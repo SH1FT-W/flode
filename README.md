@@ -35,17 +35,24 @@
 
 ### Über HACS (empfohlen)
 
-1. HACS öffnen → Integrationen → Benutzerdefinierte Repositories
-2. `https://github.com/SH1FT-W/flode` als Typ **Integration** hinzufügen
-3. Nach **FLODE** suchen und installieren
+**Schaltfläche (ein Klick):**
+
+[![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
+
+**Manuell in HACS:**
+
+1. HACS öffnen → Integrationen → ⋮ → Benutzerdefinierte Repositories
+2. URL `https://github.com/SH1FT-W/flode` eingeben, Typ **Integration** wählen → Hinzufügen
+3. HACS → Integrationen → Nach **FLODE** suchen → Installieren
 4. Home Assistant neu starten
 5. **Einstellungen → Integrationen → Integration hinzufügen → FLODE**
 
-### Manuell
+### Manuell (ohne HACS)
 
-1. Den Ordner `custom_components/flode/` in den HA-Ordner `config/custom_components/` kopieren
-2. Home Assistant neu starten
-3. **Einstellungen → Integrationen → Integration hinzufügen → FLODE**
+1. Neueste Version von der [Releases-Seite](https://github.com/SH1FT-W/flode/releases) herunterladen (`flode.zip`)
+2. Archiv entpacken und den Ordner `flode/` nach `config/custom_components/flode/` kopieren
+3. Home Assistant neu starten
+4. **Einstellungen → Integrationen → Integration hinzufügen → FLODE**
 
 ## Verwendung
 
