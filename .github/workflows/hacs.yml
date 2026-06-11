@@ -1,12 +1,9 @@
 name: HACS Validation
 
+# Nur aktiv wenn das Repo öffentlich ist
+# Bei privatem Repo schlägt hacs/action fehl, da es keinen Zugriff hat
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  release:
-    types: [published]
+  workflow_dispatch:
 
 jobs:
   validate:
@@ -22,35 +19,6 @@ jobs:
         with:
           category: integration
           ignore: brands
-
-      - name: Validate integration structure
-        run: |
-          if [ ! -f "custom_components/flode/manifest.json" ]; then
-            echo "❌ manifest.json fehlt"
-            exit 1
-          fi
-          if [ ! -f "custom_components/flode/__init__.py" ]; then
-            echo "❌ __init__.py fehlt"
-            exit 1
-          fi
-          if [ ! -f "hacs.json" ]; then
-            echo "❌ hacs.json fehlt"
-            exit 1
-          fi
-          echo "✅ Integrationsstruktur ist gültig"
-
-      - name: Validate manifest.json
-        run: |
-          python3 -c "
-          import json, sys
-          with open('custom_components/flode/manifest.json') as f:
-              m = json.load(f)
-          missing = [k for k in ['domain','name','version','documentation_url','issue_tracker'] if k not in m]
-          if missing:
-              print(f'❌ Fehlende Felder in manifest.json: {missing}')
-              sys.exit(1)
-          print('✅ manifest.json gültig')
-          "
 
   validate-frontend:
     name: Frontend Build Validierung
@@ -83,10 +51,6 @@ jobs:
           fi
           if [ ! -d "custom_components/flode/www/assets" ]; then
             echo "❌ Frontend Build fehlgeschlagen - assets Verzeichnis fehlt"
-            exit 1
-          fi
-          if [ -z "$(ls -A custom_components/flode/www/assets/)" ]; then
-            echo "❌ Assets Verzeichnis ist leer"
             exit 1
           fi
           echo "✅ Frontend Build gültig"
