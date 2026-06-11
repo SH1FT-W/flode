@@ -2,7 +2,7 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   type EdgeProps,
-  getSmoothStepPath,
+  getBezierPath,
   useReactFlow,
 } from '@xyflow/react';
 import { X } from 'lucide-react';
@@ -69,8 +69,8 @@ export function DeletableEdge({
     labelX = (startRightX + endLeftX) / 2;
     labelY = topY;
   } else {
-    // Use normal smooth step path for forward edges
-    const [path, x, y] = getSmoothStepPath({
+    // Use bezier curve path for forward edges (smooth wave shape)
+    const [path, x, y] = getBezierPath({
       sourceX,
       sourceY,
       sourcePosition,

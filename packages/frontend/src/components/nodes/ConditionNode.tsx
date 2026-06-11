@@ -23,7 +23,13 @@ export const ConditionNode = memo(function ConditionNode({
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
   const edges = useEdges();
-  const hasFalseEdge = edges.some((e) => e.source === id && e.sourceHandle === 'false');
+  const hasFalseEdge = edges.some(
+    (e) =>
+      e.source === id &&
+      e.sourceHandle === 'false' &&
+      e.type !== 'choose-chain' &&
+      e.type !== 'choose-default'
+  );
 
   const conditionLabels: Record<string, string> = {
     state: 'State',

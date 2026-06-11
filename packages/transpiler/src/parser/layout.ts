@@ -20,7 +20,13 @@ export async function applyHeuristicLayout(
     }));
 
     const elkEdges = edges
-      .filter((edge) => edge.type !== 'choose-chain' && edge.type !== 'loop-back')
+      .filter(
+        (edge) =>
+          edge.type !== 'choose-chain' &&
+          edge.type !== 'choose-default' &&
+          edge.type !== 'loop-back' &&
+          edge.type !== 'hint'
+      )
       .map((edge) => ({
         id: edge.id,
         sources: [edge.source],
@@ -46,7 +52,7 @@ export async function applyHeuristicLayout(
     const layout = await elk.layout(graph);
 
     // Apply computed positions back to nodes
-    return nodes.map((node) => {
+    const positionedNodes = nodes.map((node) => {
       const elkNode = layout.children?.find((n) => n.id === node.id);
       if (elkNode && elkNode.x !== undefined && elkNode.y !== undefined) {
         return {
@@ -59,10 +65,103 @@ export async function applyHeuristicLayout(
       }
       return node;
     });
+
+    // choose-hint edges are included in ELK so case 2+ nodes are placed
+    // in the same column as case 1 (directly below it). No post-processing needed.
+    return positionedNodes;
   } catch (_error) {
     // Fallback to simple grid layout if ELK fails
     return applyFallbackLayout(nodes);
   }
+}
+
+/**
+ * Post-process positions to vertically stack choose-chain cases.
+ * ELK excludes choose-chain edges, so case 2+ nodes are placed at (0,0) as
+ * isolated components. This function aligns them horizontally with their
+ * predecessor case and places them below it.
+ */
+export function fixChooseChainLayout(nodes: FlowNode[], edges: FlowEdge[]): FlowNode[] {
+  const chooseChainEdges = edges.filter((e) => e.type === 'choose-chain');
+  if (chooseChainEdges.length === 0) return nodes;
+
+  const posMap = new Map(nodes.map((n) => [n.id, { ...n.position }]));
+  const nodeTypeMap = new Map(nodes.map((n) => [n.id, n.type ?? 'action']));
+
+  // Build traversal maps
+  const ccBySource = new Map(chooseChainEdges.map((e) => [e.source, e]));
+  const ccTargetIds = new Set(chooseChainEdges.map((e) => e.target));
+
+  // Process each chain starting from the first case (source not targeted by any choose-chain)
+  const chainStarters = chooseChainEdges.filter((e) => !ccTargetIds.has(e.source));
+
+  for (const starter of chainStarters) {
+    let currentEdge: (typeof chooseChainEdges)[number] | undefined = starter;
+
+    while (currentEdge) {
+      const { source: sourceId, target: targetId } = currentEdge;
+
+      const sourcePos = posMap.get(sourceId);
+      const targetPos = posMap.get(targetId);
+      if (!sourcePos || !targetPos) {
+        currentEdge = ccBySource.get(targetId);
+        continue;
+      }
+
+      // Compute the bottom edge of the source case's subtree (current posMap values)
+      const sourceSubtreeIds = getSubtreeIds(sourceId, edges);
+      let bottomY = sourcePos.y + getNodeHeight(nodeTypeMap.get(sourceId) ?? 'action');
+      for (const id of sourceSubtreeIds) {
+        const pos = posMap.get(id);
+        if (pos) {
+          bottomY = Math.max(bottomY, pos.y + getNodeHeight(nodeTypeMap.get(id) ?? 'action'));
+        }
+      }
+
+      // Shift target's subtree, but NOT nodes shared with the source subtree
+      // (those are post-choose actions already correctly positioned by ELK)
+      const targetSubtreeIds = getSubtreeIds(targetId, edges);
+      const toShift = [...targetSubtreeIds].filter((id) => !sourceSubtreeIds.has(id));
+
+      const dx = sourcePos.x - targetPos.x;
+      const dy = bottomY + 60 - targetPos.y;
+
+      for (const id of toShift) {
+        const pos = posMap.get(id);
+        if (pos) posMap.set(id, { x: pos.x + dx, y: pos.y + dy });
+      }
+
+      currentEdge = ccBySource.get(targetId);
+    }
+  }
+
+  return nodes.map((n) => ({ ...n, position: posMap.get(n.id) ?? n.position }));
+}
+
+/**
+ * Collect all node IDs reachable from startId following forward edges,
+ * excluding choose-chain, loop-back, and hint edges so each case's
+ * subtree stays independent.
+ */
+function getSubtreeIds(startId: string, edges: FlowEdge[]): Set<string> {
+  const visited = new Set<string>();
+  const stack = [startId];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (visited.has(id)) continue;
+    visited.add(id);
+    for (const edge of edges) {
+      if (
+        edge.source === id &&
+        edge.type !== 'choose-chain' &&
+        edge.type !== 'loop-back' &&
+        edge.type !== 'hint'
+      ) {
+        stack.push(edge.target);
+      }
+    }
+  }
+  return visited;
 }
 
 /**

@@ -308,7 +308,18 @@ export class YamlParser {
       // Step 7: Apply positions from metadata or generate heuristic layout
       let nodesWithPositions: FlowNode[];
       if (hadMetadata && metadata) {
-        nodesWithPositions = this.applyMetadataPositions(nodes, metadata);
+        const metaNodes = this.applyMetadataPositions(nodes, metadata);
+        // Validate layout: if any choose-chain edge goes right-to-left, the saved
+        // positions are stale/manually rearranged in a confusing way — recompute.
+        const nodePositionMap = new Map(metaNodes.map((n) => [n.id, n.position.x]));
+        const hasBackwardsChooseChain = edges.some(
+          (e) =>
+            (e.type === 'choose-chain' || e.type === 'choose-hint') &&
+            (nodePositionMap.get(e.target) ?? 0) < (nodePositionMap.get(e.source) ?? 0)
+        );
+        nodesWithPositions = hasBackwardsChooseChain
+          ? await applyHeuristicLayout(nodes, edges)
+          : metaNodes;
       } else {
         // Use async heuristic layout if metadata is missing
         nodesWithPositions = await applyHeuristicLayout(nodes, edges);
@@ -2045,6 +2056,9 @@ export class YamlParser {
       return Array.isArray(conds) ? conds.length > 0 : Boolean(conds);
     });
 
+    // Keep the entry point IDs to add choose-hint edges from entry to case 2+
+    const originalPreviousIds = [...previousNodeIds];
+
     // Track what nodes should connect to the next condition (false path of current)
     let currentPreviousIds = [...previousNodeIds];
 
@@ -2182,6 +2196,17 @@ export class YamlParser {
         edges.push(e);
       }
 
+      // For case 2+: add a visible choose-hint edge from the original entry node to this case.
+      // This lets ELK place all cases in the same column (directly below case 1) and shows
+      // a dashed line in the UI so the user sees all branches originating from the entry point.
+      if (choiceIndex > 0 && originalPreviousIds.length > 0) {
+        for (const entryId of originalPreviousIds) {
+          const hintEdge = this.createEdge(entryId, firstConditionId);
+          (hintEdge as Record<string, unknown>).type = 'choose-hint';
+          edges.push(hintEdge);
+        }
+      }
+
       // Chain condition nodes together with 'true' edges
       for (let i = 0; i < choiceConditionNodes.length - 1; i++) {
         edges.push(
@@ -2252,10 +2277,22 @@ export class YamlParser {
         );
         if (falseEdge && localConditionIds.has(lastConditionId)) {
           falseEdge.sourceHandle = 'false';
+          // Mark as choose-default so the UI hides this edge (choose-hint from entry already shows it)
+          (falseEdge as Record<string, unknown>).type = 'choose-default';
         }
         // The last node in the default sequence is the output
         const lastNodeId = defaultResult.nodes[defaultResult.nodes.length - 1].id;
         outputNodeIds.push(lastNodeId);
+
+        // Add choose-hint from entry to first default node so the default branch
+        // also appears connected to the entry point (same as case 2+)
+        if (originalPreviousIds.length > 0) {
+          for (const entryId of originalPreviousIds) {
+            const defaultHintEdge = this.createEdge(entryId, firstDefaultId);
+            (defaultHintEdge as Record<string, unknown>).type = 'choose-hint';
+            edges.push(defaultHintEdge);
+          }
+        }
       }
     } else if (validChoices.length > 0) {
       // No default - the last condition's false path is an implicit output

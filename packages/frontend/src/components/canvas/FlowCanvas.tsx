@@ -167,12 +167,28 @@ export function FlowCanvas() {
       const isConnectedToSelected =
         selectedNodeId && (edge.source === selectedNodeId || edge.target === selectedNodeId);
 
+      // Structural-only edges hidden in UI (choose-hint already shows the connection visually)
+      if (edge.type === 'choose-default') {
+        return { ...edge, style: { opacity: 0 } };
+      }
+
       // Visual-only edges — same style as normal edges, no simulation/selection effects
       if (edge.type === 'hint' || edge.type === 'choose-chain') {
         return {
           ...edge,
           style: { strokeWidth: 2, stroke: isDarkMode ? '#94a3b8' : '#64748b' },
           markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#94a3b8' : '#64748b' },
+        };
+      }
+
+      // Choose-hint: same style as regular edges — shows all branches from the entry node
+      if (edge.type === 'choose-hint') {
+        const color = isDarkMode ? '#94a3b8' : '#64748b';
+        return {
+          ...edge,
+          type: 'default',
+          style: { strokeWidth: 2, stroke: color },
+          markerEnd: { type: MarkerType.ArrowClosed, color },
         };
       }
 

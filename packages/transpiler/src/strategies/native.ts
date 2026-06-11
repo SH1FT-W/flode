@@ -59,7 +59,7 @@ export class NativeStrategy extends BaseStrategy {
     const warnings: string[] = [];
 
     // Strip hint edges (visual-only trigger-routing aids) before any processing
-    flow = { ...flow, edges: flow.edges.filter((e) => e.type !== 'hint') };
+    flow = { ...flow, edges: flow.edges.filter((e) => e.type !== 'hint' && e.type !== 'choose-hint') };
 
     // Structurally detect back-edges using DFS
     this.backEdgeIds = findBackEdges(flow);
