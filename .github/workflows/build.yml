@@ -13,39 +13,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "yarn"
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Install dependencies
         run: yarn install --immutable
 
       - name: Build shared package
-        run: yarn workspace @cafe/shared build
+        run: yarn workspace @flode/shared build
 
       - name: Build transpiler package
-        run: yarn workspace @cafe/transpiler build
+        run: yarn workspace @flode/transpiler build
 
       - name: Build frontend
-        run: yarn workspace @cafe/frontend build
+        run: yarn workspace @flode/frontend build
 
       - name: Run tests
         run: yarn test
-        continue-on-error: true
-
-      - name: Copy frontend to custom_components
-        run: |
-          rm -rf custom_components/cafe/www/*
-          cp -r packages/frontend/dist/* custom_components/cafe/www/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cafe
-          path: custom_components/cafe/
+          name: flode
+          path: custom_components/flode/
           retention-days: 30

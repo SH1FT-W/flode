@@ -15,51 +15,69 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "yarn"
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Install dependencies
         run: yarn install --immutable
 
       - name: Build shared package
-        run: yarn workspace @cafe/shared build
+        run: yarn workspace @flode/shared build
 
       - name: Build transpiler package
-        run: yarn workspace @cafe/transpiler build
+        run: yarn workspace @flode/transpiler build
 
       - name: Build frontend
-        run: yarn workspace @cafe/frontend build
+        run: yarn workspace @flode/frontend build
 
-      - name: Verify www directory was created
+      - name: Verify www directory
         run: |
-          ls -la custom_components/cafe/
-          ls -la custom_components/cafe/www/ || echo "www directory missing!"
-          ls -la custom_components/cafe/www/assets/ || echo "assets directory missing!"
+          ls -la custom_components/flode/
+          ls -la custom_components/flode/www/
+          ls -la custom_components/flode/www/assets/
 
-      - name: Create release archives
+      - name: Create release archive
         run: |
-          # Create zip with files at root (for HACS)
-          cd custom_components/cafe
-          zip -r ../../cafe.zip . -x "*.DS_Store" "*/.DS_Store"
-
-          # Create alternative tar.gz
-          tar -czf ../../cafe.tar.gz --exclude="*.DS_Store" .
+          cd custom_components/flode
+          zip -r ../../flode.zip . -x "*.DS_Store"
+          tar -czf ../../flode.tar.gz --exclude="*.DS_Store" .
           cd ../..
-
-          echo "Created archives:"
+          echo "Archive erstellt:"
           ls -la *.zip *.tar.gz
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            cafe.zip
-            cafe.tar.gz
+            flode.zip
+            flode.tar.gz
           tag_name: ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update version in manifest.json
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION=${VERSION#v}
+          python3 -c "
+          import json
+          with open('custom_components/flode/manifest.json', 'r') as f:
+              manifest = json.load(f)
+          manifest['version'] = '${VERSION}'
+          with open('custom_components/flode/manifest.json', 'w') as f:
+              json.dump(manifest, f, indent=2)
+          print(f'✅ Version aktualisiert auf ${VERSION}')
+          "
+
+      - name: Commit version update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add custom_components/flode/manifest.json
+          git diff --staged --quiet || git commit -m "chore: version bump ${{ github.ref_name }}"
+          git push

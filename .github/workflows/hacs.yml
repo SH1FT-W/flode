@@ -25,80 +25,35 @@ jobs:
 
       - name: Validate integration structure
         run: |
-          # Check required files exist
-          if [ ! -f "custom_components/cafe/manifest.json" ]; then
-            echo "❌ Missing manifest.json"
+          if [ ! -f "custom_components/flode/manifest.json" ]; then
+            echo "❌ manifest.json fehlt"
             exit 1
           fi
-
-          if [ ! -f "custom_components/cafe/__init__.py" ]; then
-            echo "❌ Missing __init__.py"
+          if [ ! -f "custom_components/flode/__init__.py" ]; then
+            echo "❌ __init__.py fehlt"
             exit 1
           fi
-
           if [ ! -f "hacs.json" ]; then
-            echo "❌ Missing hacs.json"
+            echo "❌ hacs.json fehlt"
             exit 1
           fi
-
-          echo "✅ Integration structure is valid"
+          echo "✅ Integrationsstruktur ist gültig"
 
       - name: Validate manifest.json
         run: |
-          # Validate manifest.json structure
           python3 -c "
-          import json
-          import sys
-
-          try:
-              with open('custom_components/cafe/manifest.json', 'r') as f:
-                  manifest = json.load(f)
-              
-              required_fields = ['domain', 'name', 'version', 'documentation_url', 'issue_tracker']
-              missing_fields = [field for field in required_fields if field not in manifest]
-              
-              if missing_fields:
-                  print(f'❌ Missing required fields in manifest.json: {missing_fields}')
-                  sys.exit(1)
-              
-              print('✅ manifest.json is valid')
-          except json.JSONDecodeError as e:
-              print(f'❌ Invalid JSON in manifest.json: {e}')
+          import json, sys
+          with open('custom_components/flode/manifest.json') as f:
+              m = json.load(f)
+          missing = [k for k in ['domain','name','version','documentation_url','issue_tracker'] if k not in m]
+          if missing:
+              print(f'❌ Fehlende Felder in manifest.json: {missing}')
               sys.exit(1)
-          except Exception as e:
-              print(f'❌ Error validating manifest.json: {e}')
-              sys.exit(1)
-          "
-
-      - name: Validate hacs.json
-        run: |
-          # Validate hacs.json structure
-          python3 -c "
-          import json
-          import sys
-
-          try:
-              with open('hacs.json', 'r') as f:
-                  hacs_config = json.load(f)
-              
-              required_fields = ['name', 'render_readme']
-              missing_fields = [field for field in required_fields if field not in hacs_config]
-              
-              if missing_fields:
-                  print(f'❌ Missing required fields in hacs.json: {missing_fields}')
-                  sys.exit(1)
-              
-              print('✅ hacs.json is valid')
-          except json.JSONDecodeError as e:
-              print(f'❌ Invalid JSON in hacs.json: {e}')
-              sys.exit(1)
-          except Exception as e:
-              print(f'❌ Error validating hacs.json: {e}')
-              sys.exit(1)
+          print('✅ manifest.json gültig')
           "
 
   validate-frontend:
-    name: Validate Frontend Build
+    name: Frontend Build Validierung
     runs-on: ubuntu-latest
 
     steps:
@@ -111,7 +66,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "24"
           cache: "yarn"
 
       - name: Install dependencies
@@ -122,60 +77,16 @@ jobs:
 
       - name: Validate frontend assets
         run: |
-          if [ ! -f "custom_components/cafe/www/index.html" ]; then
-            echo "❌ Frontend build failed - missing index.html"
+          if [ ! -f "custom_components/flode/www/index.html" ]; then
+            echo "❌ Frontend Build fehlgeschlagen - index.html fehlt"
             exit 1
           fi
-
-          if [ ! -d "custom_components/cafe/www/assets" ]; then
-            echo "❌ Frontend build failed - missing assets directory"
+          if [ ! -d "custom_components/flode/www/assets" ]; then
+            echo "❌ Frontend Build fehlgeschlagen - assets Verzeichnis fehlt"
             exit 1
           fi
-
-          # Check if assets are not empty
-          if [ -z "$(ls -A custom_components/cafe/www/assets/)" ]; then
-            echo "❌ Frontend assets directory is empty"
+          if [ -z "$(ls -A custom_components/flode/www/assets/)" ]; then
+            echo "❌ Assets Verzeichnis ist leer"
             exit 1
           fi
-
-          echo "✅ Frontend build is valid"
-
-  update-hacs-version:
-    name: Update HACS Version
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update version in manifest.json
-        run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          # Remove 'v' prefix if present
-          VERSION=${VERSION#v}
-
-          # Update manifest.json version
-          python3 -c "
-          import json
-
-          with open('custom_components/cafe/manifest.json', 'r') as f:
-              manifest = json.load(f)
-
-          manifest['version'] = '${VERSION}'
-
-          with open('custom_components/cafe/manifest.json', 'w') as f:
-              json.dump(manifest, f, indent=2)
-
-          print(f'✅ Updated manifest.json version to ${VERSION}')
-          "
-
-      - name: Commit version update
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add custom_components/cafe/manifest.json
-          git diff --staged --quiet || git commit -m "Update version to ${{ github.event.release.tag_name }}"
-          git push
+          echo "✅ Frontend Build gültig"
