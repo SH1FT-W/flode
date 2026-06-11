@@ -99,5 +99,5 @@ Apache 2.0 — siehe [LICENSE](LICENSE)
 ---
 
 <div align="center">
-  <sub>Entwickelt von <strong>SH1FT-W</strong></sub>
+  <sub>Entwickelt von <strong>SH1FT-W</strong> · Aktiv weiterentwickelt mit <a href="https://claude.ai">Claude (Anthropic)</a></sub>
 </div>
