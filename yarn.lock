@@ -784,7 +784,7 @@ __metadata:
     uuid: "npm:^13.0.0"
     vitest: "npm:^2.1.0"
   bin:
-    cafe: ./dist/cli.js
+    flode: ./dist/cli.js
   languageName: unknown
   linkType: soft
 
