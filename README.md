@@ -1,101 +1,101 @@
 <div align="center">
   <img src="custom_components/flode/brand/icon.png" alt="FLODE Logo" width="120" />
   <h1>FLODE</h1>
-  <p><strong>Flow + Node Editor for Home Assistant</strong></p>
+  <p><strong>Visueller Flow + Node Editor für Home Assistant</strong></p>
 
   <p>
     <img alt="Version" src="https://img.shields.io/badge/version-0.7.5-blue?style=flat-square" />
     <img alt="HA Version" src="https://img.shields.io/badge/HA-2024.1%2B-brightgreen?style=flat-square" />
-    <img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square" />
+    <img alt="Lizenz" src="https://img.shields.io/badge/lizenz-Apache%202.0-orange?style=flat-square" />
     <img alt="Status" src="https://img.shields.io/badge/status-beta-yellow?style=flat-square" />
   </p>
 </div>
 
 ---
 
-> **Beta:** FLODE is designed to be non-destructive. Back up your automations before editing them with FLODE.
+> **Beta:** FLODE ist darauf ausgelegt, keine bestehenden Daten zu überschreiben. Trotzdem empfehlen wir, Automatisierungen vor der Bearbeitung zu sichern.
 
-## What is FLODE?
+## Was ist FLODE?
 
-**FLODE** is a visual flow editor for Home Assistant automations — inspired by Node-RED, but without the external engine. You design your automations as diagrams and FLODE transpiles them into **100% native Home Assistant YAML**, stored directly in the HA core system. No vendor lock-in. No external runtime. Automations stay fully editable in HA's built-in editor.
+**FLODE** ist ein visueller Flow-Editor für Home Assistant Automatisierungen — inspiriert von Node-RED, aber ohne externen Server. Du zeichnest deine Automatisierungen als Diagramme und FLODE übersetzt sie automatisch in **100 % natives Home Assistant YAML**, das direkt im HA-Kern gespeichert wird. Kein Vendor Lock-in. Kein externer Dienst. Automatisierungen bleiben vollständig im integrierten HA-Editor bearbeitbar.
 
-## Features
+## Funktionen
 
-- **Visual flow editor** — Drag-and-drop triggers, conditions and actions onto a canvas
-- **100% native YAML** — Output is standard HA automation YAML, no proprietary format
-- **Bidirectional** — Import existing HA automations, edit visually, save back
-- **Trace-integrated** — Debug flows using HA's official Trace View
-- **State-machine support** — Complex loops and branching via automatic state-machine pattern
-- **German & English UI** — Full i18n support
-- **Dark & Light mode** — Follows your HA theme
+- **Visueller Flow-Editor** — Trigger, Bedingungen und Aktionen per Drag-and-Drop auf einer Leinwand
+- **100 % natives YAML** — Die Ausgabe ist Standard-HA-Automatisierungs-YAML, kein proprietäres Format
+- **Bidirektional** — Bestehende HA-Automatisierungen importieren, visuell bearbeiten und zurückspeichern
+- **Trace-Integration** — Flows mit der offiziellen HA Trace-Ansicht debuggen
+- **State-Machine-Unterstützung** — Komplexe Schleifen und Verzweigungen via automatischem State-Machine-Muster
+- **Deutsch & Englisch** — Vollständige i18n-Unterstützung
+- **Dark & Light Mode** — Folgt dem eingestellten HA-Theme
 
 ## Installation
 
-### Via HACS (recommended)
+### Über HACS (empfohlen)
 
-1. Open HACS → Integrations → Custom repositories
-2. Add `https://github.com/SH1FT-W/flode` as type **Integration**
-3. Search for **FLODE** and install
-4. Restart Home Assistant
-5. Go to **Settings → Integrations → Add Integration → FLODE**
+1. HACS öffnen → Integrationen → Benutzerdefinierte Repositories
+2. `https://github.com/SH1FT-W/flode` als Typ **Integration** hinzufügen
+3. Nach **FLODE** suchen und installieren
+4. Home Assistant neu starten
+5. **Einstellungen → Integrationen → Integration hinzufügen → FLODE**
 
-### Manual
+### Manuell
 
-1. Copy `custom_components/flode/` into your HA `config/custom_components/` folder
-2. Restart Home Assistant
-3. Go to **Settings → Integrations → Add Integration → FLODE**
+1. Den Ordner `custom_components/flode/` in den HA-Ordner `config/custom_components/` kopieren
+2. Home Assistant neu starten
+3. **Einstellungen → Integrationen → Integration hinzufügen → FLODE**
 
-## Usage
+## Verwendung
 
-After setup, **FLODE** appears in the HA sidebar. Click it to open the flow editor.
+Nach der Einrichtung erscheint **FLODE** in der HA-Seitenleiste. Einfach anklicken, um den Flow-Editor zu öffnen.
 
-- **New automation** — Start with a trigger node, add conditions and actions
-- **Import existing** — Click the folder icon to load any existing HA automation
-- **Save** — Saves directly to Home Assistant as a native automation
-- **Export YAML** — View or copy the generated YAML at any time
+- **Neue Automatisierung** — Mit einem Trigger-Knoten beginnen, Bedingungen und Aktionen hinzufügen
+- **Bestehende importieren** — Über das Ordner-Symbol eine vorhandene HA-Automatisierung laden
+- **Speichern** — Speichert direkt in Home Assistant als native Automatisierung
+- **YAML exportieren** — Generierten YAML-Code jederzeit ansehen oder kopieren
 
-## Node Types
+## Knotentypen
 
-| Node | Color | Description |
+| Knoten | Farbe | Beschreibung |
 |---|---|---|
-| Trigger | Yellow | What starts the automation (state, time, event, ...) |
-| Condition | Blue | Filter — only continues if condition is true |
-| Action | Green | What happens (call service, fire event, delay, ...) |
-| OR / AND / NOT | Purple | Group multiple conditions |
+| Trigger | Gelb | Was die Automatisierung startet (Zustand, Zeit, Ereignis, ...) |
+| Bedingung | Blau | Filter — läuft nur weiter, wenn die Bedingung erfüllt ist |
+| Aktion | Grün | Was passiert (Dienst aufrufen, Ereignis auslösen, Verzögerung, ...) |
+| OR / AND / NOT | Lila | Mehrere Bedingungen gruppieren |
 
-## Project Structure
+## Projektstruktur
 
 ```
 flode/
-├── custom_components/flode/   # HA integration (Python)
-│   ├── brand/                 # Integration icons
-│   ├── translations/          # de + en setup strings
-│   └── www/                   # Built frontend assets
+├── custom_components/flode/   # HA-Integration (Python)
+│   ├── brand/                 # Integrations-Icons
+│   ├── translations/          # DE + EN Einrichtungstexte
+│   └── www/                   # Gebaute Frontend-Dateien
 ├── packages/
 │   ├── frontend/              # React/Vite UI (@flode/frontend)
-│   ├── transpiler/            # YAML ↔ Graph logic (@flode/transpiler)
-│   └── shared/                # Zod schemas + types (@flode/shared)
-└── __tests__/                 # YAML round-trip fixtures
+│   ├── transpiler/            # YAML ↔ Graph Logik (@flode/transpiler)
+│   └── shared/                # Zod-Schemas + Typen (@flode/shared)
+└── __tests__/                 # YAML Round-Trip Fixtures
 ```
 
-## Tech Stack
+## Technologie
 
 - **Frontend:** React 18, Vite, Tailwind CSS, React Flow (xyflow), Zustand, i18next
-- **Transpiler:** TypeScript, js-yaml, ELK layout engine
-- **Validation:** Zod schemas
-- **Tests:** Vitest (256 tests)
-- **HA Integration:** Python, custom panel via `panel_custom`
+- **Transpiler:** TypeScript, js-yaml, ELK Layout-Engine
+- **Validierung:** Zod Schemas
+- **Tests:** Vitest (256 Tests)
+- **HA-Integration:** Python, Custom Panel via `panel_custom`
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for the full release history.
+Alle Änderungen findest du in der [CHANGELOG.md](CHANGELOG.md).
 
-## License
+## Lizenz
 
-Apache 2.0 — see [LICENSE](LICENSE)
+Apache 2.0 — siehe [LICENSE](LICENSE)
 
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by <strong>SH1FT-W</strong></sub>
+  <sub>Entwickelt von <strong>SH1FT-W</strong></sub>
 </div>
