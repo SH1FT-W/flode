@@ -63,7 +63,7 @@ class FlodePanelWrapper extends HTMLElement {
     this._messageHandler = (event: MessageEvent) => {
       // Only accept messages from our iframe
       if (event.source !== this.iframe?.contentWindow) return;
-      if (event.data && event.data.type === 'CAFE_TOGGLE_SIDEBAR') {
+      if (event.data && event.data.type === 'FLODE_TOGGLE_SIDEBAR') {
         this.dispatchEvent(new Event('hass-toggle-menu', { bubbles: true, composed: true }));
       }
     };

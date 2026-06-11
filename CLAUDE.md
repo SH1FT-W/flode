@@ -7,25 +7,25 @@
 
 # Project Overview
 
-**FLODE** (Flow + Node Editor) is a visual flow editor for Home Assistant automations, inspired by Node-RED. It allows users to design automations as diagrams and transpiles them to 100% native Home Assistant YAML—no vendor lock-in. Automations remain editable in HA’s built-in editor.
+**FLODE** (Flow + Node Editor) is a visual flow editor for Home Assistant automations, inspired by Node-RED. It allows users to design automations as diagrams and transpiles them to 100% native Home Assistant YAML—no vendor lock-in. Automations remain editable in HA's built-in editor.
 
 # Repository Structure
 
 ```
-cafe-hass/
+flode/
 ├── packages/
-│   ├── shared/          # @cafe/shared - Types and Zod schemas
-│   ├── frontend/        # @cafe/frontend - React UI (Vite + Tailwind)
-│   └── transpiler/      # @cafe/transpiler - YAML parser/generator
-├── custom_components/cafe/  # Home Assistant integration (Python)
-└── .github/workflows/       # CI/CD pipelines
+│   ├── shared/          # @flode/shared - Types and Zod schemas
+│   ├── frontend/        # @flode/frontend - React UI (Vite + Tailwind)
+│   └── transpiler/      # @flode/transpiler - YAML parser/generator
+├── custom_components/flode/  # Home Assistant integration (Python)
+└── .github/workflows/        # CI/CD pipelines
 ```
 
 # Package Descriptions
 
-- **@cafe/shared**: Zod schemas, TypeScript types, validation utilities
-- **@cafe/frontend**: React 18 + XYFlow canvas + Zustand state + Radix UI
-- **@cafe/transpiler**: YAML parsing, topology analysis, transpilation strategies
+- **@flode/shared**: Zod schemas, TypeScript types, validation utilities
+- **@flode/frontend**: React 18 + XYFlow canvas + Zustand state + Radix UI
+- **@flode/transpiler**: YAML parsing, topology analysis, transpilation strategies
 
 # Key Domains/Features
 
@@ -47,10 +47,10 @@ cafe-hass/
 
 In addition to strict TypeScript rules:
 
-- **Zod for Schema Validation**: All data structures use Zod schemas in `@cafe/shared`
+- **Zod for Schema Validation**: All data structures use Zod schemas in `@flode/shared`
 - **Zustand for State**: Single cohesive store pattern in `flow-store.ts`
 - **React Patterns**: Use `memo()` for nodes, `cn()` for class merging, and typed NodeProps
-- **Import Aliases**: `@/` for frontend, `@cafe/*` for packages
+- **Import Aliases**: `@/` for frontend, `@flode/*` for packages
 
 # Common Commands
 
@@ -112,7 +112,7 @@ The codebase should compile with zero TypeScript errors and maintain type safety
 
 - **Helper Functions/Utilities**: Extract common logic into reusable helper functions or utility modules. If you write the same logic twice, you have failed.
 - **Generic Components**: Design React components to be as generic and reusable as possible, accepting props to customize behavior and appearance. Components MUST be designed for reuse from the start.
-- **Shared Types/Schemas**: Leverage `@cafe/shared` for all common types, interfaces, and Zod schemas to ensure consistency and avoid duplication across `frontend` and `transpiler`.
+- **Shared Types/Schemas**: Leverage `@flode/shared` for all common types, interfaces, and Zod schemas to ensure consistency and avoid duplication across `frontend` and `transpiler`.
 - **Custom Hooks**: For shared stateful logic in React, create custom hooks. ANY repeated stateful pattern MUST become a hook.
 - **Before Writing Code**: ALWAYS search the codebase first to check if similar functionality exists. Reuse and extend existing code rather than creating new duplicates.
 - **Refactor Immediately**: If you discover existing duplication while working, refactor it into a shared abstraction before proceeding.
@@ -120,7 +120,7 @@ The codebase should compile with zero TypeScript errors and maintain type safety
 **ABSOLUTELY FORBIDDEN - VIOLATIONS WILL NOT BE ACCEPTED**:
 
 - **Copy-pasting code**: NEVER duplicate blocks of code under any circumstances. If you find yourself copying and pasting, STOP and create a reusable function, component, or hook instead.
-- **Redundant Type Definitions**: NEVER redefine types or interfaces that already exist in `@cafe/shared` or can be derived from existing schemas.
+- **Redundant Type Definitions**: NEVER redefine types or interfaces that already exist in `@flode/shared` or can be derived from existing schemas.
 - **Similar but slightly different implementations**: If two pieces of code do similar things, they MUST be unified into a single parameterized implementation.
 - **Duplicated constants or configuration**: All shared values MUST be defined once and imported where needed.
 - **Repeated UI patterns**: Any UI pattern used more than once MUST be extracted into a reusable component.
@@ -131,7 +131,7 @@ The codebase should compile with zero TypeScript errors and maintain type safety
 
 To cut a new release, follow these steps:
 
-**Important:** Before tagging and releasing, always bump the version in `custom_components/cafe/manifest.json` to match the new release version.
+**Important:** Before tagging and releasing, always bump the version in `custom_components/flode/manifest.json` to match the new release version.
 
 **All information for the release (version number and release notes) must be automatically derived from the git commit history since the last release.**
 
@@ -141,7 +141,7 @@ To cut a new release, follow these steps:
 1. **Commit your changes**
 
 - Ensure all changes are staged and committed with a clear message.
-- Bump the version in `custom_components/cafe/manifest.json` to the new release version (e.g., "0.1.9").
+- Bump the version in `custom_components/flode/manifest.json` to the new release version (e.g., "0.7.7").
 - Example:
   ```bash
   # Edit manifest.json and update the version field
@@ -151,10 +151,10 @@ To cut a new release, follow these steps:
 
 2. **Create a new git tag**
 
-- Use semantic versioning (e.g., v0.1.9). For 1.x.x.
+- Use semantic versioning (e.g., v0.7.7). For 1.x.x.
 - Example:
   ```bash
-  git tag v0.1.9
+  git tag v0.7.7
   ```
 
 3. **Push changes to remote**
@@ -178,7 +178,7 @@ To cut a new release, follow these steps:
 
 ```bash
 # IMPORTANT: Use real newlines in the --notes argument, not literal \n. For multiline notes, write each line on a new line inside the string.
-gh release create v0.1.9 --title "FLODE v0.1.9" --notes "<release notes>"
+gh release create v0.7.7 --title "FLODE v0.7.7" --notes "<release notes>"
 ```
 
 5. **Verify release on GitHub**

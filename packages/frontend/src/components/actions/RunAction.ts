@@ -35,10 +35,6 @@ export function getRunAction(t: TFunction): NodeAction {
             data: data.data,
             target: data.target,
           });
-          console.log(`Executed action: ${data.service}`, {
-            target: data.target,
-            data: data.data,
-          });
         } catch (error) {
           console.error(`Failed to execute action ${data.service}:`, error);
         }

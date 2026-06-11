@@ -57,7 +57,7 @@ export interface HassConfig {
   token: string;
 }
 
-const STORAGE_KEY = 'cafe_hass_config';
+const STORAGE_KEY = 'flode_hass_config';
 
 /**
  * Load config from localStorage

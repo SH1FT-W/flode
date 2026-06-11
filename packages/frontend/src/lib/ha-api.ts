@@ -492,9 +492,6 @@ export class HomeAssistantAPI {
    */
   async updateAutomation(automationId: string, config: AutomationConfig): Promise<void> {
     try {
-      console.log('FLODE: Updating automation with ID:', automationId);
-      console.log('FLODE: Update config:', config);
-
       // Ensure the config has the correct structure that HA expects (plural forms)
       const configWithId = {
         id: automationId,
@@ -507,12 +504,8 @@ export class HomeAssistantAPI {
         variables: config.variables || {},
       };
 
-      console.log('FLODE: Final update payload:', configWithId);
-
       // Use POST method for updates (HA doesn't support PUT for automation config updates)
       await this.fetchRestAPI(`config/automation/config/${automationId}`, 'POST', configWithId);
-
-      console.log('FLODE: Successfully updated automation:', automationId);
     } catch (error) {
       console.error('FLODE: Failed to update automation:', error);
       throw new Error(

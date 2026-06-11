@@ -24,7 +24,7 @@ import type { AutomationTrace } from '@/lib/ha-api';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
 import { generateUUID } from '@/lib/utils';
 import type { HomeAssistant } from '@/types/hass';
-import { cafeIndexedDBStorage } from '@/utils/indexeddb-storage';
+import { flodeIndexedDBStorage } from '@/utils/indexeddb-storage';
 
 /**
  * Node data types for React Flow
@@ -544,7 +544,6 @@ export const useFlowStore = create<FlowState>()(
           throw new Error('No automation ID set. Use saveAutomation() for new automations.');
         }
 
-        console.log('FLODE: Updating automation with ID from store:', state.automationId);
 
         set({ isSaving: true });
 
@@ -910,7 +909,7 @@ export const useFlowStore = create<FlowState>()(
     }),
     {
       name: 'flode-flow-storage',
-      storage: cafeIndexedDBStorage,
+      storage: flodeIndexedDBStorage,
       partialize: persistSelector,
       version: 1,
       onRehydrateStorage: () => (state) => {

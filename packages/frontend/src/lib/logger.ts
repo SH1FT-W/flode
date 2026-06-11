@@ -6,7 +6,7 @@
 // Enable debugging by setting this to true or via localStorage
 const DEBUG_ENABLED =
   typeof window !== 'undefined' &&
-  (localStorage.getItem('cafe_debug') === 'true' || window.location.search.includes('debug=true'));
+  (localStorage.getItem('flode_debug') === 'true' || window.location.search.includes('debug=true'));
 
 // Console styling for better visibility
 const styles = {
@@ -32,7 +32,7 @@ class Logger {
   setEnabled(enabled: boolean) {
     this.enabled = enabled;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cafe_debug', enabled.toString());
+      localStorage.setItem('flode_debug', enabled.toString());
     }
   }
 
@@ -115,7 +115,7 @@ export const logger = new Logger();
 
 // Helper to enable debugging from browser console
 if (typeof window !== 'undefined') {
-  (window as unknown as Record<string, unknown>).cafeLogger = logger;
+  (window as unknown as Record<string, unknown>).flodeLogger = logger;
 }
 
 export default logger;

@@ -230,8 +230,8 @@ program
     console.log(`Sample flow created: ${file}`);
     console.log('');
     console.log('Try it out:');
-    console.log(`  cafe check ${file}`);
-    console.log(`  cafe transpile ${file}`);
+    console.log(`  flode check ${file}`);
+    console.log(`  flode transpile ${file}`);
   });
 
 program.parse();

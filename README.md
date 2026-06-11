@@ -92,7 +92,7 @@ flode/
 - **Frontend:** React 18, Vite, Tailwind CSS, React Flow (xyflow), Zustand, i18next
 - **Transpiler:** TypeScript, js-yaml, ELK Layout-Engine
 - **Validierung:** Zod Schemas
-- **Tests:** Vitest (256 Tests)
+- **Tests:** Vitest (187 Tests)
 - **HA-Integration:** Python, Custom Panel via `panel_custom`
 
 ## Changelog

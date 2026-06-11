@@ -64,7 +64,7 @@ function App() {
 
   // Sidebar toggle button handler
   const handleSidebarToggle = () => {
-    window.parent.postMessage({ type: 'CAFE_TOGGLE_SIDEBAR' }, '*');
+    window.parent.postMessage({ type: 'FLODE_TOGGLE_SIDEBAR' }, '*');
   };
 
   // Navigate back to Home Assistant (only in panel mode)
@@ -491,9 +491,7 @@ function App() {
         <AutomationSaveDialog
           isOpen={saveDialogOpen}
           onClose={() => setSaveDialogOpen(false)}
-          onSaved={() => {
-            /* TODO: Handle automation save */
-          }}
+          onSaved={() => {}}
         />
 
         {/* Clear confirm dialog */}

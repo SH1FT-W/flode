@@ -1,6 +1,6 @@
 # FLODE Debug Mode
 
-I've added comprehensive debugging to help identify the issue with your custom panel not retrieving data from Home Assistant.
+This document explains how to enable verbose debug logging in FLODE.
 
 ## How to Enable Debugging
 
@@ -9,15 +9,17 @@ I've added comprehensive debugging to help identify the issue with your custom p
 Add `?debug=true` to the URL when accessing the panel:
 
 ```
-http://your-ha-instance:8123/cafe-hass/#/cafe?debug=true
+http://your-ha-instance:8123/flode
 ```
+
+Append `?debug=true` to the iframe URL in your browser's address bar.
 
 ### Option 2: Browser Console
 
 Open the browser's developer tools and run:
 
 ```javascript
-cafeLogger.setEnabled(true);
+flodeLogger.setEnabled(true);
 ```
 
 ### Option 3: Local Storage
@@ -25,16 +27,16 @@ cafeLogger.setEnabled(true);
 Set the debug flag in browser's local storage:
 
 ```javascript
-localStorage.setItem('cafe_debug', 'true');
+localStorage.setItem('flode_debug', 'true');
 ```
 
 ## What Gets Logged
 
-The debug system now tracks:
+The debug system tracks:
 
 ### 1. Custom Element Lifecycle
 
-- When the cafe-panel element is constructed, connected, disconnected
+- When the `flode-panel` element is constructed, connected, disconnected
 - When the `hass` property is set on the custom element
 - What data is in the hass object (states count, services count, etc.)
 
@@ -62,51 +64,19 @@ The debug system now tracks:
 When working correctly, you should see:
 
 ```
-[FLODE] CafePanel custom element registered successfully
+[FLODE] FlodePanel custom element registered successfully
 [FLODE] Setting hass object in custom element { hasHass: true, statesCount: 378, ... }
 [FLODE] App component rendering { hasExternalHass: true, ... }
 [FLODE] Setting global hass instance { source: 'external', statesCount: 378, ... }
 [FLODE] Global hass instance set successfully
 ```
 
-## Troubleshooting
-
-Check the browser console for these patterns:
-
-### If no hass object is being passed:
-
-```
-[FLODE] Setting hass object in custom element { hasHass: false, ... }
-```
-
-→ Issue is with Home Assistant not passing the hass object to the custom element
-
-### If hass object is empty:
-
-```
-[FLODE] Setting hass object in custom element { hasHass: true, statesCount: 0, ... }
-```
-
-→ Home Assistant is passing an empty or invalid hass object
-
-### If global hass isn't being set:
-
-```
-[FLODE] No effective hass available to set globally
-```
-
-→ Issue with hass object propagation from custom element to React app
-
 ## Disabling Debug Mode
 
 To turn off debugging:
 
 ```javascript
-cafeLogger.setEnabled(false);
+flodeLogger.setEnabled(false);
 ```
 
 or remove the `debug=true` parameter from the URL.
-
----
-
-Please enable debugging and share the console output so we can identify exactly where the data flow is breaking!

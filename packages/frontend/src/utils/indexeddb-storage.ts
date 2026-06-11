@@ -168,7 +168,7 @@ export class IndexedDBStorage implements StateStorage<Promise<void>> {
 /**
  * Default IndexedDB storage instance for FLODE
  */
-export const cafeIndexedDBStorage = IndexedDBStorage.createJSONStorage<PersistedFlowState>(
+export const flodeIndexedDBStorage = IndexedDBStorage.createJSONStorage<PersistedFlowState>(
   'flode-flow-storage',
   'flow-store'
 );

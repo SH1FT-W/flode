@@ -8,18 +8,18 @@ Thank you for considering contributing to FLODE This document explains how to se
 
 - **Clone the repo**:
   - `git clone <repo-url>`
-  - `cd cafe-hass`
+  - `cd flode`
 - **Install**: The repository uses Yarn 4 workspaces. From the repository root run:
   - `yarn install`
 - **Start development**: To run the frontend in watch/dev mode for local development:
-  - `yarn dev` (from the `cafe-hass` folder in monorepo the root scripts will route properly)
+  - `yarn dev` (from the repo root)
 
 ## Project Structure (short)
 
 - `packages/frontend` — React + Vite frontend UI
 - `packages/shared` — shared types & Zod schemas
 - `packages/transpiler` — YAML parsing & transpilation
-- `custom_components/cafe` — Home Assistant integration (Python)
+- `custom_components/flode` — Home Assistant integration (Python)
 
 See the repository root and the `packages` folder for the full layout.
 
@@ -39,7 +39,7 @@ If you need to run a command inside a package, change into that package director
 
 - Keep TypeScript strict — the codebase is compiled with `--strict` and must remain type-safe.
 - Avoid `any`, `as` assertions, and `@ts-ignore` except when interacting with unavoidable external APIs; prefer `unknown` + type guards instead.
-- Use `@cafe/shared` types and Zod schemas for shared shapes — do not re-declare common types.
+- Use `@flode/shared` types and Zod schemas for shared shapes — do not re-declare common types.
 - Extract reusable logic to helpers or custom hooks rather than duplicating code.
 - In React/TypeScript files: do not use IIFEs; prefer named components or helper functions.
 
@@ -66,7 +66,7 @@ If you need to run a command inside a package, change into that package director
 ## Home Assistant Build / Deploy
 
 - The repository includes scripts to copy builds into the Home Assistant custom component directory. Use `yarn build:ha` from the repo root to build and copy files.
-- The manifest at [custom_components/cafe/manifest.json](custom_components/cafe/manifest.json#L1) must be kept in sync with release versions.
+- The manifest at [custom_components/flode/manifest.json](custom_components/flode/manifest.json) must be kept in sync with release versions.
 
 ## Adding Packages or Tests
 

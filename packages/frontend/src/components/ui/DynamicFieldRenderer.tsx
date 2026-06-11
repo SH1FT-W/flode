@@ -117,18 +117,12 @@ export function DynamicFieldRenderer({
 
       description = translations[descKey] || '';
 
-      console.log(`Field "${name}" in domain "${domain}":`);
-      console.log(`  Label key: ${labelKey} = ${translations[labelKey] || '(not found)'}`);
-      console.log(`  Desc key: ${descKey} = ${translations[descKey] || '(not found)'}`);
-      console.log(`  Final label: ${label}`);
-      console.log(`  Final description: ${description}`);
     } else {
       // Fallback: format the name nicely
       label = name
         .split('_')
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
-      console.log(`Field "${name}" with no domain - using formatted name: ${label}`);
     }
   }
 

@@ -36,7 +36,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     try:
         hass.data.get("frontend_panels", {}).pop(DOMAIN, None)
         _LOGGER.info("Removed any existing panel registration")
-    except:
+    except Exception:
         pass
 
     await panel_custom.async_register_panel(

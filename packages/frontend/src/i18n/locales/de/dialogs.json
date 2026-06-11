@@ -87,7 +87,7 @@
     "connected": "Verbunden!",
     "disconnect": "Trennen",
     "corsNote": "CORS-Hinweis",
-    "corsDescription": "Um sich von einem Browser zu verbinden, müssen Sie möglicherweise CORS-Header zu Ihrer HA-Konfiguration hinzufügen. Wenn Sie sich von https://fezvrasta.github.io/hass-cafe verbinden, muss Ihre HA-Instanz unter HTTPS laufen.",
+    "corsDescription": "Um sich von einem Browser zu verbinden, müssen Sie möglicherweise CORS-Header zu Ihrer HA-Konfiguration hinzufügen. Für Remote-Verbindungen muss Ihre HA-Instanz über HTTPS erreichbar sein.",
     "tokenGuideLink": "Wie man ein langlebiges Zugriffstoken erstellt",
     "apiRunning": "API läuft.",
     "errors": {
