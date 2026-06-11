@@ -737,8 +737,12 @@ export const useFlowStore = create<FlowState>()(
         return null;
       },
 
-      canDeleteEdge: () => {
-        // All edges are always deletable
+      canDeleteEdge: (edgeId: string) => {
+        // Visual-only edges are not deletable by the user
+        if (edgeId.startsWith('hint-') || edgeId.startsWith('choose-chain-')) return false;
+        const state = get();
+        const edge = state.edges.find((e) => e.id === edgeId);
+        if (edge?.type === 'hint' || edge?.type === 'choose-chain') return false;
         return true;
       },
 
@@ -786,6 +790,7 @@ export const useFlowStore = create<FlowState>()(
               sourceHandle: e.sourceHandle,
               targetHandle: e.targetHandle,
               label: typeof e.label === 'string' ? e.label : undefined,
+              type: e.type as string | undefined,
             })) as FlowEdge[],
           metadata: state.flowMetadata,
           version: 1,
@@ -808,6 +813,7 @@ export const useFlowStore = create<FlowState>()(
           sourceHandle: e.sourceHandle,
           targetHandle: e.targetHandle,
           label: e.label,
+          type: e.type,
         }));
         const importedMetadata: FlowMetadata = {
           ...defaultFlowMetadata,

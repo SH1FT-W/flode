@@ -1344,6 +1344,7 @@ export class YamlParser {
           conditionNodeIds: localConditionNodeIds,
           falsePathConditionIds,
           inheritedEnabled,
+          triggerNodeMap,
         });
         nodes.push(...chooseResult.nodes);
         edges.push(...chooseResult.edges);
@@ -2004,6 +2005,7 @@ export class YamlParser {
       conditionNodeIds = new Set(),
       falsePathConditionIds = new Set(),
       inheritedEnabled,
+      triggerNodeMap,
     } = options;
 
     const nodes: FlowNode[] = [];
@@ -2011,6 +2013,15 @@ export class YamlParser {
     const outputNodeIds: string[] = [];
     const falsePathOutputIds: string[] = [];
     const localConditionIds = new Set(conditionNodeIds);
+
+    // Build reverse map: trigger-id-value → trigger-node-id (for hint edges)
+    // triggerNodeMap is: triggerNodeId → triggerIdValue
+    const triggerIdToNodeId = new Map<string, string>();
+    if (triggerNodeMap) {
+      for (const [nodeId, triggerId] of triggerNodeMap.entries()) {
+        triggerIdToNodeId.set(triggerId, nodeId);
+      }
+    }
 
     // Compute effective enabled state: if parent is disabled or this block is disabled
     const blockEnabled = chooseAction.enabled;
@@ -2097,6 +2108,11 @@ export class YamlParser {
             };
           }
 
+          // Normalize id: single-element array → string (HA API returns arrays)
+          if (Array.isArray(data.id) && (data.id as string[]).length === 1) {
+            data = { ...data, id: (data.id as string[])[0] };
+          }
+
           conditionNode = {
             id: conditionId,
             type: 'condition',
@@ -2113,14 +2129,36 @@ export class YamlParser {
       const firstConditionId = choiceConditionNodes[0].id;
       const lastConditionId = choiceConditionNodes[choiceConditionNodes.length - 1].id;
 
+      // Add visual hint edges: matching trigger → first condition of this choice
+      if (triggerIdToNodeId.size > 0) {
+        for (const condNode of choiceConditionNodes) {
+          const condData = condNode.data as Record<string, unknown>;
+          if (condData.condition === 'trigger' && condData.id) {
+            const rawId = condData.id;
+            const lookupId = Array.isArray(rawId) ? String(rawId[0]) : String(rawId);
+            const matchingTriggerNodeId = triggerIdToNodeId.get(lookupId);
+            if (matchingTriggerNodeId) {
+              edges.push({
+                id: `hint-${matchingTriggerNodeId}-${condNode.id}`,
+                source: matchingTriggerNodeId,
+                target: condNode.id,
+                type: 'hint',
+              });
+            }
+          }
+        }
+      }
+
       // Connect from current previous nodes to first condition of this choice
       // For first choice, connect from original previousNodeIds
       // For subsequent choices, connect from previous choice's first condition's FALSE path
       for (const prevId of currentPreviousIds) {
         let sourceHandle: string | undefined;
+        let isChooseChainEdge = false;
         if (choiceIndex > 0 && localConditionIds.has(prevId) && !conditionNodeIds.has(prevId)) {
-          // Previous is a condition from this choose block - use FALSE path
+          // Previous is a condition from this choose block - use FALSE path (choose-chain visual)
           sourceHandle = 'false';
+          isChooseChainEdge = true;
         } else if (falsePathConditionIds.has(prevId)) {
           // Previous is a condition whose FALSE path should connect here
           sourceHandle = 'false';
@@ -2129,7 +2167,11 @@ export class YamlParser {
           sourceHandle = 'true';
         }
         // else: previous is not a condition - no sourceHandle needed
-        edges.push(this.createEdge(prevId, firstConditionId, sourceHandle));
+        const e = this.createEdge(prevId, firstConditionId, sourceHandle);
+        if (isChooseChainEdge) {
+          (e as Record<string, unknown>).type = 'choose-chain';
+        }
+        edges.push(e);
       }
 
       // Chain condition nodes together with 'true' edges
@@ -2320,6 +2362,11 @@ export class YamlParser {
             value_template: JSON.stringify(condition),
             enabled: getNodeEnabled(),
           };
+        }
+
+        // Normalize id: single-element array → string (HA API returns arrays)
+        if (Array.isArray(data.id) && (data.id as string[]).length === 1) {
+          data = { ...data, id: (data.id as string[])[0] };
         }
 
         conditionNode = {

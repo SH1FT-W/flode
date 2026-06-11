@@ -40,6 +40,9 @@ export class StateMachineStrategy extends BaseStrategy {
   generate(flow: FlowGraph, analysis: TopologyAnalysis): HAYamlOutput {
     const warnings: string[] = [];
 
+    // Strip hint edges (visual-only trigger-routing aids) before any processing
+    flow = { ...flow, edges: flow.edges.filter((e) => e.type !== 'hint') };
+
     // Build trigger-to-action mapping for routing
     const triggerRouting = this.buildTriggerRouting(flow);
 
@@ -446,11 +449,11 @@ export class StateMachineStrategy extends BaseStrategy {
       return actionCall;
     }
 
-    // Standard service call format
-    // Use spread pattern to preserve unknown properties from custom integrations
+    // Standard service call format — output as 'action:' (HA 2024.8+ preferred key)
     const {
       alias,
       service,
+      action: _originalActionKey,
       id,
       target,
       data,
@@ -462,9 +465,9 @@ export class StateMachineStrategy extends BaseStrategy {
       ...extraProps
     } = node.data;
     const actionCall: Record<string, unknown> = {
-      ...extraProps, // Preserve extra properties
+      ...extraProps,
       alias,
-      service,
+      action: service,
     };
 
     if (id) {

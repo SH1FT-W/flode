@@ -19,21 +19,24 @@ export async function applyHeuristicLayout(
       height: getNodeHeight(node.type),
     }));
 
-    const elkEdges = edges.map((edge) => ({
-      id: edge.id,
-      sources: [edge.source],
-      targets: [edge.target],
-    }));
+    const elkEdges = edges
+      .filter((edge) => edge.type !== 'choose-chain')
+      .map((edge) => ({
+        id: edge.id,
+        sources: [edge.source],
+        targets: [edge.target],
+      }));
 
     const graph = {
       id: 'root',
       layoutOptions: {
         'elk.algorithm': 'layered',
         'elk.direction': 'RIGHT',
-        'elk.spacing.nodeNode': '80',
-        'elk.layered.spacing.nodeNodeBetweenLayers': '100',
-        'elk.spacing.edgeNode': '40',
-        'elk.layered.nodePlacement.strategy': 'SIMPLE',
+        'elk.spacing.nodeNode': '60',
+        'elk.layered.spacing.nodeNodeBetweenLayers': '120',
+        'elk.spacing.edgeNode': '30',
+        'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+        'elk.padding': '[top=40, left=40, bottom=40, right=40]',
       },
       children: elkNodes,
       edges: elkEdges,

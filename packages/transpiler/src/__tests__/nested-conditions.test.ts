@@ -78,8 +78,8 @@ describe('Nested Conditions', () => {
     expect(yaml).toContain('entity_id: sensor.temperature');
 
     // Check for correct 'then' and 'else' blocks
-    expect(yaml).toContain('service: light.turn_on');
-    expect(yaml).toContain('service: notify.mobile_app');
+    expect(yaml).toContain('action: light.turn_on');
+    expect(yaml).toContain('action: notify.mobile_app');
 
     // Make sure there is only one 'if' block
     expect(yaml.match(/if:/g)?.length).toBe(1);
@@ -263,7 +263,7 @@ describe('Nested Conditions', () => {
     expect(yaml).not.toMatch(/^\s+else:/m);
 
     // Action should be directly in the actions block
-    expect(yaml).toContain('service: light.turn_on');
+    expect(yaml).toContain('action: light.turn_on');
   });
 
   it('should not combine conditions when second condition has a different else path', () => {
@@ -524,7 +524,7 @@ describe('Nested Conditions', () => {
     expect(yaml).toContain('condition: numeric_state');
 
     // Should have both actions in the then block
-    expect(yaml).toContain('service: light.turn_on');
+    expect(yaml).toContain('action: light.turn_on');
     expect(yaml).toContain('Light turned on');
 
     // Should have else action
@@ -577,7 +577,7 @@ describe('Nested Conditions', () => {
       expect(yaml).not.toContain('then:');
 
       // Action should be in the actions block
-      expect(yaml).toContain('service: light.turn_on');
+      expect(yaml).toContain('action: light.turn_on');
     });
 
     it('should only promote leading conditions without else paths, keeping conditions with else in actions', () => {
@@ -644,8 +644,8 @@ describe('Nested Conditions', () => {
       expect(yaml).toContain('condition: numeric_state');
 
       // Actions should be present
-      expect(yaml).toContain('service: light.turn_on');
-      expect(yaml).toContain('service: notify.mobile_app');
+      expect(yaml).toContain('action: light.turn_on');
+      expect(yaml).toContain('action: notify.mobile_app');
     });
 
     it('should not promote conditions when first condition has else path', () => {
@@ -696,8 +696,8 @@ describe('Nested Conditions', () => {
       expect(yaml).toContain('else:');
 
       // Should have both actions
-      expect(yaml).toContain('service: light.turn_on');
-      expect(yaml).toContain('service: light.turn_off');
+      expect(yaml).toContain('action: light.turn_on');
+      expect(yaml).toContain('action: light.turn_off');
     });
 
     it('should not promote when first node after trigger is not a condition', () => {
@@ -730,7 +730,7 @@ describe('Nested Conditions', () => {
       expect(yaml).not.toMatch(/^conditions:/m);
 
       // Action should be in actions
-      expect(yaml).toContain('service: light.turn_on');
+      expect(yaml).toContain('action: light.turn_on');
     });
 
     it('should promote conditions and handle multiple subsequent actions', () => {
@@ -782,8 +782,8 @@ describe('Nested Conditions', () => {
       expect(yaml).not.toContain('if:');
 
       // Both actions should be in actions block
-      expect(yaml).toContain('service: light.turn_on');
-      expect(yaml).toContain('service: notify.mobile_app');
+      expect(yaml).toContain('action: light.turn_on');
+      expect(yaml).toContain('action: notify.mobile_app');
     });
 
     it('should promote inverted condition (false-handle only) as condition: not', () => {
@@ -830,7 +830,7 @@ describe('Nested Conditions', () => {
       expect(yaml).not.toMatch(/^\s+if:/m);
 
       // Action should be in actions block
-      expect(yaml).toContain('service: light.turn_on');
+      expect(yaml).toContain('action: light.turn_on');
     });
 
     it('should promote chain of mixed true/false-handle conditions to root conditions', () => {
@@ -883,7 +883,7 @@ describe('Nested Conditions', () => {
       expect(yaml).not.toMatch(/^\s+if:/m);
 
       // Action should be in actions block
-      expect(yaml).toContain('service: light.turn_on');
+      expect(yaml).toContain('action: light.turn_on');
     });
 
     it('should promote multiple false-handle conditions as not wrappers', () => {
@@ -938,7 +938,7 @@ describe('Nested Conditions', () => {
       expect(notMatches?.length).toBe(2);
 
       // Action should be in actions block
-      expect(yaml).toContain('service: light.turn_on');
+      expect(yaml).toContain('action: light.turn_on');
     });
   });
 
@@ -1277,7 +1277,7 @@ describe('Nested Conditions', () => {
       expect(yaml).toContain('entity_id: sensor.temperature');
 
       // Should have the action in the then block
-      expect(yaml).toContain('service: light.turn_on');
+      expect(yaml).toContain('action: light.turn_on');
     });
 
     it('should combine parallel conditions with converging false paths into OR', () => {
@@ -1334,7 +1334,7 @@ describe('Nested Conditions', () => {
       expect(yaml).toContain('condition: numeric_state');
 
       // Should have the action in the else block (since false paths converge)
-      expect(yaml).toContain('service: notify.mobile_app');
+      expect(yaml).toContain('action: notify.mobile_app');
       expect(yaml).toContain('Both conditions failed');
     });
 
@@ -1454,8 +1454,8 @@ describe('Nested Conditions', () => {
       expect(yaml).toContain('condition: or');
 
       // Both actions should be in the then block
-      expect(yaml).toContain('service: light.turn_on');
-      expect(yaml).toContain('service: notify.mobile_app');
+      expect(yaml).toContain('action: light.turn_on');
+      expect(yaml).toContain('action: notify.mobile_app');
       expect(yaml).toContain('Light turned on');
     });
   });

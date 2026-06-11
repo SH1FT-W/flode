@@ -23,6 +23,11 @@ export const EdgeSchema = z.object({
    * Whether this edge is animated (useful for highlighting execution paths)
    */
   animated: z.boolean().optional(),
+  /**
+   * Edge type — 'hint' edges are visual-only (trigger→condition routing hints)
+   * and are ignored by the transpiler.
+   */
+  type: z.enum(['default', 'deletable', 'hint', 'choose-chain']).optional(),
 });
 export type FlowEdge = z.infer<typeof EdgeSchema>;
 

@@ -15,6 +15,9 @@ type GraphInstance = InstanceType<typeof Graph>;
  * requiring any edge metadata.
  */
 export function findBackEdges(flow: FlowGraph): Set<string> {
+  // Ignore hint edges — they are visual-only and must not affect loop detection
+  flow = { ...flow, edges: flow.edges.filter((e) => e.type !== 'hint') };
+
   const backEdgeIds = new Set<string>();
   const visited = new Set<string>();
   const inStack = new Set<string>();
@@ -115,6 +118,9 @@ export interface TopologyAnalysis {
  * or requires the state machine approach
  */
 export function analyzeTopology(flow: FlowGraph): TopologyAnalysis {
+  // Strip hint edges (visual-only trigger-routing aids) before topology analysis
+  flow = { ...flow, edges: flow.edges.filter((e) => e.type !== 'hint') };
+
   const g = new Graph({ directed: true });
 
   // Structurally detect back-edges (loop edges) using DFS

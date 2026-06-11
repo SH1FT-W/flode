@@ -60,11 +60,8 @@ export function ImportYamlDialog({ isOpen, onClose, onImportSuccess }: ImportYam
 
         // Center the viewport on the imported nodes
         setTimeout(() => {
-          fitView({
-            padding: 0.2,
-            duration: 300,
-          });
-        }, 50);
+          fitView({ padding: 0.2, duration: 300, maxZoom: 0.75 });
+        }, 150);
 
         // Show success message briefly before closing
         setTimeout(() => {

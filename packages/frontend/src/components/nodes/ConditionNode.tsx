@@ -150,10 +150,10 @@ export const ConditionNode = memo(function ConditionNode({
             {'...'}
           </div>
         )}
-        {typeof data.id === 'string' && (
+        {(data.id !== undefined && data.id !== null) && (
           <div className="opacity-75">
             {'id: '}
-            {data.id}
+            {Array.isArray(data.id) ? (data.id as string[]).join(', ') : String(data.id)}
           </div>
         )}
         {Array.isArray(data.conditions) && data.conditions.length > 0 && (

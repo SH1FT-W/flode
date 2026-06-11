@@ -58,6 +58,9 @@ export class NativeStrategy extends BaseStrategy {
   generate(flow: FlowGraph, analysis: TopologyAnalysis): HAYamlOutput {
     const warnings: string[] = [];
 
+    // Strip hint edges (visual-only trigger-routing aids) before any processing
+    flow = { ...flow, edges: flow.edges.filter((e) => e.type !== 'hint') };
+
     // Structurally detect back-edges using DFS
     this.backEdgeIds = findBackEdges(flow);
 
@@ -1438,6 +1441,10 @@ export class NativeStrategy extends BaseStrategy {
           .map(mapCondition)
           .filter((c) => c && (!Array.isArray(c.conditions) || c.conditions.length > 0));
       }
+      // Normalize id: ["x"] → "x" — HA API sometimes returns trigger condition ids as single-element arrays
+      if (Array.isArray(out.id) && (out.id as unknown[]).length === 1) {
+        out.id = (out.id as unknown[])[0];
+      }
       return Object.fromEntries(Object.entries(out).filter(([, v]) => v !== undefined && v !== ''));
     }
     return mapCondition(node.data);
@@ -1521,11 +1528,11 @@ export class NativeStrategy extends BaseStrategy {
       return action;
     }
 
-    // Standard service call format
-    // Use spread pattern to preserve unknown properties from custom integrations
+    // Standard service call format — output as 'action:' (HA 2024.8+ preferred key)
     const {
       alias,
       service,
+      action: _originalActionKey, // excluded from extraProps
       id,
       target,
       data,
@@ -1537,9 +1544,9 @@ export class NativeStrategy extends BaseStrategy {
       ...extraProps
     } = node.data;
     const action: Record<string, unknown> = {
-      ...extraProps, // Preserve extra properties
+      ...extraProps,
       alias,
-      service,
+      action: service, // use 'action:' key (replaces legacy 'service:')
     };
 
     if (id) {
@@ -1550,7 +1557,7 @@ export class NativeStrategy extends BaseStrategy {
       action.target = target;
     }
 
-    if (data) {
+    if (data && Object.keys(data as object).length > 0) {
       action.data = data;
     }
 

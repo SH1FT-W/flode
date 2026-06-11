@@ -185,8 +185,8 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
 
         fromFlowGraph(result.graph);
         setTimeout(() => {
-          fitView({ padding: 0.2, duration: 300 });
-        }, 50);
+          fitView({ padding: 0.2, duration: 300, maxZoom: 0.75 });
+        }, 150);
 
         setFlowName(automation.friendly_name || automation.automation_id);
         setAutomationId(automation.automation_id);
@@ -297,8 +297,8 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
       setSelectedEntityIds(new Set());
 
       setTimeout(() => {
-        fitView({ padding: 0.2, duration: 300 });
-      }, 50);
+        fitView({ padding: 0.2, duration: 300, maxZoom: 0.75 });
+      }, 150);
 
       toast.success(
         t('dialogs:import.mergeSuccess', {

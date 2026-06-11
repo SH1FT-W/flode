@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react';
 import { type DragEvent, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DeletableEdge } from '@/components/edges';
+import { ChooseChainEdge, DeletableEdge, HintEdge } from '@/components/edges';
 import {
   ActionNode,
   ConditionNode,
@@ -41,6 +41,8 @@ const nodeTypes: NodeTypes = {
 
 const edgeTypes: EdgeTypes = {
   deletable: DeletableEdge,
+  hint: HintEdge,
+  'choose-chain': ChooseChainEdge,
 };
 
 export function FlowCanvas() {
@@ -163,6 +165,15 @@ export function FlowCanvas() {
       // Check if this edge is connected to the selected node
       const isConnectedToSelected =
         selectedNodeId && (edge.source === selectedNodeId || edge.target === selectedNodeId);
+
+      // Visual-only edges — same style as normal edges, no simulation/selection effects
+      if (edge.type === 'hint' || edge.type === 'choose-chain') {
+        return {
+          ...edge,
+          style: { strokeWidth: 2, stroke: isDarkMode ? '#94a3b8' : '#64748b' },
+          markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#94a3b8' : '#64748b' },
+        };
+      }
 
       // Determine edge styling based on state (priority: simulation > trace > selection)
       let edgeStyle = { strokeWidth: 2, stroke: isDarkMode ? '#94a3b8' : '#64748b' };
