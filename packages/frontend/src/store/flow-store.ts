@@ -741,7 +741,7 @@ export const useFlowStore = create<FlowState>()(
         if (edgeId.startsWith('hint-') || edgeId.startsWith('choose-chain-') || edgeId.startsWith('choose-hint-')) return false;
         const state = get();
         const edge = state.edges.find((e) => e.id === edgeId);
-        if (edge?.type === 'hint' || edge?.type === 'choose-chain' || edge?.type === 'choose-hint' || edge?.type === 'choose-default' || edge?.type === 'loop-back') return false;
+        if (edge?.type === 'hint' || edge?.type === 'choose-chain' || edge?.type === 'choose-hint' || edge?.type === 'choose-default' || edge?.type === 'choose-entry' || edge?.type === 'loop-back') return false;
         return true;
       },
 

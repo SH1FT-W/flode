@@ -24,8 +24,7 @@ export async function applyHeuristicLayout(
         (edge) =>
           edge.type !== 'choose-chain' &&
           edge.type !== 'choose-default' &&
-          edge.type !== 'loop-back' &&
-          edge.type !== 'hint'
+          edge.type !== 'loop-back'
       )
       .map((edge) => ({
         id: edge.id,
@@ -66,9 +65,10 @@ export async function applyHeuristicLayout(
       return node;
     });
 
-    // choose-hint edges are included in ELK so case 2+ nodes are placed
-    // in the same column as case 1 (directly below it). No post-processing needed.
-    return positionedNodes;
+    // choose-hint edges help ELK place case 2+ nodes correctly when the choose entry
+    // is a condition node. For trigger-entry automations (no choose-hint), fixChooseChainLayout
+    // aligns cases vertically as a fallback.
+    return fixChooseChainLayout(positionedNodes, edges);
   } catch (_error) {
     // Fallback to simple grid layout if ELK fails
     return applyFallbackLayout(nodes);

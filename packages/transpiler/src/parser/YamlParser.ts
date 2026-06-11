@@ -315,7 +315,7 @@ export class YamlParser {
         const hasBackwardsChooseChain = edges.some(
           (e) =>
             (e.type === 'choose-chain' || e.type === 'choose-hint') &&
-            (nodePositionMap.get(e.target) ?? 0) < (nodePositionMap.get(e.source) ?? 0)
+            (nodePositionMap.get(e.target) ?? 0) < (nodePositionMap.get(e.source) ?? 0) - 100
         );
         nodesWithPositions = hasBackwardsChooseChain
           ? await applyHeuristicLayout(nodes, edges)
@@ -2036,6 +2036,9 @@ export class YamlParser {
         triggerIdToNodeId.set(triggerId, nodeId);
       }
     }
+    // Set of trigger node IDs — used to skip plain flow edges from triggers to case1.
+    // Hint edges already show the matching trigger→condition connection visually.
+    const triggerNodeIds = new Set(triggerIdToNodeId.values());
 
     // Compute effective enabled state: if parent is disabled or this block is disabled
     const blockEnabled = chooseAction.enabled;
@@ -2177,6 +2180,15 @@ export class YamlParser {
       for (const prevId of currentPreviousIds) {
         let sourceHandle: string | undefined;
         let isChooseChainEdge = false;
+        // In trigger-based choose blocks (choiceIndex=0), edges from trigger nodes to case1_cond
+        // are marked as 'choose-entry' so they stay invisible in the UI.
+        // The matching hint edges already show the visual trigger→condition connection.
+        if (choiceIndex === 0 && triggerNodeIds.has(prevId)) {
+          const e = this.createEdge(prevId, firstConditionId);
+          (e as Record<string, unknown>).type = 'choose-entry';
+          edges.push(e);
+          continue;
+        }
         if (choiceIndex > 0 && localConditionIds.has(prevId) && !conditionNodeIds.has(prevId)) {
           // Previous is a condition from this choose block - use FALSE path (choose-chain visual)
           sourceHandle = 'false';
@@ -2197,10 +2209,11 @@ export class YamlParser {
       }
 
       // For case 2+: add a visible choose-hint edge from the original entry node to this case.
-      // This lets ELK place all cases in the same column (directly below case 1) and shows
-      // a dashed line in the UI so the user sees all branches originating from the entry point.
+      // Only add from CONDITION entry nodes — trigger nodes already have hint edges to their
+      // matching conditions, so adding choose-hint from triggers creates crossed lines.
       if (choiceIndex > 0 && originalPreviousIds.length > 0) {
         for (const entryId of originalPreviousIds) {
+          if (!conditionNodeIds.has(entryId)) continue;
           const hintEdge = this.createEdge(entryId, firstConditionId);
           (hintEdge as Record<string, unknown>).type = 'choose-hint';
           edges.push(hintEdge);
@@ -2285,9 +2298,11 @@ export class YamlParser {
         outputNodeIds.push(lastNodeId);
 
         // Add choose-hint from entry to first default node so the default branch
-        // also appears connected to the entry point (same as case 2+)
+        // also appears connected to the entry point (same as case 2+).
+        // Only add from CONDITION entry nodes (same reason as case 2+ above).
         if (originalPreviousIds.length > 0) {
           for (const entryId of originalPreviousIds) {
+            if (!conditionNodeIds.has(entryId)) continue;
             const defaultHintEdge = this.createEdge(entryId, firstDefaultId);
             (defaultHintEdge as Record<string, unknown>).type = 'choose-hint';
             edges.push(defaultHintEdge);

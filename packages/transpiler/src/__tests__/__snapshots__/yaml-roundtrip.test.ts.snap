@@ -207,22 +207,22 @@ variables:
     nodes:
       trigger_test_0_172:
         x: 40
-        "y": 190
+        "y": 170
       condition_test_1_173:
         x: 360
-        "y": 180
+        "y": 160
       action_test_2_174:
         x: 700
-        "y": 190
+        "y": 170
       condition_test_3_175:
         x: 360
-        "y": 340
+        "y": 320
       action_test_4_176:
         x: 700
-        "y": 350
+        "y": 330
       action_test_5_177:
-        x: 360
-        "y": 40
+        x: 140
+        "y": 320
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -695,43 +695,43 @@ variables:
     nodes:
       trigger_test_0_129:
         x: 40
-        "y": 428
+        "y": 300
       trigger_test_1_130:
         x: 40
-        "y": 288
+        "y": 440
       trigger_test_2_131:
         x: 40
-        "y": 148
+        "y": 160
       condition_test_3_132:
         x: 360
-        "y": 150
+        "y": 287
       condition_test_4_133:
         x: 700
-        "y": 150
+        "y": 287
       condition_test_5_134:
         x: 1040
-        "y": 150
+        "y": 287
       action_test_6_135:
         x: 1380
-        "y": 40
+        "y": 280
       action_test_7_136:
         x: 1380
-        "y": 180
+        "y": 420
       action_test_8_137:
         x: 1700
-        "y": 180
+        "y": 420
       condition_test_9_138:
         x: 360
-        "y": 310
+        "y": 560
       condition_test_10_139:
         x: 700
-        "y": 310
+        "y": 560
       condition_test_11_140:
         x: 1040
-        "y": 310
+        "y": 560
       action_test_12_141:
         x: 1380
-        "y": 320
+        "y": 570
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -792,25 +792,25 @@ variables:
     nodes:
       trigger_test_0_122:
         x: 40
-        "y": 190
+        "y": 214
       trigger_test_1_123:
         x: 40
-        "y": 50
+        "y": 46
       condition_test_2_124:
         x: 360
-        "y": 57
+        "y": 137
       condition_test_3_125:
         x: 700
-        "y": 40
+        "y": 200
       action_test_4_126:
         x: 1040
-        "y": 50
+        "y": 210
       condition_test_5_127:
         x: 700
-        "y": 200
+        "y": 360
       action_test_6_128:
         x: 1040
-        "y": 210
+        "y": 370
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1060,67 +1060,67 @@ variables:
     nodes:
       trigger_test_0_95:
         x: 40
-        "y": 295
+        "y": 211
       trigger_test_1_96:
         x: 40
-        "y": 435
+        "y": 491
       trigger_test_2_97:
         x: 40
-        "y": 575
+        "y": 70
       trigger_test_3_98:
         x: 40
-        "y": 155
+        "y": 351
       condition_test_4_99:
         x: 360
-        "y": 155
+        "y": 214
       condition_test_5_100:
         x: 700
-        "y": 148
+        "y": 214
       wait_test_6_101:
         x: 1060
-        "y": 180
+        "y": 347
       action_test_7_102:
         x: 1380
-        "y": 175
+        "y": 342
       action_test_8_103:
         x: 1040
-        "y": 40
+        "y": 207
       condition_test_9_104:
         x: 360
-        "y": 315
+        "y": 482
       condition_test_10_105:
         x: 700
-        "y": 315
+        "y": 482
       condition_test_11_106:
         x: 1040
-        "y": 315
+        "y": 482
       condition_test_12_107:
         x: 1380
-        "y": 315
+        "y": 482
       action_test_13_108:
         x: 1720
-        "y": 325
+        "y": 492
       condition_test_14_109:
         x: 360
-        "y": 475
+        "y": 642
       condition_test_15_110:
         x: 700
-        "y": 477
+        "y": 642
       condition_test_16_111:
         x: 1040
-        "y": 477
+        "y": 642
       delay_test_17_112:
         x: 1400
-        "y": 475
+        "y": 640
       action_test_18_113:
         x: 1720
-        "y": 465
+        "y": 635
       delay_test_19_114:
         x: 1400
-        "y": 610
+        "y": 780
       action_test_20_115:
         x: 1720
-        "y": 605
+        "y": 775
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1198,40 +1198,40 @@ variables:
     nodes:
       trigger_test_0_83:
         x: 40
-        "y": 186
+        "y": 222
       trigger_test_1_84:
         x: 40
-        "y": 46
+        "y": 63
       condition_test_2_85:
         x: 360
-        "y": 40
+        "y": 200
       condition_test_3_86:
         x: 700
-        "y": 40
+        "y": 200
       action_test_4_87:
         x: 1040
-        "y": 50
+        "y": 210
       action_test_5_88:
         x: 1360
-        "y": 50
+        "y": 210
       condition_test_6_89:
         x: 360
-        "y": 200
+        "y": 360
       condition_test_7_90:
         x: 700
-        "y": 200
+        "y": 360
       action_test_8_91:
         x: 1040
-        "y": 210
+        "y": 370
       set_variables_test_9_92:
         x: 1360
-        "y": 210
+        "y": 370
       action_test_10_93:
         x: 1680
-        "y": 210
+        "y": 370
       action_test_11_94:
         x: 2000
-        "y": 210
+        "y": 370
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native

@@ -4,6 +4,19 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.7.9] — 2026-06-11 — Choose-Block Trigger-Routing Fix
+
+### Bug Fixes
+- **Gekreuzte Linien bei Trigger-basierten Choose-Blöcken** — Automationen mit mehreren Triggern und trigger-ID-Conditions (z. B. iPad-Akku-Automation) zeigten gekreuzte blaue Linien, weil alle Trigger mit dem ersten Case verbunden wurden. Jetzt wird jeder Trigger nur noch mit seinem passenden Case verbunden (via hint-Edge). Die internen Fluss-Kanten sind unsichtbar (`choose-entry`-Typ).
+- **Backward-Detection zu sensitiv** — Minimale x-Unterschiede in gespeicherten Metadaten (z. B. 15 px) lösten unnötige ELK-Neuberechnungen aus; Schwellenwert auf 100 px erhöht.
+
+### Technisch
+- Neuer Edge-Typ `choose-entry`: semantische, unsichtbare Verbindung Trigger→Case1 (für Topology/Serializer notwendig)
+- ELK-Layout schließt jetzt `hint`-Edges ein (für korrekte Layer-Zuweisung bei trigger-basierten Choose-Blöcken)
+- `fixChooseChainLayout` als Fallback für frische Layouts ohne Metadaten wiederhergestellt
+
+---
+
 ## [0.7.8] — 2026-06-11 — Choose-Block Visualisierung
 
 ### Bug Fixes

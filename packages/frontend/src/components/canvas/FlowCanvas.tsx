@@ -167,13 +167,25 @@ export function FlowCanvas() {
       const isConnectedToSelected =
         selectedNodeId && (edge.source === selectedNodeId || edge.target === selectedNodeId);
 
-      // Structural-only edges hidden in UI (choose-hint already shows the connection visually)
-      if (edge.type === 'choose-default') {
-        return { ...edge, style: { opacity: 0 } };
+      // Invisible semantic flow edges — trigger→case1 in trigger-based choose blocks.
+      // Topology/serializer needs them; hint edges already show the visual connection.
+      if (edge.type === 'choose-entry') {
+        return { ...edge, style: { opacity: 0, pointerEvents: 'none' as const }, markerEnd: undefined };
       }
 
-      // Visual-only edges — same style as normal edges, no simulation/selection effects
-      if (edge.type === 'hint' || edge.type === 'choose-chain') {
+      // Internal choose-structure edges — shown as thin dashed lines so the red FALSE dot
+      // on condition nodes has a visible connection target
+      if (edge.type === 'choose-chain' || edge.type === 'choose-default') {
+        const color = isDarkMode ? '#64748b' : '#94a3b8';
+        return {
+          ...edge,
+          style: { strokeWidth: 1, stroke: color, strokeDasharray: '4 4', opacity: 0.45 },
+          markerEnd: { type: MarkerType.ArrowClosed, color },
+        };
+      }
+
+      // Visual-only hint edges (trigger routing)
+      if (edge.type === 'hint') {
         return {
           ...edge,
           style: { strokeWidth: 2, stroke: isDarkMode ? '#94a3b8' : '#64748b' },
