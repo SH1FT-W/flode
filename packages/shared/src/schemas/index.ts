@@ -45,6 +45,9 @@ export {
 export {
   type CafeMetadata,
   CafeMetadataSchema,
+  type FlodeMetadata,
+  FlodeMetadataSchema,
+  isFlodeMetadata,
   type FlowGraphMetadata,
   FlowGraphMetadataSchema,
   type HAAction,

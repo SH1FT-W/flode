@@ -892,133 +892,234 @@ export class NativeStrategy extends BaseStrategy {
     const outgoing = this.getOutgoingEdges(flow, nodeId).filter((e) => !this.backEdgeIds.has(e.id));
 
     if (node.type === 'condition') {
-      // ===== Condition Chain Logic =====
-      // This logic identifies chains of conditions and merges them into a single 'choose'
-
-      const conditions: unknown[] = [];
-      let currentNode: FlowNode = node;
-      let thenNodeIds: string[] = [];
-      let elseNodeIds: string[] = [];
-
-      // The 'else' paths are taken from the very first condition in the chain
-      // Use filter to get ALL false edges, not just the first (handles fan-out patterns)
-      const originalElsePaths = this.getOutgoingEdges(flow, node.id).filter(
-        (edge) => edge.sourceHandle === 'false' && !this.backEdgeIds.has(edge.id)
+      // Detect choose chain: condition's FALSE path leads to another unvisited condition node
+      const falsePathEdges = this.getOutgoingEdges(flow, node.id).filter(
+        (e) => e.sourceHandle === 'false' && !this.backEdgeIds.has(e.id)
       );
-      elseNodeIds = originalElsePaths.map((edge) => edge.target);
+      const firstFalseTarget =
+        falsePathEdges.length === 1 ? this.getNode(flow, falsePathEdges[0].target) : null;
+      const isChooseChain =
+        firstFalseTarget?.type === 'condition' && !visited.has(firstFalseTarget.id);
 
-      // Start traversing the 'true' path to find all sequential conditions
-      // Only chain conditions that share the same "else" behavior (no else, or same else target)
-      while (currentNode?.type === 'condition') {
-        conditions.push(this.buildCondition(currentNode as ConditionNode));
+      if (isChooseChain) {
+        // ===== Choose Block Logic =====
+        // Build choose: [{conditions, sequence}, ...] from condition chain via FALSE paths
+        type BranchInfo = { conditions: unknown[]; thenNodeIds: string[] };
+        const branchInfos: BranchInfo[] = [];
+        let currentChoiceNode: FlowNode | null = node;
+        let defaultStartId: string | null = null;
 
-        // Get ALL true paths (handles fan-out patterns where multiple conditions branch from same handle)
-        const truePaths = this.getOutgoingEdges(flow, currentNode.id).filter(
-          (edge) => edge.sourceHandle === 'true' && !this.backEdgeIds.has(edge.id)
-        );
+        while (currentChoiceNode?.type === 'condition') {
+          visited.add(currentChoiceNode.id);
+          const choiceFirstNodeId = currentChoiceNode.id;
 
-        if (truePaths.length === 0) {
-          // No true paths - end of chain
-          break;
-        }
+          // Collect AND-chain within this choice (conditions on TRUE path with no own false path)
+          const branchConditions: unknown[] = [];
+          let innerNode: FlowNode = currentChoiceNode;
+          let thenNodeIds: string[] = [];
 
-        // If there are multiple true paths (fan-out), we can't chain conditions
-        // Each branch becomes a separate action in the then sequence
-        if (truePaths.length > 1) {
-          thenNodeIds = truePaths.map((edge) => edge.target);
-          break;
-        }
+          while (innerNode?.type === 'condition') {
+            branchConditions.push(this.buildCondition(innerNode as ConditionNode));
 
-        // Single true path - check if we can chain to another condition
-        const truePath = truePaths[0];
-        const nextNode = this.getNode(flow, truePath.target);
+            const truePaths = this.getOutgoingEdges(flow, innerNode.id).filter(
+              (e) => e.sourceHandle === 'true' && !this.backEdgeIds.has(e.id)
+            );
 
-        // If the next node is a condition and not visited, check if we should continue chaining
-        // Never chain conditions that are part of a repeat pattern
-        if (
-          nextNode?.type === 'condition' &&
-          !visited.has(nextNode.id) &&
-          !this.repeatPatterns.has(nextNode.id) &&
-          !this.repeatInternalNodeIds.has(nextNode.id)
-        ) {
-          // Check if the next condition has false paths
-          const nextFalsePaths = this.getOutgoingEdges(flow, nextNode.id).filter(
-            (edge) => edge.sourceHandle === 'false' && !this.backEdgeIds.has(edge.id)
+            if (truePaths.length === 0) break;
+            if (truePaths.length > 1) {
+              thenNodeIds = truePaths.map((e) => e.target);
+              break;
+            }
+
+            const trueTarget = this.getNode(flow, truePaths[0].target);
+
+            if (
+              trueTarget?.type === 'condition' &&
+              !visited.has(trueTarget.id) &&
+              !this.repeatPatterns.has(trueTarget.id) &&
+              !this.repeatInternalNodeIds.has(trueTarget.id)
+            ) {
+              const innerFalse = this.getOutgoingEdges(flow, trueTarget.id).filter(
+                (e) => e.sourceHandle === 'false' && !this.backEdgeIds.has(e.id)
+              );
+              if (innerFalse.length === 0) {
+                // No false path — AND-condition within this choice
+                visited.add(trueTarget.id);
+                innerNode = trueTarget;
+              } else {
+                thenNodeIds = [truePaths[0].target];
+                break;
+              }
+            } else {
+              thenNodeIds = [truePaths[0].target];
+              break;
+            }
+          }
+
+          branchInfos.push({ conditions: branchConditions, thenNodeIds });
+
+          const choiceFalse = this.getOutgoingEdges(flow, choiceFirstNodeId).filter(
+            (e) => e.sourceHandle === 'false' && !this.backEdgeIds.has(e.id)
           );
 
-          // Only continue chaining if:
-          // 1. The next condition has no false path (it can be merged), OR
-          // 2. The next condition has exactly one false path going to one of the original else targets
-          const canChain =
-            nextFalsePaths.length === 0 ||
-            (nextFalsePaths.length === 1 && elseNodeIds.includes(nextFalsePaths[0].target));
+          if (choiceFalse.length === 0) {
+            currentChoiceNode = null;
+            break;
+          }
 
-          if (canChain) {
-            currentNode = nextNode;
-            visited.add(currentNode.id); // Mark as visited to avoid re-processing
+          const nextFalseNode = this.getNode(flow, choiceFalse[0].target);
+
+          if (nextFalseNode?.type === 'condition' && !visited.has(nextFalseNode.id)) {
+            currentChoiceNode = nextFalseNode;
           } else {
-            // The next condition has its own else branch - don't merge it
-            // Instead, it becomes part of the "then" sequence as a nested if
+            defaultStartId = choiceFalse[0].target;
+            currentChoiceNode = null;
+          }
+        }
+
+        // Find convergence point across all branches + optional default
+        const allBranchStarts = [
+          ...branchInfos.flatMap((b) => b.thenNodeIds),
+          ...(defaultStartId ? [defaultStartId] : []),
+        ];
+        const convergencePoint =
+          allBranchStarts.length >= 2
+            ? this.findConvergencePoint(flow, allBranchStarts)
+            : null;
+
+        // Build choose options
+        const chooseOptions: Array<Record<string, unknown>> = [];
+        for (const branch of branchInfos) {
+          const branchSeq =
+            branch.thenNodeIds.length > 0
+              ? branch.thenNodeIds.flatMap((id) =>
+                  convergencePoint
+                    ? this.buildSequenceUntilNode(flow, id, convergencePoint, new Set(visited))
+                    : this.buildSequenceFromNode(flow, id, new Set(visited))
+                )
+              : [];
+          chooseOptions.push({ conditions: branch.conditions, sequence: branchSeq });
+        }
+
+        const chooseAction: Record<string, unknown> = { choose: chooseOptions };
+
+        if (defaultStartId) {
+          const defSeq = convergencePoint
+            ? this.buildSequenceUntilNode(
+                flow,
+                defaultStartId,
+                convergencePoint,
+                new Set(visited)
+              )
+            : this.buildSequenceFromNode(flow, defaultStartId, new Set(visited));
+          if (defSeq.length > 0) {
+            chooseAction.default = defSeq;
+          }
+        }
+
+        sequence.push(chooseAction);
+
+        if (convergencePoint) {
+          sequence.push(...this.buildSequenceFromNode(flow, convergencePoint, new Set(visited)));
+        }
+      } else {
+        // ===== Condition Chain Logic (AND-chain → if/then/else) =====
+
+        const conditions: unknown[] = [];
+        let currentNode: FlowNode = node;
+        let thenNodeIds: string[] = [];
+        let elseNodeIds: string[] = [];
+
+        const originalElsePaths = this.getOutgoingEdges(flow, node.id).filter(
+          (edge) => edge.sourceHandle === 'false' && !this.backEdgeIds.has(edge.id)
+        );
+        elseNodeIds = originalElsePaths.map((edge) => edge.target);
+
+        while (currentNode?.type === 'condition') {
+          conditions.push(this.buildCondition(currentNode as ConditionNode));
+
+          const truePaths = this.getOutgoingEdges(flow, currentNode.id).filter(
+            (edge) => edge.sourceHandle === 'true' && !this.backEdgeIds.has(edge.id)
+          );
+
+          if (truePaths.length === 0) {
+            break;
+          }
+
+          if (truePaths.length > 1) {
+            thenNodeIds = truePaths.map((edge) => edge.target);
+            break;
+          }
+
+          const truePath = truePaths[0];
+          const nextNode = this.getNode(flow, truePath.target);
+
+          if (
+            nextNode?.type === 'condition' &&
+            !visited.has(nextNode.id) &&
+            !this.repeatPatterns.has(nextNode.id) &&
+            !this.repeatInternalNodeIds.has(nextNode.id)
+          ) {
+            const nextFalsePaths = this.getOutgoingEdges(flow, nextNode.id).filter(
+              (edge) => edge.sourceHandle === 'false' && !this.backEdgeIds.has(edge.id)
+            );
+
+            const canChain =
+              nextFalsePaths.length === 0 ||
+              (nextFalsePaths.length === 1 && elseNodeIds.includes(nextFalsePaths[0].target));
+
+            if (canChain) {
+              currentNode = nextNode;
+              visited.add(currentNode.id);
+            } else {
+              thenNodeIds = [truePath.target];
+              break;
+            }
+          } else {
             thenNodeIds = [truePath.target];
             break;
           }
+        }
+
+        const ifAction: Record<string, unknown> = {
+          alias: node.data.alias,
+          if: conditions,
+          then: [],
+          else: [],
+        };
+
+        const allBranchStarts = [...thenNodeIds, ...elseNodeIds];
+        const convergencePoint =
+          thenNodeIds.length > 0 && elseNodeIds.length > 0
+            ? this.findConvergencePoint(flow, allBranchStarts)
+            : null;
+
+        if (convergencePoint) {
+          if (thenNodeIds.length > 0) {
+            ifAction.then = thenNodeIds.flatMap((id) =>
+              this.buildSequenceUntilNode(flow, id, convergencePoint, new Set(visited))
+            );
+          }
+          if (elseNodeIds.length > 0) {
+            ifAction.else = elseNodeIds.flatMap((id) =>
+              this.buildSequenceUntilNode(flow, id, convergencePoint, new Set(visited))
+            );
+          }
+          sequence.push(ifAction);
+          sequence.push(...this.buildSequenceFromNode(flow, convergencePoint, new Set(visited)));
         } else {
-          // End of chain: the target is not a condition or is already visited
-          thenNodeIds = [truePath.target];
-          break;
+          if (thenNodeIds.length > 0) {
+            ifAction.then = thenNodeIds.flatMap((id) =>
+              this.buildSequenceFromNode(flow, id, new Set(visited))
+            );
+          }
+          if (elseNodeIds.length > 0) {
+            ifAction.else = elseNodeIds.flatMap((id) =>
+              this.buildSequenceFromNode(flow, id, new Set(visited))
+            );
+          }
+          sequence.push(ifAction);
         }
-      }
-
-      // Put conditions directly in the if: array - HA implicitly ANDs them
-      const chooseAction: Record<string, unknown> = {
-        alias: node.data.alias, // Use alias from the first condition
-        if: conditions,
-        then: [],
-        else: [],
-      };
-
-      // Find convergence point between then and else branches.
-      // When both branches lead to the same continuation node, that node should
-      // appear AFTER the if/then/else block, not duplicated inside each branch.
-      const allBranchStarts = [...thenNodeIds, ...elseNodeIds];
-      const convergencePoint =
-        thenNodeIds.length > 0 && elseNodeIds.length > 0
-          ? this.findConvergencePoint(flow, allBranchStarts)
-          : null;
-
-      if (convergencePoint) {
-        // Build each branch only up to the convergence point
-        if (thenNodeIds.length > 0) {
-          const thenActions = thenNodeIds.flatMap((id) =>
-            this.buildSequenceUntilNode(flow, id, convergencePoint, new Set(visited))
-          );
-          chooseAction.then = thenActions;
-        }
-        if (elseNodeIds.length > 0) {
-          const elseActions = elseNodeIds.flatMap((id) =>
-            this.buildSequenceUntilNode(flow, id, convergencePoint, new Set(visited))
-          );
-          chooseAction.else = elseActions;
-        }
-        sequence.push(chooseAction);
-        // Continue from the convergence point after the condition block
-        const afterCondition = this.buildSequenceFromNode(flow, convergencePoint, new Set(visited));
-        sequence.push(...afterCondition);
-      } else {
-        // No convergence — build each branch independently
-        if (thenNodeIds.length > 0) {
-          const thenActions = thenNodeIds.flatMap((id) =>
-            this.buildSequenceFromNode(flow, id, new Set(visited))
-          );
-          chooseAction.then = thenActions;
-        }
-        if (elseNodeIds.length > 0) {
-          const elseActions = elseNodeIds.flatMap((id) =>
-            this.buildSequenceFromNode(flow, id, new Set(visited))
-          );
-          chooseAction.else = elseActions;
-        }
-        sequence.push(chooseAction);
       }
     } else {
       // ===== Default Logic for Non-Condition Nodes =====

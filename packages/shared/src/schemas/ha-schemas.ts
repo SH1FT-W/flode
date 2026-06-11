@@ -260,7 +260,7 @@ export function isDeviceAction(obj: unknown): obj is Record<string, unknown> {
 /**
  * FLODE metadata stored in automation YAML to preserve flow layout.
  */
-export const CafeMetadataSchema = z.object({
+export const FlodeMetadataSchema = z.object({
   version: z.number(),
   nodes: z.record(
     z.string(),
@@ -273,14 +273,21 @@ export const CafeMetadataSchema = z.object({
   graph_version: z.number(),
   strategy: z.enum(['native', 'state-machine']),
 });
-export type CafeMetadata = z.infer<typeof CafeMetadataSchema>;
+export type FlodeMetadata = z.infer<typeof FlodeMetadataSchema>;
+
+/** @deprecated Use FlodeMetadataSchema */
+export const CafeMetadataSchema = FlodeMetadataSchema;
+/** @deprecated Use FlodeMetadata */
+export type CafeMetadata = FlodeMetadata;
 
 /**
  * Type guard for FLODE metadata.
  */
-export function isCafeMetadata(obj: unknown): obj is CafeMetadata {
-  return CafeMetadataSchema.safeParse(obj).success;
+export function isFlodeMetadata(obj: unknown): obj is FlodeMetadata {
+  return FlodeMetadataSchema.safeParse(obj).success;
 }
+/** @deprecated Use isFlodeMetadata */
+export const isCafeMetadata = isFlodeMetadata;
 
 /**
  * Zod schema for choose option in HA actions.
@@ -351,7 +358,7 @@ export const HAAutomationSchema = z.object({
   trace: z.record(z.string(), z.unknown()).optional(),
   variables: z
     .object({
-      _cafe_metadata: CafeMetadataSchema.optional(),
+      _flode_metadata: CafeMetadataSchema.optional(),
     })
     .catchall(z.unknown())
     .optional(),

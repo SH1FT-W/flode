@@ -26,7 +26,7 @@ describe('Position Restoration', () => {
       ],
       mode: 'single',
       variables: {
-        _cafe_metadata: {
+        _flode_metadata: {
           version: 1,
           nodes: {
             trigger_1767901134917_0: {

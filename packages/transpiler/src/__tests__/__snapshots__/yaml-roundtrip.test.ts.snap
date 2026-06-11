@@ -13,7 +13,7 @@ actions:
       entity_id: light.living_room
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_190:
@@ -68,7 +68,7 @@ actions:
           entity_id: script.buongiorno
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_186:
@@ -106,25 +106,24 @@ conditions:
   - condition: template
     value_template: "{{ (state_attr('media_player.tv','media_content_type') or '') | lower == 'movie' }}"
 actions:
-  - if:
-      - condition: template
-        value_template: "{{ states('cover.velux_blind') != 'closed' }}"
-    then:
-      - service: cover.close_cover
-        target:
-          entity_id: cover.velux_blind
-    else: []
-  - if:
-      - condition: template
-        value_template: "{{ states('cover.main_blind') != 'closed' }}"
-    then:
-      - service: cover.close_cover
-        target:
-          entity_id: cover.main_blind
-    else: []
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ states('cover.velux_blind') != 'closed' }}"
+        sequence:
+          - service: cover.close_cover
+            target:
+              entity_id: cover.velux_blind
+      - conditions:
+          - condition: template
+            value_template: "{{ states('cover.main_blind') != 'closed' }}"
+        sequence: []
+  - service: cover.close_cover
+    target:
+      entity_id: cover.main_blind
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_178:
@@ -165,23 +164,23 @@ triggers:
     entity_id: binary_sensor.occupancy
     for: "00:05:00"
 actions:
-  - if:
-      - condition: and
-        conditions:
-          - condition: state
-            entity_id: binary_sensor.occupancy
-            state: "on"
-          - condition: time
-            after: "08:00:00"
-            before: "22:00:00"
-    then:
-      - service: climate.set_temperature
-        target:
-          entity_id: climate.main
-        data:
-          temperature: 22
-    else:
-      - if:
+  - choose:
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: binary_sensor.occupancy
+                state: "on"
+              - condition: time
+                after: "08:00:00"
+                before: "22:00:00"
+        sequence:
+          - service: climate.set_temperature
+            target:
+              entity_id: climate.main
+            data:
+              temperature: 22
+      - conditions:
           - condition: and
             conditions:
               - condition: state
@@ -189,21 +188,21 @@ actions:
                 state: "on"
               - condition: time
                 after: "22:00:00"
-        then:
+        sequence:
           - service: climate.set_temperature
             target:
               entity_id: climate.main
             data:
               temperature: 20
-        else:
-          - service: climate.set_temperature
-            target:
-              entity_id: climate.main
-            data:
-              temperature: 18
+    default:
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.main
+        data:
+          temperature: 18
 mode: restart
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_172:
@@ -257,7 +256,7 @@ actions:
       entity_id: light.security_light
 mode: restart
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_165:
@@ -314,7 +313,7 @@ actions:
 mode: queued
 max: 3
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_159:
@@ -534,7 +533,7 @@ variables:
     0/0/1: light.faretti_disimpegno
   ga: "{{ trigger.destination }}"
   target_light: "{{ ga_to_light.get(ga) }}"
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_142:
@@ -609,7 +608,7 @@ actions:
     data: {}
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_1767901134917_0:
@@ -644,33 +643,33 @@ triggers:
     attribute: current_temperature
     id: temp_limit_reached
 actions:
-  - if:
-      - condition: trigger
-        id: arriving
-      - condition: template
-        value_template: |
-          {{ (as_timestamp(now()) - as_timestamp(trigger.from_state.last_changed)) > 3600 }}
-    then:
-      - if:
-          - condition: numeric_state
-            entity_id: water_heater.altherma
-            above: 39
-            attribute: current_temperature
-        then:
-          - service: notify.mobile_app_iphone_maria
-            data:
-              title: 🚿 Hot Water Ready
-              message: Welcome back! There is plenty of hot water waiting for you.
-        else:
-          - service: water_heater.turn_on
-            target:
-              entity_id: water_heater.altherma
-          - service: notify.mobile_app_iphone_maria
-            data:
-              title: 🚿 Heating Water
-              message: Welcome back! Turning on the water heater now.
-    else:
-      - if:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: arriving
+          - condition: template
+            value_template: |
+              {{ (as_timestamp(now()) - as_timestamp(trigger.from_state.last_changed)) > 3600 }}
+        sequence:
+          - if:
+              - condition: numeric_state
+                entity_id: water_heater.altherma
+                above: 39
+                attribute: current_temperature
+            then:
+              - service: notify.mobile_app_iphone_maria
+                data:
+                  title: 🚿 Hot Water Ready
+                  message: Welcome back! There is plenty of hot water waiting for you.
+            else:
+              - service: water_heater.turn_on
+                target:
+                  entity_id: water_heater.altherma
+              - service: notify.mobile_app_iphone_maria
+                data:
+                  title: 🚿 Heating Water
+                  message: Welcome back! Turning on the water heater now.
+      - conditions:
           - condition: or
             conditions:
               - condition: trigger
@@ -686,14 +685,13 @@ actions:
               - condition: zone
                 entity_id: person.maria
                 zone: zone.city_limits
-        then:
+        sequence:
           - service: water_heater.turn_off
             target:
               entity_id: water_heater.altherma
-        else: []
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_129:
@@ -766,32 +764,31 @@ conditions:
     after: sunset
     after_offset: "00:05:00"
 actions:
-  - if:
-      - condition: trigger
-        id: playing
-    then:
-      - service: light.turn_off
-        target:
-          entity_id:
-            - light.0a12b58eadb1ae45d36fdb96e025444d
-            - light.751314eaa8749ab751d478948a65b33e
-        data:
-          transition: 2
-    else:
-      - if:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: playing
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id:
+                - light.0a12b58eadb1ae45d36fdb96e025444d
+                - light.751314eaa8749ab751d478948a65b33e
+            data:
+              transition: 2
+      - conditions:
           - condition: trigger
             id: paused
-        then:
+        sequence:
           - service: light.turn_on
             target:
               entity_id: light.751314eaa8749ab751d478948a65b33e
             data:
               brightness_pct: 5
               transition: 3
-        else: []
 mode: restart
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_122:
@@ -861,7 +858,7 @@ actions:
                 current_node: END
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger-sm:
@@ -916,7 +913,7 @@ actions:
       entity_id: timer.uscita_maya
 mode: restart
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_116:
@@ -969,46 +966,45 @@ triggers:
       - "off"
     id: fan-switch-toggled-off
 actions:
-  - alias: Off at night
-    if:
-      - condition: trigger
-        id:
-          - NightOff
-    then:
-      - if:
-          - condition: state
-            entity_id: switch.ensuite
-            state:
-              - "on"
-        then:
-          - wait_for_trigger:
-              - trigger: state
-                entity_id:
-                  - switch.ensuite
-                to:
-                  - "off"
-            timeout:
-              hours: 0
-              minutes: 20
-              seconds: 0
-              milliseconds: 0
-          - metadata: {}
-            service: switch.turn_off
-            target:
-              entity_id:
-                - switch.ensuite_fan
-                - switch.ensuite_fan_boost
-            data: {}
-        else:
-          - metadata: {}
-            service: switch.turn_off
-            target:
-              entity_id:
-                - switch.ensuite_fan
-                - switch.ensuite_fan_boost
-            data: {}
-    else:
-      - if:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - NightOff
+        sequence:
+          - if:
+              - condition: state
+                entity_id: switch.ensuite
+                state:
+                  - "on"
+            then:
+              - wait_for_trigger:
+                  - trigger: state
+                    entity_id:
+                      - switch.ensuite
+                    to:
+                      - "off"
+                timeout:
+                  hours: 0
+                  minutes: 20
+                  seconds: 0
+                  milliseconds: 0
+              - metadata: {}
+                service: switch.turn_off
+                target:
+                  entity_id:
+                    - switch.ensuite_fan
+                    - switch.ensuite_fan_boost
+                data: {}
+            else:
+              - metadata: {}
+                service: switch.turn_off
+                target:
+                  entity_id:
+                    - switch.ensuite_fan
+                    - switch.ensuite_fan_boost
+                data: {}
+      - conditions:
           - condition: trigger
             id:
               - light-toggled-on
@@ -1024,52 +1020,50 @@ actions:
             entity_id: switch.ensuite_fan
             state:
               - "off"
-        then:
+        sequence:
           - metadata: {}
             service: switch.turn_on
             target:
               entity_id: switch.ensuite_fan
             data: {}
-        else:
+      - conditions:
+          - condition: trigger
+            id:
+              - light-toggled-off
+              - fan-switch-toggled-off
+          - condition: time
+            after: "05:45:00"
+            before: "21:00:00"
+        sequence:
           - if:
               - condition: trigger
                 id:
                   - light-toggled-off
-                  - fan-switch-toggled-off
-              - condition: time
-                after: "05:45:00"
-                before: "21:00:00"
             then:
-              - if:
-                  - condition: trigger
-                    id:
-                      - light-toggled-off
-                then:
-                  - delay:
-                      hours: 0
-                      minutes: 30
-                      seconds: 0
-                      milliseconds: 0
-                  - metadata: {}
-                    service: switch.turn_off
-                    target:
-                      entity_id: switch.ensuite_fan
-                    data: {}
-                else:
-                  - delay:
-                      hours: 1
-                      minutes: 0
-                      seconds: 0
-                      milliseconds: 0
-                  - metadata: {}
-                    service: switch.turn_off
-                    target:
-                      entity_id: switch.ensuite_fan
-                    data: {}
-            else: []
+              - delay:
+                  hours: 0
+                  minutes: 30
+                  seconds: 0
+                  milliseconds: 0
+              - metadata: {}
+                service: switch.turn_off
+                target:
+                  entity_id: switch.ensuite_fan
+                data: {}
+            else:
+              - delay:
+                  hours: 1
+                  minutes: 0
+                  seconds: 0
+                  milliseconds: 0
+              - metadata: {}
+                service: switch.turn_off
+                target:
+                  entity_id: switch.ensuite_fan
+                data: {}
 mode: restart
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_95:
@@ -1164,30 +1158,30 @@ triggers:
     below: 2
     id: machine_off
 actions:
-  - if:
-      - condition: trigger
-        id: machine_on
-      - condition: state
-        entity_id: input_boolean.wasmachine_status
-        state: "off"
-    then:
-      - service: input_boolean.turn_on
-        target:
-          entity_id: input_boolean.wasmachine_status
-        data: {}
-      - service: input_number.set_value
-        target:
-          entity_id: input_number.wasmachine_energie_start_cyclus
-        data:
-          value: "{{ states('sensor.noord_wasplaats_energie_wasmachine') }}"
-    else:
-      - if:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: machine_on
+          - condition: state
+            entity_id: input_boolean.wasmachine_status
+            state: "off"
+        sequence:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.wasmachine_status
+            data: {}
+          - service: input_number.set_value
+            target:
+              entity_id: input_number.wasmachine_energie_start_cyclus
+            data:
+              value: "{{ states('sensor.noord_wasplaats_energie_wasmachine') }}"
+      - conditions:
           - condition: trigger
             id: machine_off
           - condition: state
             entity_id: input_boolean.wasmachine_status
             state: "on"
-        then:
+        sequence:
           - service: input_boolean.turn_off
             target:
               entity_id: input_boolean.wasmachine_status
@@ -1207,10 +1201,9 @@ actions:
                 - media_player.kitchen_speaker
                 - media_player.zithoek_speaker
               message: Het wasmachine is gereed en moet leeg gemaakt worden
-        else: []
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_83:
@@ -1324,7 +1317,7 @@ actions:
     entity_id: f7cbd6770bbb3bb5276c3d8e991e9b4d
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_70:
@@ -1403,7 +1396,7 @@ actions:
       notification_id: paperless_ai_shutdown_complete
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_64:
@@ -1497,7 +1490,7 @@ actions:
           entity_id: input_boolean.tv_light_supposed_state
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_57:
@@ -1548,7 +1541,7 @@ actions:
       title: Alert!
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_55:
@@ -1581,7 +1574,7 @@ actions:
       compressed: true
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_52:
@@ -1627,7 +1620,7 @@ actions:
       title: Self Use reactivated
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_48:
@@ -1664,7 +1657,7 @@ actions:
       milliseconds: 0
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_46:
@@ -1696,7 +1689,7 @@ actions:
     data: {}
 mode: restart
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_44:
@@ -1732,7 +1725,7 @@ actions:
   - set_conversation_response: The cleaners are coming.
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_41:
@@ -1814,7 +1807,7 @@ actions:
     else: []
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_36:
@@ -1859,7 +1852,7 @@ actions:
             seconds: 5
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_32:
@@ -1901,7 +1894,7 @@ actions:
             minutes: 1
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_28:
@@ -1940,7 +1933,7 @@ actions:
             seconds: 1
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_22:
@@ -1996,7 +1989,7 @@ actions:
           message: Enjoy your day off!
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_16:
@@ -2038,7 +2031,7 @@ actions:
   - stop: Not enabled
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_13:
@@ -2074,7 +2067,7 @@ actions:
       entity_id: light.bedroom
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_10:
@@ -2119,7 +2112,7 @@ actions:
           entity_id: light.all
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_6:
@@ -2162,7 +2155,7 @@ actions:
       entity_id: light.living_room
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_3:
@@ -2198,7 +2191,7 @@ actions:
       brightness_pct: "{{ brightness }}"
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_test_0_0:

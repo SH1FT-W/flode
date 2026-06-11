@@ -204,11 +204,11 @@ describe('Roundtrip Import/Export Tests', () => {
         const variables = finalConfig.variables as
           | Record<string, Record<string, unknown>>
           | undefined;
-        expect(variables?._cafe_metadata).toBeDefined();
+        expect(variables?._flode_metadata).toBeDefined();
         // All exports use version 1 metadata (positions only - node data and edges are in the YAML structure)
-        expect(variables?._cafe_metadata.version).toBe(1);
+        expect(variables?._flode_metadata.version).toBe(1);
         // Strategy can be 'native' or 'state-machine' depending on complexity
-        expect(['native', 'state-machine']).toContain(variables?._cafe_metadata.strategy);
+        expect(['native', 'state-machine']).toContain(variables?._flode_metadata.strategy);
       }
 
       console.log(`✅ ${filename} roundtrip test passed`);

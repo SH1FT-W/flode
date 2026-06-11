@@ -115,7 +115,7 @@ describe('Metadata Persistence', () => {
       expect(result.yaml).toBeDefined();
 
       // Verify metadata is in YAML
-      expect(result.yaml).toContain('_cafe_metadata');
+      expect(result.yaml).toContain('_flode_metadata');
       expect(result.yaml).toContain('trigger-1');
       expect(result.yaml).toContain('action-1');
 
@@ -307,7 +307,7 @@ describe('Metadata Persistence', () => {
       const result = transpiler.transpile(flow, { forceStrategy: 'state-machine' });
 
       expect(result.success).toBe(true);
-      expect(result.yaml).toContain('_cafe_metadata');
+      expect(result.yaml).toContain('_flode_metadata');
       expect(result.yaml).toContain('strategy: state-machine');
       expect(result.yaml).toContain('trigger-1');
       expect(result.yaml).toContain('action-1');
@@ -417,7 +417,7 @@ action:
                 current_node: END
 mode: single
 variables:
-  _cafe_metadata:
+  _flode_metadata:
     version: 1
     nodes:
       trigger_1769519721851:
@@ -753,7 +753,7 @@ trigger:
 action:
   - service: light.turn_on
 variables:
-  _cafe_metadata: "this should be an object"
+  _flode_metadata: "this should be an object"
 mode: single
       `;
 

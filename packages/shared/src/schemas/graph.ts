@@ -92,7 +92,7 @@ export const FlowGraphSchema = z.object({
   /**
    * User-defined variables at the root level (preserved during round-trip)
    * These are variables defined in the automation's variables: section,
-   * excluding _cafe_metadata which is handled separately.
+   * excluding _flode_metadata which is handled separately.
    */
   userVariables: z.record(z.string(), z.unknown()).optional(),
   /**

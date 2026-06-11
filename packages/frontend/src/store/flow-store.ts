@@ -501,7 +501,7 @@ export const useFlowStore = create<FlowState>()(
             ...result.output.automation,
             variables: {
               ...(result.output.automation.variables || {}),
-              _cafe_metadata: {
+              _flode_metadata: {
                 version: 1,
                 strategy: 'native' as const,
                 nodes: graph.nodes.reduce(
@@ -604,7 +604,7 @@ export const useFlowStore = create<FlowState>()(
             ...result.output.automation,
             variables: {
               ...(result.output.automation.variables || {}),
-              _cafe_metadata: {
+              _flode_metadata: {
                 version: 1,
                 strategy: 'native' as const,
                 nodes: graph.nodes.reduce(

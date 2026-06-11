@@ -131,7 +131,7 @@ export class FlowTranspiler {
     const output = strategy.generate(flow, analysis);
     warnings.push(...output.warnings);
 
-    // Step 5: Inject _cafe_metadata metadata with node positions
+    // Step 5: Inject _flode_metadata metadata with node positions
     const yamlContent = output.automation ?? output.script;
     let yaml: string;
 
@@ -144,8 +144,8 @@ export class FlowTranspiler {
           ...(flow.userVariables || {}),
           // Then include any variables from the generated YAML (e.g., state machine vars)
           ...(yamlContent.variables || {}),
-          // Finally, add _cafe_metadata
-          _cafe_metadata: metadata,
+          // Finally, add _flode_metadata
+          _flode_metadata: metadata,
         },
       };
 

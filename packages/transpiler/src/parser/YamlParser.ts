@@ -278,7 +278,7 @@ export class YamlParser {
       const metadata = this.extractMetadata(parsed);
       const hadMetadata = metadata !== null;
 
-      // Step 2b: Extract user-defined variables (excluding _cafe_metadata)
+      // Step 2b: Extract user-defined variables (excluding _flode_metadata)
       const userVariables = this.extractUserVariables(parsed);
 
       // Step 3: Only support automation format (no script import)
@@ -417,17 +417,15 @@ export class YamlParser {
       if (typeof parsed.variables === 'object' && parsed.variables !== null) {
         variables = parsed.variables;
       }
-      if (
-        variables &&
-        typeof variables === 'object' &&
-        '_cafe_metadata' in variables &&
-        typeof (variables as Record<string, unknown>)._cafe_metadata === 'object' &&
-        (variables as Record<string, unknown>)._cafe_metadata !== null
-      ) {
-        const metadata = (variables as Record<string, unknown>)._cafe_metadata;
-        const result = CafeMetadataSchema.safeParse(metadata);
-        if (result.success) {
-          return result.data;
+      if (variables && typeof variables === 'object') {
+        const vars = variables as Record<string, unknown>;
+        // Support both _flode_metadata (current) and _cafe_metadata (legacy, backward-compat)
+        const raw = vars['_flode_metadata'] ?? vars['_cafe_metadata'];
+        if (typeof raw === 'object' && raw !== null) {
+          const result = CafeMetadataSchema.safeParse(raw);
+          if (result.success) {
+            return result.data;
+          }
         }
       }
     } catch {
@@ -438,7 +436,7 @@ export class YamlParser {
 
   /**
    * Extract user-defined variables from the root variables section.
-   * Excludes _cafe_metadata which is handled separately.
+   * Excludes _flode_metadata which is handled separately.
    */
   private extractUserVariables(parsed: Record<string, unknown>): Record<string, unknown> {
     const userVariables: Record<string, unknown> = {};
@@ -446,8 +444,8 @@ export class YamlParser {
     if (typeof parsed.variables === 'object' && parsed.variables !== null) {
       const variables = parsed.variables as Record<string, unknown>;
       for (const [key, value] of Object.entries(variables)) {
-        // Skip _cafe_metadata - it's handled separately
-        if (key !== '_cafe_metadata') {
+        // Skip metadata keys - handled separately
+        if (key !== '_flode_metadata' && key !== '_cafe_metadata') {
           userVariables[key] = value;
         }
       }
