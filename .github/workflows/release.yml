@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,25 +58,3 @@ jobs:
             flode.tar.gz
           tag_name: ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update version in manifest.json
-        run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION=${VERSION#v}
-          python3 -c "
-          import json
-          with open('custom_components/flode/manifest.json', 'r') as f:
-              manifest = json.load(f)
-          manifest['version'] = '${VERSION}'
-          with open('custom_components/flode/manifest.json', 'w') as f:
-              json.dump(manifest, f, indent=2)
-          print(f'✅ Version aktualisiert auf ${VERSION}')
-          "
-
-      - name: Commit version update
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add custom_components/flode/manifest.json
-          git diff --staged --quiet || git commit -m "chore: version bump ${{ github.ref_name }}"
-          git push
