@@ -1,4 +1,4 @@
-import type { FlowNode } from '@cafe/shared';
+import type { FlowNode } from '@flode/shared';
 
 /**
  * Type-safe utility functions for working with node data.

@@ -1,119 +1,101 @@
-> [!WARNING]
-> The project is still in beta. While it is designed to be non-destructive, please make sure to backup your automations before editing them with C.A.F.E.!
+<div align="center">
+  <img src="custom_components/flode/brand/icon.png" alt="FLODE Logo" width="120" />
+  <h1>FLODE</h1>
+  <p><strong>Flow + Node Editor for Home Assistant</strong></p>
 
-# ☕ C.A.F.E.
-
-### **C**omplex **A**utomation **F**low **E**ditor
-
-**The "Third Way" for Home Assistant: Visual Logic with 0% Overhead.**
-
-[![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Stars](https://img.shields.io/github/stars/FezVrasta/cafe-hass?style=flat&color=gold)](https://github.com/FezVrasta/cafe-hass)
-
-**C.A.F.E.** is a visual flow editor that brings Node-RED-style power to Home Assistant **without the external engine**. It transpiles your visual diagrams into 100% compliant, native Home Assistant logic stored directly in the core system.
+  <p>
+    <img alt="Version" src="https://img.shields.io/badge/version-0.7.5-blue?style=flat-square" />
+    <img alt="HA Version" src="https://img.shields.io/badge/HA-2024.1%2B-brightgreen?style=flat-square" />
+    <img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square" />
+    <img alt="Status" src="https://img.shields.io/badge/status-beta-yellow?style=flat-square" />
+  </p>
+</div>
 
 ---
 
-## 📺 Featured In
+> **Beta:** FLODE is designed to be non-destructive. Back up your automations before editing them with FLODE.
 
-> "THIS Home Assistant Automation Integration Is Absolutely INCREDIBLE!"
-> — **Byte of Geek** [![Watch the review](https://img.shields.io/badge/YouTube-Watch%20Review-red?logo=youtube)](https://www.youtube.com/watch?v=9PVBo0CtHz0)
+## What is FLODE?
 
-> "10 Home Assistant add-ons to make it WAY Better!"
-> — **Smart Home Solver** [![Watch the review](https://img.shields.io/badge/YouTube-Watch%20Review-red?logo=youtube)](https://youtu.be/l_gizeju8D4?t=127)
+**FLODE** is a visual flow editor for Home Assistant automations — inspired by Node-RED, but without the external engine. You design your automations as diagrams and FLODE transpiles them into **100% native Home Assistant YAML**, stored directly in the HA core system. No vendor lock-in. No external runtime. Automations stay fully editable in HA's built-in editor.
+
+## Features
+
+- **Visual flow editor** — Drag-and-drop triggers, conditions and actions onto a canvas
+- **100% native YAML** — Output is standard HA automation YAML, no proprietary format
+- **Bidirectional** — Import existing HA automations, edit visually, save back
+- **Trace-integrated** — Debug flows using HA's official Trace View
+- **State-machine support** — Complex loops and branching via automatic state-machine pattern
+- **German & English UI** — Full i18n support
+- **Dark & Light mode** — Follows your HA theme
+
+## Installation
+
+### Via HACS (recommended)
+
+1. Open HACS → Integrations → Custom repositories
+2. Add `https://github.com/SH1FT-W/flode` as type **Integration**
+3. Search for **FLODE** and install
+4. Restart Home Assistant
+5. Go to **Settings → Integrations → Add Integration → FLODE**
+
+### Manual
+
+1. Copy `custom_components/flode/` into your HA `config/custom_components/` folder
+2. Restart Home Assistant
+3. Go to **Settings → Integrations → Add Integration → FLODE**
+
+## Usage
+
+After setup, **FLODE** appears in the HA sidebar. Click it to open the flow editor.
+
+- **New automation** — Start with a trigger node, add conditions and actions
+- **Import existing** — Click the folder icon to load any existing HA automation
+- **Save** — Saves directly to Home Assistant as a native automation
+- **Export YAML** — View or copy the generated YAML at any time
+
+## Node Types
+
+| Node | Color | Description |
+|---|---|---|
+| Trigger | Yellow | What starts the automation (state, time, event, ...) |
+| Condition | Blue | Filter — only continues if condition is true |
+| Action | Green | What happens (call service, fire event, delay, ...) |
+| OR / AND / NOT | Purple | Group multiple conditions |
+
+## Project Structure
+
+```
+flode/
+├── custom_components/flode/   # HA integration (Python)
+│   ├── brand/                 # Integration icons
+│   ├── translations/          # de + en setup strings
+│   └── www/                   # Built frontend assets
+├── packages/
+│   ├── frontend/              # React/Vite UI (@flode/frontend)
+│   ├── transpiler/            # YAML ↔ Graph logic (@flode/transpiler)
+│   └── shared/                # Zod schemas + types (@flode/shared)
+└── __tests__/                 # YAML round-trip fixtures
+```
+
+## Tech Stack
+
+- **Frontend:** React 18, Vite, Tailwind CSS, React Flow (xyflow), Zustand, i18next
+- **Transpiler:** TypeScript, js-yaml, ELK layout engine
+- **Validation:** Zod schemas
+- **Tests:** Vitest (256 tests)
+- **HA Integration:** Python, custom panel via `panel_custom`
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the full release history.
+
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE)
 
 ---
 
-## 🧐 Why C.A.F.E.?
-
-For years, Home Assistant users had to choose: the **stability** of native YAML or the **clarity** of Node-RED flows. **C.A.F.E. eliminates the trade-off.**
-
-- **Native YAML:** No side files, no external databases, and no proprietary formats. Everything is stored in HASS.
-- **Zero Overhead:** No secondary engine or extra Docker containers. Once saved, the logic runs in the HA Core with zero extra resource consumption.
-- **Optimized YAML Generation:** C.A.F.E. produces standard, linear sequences for simple flows and automatically utilizes a robust **State-Machine** pattern for complex logic like loops.
-- **Trace-Integrated:** Debug your visual flows using the official Home Assistant **Trace View**. C.A.F.E. maps execution paths back to your canvas.
-
-![side by side image of CAFE editor and Home Assistant trace view](./docs/images/side-by-side.png)
-
----
-
-## 🔒 No Vendor Lock-In: Your Automations, Your Way
-
-- **Stop Using C.A.F.E. Anytime:** If you uninstall C.A.F.E., your automations keep working exactly as before. The logic is standard YAML; you only lose the visual layout metadata.
-- **Built-in Editor Compatible:** You can switch between C.A.F.E. and the native HASS automation editor seamlessly. They edit the same source of truth.
-- **Zero Side-Files:** There is no `cafe_data.json`. Visual metadata (node positions, etc.) is stored as a harmless object inside the automation's `variables` block.
-
----
-
-## 🛠 Engineering Quality & Architecture
-
-C.A.F.E. is architected with strict engineering principles to ensure your home remains reliable:
-
-- **Intelligent Transpiler:** The engine analyzes your flow and chooses the optimal target structure. It generates clean, human-readable YAML for standard sequences, and utilizes a **Native State Machine** (repeat/choose dispatcher) only when needed to unlock complex non-linear "jumps" and loops.
-- **Zod Validation:** Every node, edge, and schema is validated via **Zod**. This ensures that malformed UI data never reaches your Home Assistant API.
-- **Heuristic Auto-Layout:** Our engine can "read" existing, manual YAML and instantly reconstruct a visual map, making it the perfect tool for auditing and cleaning up "spaghetti" automations.
-
----
-
-## ✨ Power Features
-
-- **Script Responses:** Full support for `call_service` responses. Call a script, capture its output, and use it in subsequent nodes via native Jinja templates.
-- **Set Variables Node:** Create and update flow-scoped variables dynamically within your automation logic.
-- **Entity Intelligence:** Full autocomplete and state-awareness via the native HASS WebSocket API.
-- **Visual Import:** Load any native automation and see it mapped instantly to nodes.
-
----
-
-## 🚀 Getting Started
-
-### Installation via HACS (Recommended)
-
-1. **Install HACS**: Ensure [HACS](https://hacs.xyz/) is installed.
-2. **Add Custom Repository**:
-   - Go to **HACS** → **Integrations**
-   - Click the **⋮** menu → **Custom repositories**
-   - Add: `https://github.com/FezVrasta/cafe-hass` as an **Integration**.
-3. **Install & Restart**: Find **C.A.F.E.** in HACS, download it, and restart Home Assistant.
-4. **Enable**: Go to **Settings** → **Devices & Services** → **Add Integration** → Search for **C.A.F.E.**
-
----
-
-## 💬 Frequently Asked Questions
-
-### How do I use script responses and variables?
-
-When you call a script and set a `response_variable` (e.g., `weather_data`), those values become available to all subsequent nodes in the flow. You can access them using standard Home Assistant Jinja syntax in any text field:
-`The temperature is {{ weather_data.temp }} degrees.`
-
-### Does C.A.F.E. slow down my Home Assistant instance?
-
-**No.** Unlike Node-RED, C.A.F.E. is not an execution engine; it is a specialized compiler. Once you hit "Save," the resulting logic is pure, native Home Assistant code. It consumes zero CPU or RAM in the background because the logic runs directly within the HA Core automation engine.
-
-### Can I still use the built-in Home Assistant automation editor?
-
-**Yes.** C.A.F.E. and the native editor are two different "lenses" for the same data. You can open a C.A.F.E. automation in the native editor to make a quick change, and C.A.F.E. will pick up those changes (and attempt to preserve your layout) the next time you open it.
-
-### What happens if I uninstall C.A.F.E.?
-
-Your house keeps running. Because C.A.F.E. stores everything as native YAML, your automations are independent of the editor. You will lose the visual layout (the positions of the boxes), but the logic itself remains 100% intact and editable via YAML.
-
-### Why does my YAML look different sometimes?
-
-C.A.F.E. uses an **Optimized Compilation** strategy.
-
-- For **Linear flows**, it generates standard YAML sequences.
-- For **Complex flows** (with loops or jumps), it generates a **Native State Machine**.
-  Both are 100% compliant with Home Assistant; C.A.F.E. simply chooses the best structure for the job.
-
-### Is this safe to use for "mission-critical" automations?
-
-While C.A.F.E. is in Beta, we recommend keeping backups. However, because it targets the native HA engine, it is inherently more stable than external engines. If the editor has a bug, it might mess up your YAML, but it can't "crash" your automation engine or cause a background memory leak.
-
-### What's the C.A.F.E. alternative to Node-Red's "Function" node?
-
-You can use Jinja2 templates directly in any text field within C.A.F.E. For more complex logic, the "Set Variables" node allows you to create and manipulate flow-scoped variables dynamically. This combination provides similar flexibility to Node-RED's "Function" node while staying within the native Home Assistant framework.
-
-## ⚖️ License
-
-MIT License. Created by [Federico Zivolo](https://github.com/FezVrasta).
+<div align="center">
+  <sub>Built with ❤️ by <strong>SH1FT-W</strong></sub>
+</div>

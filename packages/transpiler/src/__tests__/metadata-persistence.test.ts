@@ -1,5 +1,5 @@
-import type { ConditionNode, FlowGraph, TriggerNode } from '@cafe/shared';
-import { isConditionNode, isTriggerNode } from '@cafe/shared';
+import type { ConditionNode, FlowGraph, TriggerNode } from '@flode/shared';
+import { isConditionNode, isTriggerNode } from '@flode/shared';
 import { v4 as uuidv4 } from 'uuid';
 import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';
@@ -411,7 +411,7 @@ action:
           default:
             - service: system_log.write
               data:
-                message: "C.A.F.E.: Unknown state \\"{{ current_node }}\\", ending flow"
+                message: "FLODE: Unknown state \\"{{ current_node }}\\", ending flow"
                 level: warning
             - variables:
                 current_node: END

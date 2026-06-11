@@ -98,6 +98,7 @@ interface HassContextProps {
   getAllServices: () => Array<{ domain: string; service: string; definition: HassService }>;
   getServiceDefinition: (fullServiceName: string) => HassService | null;
   getDeviceNameForEntity: (entityId: string) => string | null;
+  getDeviceNameById: (deviceId: string) => string | null;
   getAreaNameForEntity: (entityId: string) => string | null;
 }
 
@@ -162,7 +163,7 @@ export const HassProvider: FC<
         });
 
         connection.addEventListener('reconnect-error', (err: unknown) => {
-          console.error('C.A.F.E.: WebSocket reconnection failed:', err);
+          console.error('FLODE: WebSocket reconnection failed:', err);
           setConnectionError('Reconnection failed');
         });
 
@@ -220,7 +221,7 @@ export const HassProvider: FC<
             }
             setEntityRegistry(entityMap);
           } catch (error) {
-            console.error('C.A.F.E.: Failed to fetch registries:', error);
+            console.error('FLODE: Failed to fetch registries:', error);
           }
         };
         fetchRegistries();
@@ -233,7 +234,7 @@ export const HassProvider: FC<
           setWsConnection(null);
         };
       } catch (error) {
-        console.error('C.A.F.E.: Failed to establish WebSocket connection:', error);
+        console.error('FLODE: Failed to establish WebSocket connection:', error);
         const errorMessage = error instanceof Error ? error.message : 'Connection failed';
         setConnectionError(errorMessage);
         setIsLoading(false);
@@ -286,7 +287,7 @@ export const HassProvider: FC<
         }
         setEntityRegistry(entityMap);
       } catch (error) {
-        console.error('C.A.F.E.: Failed to fetch registries from externalHass:', error);
+        console.error('FLODE: Failed to fetch registries from externalHass:', error);
       }
     };
 
@@ -457,6 +458,14 @@ export const HassProvider: FC<
     [entityRegistry, deviceRegistry]
   );
 
+  const getDeviceNameById = useCallback(
+    (deviceId: string): string | null => {
+      const device = deviceRegistry.get(deviceId);
+      return device?.name_by_user || device?.name || null;
+    },
+    [deviceRegistry]
+  );
+
   const getAreaNameForEntity = useCallback(
     (entityId: string): string | null => {
       // Check entity registry for direct area assignment
@@ -484,6 +493,7 @@ export const HassProvider: FC<
     getAllServices,
     getServiceDefinition,
     getDeviceNameForEntity,
+    getDeviceNameById,
     getAreaNameForEntity,
   };
 

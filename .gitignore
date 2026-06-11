@@ -37,4 +37,8 @@ yarn-error.log*
 .env.*.local
 
 # Home Assistant
-custom_components/cafe/www/
+custom_components/cafe/
+custom_components/flode/www/
+
+# Temp / debug
+test-issue-219.mjs

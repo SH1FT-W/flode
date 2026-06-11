@@ -1,4 +1,4 @@
-import type { FlowNode, TriggerPlatform } from '@cafe/shared';
+import type { FlowNode, TriggerPlatform } from '@flode/shared';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormField } from '@/components/forms/FormField';
@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getTriggerDefaults, getTriggerFields } from '@/config/triggerFields';
+import { TRIGGER_PLATFORM_FIELDS, getTriggerDefaults, getTriggerFields } from '@/config/triggerFields';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
@@ -45,17 +45,19 @@ export function TriggerFields({ node, onChange, entities }: TriggerFieldsProps) 
   }, [deviceId, triggerType, onChange]);
 
   const handleTriggerTypeChange = (newTriggerType: string) => {
-    // Get defaults for the new trigger type (includes trigger field and any field defaults)
-    const defaults = getTriggerDefaults(newTriggerType as TriggerPlatform);
+    // Clear all fields from every trigger type to avoid stale values leaking across types
+    const allFieldNames = new Set(
+      Object.values(TRIGGER_PLATFORM_FIELDS).flatMap((fields) => fields.map((f) => f.name))
+    );
+    for (const fieldName of allFieldNames) {
+      onChange(fieldName, undefined);
+    }
+    onChange('device_id', undefined);
 
-    // Apply all defaults
+    // Apply defaults for the new type
+    const defaults = getTriggerDefaults(newTriggerType as TriggerPlatform);
     for (const [key, value] of Object.entries(defaults)) {
       onChange(key, value);
-    }
-
-    // If switching away from device, clear device_id
-    if (newTriggerType !== 'device' && deviceId) {
-      onChange('device_id', undefined);
     }
   };
 
@@ -85,6 +87,7 @@ export function TriggerFields({ node, onChange, entities }: TriggerFieldsProps) 
               {t('nodes:triggers.platforms.homeassistant')}
             </SelectItem>
             <SelectItem value="device">{t('nodes:triggers.platforms.device')}</SelectItem>
+            <SelectItem value="calendar">{t('nodes:triggers.platforms.calendar')}</SelectItem>
           </SelectContent>
         </Select>
       </FormField>

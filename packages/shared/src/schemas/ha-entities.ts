@@ -17,6 +17,7 @@ export const TriggerPlatformSchema = z.enum([
   'template',
   'homeassistant',
   'device',
+  'calendar',
 ]);
 export type TriggerPlatform = z.infer<typeof TriggerPlatformSchema>;
 

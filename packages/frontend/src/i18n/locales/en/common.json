@@ -79,7 +79,9 @@
     "duration": "00:05:00",
     "enterTemplate": "Enter Jinja2 template...",
     "jsonExample": "{ \"key\": \"value\" }",
-    "none": "None"
+    "none": "None",
+    "addValue": "Add value...",
+    "select": "Select..."
   },
   "help": {
     "clickNodesToAdd": "Click nodes to add",
@@ -88,7 +90,7 @@
     "backspaceDeleteKey": "Backspace/Delete key"
   },
   "titles": {
-    "appName": "C.A.F.E.",
+    "appName": "FLODE",
     "appFullName": "Complex Automation Flow Editor",
     "settings": "Settings",
     "updateAutomation": "Update automation in Home Assistant",
@@ -96,6 +98,7 @@
     "clearAutomation": "Clear current automation",
     "exportJson": "Export flow as JSON",
     "clickToConfigure": "Click to configure Home Assistant connection",
+    "backToHA": "Back to Home Assistant",
     "openDetached": "Open detached window",
     "removeSource": "Remove source from merged workspace"
   },

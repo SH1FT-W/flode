@@ -79,7 +79,9 @@
     "duration": "00:05:00",
     "enterTemplate": "Jinja2-Vorlage eingeben...",
     "jsonExample": "{ \"key\": \"value\" }",
-    "none": "Keine"
+    "none": "Keine",
+    "addValue": "Wert hinzufügen...",
+    "select": "Auswählen..."
   },
   "help": {
     "clickNodesToAdd": "Klicken zum Hinzufügen",
@@ -88,7 +90,7 @@
     "backspaceDeleteKey": "Rücktaste/Entf-Taste"
   },
   "titles": {
-    "appName": "C.A.F.E.",
+    "appName": "FLODE",
     "appFullName": "Complex Automation Flow Editor",
     "settings": "Einstellungen",
     "updateAutomation": "Automatisierung in Home Assistant aktualisieren",
@@ -96,6 +98,7 @@
     "clearAutomation": "Aktuelle Automatisierung leeren",
     "exportJson": "Flow als JSON exportieren",
     "clickToConfigure": "Klicken um Home Assistant-Verbindung zu konfigurieren",
+    "backToHA": "Zurück zu Home Assistant",
     "openDetached": "Eigenes Fenster öffnen",
     "removeSource": "Quelle aus dem Merge-Workspace entfernen"
   },
@@ -161,5 +164,32 @@
   },
   "stateTrigger": {
     "useValue": "Wert verwenden"
+  },
+  "automationSettings": {
+    "title": "Automationseinstellungen",
+    "description": "Beschreibung",
+    "mode": "Modus",
+    "modeDescription": "Legt fest, was passiert, wenn die Automatisierung erneut ausgelöst wird, während sie bereits läuft.",
+    "modes": {
+      "single": "Einzeln",
+      "restart": "Neustart",
+      "queued": "Warteschlange",
+      "parallel": "Parallel"
+    },
+    "modeDescriptions": {
+      "single": "Keinen neuen Durchlauf starten, wenn bereits einer läuft",
+      "restart": "Aktuellen Durchlauf stoppen und neu starten",
+      "queued": "Neue Durchläufe in die Warteschlange stellen",
+      "parallel": "Neuen Durchlauf unabhängig parallel starten"
+    },
+    "max": "Max. Durchläufe",
+    "maxDescription": "Maximale Anzahl gleichzeitiger oder wartender Durchläufe.",
+    "maxExceeded": "Bei Überschreitung",
+    "maxExceededDescription": "Was passiert, wenn die maximale Anzahl von Durchläufen überschritten wird.",
+    "maxExceededOptions": {
+      "silent": "Stumm",
+      "warning": "Warnung",
+      "critical": "Kritisch"
+    }
   }
 }

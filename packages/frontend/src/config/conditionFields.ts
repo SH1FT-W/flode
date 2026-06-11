@@ -1,4 +1,4 @@
-import type { ConditionType } from '@cafe/shared';
+import type { ConditionType } from '@flode/shared';
 import type { FieldConfig } from './triggerFields';
 
 /**

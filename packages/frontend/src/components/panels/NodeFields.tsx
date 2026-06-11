@@ -1,4 +1,4 @@
-import type { FlowNode, SetVariablesNode } from '@cafe/shared';
+import type { FlowNode, SetVariablesNode } from '@flode/shared';
 import type { HassEntity } from '@/types/hass';
 import { ActionFields } from './node-fields/ActionFields';
 import { ConditionFields } from './node-fields/ConditionFields';

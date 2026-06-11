@@ -48,7 +48,7 @@ function renderApp() {
   }
 
   const inHaIframe = isInHaIframe();
-  logger.info('C.A.F.E. starting', { inHaIframe });
+  logger.info('FLODE starting', { inHaIframe });
 
   if (inHaIframe) {
     // Running inside HA iframe - use parent's hass object

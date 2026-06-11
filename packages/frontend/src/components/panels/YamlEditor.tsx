@@ -1,4 +1,4 @@
-import { FlowTranspiler } from '@cafe/transpiler';
+import { FlowTranspiler } from '@flode/transpiler';
 import CodeEditor from '@uiw/react-textarea-code-editor';
 
 import { useEffect } from 'react';

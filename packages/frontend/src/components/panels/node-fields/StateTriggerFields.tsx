@@ -1,4 +1,4 @@
-import type { FlowNode } from '@cafe/shared';
+import type { FlowNode } from '@flode/shared';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

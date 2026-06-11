@@ -278,7 +278,7 @@ export class HomeAssistantAPI {
 
     // Remote/standalone mode - use fetch
     if (!this.baseUrl || !this.token) {
-      console.error('C.A.F.E.: No authentication configured', {
+      console.error('FLODE: No authentication configured', {
         baseUrl: this.baseUrl,
         hasToken: !!this.token,
       });
@@ -298,7 +298,7 @@ export class HomeAssistantAPI {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('C.A.F.E.: REST API error response:', errorText);
+      console.error('FLODE: REST API error response:', errorText);
       throw new Error(`REST API error: ${response.status} ${response.statusText}`);
     }
 
@@ -385,7 +385,7 @@ export class HomeAssistantAPI {
         ) || null
       );
     } catch (error) {
-      console.error('C.A.F.E.: Failed to get automation config:', error);
+      console.error('FLODE: Failed to get automation config:', error);
       return null;
     }
   }
@@ -405,7 +405,7 @@ export class HomeAssistantAPI {
       const traceDetails = await this.getAutomationTraceDetails(automationId, traces[0].run_id);
       return traceDetails?.config || null;
     } catch (error) {
-      console.error('C.A.F.E.: Failed to get automation config from trace:', error);
+      console.error('FLODE: Failed to get automation config from trace:', error);
       return null;
     }
   }
@@ -428,7 +428,7 @@ export class HomeAssistantAPI {
       const fromTrace = await this.getAutomationConfigFromTrace(automationId);
       return (fromTrace as AutomationConfig | null) ?? null;
     } catch (error) {
-      console.error('C.A.F.E.: Failed to get automation config with fallback:', error);
+      console.error('FLODE: Failed to get automation config with fallback:', error);
       return null;
     }
   }
@@ -444,7 +444,7 @@ export class HomeAssistantAPI {
       // Ensure the config has the required fields for Home Assistant (plural forms)
       const configWithId = {
         id: automationId,
-        alias: config.alias || `C.A.F.E. Automation ${automationId}`,
+        alias: config.alias || `FLODE Automation ${automationId}`,
         description: config.description || '',
         triggers: config.trigger || config.triggers || [],
         conditions: config.condition || config.conditions || [],
@@ -457,7 +457,7 @@ export class HomeAssistantAPI {
       try {
         await this.fetchRestAPI(`config/automation/config/${automationId}`, 'POST', configWithId);
       } catch (saveError) {
-        console.error('C.A.F.E.: Failed to save automation config:', saveError);
+        console.error('FLODE: Failed to save automation config:', saveError);
         throw new Error(
           `Failed to save automation config: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`
         );
@@ -480,7 +480,7 @@ export class HomeAssistantAPI {
 
       throw new Error('No working Home Assistant connection method found');
     } catch (error) {
-      console.error('C.A.F.E.: Failed to create automation:', error);
+      console.error('FLODE: Failed to create automation:', error);
       throw new Error(
         `Failed to create automation: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -492,13 +492,13 @@ export class HomeAssistantAPI {
    */
   async updateAutomation(automationId: string, config: AutomationConfig): Promise<void> {
     try {
-      console.log('C.A.F.E.: Updating automation with ID:', automationId);
-      console.log('C.A.F.E.: Update config:', config);
+      console.log('FLODE: Updating automation with ID:', automationId);
+      console.log('FLODE: Update config:', config);
 
       // Ensure the config has the correct structure that HA expects (plural forms)
       const configWithId = {
         id: automationId,
-        alias: config.alias || `C.A.F.E. Automation ${automationId}`,
+        alias: config.alias || `FLODE Automation ${automationId}`,
         description: config.description || '',
         triggers: config.trigger || config.triggers || [],
         conditions: config.condition || config.conditions || [],
@@ -507,14 +507,14 @@ export class HomeAssistantAPI {
         variables: config.variables || {},
       };
 
-      console.log('C.A.F.E.: Final update payload:', configWithId);
+      console.log('FLODE: Final update payload:', configWithId);
 
       // Use POST method for updates (HA doesn't support PUT for automation config updates)
       await this.fetchRestAPI(`config/automation/config/${automationId}`, 'POST', configWithId);
 
-      console.log('C.A.F.E.: Successfully updated automation:', automationId);
+      console.log('FLODE: Successfully updated automation:', automationId);
     } catch (error) {
-      console.error('C.A.F.E.: Failed to update automation:', error);
+      console.error('FLODE: Failed to update automation:', error);
       throw new Error(
         `Failed to update automation: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -529,7 +529,7 @@ export class HomeAssistantAPI {
       // Use the automation config DELETE endpoint
       await this.fetchRestAPI(`config/automation/config/${automationId}`, 'DELETE');
     } catch (error) {
-      console.error('C.A.F.E.: Failed to delete automation:', error);
+      console.error('FLODE: Failed to delete automation:', error);
       throw new Error(
         `Failed to delete automation: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -546,7 +546,7 @@ export class HomeAssistantAPI {
 
       return exists;
     } catch (error) {
-      console.error('C.A.F.E.: Failed to check automation existence:', error);
+      console.error('FLODE: Failed to check automation existence:', error);
       return false;
     }
   }
@@ -566,7 +566,7 @@ export class HomeAssistantAPI {
 
       return alias;
     } catch (error) {
-      console.error('C.A.F.E.: Failed to get unique automation alias:', error);
+      console.error('FLODE: Failed to get unique automation alias:', error);
       return baseAlias;
     }
   }

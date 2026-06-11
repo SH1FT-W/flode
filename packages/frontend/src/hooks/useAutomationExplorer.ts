@@ -32,7 +32,7 @@ export interface ExplorerSection {
   automations: ExplorerAutomationItem[];
 }
 
-const EXPLORER_CACHE_DB = 'cafe-explorer-cache';
+const EXPLORER_CACHE_DB = 'flode-explorer-cache';
 const EXPLORER_CACHE_STORE = 'automation-inference-v1';
 const inMemoryCache = new Map<string, AutomationInferenceResult>();
 

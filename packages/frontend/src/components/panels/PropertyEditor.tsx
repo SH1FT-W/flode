@@ -1,4 +1,4 @@
-import type { FlowNode } from '@cafe/shared';
+import type { FlowNode } from '@flode/shared';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { FormField } from '@/components/forms/FormField';

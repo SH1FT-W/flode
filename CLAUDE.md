@@ -7,7 +7,7 @@
 
 # Project Overview
 
-**C.A.F.E.** (Complex Automation Flow Editor) is a visual flow editor for Home Assistant automations, inspired by Node-RED. It allows users to design automations as diagrams and transpiles them to 100% native Home Assistant YAML—no vendor lock-in. Automations remain editable in HA’s built-in editor.
+**FLODE** (Flow + Node Editor) is a visual flow editor for Home Assistant automations, inspired by Node-RED. It allows users to design automations as diagrams and transpiles them to 100% native Home Assistant YAML—no vendor lock-in. Automations remain editable in HA’s built-in editor.
 
 # Repository Structure
 
@@ -178,7 +178,7 @@ To cut a new release, follow these steps:
 
 ```bash
 # IMPORTANT: Use real newlines in the --notes argument, not literal \n. For multiline notes, write each line on a new line inside the string.
-gh release create v0.1.9 --title "C.A.F.E. v0.1.9" --notes "<release notes>"
+gh release create v0.1.9 --title "FLODE v0.1.9" --notes "<release notes>"
 ```
 
 5. **Verify release on GitHub**

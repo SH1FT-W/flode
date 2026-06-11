@@ -1,6 +1,7 @@
 import { ReactFlowProvider } from '@xyflow/react';
 import {
   AlertCircle,
+  ArrowLeft,
   BrushCleaning,
   ChevronDown,
   DiamondPlus,
@@ -50,7 +51,7 @@ import { ResizablePanel } from '@/components/ui/resizable-panel';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { version } from '../../../custom_components/cafe/manifest.json';
+import { version } from '../../../custom_components/flode/manifest.json';
 import { useHass } from './contexts/HassContext';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useLanguage } from './hooks/useLanguage';
@@ -64,6 +65,11 @@ function App() {
   // Sidebar toggle button handler
   const handleSidebarToggle = () => {
     window.parent.postMessage({ type: 'CAFE_TOGGLE_SIDEBAR' }, '*');
+  };
+
+  // Navigate back to Home Assistant (only in panel mode)
+  const handleBackToHA = () => {
+    window.parent.history.back();
   };
 
   const {
@@ -212,6 +218,19 @@ function App() {
           {/* Header */}
           <header className="flex h-14 items-center justify-between gap-4 border-border border-b bg-card px-4 shadow-sm">
             <div className="flex flex-1 items-center gap-4">
+              {/* Back to HA button — only in panel mode (not remote) */}
+              {!actualIsRemote && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 text-muted-foreground hover:bg-accent"
+                  onClick={handleBackToHA}
+                  title={t('titles.backToHA')}
+                  aria-label={t('titles.backToHA')}
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              )}
               {/* Sidebar toggle button, only visible when parent window width <= 870px */}
               {parentWidth <= 870 ? (
                 <Button
@@ -228,7 +247,6 @@ function App() {
                   className="whitespace-nowrap font-bold text-foreground text-lg"
                   title={t('titles.appFullName')}
                 >
-                  {'☕ '}
                   {t('titles.appName')}
                 </h1>
               )}
@@ -363,7 +381,7 @@ function App() {
                 </div>
                 <div className="text-muted-foreground text-xs">
                   <span>
-                    {t('titles.appName')} {`v${version}`}
+                    {t('titles.appName')} {`v${version}`} · by SH1FT-W
                   </span>
                 </div>
               </div>

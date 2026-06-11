@@ -1,5 +1,5 @@
 /**
- * Global logging utility for C.A.F.E.
+ * Global logging utility for FLODE
  * Can be easily enabled/disabled for debugging
  */
 
@@ -23,7 +23,7 @@ class Logger {
 
   constructor(enabled = DEBUG_ENABLED) {
     this.enabled = enabled;
-    this.prefix = '[C.A.F.E.]';
+    this.prefix = '[FLODE]';
   }
 
   /**

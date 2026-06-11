@@ -13,7 +13,7 @@ import type {
   SetVariablesNode,
   TriggerNode,
   WaitNode,
-} from '@cafe/shared';
+} from '@flode/shared';
 import {
   CafeMetadataSchema,
   FlowGraphMetadataSchema,
@@ -22,9 +22,8 @@ import {
   HATriggerSchema,
   isDeviceAction,
   isHACondition,
-  isHATrigger,
   validateGraphStructure,
-} from '@cafe/shared';
+} from '@flode/shared';
 import { load as yamlLoad } from 'js-yaml';
 import { generateEdgeId, generateGraphId, generateNodeId } from '../utils/generateIds';
 import { applyHeuristicLayout } from './layout';
@@ -120,6 +119,11 @@ function isVariablesAction(action: unknown): action is Record<string, unknown> {
 /** Returns true if the action is a set_conversation_response action */
 function isSetConversationResponseAction(action: unknown): action is Record<string, unknown> {
   return typeof action === 'object' && action !== null && 'set_conversation_response' in action;
+}
+
+/** Returns true if the action is a stop action */
+function isStopAction(action: unknown): action is Record<string, unknown> {
+  return typeof action === 'object' && action !== null && 'stop' in action;
 }
 
 /** Returns true if the action is a repeat block */
@@ -270,7 +274,7 @@ export class YamlParser {
         };
       }
 
-      // Step 2: Extract C.A.F.E. metadata if present
+      // Step 2: Extract FLODE metadata if present
       const metadata = this.extractMetadata(parsed);
       const hadMetadata = metadata !== null;
 
@@ -401,10 +405,10 @@ export class YamlParser {
   }
 
   /**
-   * Extract C.A.F.E. metadata from variables section
+   * Extract FLODE metadata from variables section
    */
   /**
-   * Extract and validate C.A.F.E. metadata from variables section using Zod schema.
+   * Extract and validate FLODE metadata from variables section using Zod schema.
    * Returns CafeMetadata if valid, otherwise null.
    */
   private extractMetadata(parsed: Record<string, unknown>): CafeMetadata | null {
@@ -979,30 +983,84 @@ export class YamlParser {
     warnings: string[],
     getNextNodeId: (type: string) => string
   ): FlowNode[] {
-    return triggers.filter(isHATrigger).map((trigger, index) => {
-      const nodeId = getNextNodeId('trigger');
-      try {
-        // Validate and parse trigger using HATriggerSchema
-        const result = HATriggerSchema.safeParse(trigger);
-        if (!result.success) {
-          warnings.push(
-            `Trigger ${index} failed schema validation: ${JSON.stringify(result.error.issues)}`
-          );
-          return this.createUnknownNode(nodeId, trigger);
+    // Process all object-type trigger items — do NOT filter with isHATrigger here,
+    // because modern HA may use formats (e.g. dict-keyed or novel trigger types)
+    // that don't have 'platform', 'trigger', or 'entity_id' at the top level.
+    return triggers
+      .filter((t) => typeof t === 'object' && t !== null)
+      .map((trigger, index) => {
+        const nodeId = getNextNodeId('trigger');
+        try {
+          // Validate and parse trigger using HATriggerSchema
+          const result = HATriggerSchema.safeParse(trigger);
+          if (!result.success) {
+            warnings.push(
+              `Trigger ${index} failed schema validation: ${JSON.stringify(result.error.issues)}`
+            );
+            // Return a fallback TRIGGER node (not an action node) so the graph
+            // always has at least one trigger — allowing the import to succeed.
+            return this.createFallbackTriggerNode(nodeId, trigger);
+          }
+          const node: TriggerNode = {
+            id: nodeId,
+            type: 'trigger',
+            position: { x: 0, y: 0 },
+            data: result.data,
+          };
+          return node;
+        } catch (error) {
+          warnings.push(`Failed to parse trigger ${index}: ${error}`);
+          return this.createFallbackTriggerNode(nodeId, trigger);
         }
-        // Use platform directly from validated schema
-        const node: TriggerNode = {
-          id: nodeId,
-          type: 'trigger',
-          position: { x: 0, y: 0 },
-          data: result.data,
-        };
-        return node;
-      } catch (error) {
-        warnings.push(`Failed to parse trigger ${index}: ${error}`);
-        return this.createUnknownNode(nodeId, trigger);
+      });
+  }
+
+  /**
+   * Build a best-effort trigger node when HATriggerSchema validation fails.
+   * Always returns type:'trigger' so validateGraphStructure does not fail.
+   */
+  private createFallbackTriggerNode(nodeId: string, originalData: unknown): TriggerNode {
+    const data = (typeof originalData === 'object' && originalData !== null
+      ? (originalData as Record<string, unknown>)
+      : {}) as Record<string, unknown>;
+
+    // Determine trigger type from various formats:
+    // 1. Modern HA: { trigger: 'state', ... }
+    // 2. Legacy HA: { platform: 'state', ... }
+    // 3. Dict-keyed: { state: { entity_id: '...' } }
+    let triggerType: string;
+    let nestedFields: Record<string, unknown> = {};
+
+    if (typeof data.trigger === 'string') {
+      triggerType = data.trigger;
+      const { platform: _p, trigger: _t, ...rest } = data;
+      nestedFields = rest;
+    } else if (typeof data.platform === 'string') {
+      triggerType = data.platform;
+      const { platform: _p, ...rest } = data;
+      nestedFields = rest;
+    } else {
+      // Dict-keyed format: first key is the trigger type, value contains fields
+      const firstKey = Object.keys(data).find(
+        (k) => !['alias', 'id', 'enabled', 'variables'].includes(k)
+      );
+      if (firstKey && typeof data[firstKey] === 'object' && data[firstKey] !== null) {
+        triggerType = firstKey;
+        nestedFields = data[firstKey] as Record<string, unknown>;
+      } else {
+        triggerType = 'state';
       }
-    });
+    }
+
+    return {
+      id: nodeId,
+      type: 'trigger',
+      position: { x: 0, y: 0 },
+      data: {
+        trigger: triggerType,
+        ...nestedFields,
+      } as TriggerNode['data'],
+    };
   }
 
   /**
@@ -1876,6 +1934,24 @@ export class YamlParser {
               typeof act.set_conversation_response === 'string'
                 ? act.set_conversation_response
                 : undefined,
+            enabled: getNodeEnabled(typeof act.enabled === 'boolean' ? act.enabled : undefined),
+          },
+        };
+        nodes.push(actionNode);
+        createEdgesFromCurrent(nodeId);
+        currentNodeIds = [nodeId];
+      } else if (isStopAction(action)) {
+        // Stop action - halts automation execution
+        const nodeId = getNextNodeId('action');
+        const act = action as Record<string, unknown>;
+        const actionNode: ActionNode = {
+          id: nodeId,
+          type: 'action',
+          position: { x: 0, y: 0 },
+          data: {
+            alias: typeof act.alias === 'string' ? act.alias : undefined,
+            stop: typeof act.stop === 'string' ? act.stop : '',
+            ...(act.error === true ? { error: true } : {}),
             enabled: getNodeEnabled(typeof act.enabled === 'boolean' ? act.enabled : undefined),
           },
         };

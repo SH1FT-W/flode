@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import type { ConditionNode } from '@cafe/shared';
+import type { ConditionNode } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
 import { yamlParser } from '../parser/YamlParser';
 

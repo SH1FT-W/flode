@@ -1,4 +1,4 @@
-import type { FlowNode } from '@cafe/shared';
+import type { FlowNode } from '@flode/shared';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormField } from '@/components/forms/FormField';
@@ -14,6 +14,7 @@ import {
 import type { DeviceTrigger, TriggerField } from '@/hooks/useDeviceAutomation';
 import { useDeviceAutomation } from '@/hooks/useDeviceAutomation';
 import { useTranslations } from '@/hooks/useTranslations';
+import { useHass } from '@/contexts/HassContext';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
 
@@ -34,17 +35,49 @@ function buildCompositeValue(trigger: DeviceTrigger): string {
   return parts.join('::');
 }
 
-/**
- * Get the translated label for a trigger type/subtype using HA device_automation translations.
- * Falls back to the raw type/subtype strings if no translation is found.
- */
-function getTriggerLabel(trigger: DeviceTrigger, translations: Record<string, string>): string {
+function resolvePlaceholders(
+  template: string,
+  trigger: DeviceTrigger,
+  entities: HassEntity[],
+  deviceName: string | null
+): string {
+  let result = template;
+  if (result.includes('{entity_name}')) {
+    const entity = trigger.entity_id
+      ? entities.find((e) => e.entity_id === trigger.entity_id)
+      : undefined;
+    const entityName =
+      (entity?.attributes?.friendly_name as string) ||
+      deviceName ||
+      trigger.entity_id ||
+      '';
+    result = result.replace(/\{entity_name\}/g, entityName);
+  }
+  return result;
+}
+
+function getTriggerLabel(
+  trigger: DeviceTrigger,
+  translations: Record<string, string>,
+  entities: HassEntity[],
+  deviceName: string | null
+): string {
   const typeKey = `component.${trigger.domain}.device_automation.trigger_type.${trigger.type}`;
-  const typeLabel = translations[typeKey] ?? trigger.type;
+  const typeLabel = resolvePlaceholders(
+    translations[typeKey] ?? trigger.type,
+    trigger,
+    entities,
+    deviceName
+  );
 
   if (trigger.subtype) {
     const subtypeKey = `component.${trigger.domain}.device_automation.trigger_subtype.${trigger.subtype}`;
-    const subtypeLabel = translations[subtypeKey] ?? trigger.subtype;
+    const subtypeLabel = resolvePlaceholders(
+      translations[subtypeKey] ?? trigger.subtype,
+      trigger,
+      entities,
+      deviceName
+    );
     return `${typeLabel}: ${subtypeLabel}`;
   }
 
@@ -59,12 +92,14 @@ export function DeviceTriggerFields({ node, onChange, entities }: DeviceTriggerF
   const { t } = useTranslation(['common', 'nodes', 'errors']);
   const { getDeviceTriggers, getTriggerCapabilities } = useDeviceAutomation();
   const { translations } = useTranslations();
+  const { entities: allEntities, getDeviceNameById } = useHass();
 
   const [availableDeviceTriggers, setAvailableDeviceTriggers] = useState<DeviceTrigger[]>([]);
   const [triggerCapabilities, setTriggerCapabilities] = useState<TriggerField[]>([]);
   const [loadingTriggers, setLoadingTriggers] = useState(false);
 
   const deviceId = getNodeDataString(node, 'device_id');
+  const deviceName = deviceId ? getDeviceNameById(deviceId) : null;
   const selectedTriggerType = getNodeDataString(node, 'type');
   const domain = getNodeDataString(node, 'domain');
   const entityId = getNodeDataString(node, 'entity_id');
@@ -175,7 +210,7 @@ export function DeviceTriggerFields({ node, onChange, entities }: DeviceTriggerF
             <SelectContent>
               {availableDeviceTriggers.map((trigger) => (
                 <SelectItem key={buildCompositeValue(trigger)} value={buildCompositeValue(trigger)}>
-                  {getTriggerLabel(trigger, translations)}
+                  {getTriggerLabel(trigger, translations, allEntities, deviceName)}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -77,7 +77,11 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
         return {
           title: data.alias || 'Time',
           subtitle: triggerLabels[triggerType],
-          detail: data.at || null,
+          detail: data.at
+            ? typeof data.at === 'string'
+              ? data.at
+              : `${(data.at as Record<string, unknown>).entity_id || ''}${(data.at as Record<string, unknown>).offset ? ` (${(data.at as Record<string, unknown>).offset})` : ''}`
+            : null,
         };
 
       case 'sun':

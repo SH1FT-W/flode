@@ -1,0 +1,12 @@
+alias: Stop Action Test
+description: Test stop action round-trip
+trigger:
+  - platform: state
+    entity_id: binary_sensor.motion_sensor
+    to: "on"
+action:
+  - condition: state
+    entity_id: input_boolean.enabled
+    state: "on"
+  - stop: "Not enabled"
+mode: single

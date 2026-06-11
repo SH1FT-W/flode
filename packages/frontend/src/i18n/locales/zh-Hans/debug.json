@@ -1,6 +1,0 @@
-{
-  "simulation": {
-    "simulatingExecution": "正在模拟执行...",
-    "showingTraceExecution": "显示追踪执行（{{steps}} 步）"
-  }
-}

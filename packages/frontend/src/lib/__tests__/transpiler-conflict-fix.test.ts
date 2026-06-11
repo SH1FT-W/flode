@@ -2,7 +2,7 @@
  * Test to verify that transpiler doesn't generate conflicting platform/trigger fields
  */
 
-import { transpiler } from '@cafe/transpiler';
+import { transpiler } from '@flode/transpiler';
 import { dump as yamlDump } from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 

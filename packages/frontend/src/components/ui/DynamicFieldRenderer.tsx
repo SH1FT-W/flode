@@ -78,7 +78,7 @@ export function DynamicFieldRenderer({
   translations = {},
   error,
 }: DynamicFieldRendererProps) {
-  const { t } = useTranslation(['common']);
+  const { t } = useTranslation(['common', 'nodes']);
   // Extract common properties
   const name = field.name;
   const required = field.required ?? false;
@@ -89,10 +89,18 @@ export function DynamicFieldRenderer({
   let placeholder = '';
 
   if ('label' in field) {
-    // Static FieldConfig
-    label = field.label;
-    description = field.description || '';
-    placeholder = field.placeholder || '';
+    // Static FieldConfig — try i18n lookup first, fall back to hardcoded English label
+    const i18nLabelKey = `nodes:fieldLabels.${name}`;
+    const translatedLabel = t(i18nLabelKey, { defaultValue: '' });
+    label = translatedLabel || field.label;
+
+    const i18nDescKey = `nodes:fieldDescriptions.${name}`;
+    const translatedDesc = t(i18nDescKey, { defaultValue: '' });
+    description = translatedDesc || field.description || '';
+
+    const i18nPlaceholderKey = `nodes:fieldPlaceholders.${name}`;
+    const translatedPlaceholder = t(i18nPlaceholderKey, { defaultValue: '' });
+    placeholder = translatedPlaceholder || field.placeholder || '';
   } else {
     // Dynamic TriggerField from API
     // Try to get label from translations first
@@ -141,8 +149,17 @@ export function DynamicFieldRenderer({
     }
   }
 
-  // Helper to get string value safely
-  const stringValue = typeof value === 'string' ? value : String(value ?? '');
+  // Helper to coerce a value to string — handles legacy {label, value} option objects
+  const normalizeToString = (v: unknown): string => {
+    if (typeof v === 'string') return v;
+    if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+      const obj = v as Record<string, unknown>;
+      if (typeof obj.value === 'string') return obj.value;
+    }
+    return String(v ?? '');
+  };
+
+  const stringValue = normalizeToString(value);
   const numberValue = typeof value === 'number' ? value : Number(value) || undefined;
   const booleanValue = typeof value === 'boolean' ? value : Boolean(value);
 
@@ -166,7 +183,7 @@ export function DynamicFieldRenderer({
             <IdList
               values={values}
               onChange={onChange}
-              placeholder={placeholder || 'Add value...'}
+              placeholder={placeholder || t('common:placeholders.addValue')}
             />
           );
         }
@@ -221,8 +238,12 @@ export function DynamicFieldRenderer({
                 label,
               }));
             } else {
-              // Object format from static config
-              options = rawOptions as Array<{ value: string; label: string }>;
+              // Object format from static config — translate option labels via i18n
+              options = (rawOptions as Array<{ value: string; label: string }>).map((opt) => {
+                const i18nKey = `nodes:fieldOptions.${name}.${opt.value}`;
+                const translated = t(i18nKey, { defaultValue: '' });
+                return { value: opt.value, label: translated || opt.label };
+              });
             }
           }
         } else if (selectorConfig.options && Array.isArray(selectorConfig.options)) {
@@ -236,9 +257,9 @@ export function DynamicFieldRenderer({
         if (multiple) {
           // Multi-select dropdown with checkboxes
           const values = Array.isArray(value)
-            ? (value as string[])
+            ? (value as unknown[]).map(normalizeToString)
             : value
-              ? [value as string]
+              ? [normalizeToString(value)]
               : [];
 
           const getDisplayText = () => {
@@ -288,7 +309,7 @@ export function DynamicFieldRenderer({
         return (
           <Select value={stringValue} onValueChange={onChange}>
             <SelectTrigger>
-              <SelectValue placeholder={placeholder || 'Select...'} />
+              <SelectValue placeholder={placeholder || t('common:placeholders.select')} />
             </SelectTrigger>
             <SelectContent>
               {options.map((option) => (

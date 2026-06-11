@@ -1,5 +1,5 @@
 {
-  "name": "cafe",
+  "name": "flode",
   "private": true,
   "packageManager": "yarn@4.12.0",
   "workspaces": [
@@ -8,9 +8,9 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "build:ha": "npm run build && echo '✓ Built and copied to custom_components/cafe/www/'",
+    "build:ha": "npm run build && echo '✓ Built and copied to custom_components/flode/www/'",
     "test": "vitest",
-    "test:cli": "yarn workspace @cafe/transpiler cli",
+    "test:cli": "yarn workspace @flode/transpiler cli",
     "lint": "turbo run lint",
     "lint:biome": "biome lint .",
     "lint:fix": "biome lint --write .",

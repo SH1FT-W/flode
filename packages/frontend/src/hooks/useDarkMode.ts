@@ -11,7 +11,7 @@ export function useDarkMode() {
   const [isDarkMode, setIsDarkMode] = useState(hass?.themes?.darkMode ?? false);
 
   useEffect(() => {
-    logger.debug('[C.A.F.E.] useDarkMode effect running', {
+    logger.debug('[FLODE] useDarkMode effect running', {
       hasHass: !!hass,
       hasStates: !!(hass?.states && Object.keys(hass.states).length > 0),
       hasThemes: !!hass?.themes,
@@ -20,16 +20,16 @@ export function useDarkMode() {
 
     if (hass?.themes?.darkMode !== undefined) {
       const darkMode = hass.themes.darkMode;
-      logger.debug('[C.A.F.E.] Dark mode from hass.themes.darkMode:', darkMode);
+      logger.debug('[FLODE] Dark mode from hass.themes.darkMode:', darkMode);
       setIsDarkMode(darkMode);
     } else if (hass && Object.keys(hass.states || {}).length > 0) {
       // Hass is available but themes.darkMode is not set, default to false
       logger.debug(
-        '[C.A.F.E.] Hass available but no themes.darkMode property, defaulting to light mode'
+        '[FLODE] Hass available but no themes.darkMode property, defaulting to light mode'
       );
       setIsDarkMode(false);
     } else {
-      logger.debug('[C.A.F.E.] Hass not available yet or no entities loaded');
+      logger.debug('[FLODE] Hass not available yet or no entities loaded');
     }
   }, [hass]);
 

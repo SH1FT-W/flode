@@ -1,4 +1,4 @@
-import type { DelayNode } from '@cafe/shared';
+import type { DelayNode } from '@flode/shared';
 import { FieldError } from '@/components/forms/FieldError';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import { DurationField } from './DurationField';

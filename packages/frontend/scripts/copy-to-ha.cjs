@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const sourceDir = path.join(__dirname, '../dist');
-const targetDir = path.join(__dirname, '../../../custom_components/cafe/www'); // extra set of '../' due to being in scripts/
+const targetDir = path.join(__dirname, '../../../custom_components/flode/www'); // extra set of '../' due to being in scripts/
 
 function copyRecursive(src, dest) {
   // Create destination directory
@@ -26,7 +26,7 @@ function copyRecursive(src, dest) {
 
 try {
   copyRecursive(sourceDir, targetDir);
-  console.log('Copied distribution files to: custom_components/cafe/www');
+  console.log('Copied distribution files to: custom_components/flode/www');
 } catch (error) {
   console.error('Error copying files:', error.message);
   process.exit(1);

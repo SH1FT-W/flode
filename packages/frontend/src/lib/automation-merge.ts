@@ -1,4 +1,4 @@
-import type { FlowEdge, FlowGraph, FlowMetadata, FlowNode, FlowWorkspace } from '@cafe/shared';
+import type { FlowEdge, FlowGraph, FlowMetadata, FlowNode, FlowWorkspace } from '@flode/shared';
 import { generateUUID } from '@/lib/utils';
 
 export interface MergeAutomationSource {

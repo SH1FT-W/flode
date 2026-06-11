@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@cafe/shared';
+import type { FlowGraph } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';
 

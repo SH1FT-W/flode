@@ -8,7 +8,51 @@
     "noAction": "Automatisierung muss mindestens einen Aktionsknoten haben. Bitte fügen Sie eine Aktion aus der Knotenpalette hinzu.",
     "validationFailed": "Validierung fehlgeschlagen: {{errors}}",
     "transpileFailed": "Flow konnte nicht in Automatisierungskonfiguration transpiliert werden",
-    "noAutomationId": "Keine Automatisierungs-ID gesetzt. Verwenden Sie saveAutomation() für neue Automatisierungen."
+    "noAutomationId": "Keine Automatisierungs-ID gesetzt. Verwenden Sie saveAutomation() für neue Automatisierungen.",
+    "trigger": {
+      "platformRequired": "Auslöser-Typ ist erforderlich",
+      "entityRequired": {
+        "state": "Entität ist für Zustandsauslöser erforderlich",
+        "numericState": "Entität ist für numerische Zustandsauslöser erforderlich",
+        "zone": "Entität ist für Zonenauslöser erforderlich"
+      },
+      "eventTypeRequired": "Ereignistyp ist erforderlich",
+      "timeRequired": "Uhrzeitwert ist erforderlich",
+      "mqttTopicRequired": "MQTT-Topic ist erforderlich",
+      "webhookIdRequired": "Webhook-ID ist erforderlich",
+      "deviceRequired": "Gerät ist erforderlich",
+      "zoneRequired": "Zone ist erforderlich",
+      "sunEventRequired": "Sonnenereignis (Aufgang/Untergang) ist erforderlich",
+      "haEventRequired": "Home-Assistant-Ereignis (Start/Herunterfahren) ist erforderlich",
+      "templateRequired": "Vorlage ist erforderlich"
+    },
+    "action": {
+      "serviceOrEventRequired": "Dienst (z.B. light.turn_on) oder Ereignisname ist erforderlich",
+      "serviceFormat": "Dienst muss im Format domain.dienst angegeben werden (z.B. light.turn_on)"
+    },
+    "wait": {
+      "templateOrTriggerRequired": "Warte-Knoten erfordert eine Vorlagenbedingung oder einen Auslöser. Verwenden Sie einen Verzögerungs-Knoten für einfache zeitbasierte Pausen."
+    },
+    "delay": {
+      "valueRequired": "Verzögerungswert ist erforderlich"
+    },
+    "condition": {
+      "typeRequired": "Bedingungstyp ist erforderlich",
+      "entityRequired": {
+        "state": "Entität ist für Zustandsbedingungen erforderlich",
+        "numericState": "Entität ist für numerische Zustandsbedingungen erforderlich",
+        "zone": "Entität ist für Zonenbedingungen erforderlich"
+      },
+      "stateRequired": "Zustandswert ist erforderlich",
+      "triggerIdRequired": "Auslöser-ID ist erforderlich",
+      "templateRequired": "Vorlage ist erforderlich",
+      "zoneRequired": "Zone ist erforderlich",
+      "deviceRequired": "Gerät ist erforderlich",
+      "groupConditionsRequired": "Mindestens eine Bedingung muss definiert werden"
+    },
+    "setVariables": {
+      "atLeastOne": "Mindestens eine Variable muss definiert werden"
+    }
   },
   "connection": {
     "noConnection": "Keine Home Assistant-Verbindung verfügbar",

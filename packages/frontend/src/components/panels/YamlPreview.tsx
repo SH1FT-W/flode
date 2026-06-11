@@ -1,4 +1,4 @@
-import { FlowTranspiler } from '@cafe/transpiler';
+import { FlowTranspiler } from '@flode/transpiler';
 import { Check, Copy } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';

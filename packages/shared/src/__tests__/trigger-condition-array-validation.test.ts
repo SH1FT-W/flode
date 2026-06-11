@@ -33,7 +33,7 @@ describe('Trigger Condition ID Array Support', () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues).toContainEqual(
       expect.objectContaining({
-        message: 'Trigger ID is required',
+        message: 'errors:validation.condition.triggerIdRequired',
         path: ['id'],
       })
     );
@@ -49,7 +49,7 @@ describe('Trigger Condition ID Array Support', () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues).toContainEqual(
       expect.objectContaining({
-        message: 'Trigger ID is required',
+        message: 'errors:validation.condition.triggerIdRequired',
         path: ['id'],
       })
     );
@@ -65,7 +65,7 @@ describe('Trigger Condition ID Array Support', () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues).toContainEqual(
       expect.objectContaining({
-        message: 'Trigger ID is required',
+        message: 'errors:validation.condition.triggerIdRequired',
         path: ['id'],
       })
     );
@@ -80,7 +80,7 @@ describe('Trigger Condition ID Array Support', () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues).toContainEqual(
       expect.objectContaining({
-        message: 'Trigger ID is required',
+        message: 'errors:validation.condition.triggerIdRequired',
         path: ['id'],
       })
     );

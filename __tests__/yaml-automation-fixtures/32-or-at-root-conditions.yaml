@@ -1,0 +1,20 @@
+alias: OR at Root Conditions
+description: Tests an OR condition in the root conditions block
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.motion
+    to: "on"
+conditions:
+  - condition: or
+    conditions:
+      - condition: state
+        entity_id: input_boolean.guest_mode
+        state: "on"
+      - condition: time
+        after: "08:00:00"
+        before: "22:00:00"
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.living_room
+mode: single

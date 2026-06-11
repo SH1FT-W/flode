@@ -1,4 +1,4 @@
-import type { ConditionType, FlowNode } from '@cafe/shared';
+import type { ConditionType, FlowNode } from '@flode/shared';
 import { useTranslation } from 'react-i18next';
 import { FormField } from '@/components/forms/FormField';
 import { ConditionGroupEditor } from '@/components/panels/node-fields/ConditionGroupEditor';
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  CONDITION_TYPE_FIELDS,
   getConditionDefaults,
   getConditionFields,
   isLogicalGroupType,
@@ -41,10 +42,19 @@ export function ConditionFields({ node, onChange, entities }: ConditionFieldsPro
   const isGroupType = isLogicalGroupType(conditionType);
 
   const handleConditionTypeChange = (newType: string) => {
-    // Get defaults for the new condition type (includes condition field and any field defaults)
-    const defaults = getConditionDefaults(newType as ConditionType);
+    // Clear all fields from every condition type to avoid stale values
+    // (e.g. sun.after="sunrise" leaking into time.after which expects HH:MM)
+    const allFieldNames = new Set(
+      Object.values(CONDITION_TYPE_FIELDS).flatMap((fields) => fields.map((f) => f.name))
+    );
+    for (const fieldName of allFieldNames) {
+      onChange(fieldName, undefined);
+    }
+    // Also clear group conditions array
+    onChange('conditions', undefined);
 
-    // Apply all defaults
+    // Apply defaults for the new type
+    const defaults = getConditionDefaults(newType as ConditionType);
     for (const [key, value] of Object.entries(defaults)) {
       onChange(key, value);
     }

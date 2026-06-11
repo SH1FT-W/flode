@@ -1,4 +1,4 @@
-import type { TriggerPlatform } from '@cafe/shared';
+import type { TriggerPlatform } from '@flode/shared';
 import type { SelectorType } from '@/hooks/useDeviceAutomation';
 
 /**
@@ -14,6 +14,7 @@ export interface FieldConfig {
   description?: string;
   options?: Array<{ value: string; label: string }>;
   default?: unknown;
+  domain?: string;
 }
 
 /**
@@ -287,6 +288,38 @@ export const TRIGGER_PLATFORM_FIELDS: Record<TriggerPlatform, FieldConfig[]> = {
   // Device trigger: uses dynamic fields from API
   // This is handled separately with device automation API
   device: [],
+
+  // Calendar trigger: fires relative to calendar events
+  calendar: [
+    {
+      name: 'entity_id',
+      label: 'Calendar',
+      type: 'entity',
+      required: true,
+      domain: 'calendar',
+      description: 'The calendar entity to monitor',
+    },
+    {
+      name: 'event',
+      label: 'Event',
+      type: 'select',
+      required: true,
+      description: 'Trigger at event start or end',
+      options: [
+        { value: 'start', label: 'Start' },
+        { value: 'end', label: 'End' },
+      ],
+      default: 'start',
+    },
+    {
+      name: 'offset',
+      label: 'Offset (optional)',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., -00:30:00',
+      description: 'Time offset before (-) or after (+) the event',
+    },
+  ],
 };
 
 /**

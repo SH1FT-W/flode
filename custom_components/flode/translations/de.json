@@ -1,0 +1,14 @@
+{
+  "config": {
+    "title": "FLODE",
+    "step": {
+      "user": {
+        "title": "FLODE einrichten",
+        "description": "FLODE ist ein visueller Automatisierungseditor für Home Assistant. Erstelle und verwalte deine Automatisierungen mit einem grafischen Flow-Editor.\n\nKlicke auf Senden, um FLODE zu deinem Home Assistant hinzuzufügen."
+      }
+    },
+    "abort": {
+      "already_configured": "FLODE ist bereits eingerichtet"
+    }
+  }
+}

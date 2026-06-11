@@ -1,4 +1,4 @@
-import type { AutomationMode, MaxExceeded } from '@cafe/shared';
+import type { AutomationMode, MaxExceeded } from '@flode/shared';
 import { useTranslation } from 'react-i18next';
 import { FormField } from '@/components/forms/FormField';
 import { Input } from '@/components/ui/input';

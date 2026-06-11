@@ -1,4 +1,4 @@
-import type { FlowEdge, FlowNode } from '@cafe/shared';
+import type { FlowEdge, FlowNode } from '@flode/shared';
 import ELK from 'elkjs/lib/elk.bundled.js';
 
 const elk = new ELK();

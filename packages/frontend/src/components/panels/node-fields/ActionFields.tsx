@@ -1,4 +1,4 @@
-import type { FlowNode } from '@cafe/shared';
+import type { FlowNode } from '@flode/shared';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldError } from '@/components/forms/FieldError';
@@ -23,6 +23,10 @@ import { ServiceDataFields } from './ServiceDataFields';
 
 // Domains where any entity type can be targeted — don't filter
 const MULTI_DOMAIN_SERVICES = new Set(['homeassistant', 'group']);
+
+function prettify(str: string): string {
+  return str.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+}
 
 /**
  * Filter entities for the target selector based on the selected service.
@@ -172,13 +176,35 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
           {/* Call service fields */}
           <FormField label={t('nodes:actions.actionLabel')} required>
             <Combobox
-              options={getAllServices().map(({ domain, service }) => ({
-                value: `${domain}.${service}`,
-                label: `${domain}.${service}`,
-              }))}
+              options={getAllServices().map(({ domain, service, definition }) => {
+                const translatedDomain = t(`nodes:serviceDomains.${domain}`, { defaultValue: prettify(domain) });
+                const translatedAction = t(`nodes:serviceActions.${service}`, { defaultValue: prettify(service) });
+                return {
+                  value: `${domain}.${service}`,
+                  label: definition?.name || `${translatedDomain}: ${translatedAction}`,
+                };
+              })}
               value={serviceName}
               onChange={handleServiceChange}
               placeholder={t('nodes:actions.selectAction')}
+              renderOption={(option) => (
+                <div className="flex flex-col gap-0.5">
+                  <span>{option.label}</span>
+                  {option.label !== option.value && (
+                    <span className="text-xs text-muted-foreground font-mono">{option.value as string}</span>
+                  )}
+                </div>
+              )}
+              renderValue={(option) =>
+                option ? (
+                  <div className="flex flex-col items-start leading-tight">
+                    <span>{option.label}</span>
+                    {option.label !== option.value && (
+                      <span className="text-xs text-muted-foreground font-mono">{option.value}</span>
+                    )}
+                  </div>
+                ) : null
+              }
             />
             <FieldError message={getFieldError('service')} />
           </FormField>

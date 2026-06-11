@@ -14,7 +14,7 @@ describe('Device Trigger Validation', () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues).toContainEqual(
       expect.objectContaining({
-        message: 'Device is required',
+        message: 'errors:validation.trigger.deviceRequired',
         path: ['device_id'],
       })
     );

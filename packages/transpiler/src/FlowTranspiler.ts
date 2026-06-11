@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@cafe/shared';
+import type { FlowGraph } from '@flode/shared';
 import { dump as yamlDump } from 'js-yaml';
 import { analyzeTopology, type TopologyAnalysis } from './analyzer/topology';
 import { type ValidationResult, validateFlowGraph } from './analyzer/validator';
@@ -228,7 +228,7 @@ export class FlowTranspiler {
   }
 
   /**
-   * Generate C.A.F.E. metadata for position persistence
+   * Generate FLODE metadata for position persistence
    *
    * Note: We only store node positions in metadata. Node data and edges are already
    * encoded in the YAML structure itself:

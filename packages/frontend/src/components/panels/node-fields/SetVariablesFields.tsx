@@ -1,4 +1,4 @@
-import type { SetVariablesNode } from '@cafe/shared';
+import type { SetVariablesNode } from '@flode/shared';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { FieldError } from '@/components/forms/FieldError';

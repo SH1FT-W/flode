@@ -1,4 +1,4 @@
-import { transpiler } from '@cafe/transpiler';
+import { transpiler } from '@flode/transpiler';
 import { dump as yamlDump } from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 

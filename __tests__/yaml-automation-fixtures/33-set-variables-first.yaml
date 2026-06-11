@@ -1,0 +1,16 @@
+alias: Set Variables at Start
+description: Tests a set_variables node directly after a trigger
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.motion
+    to: "on"
+actions:
+  - variables:
+      target_light: light.living_room
+      brightness: 80
+  - action: light.turn_on
+    target:
+      entity_id: "{{ target_light }}"
+    data:
+      brightness_pct: "{{ brightness }}"
+mode: single

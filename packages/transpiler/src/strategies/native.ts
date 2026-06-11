@@ -7,8 +7,8 @@ import type {
   SetVariablesNode,
   TriggerNode,
   WaitNode,
-} from '@cafe/shared';
-import { isDeviceAction } from '@cafe/shared';
+} from '@flode/shared';
+import { isDeviceAction } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { findBackEdges } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
@@ -605,17 +605,32 @@ export class NativeStrategy extends BaseStrategy {
       return null;
     }
 
-    // Check if all true paths converge to the same node
+    // Collect true and false targets for each condition
     const trueTargets = new Set<string>();
+    const falseTargets = new Set<string>();
+    let conditionsWithTruePath = 0;
+    let conditionsWithFalsePath = 0;
+
     for (const cond of conditions) {
       const trueEdge = flow.edges.find((e) => e.source === cond.id && e.sourceHandle === 'true');
+      const falseEdge = flow.edges.find((e) => e.source === cond.id && e.sourceHandle === 'false');
       if (trueEdge) {
         trueTargets.add(trueEdge.target);
+        conditionsWithTruePath++;
+      }
+      if (falseEdge) {
+        falseTargets.add(falseEdge.target);
+        conditionsWithFalsePath++;
       }
     }
 
-    if (trueTargets.size === 1 && conditions.length === firstActionIds.length) {
-      // All conditions have the same true target
+    // OR via true paths: all conditions have the same true target
+    // AND either no false paths exist OR all false paths also converge (no information loss)
+    if (trueTargets.size === 1 && conditionsWithTruePath === firstActionIds.length) {
+      // Reject if false paths diverge — that would silently drop else-branch actions
+      if (conditionsWithFalsePath > 0 && falseTargets.size > 1) {
+        return null;
+      }
       const convergenceNode = [...trueTargets][0];
       return {
         conditions: conditions as ConditionNode[],
@@ -624,17 +639,13 @@ export class NativeStrategy extends BaseStrategy {
       };
     }
 
-    // Check if all false paths converge to the same node
-    const falseTargets = new Set<string>();
-    for (const cond of conditions) {
-      const falseEdge = flow.edges.find((e) => e.source === cond.id && e.sourceHandle === 'false');
-      if (falseEdge) {
-        falseTargets.add(falseEdge.target);
+    // OR via false paths: all conditions have the same false target
+    // AND either no true paths exist OR all true paths also converge
+    if (falseTargets.size === 1 && conditionsWithFalsePath === firstActionIds.length) {
+      // Reject if true paths diverge — that would silently drop then-branch actions
+      if (conditionsWithTruePath > 0 && trueTargets.size > 1) {
+        return null;
       }
-    }
-
-    if (falseTargets.size === 1 && conditions.length === firstActionIds.length) {
-      // All conditions have the same false target
       const convergenceNode = [...falseTargets][0];
       return {
         conditions: conditions as ConditionNode[],
@@ -744,7 +755,29 @@ export class NativeStrategy extends BaseStrategy {
       .map((e) => this.getNode(flow, e.source))
       .filter((n): n is ConditionNode => n?.type === 'condition' && !visited.has(n.id));
 
-    return sources.length > 1 ? sources : [];
+    if (sources.length <= 1) return [];
+
+    // Only treat as OR if the opposite handle (else/then) of each source
+    // either has no edge, or all opposite edges converge to the same target.
+    // This prevents silent data loss when conditions have diverging else/then branches.
+    const oppositeHandle = handleType === 'true' ? 'false' : 'true';
+    const oppositeTargets = new Set<string>();
+    let sourcesWithOpposite = 0;
+    for (const src of sources) {
+      const edge = flow.edges.find(
+        (e) => e.source === src.id && e.sourceHandle === oppositeHandle && !this.backEdgeIds.has(e.id)
+      );
+      if (edge) {
+        oppositeTargets.add(edge.target);
+        sourcesWithOpposite++;
+      }
+    }
+    // If opposite paths diverge → not a clean OR pattern, skip detection
+    if (sourcesWithOpposite > 0 && oppositeTargets.size > 1) {
+      return [];
+    }
+
+    return sources;
   }
 
   /**
@@ -1374,6 +1407,15 @@ export class NativeStrategy extends BaseStrategy {
       if (node.data.event_data && Object.keys(node.data.event_data).length > 0) {
         action.event_data = node.data.event_data;
       }
+      if (node.data.enabled === false) action.enabled = false;
+      return action;
+    }
+
+    // Check if this is a stop action
+    if ('stop' in node.data) {
+      const action: Record<string, unknown> = { stop: node.data.stop ?? '' };
+      if (node.data.alias) action.alias = node.data.alias;
+      if (node.data.error === true) action.error = true;
       if (node.data.enabled === false) action.enabled = false;
       return action;
     }

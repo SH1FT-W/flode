@@ -8,7 +8,7 @@ import { FlowTranspiler } from './FlowTranspiler';
 const program = new Command();
 
 program
-  .name('cafe')
+  .name('flode')
   .description('Transpile React Flow graphs to Home Assistant YAML')
   .version('0.1.0');
 

@@ -8,8 +8,8 @@ import type {
   SetVariablesNode,
   TriggerNode,
   WaitNode,
-} from '@cafe/shared';
-import { isDeviceAction } from '@cafe/shared';
+} from '@flode/shared';
+import { isDeviceAction } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
 
@@ -125,7 +125,7 @@ export class StateMachineStrategy extends BaseStrategy {
                 {
                   service: 'system_log.write',
                   data: {
-                    message: 'C.A.F.E.: Unknown state "{{ current_node }}", ending flow',
+                    message: 'FLODE: Unknown state "{{ current_node }}", ending flow',
                     level: 'warning',
                   },
                 },

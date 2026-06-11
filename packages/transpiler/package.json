@@ -1,11 +1,11 @@
 {
-  "name": "@cafe/transpiler",
+  "name": "@flode/transpiler",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "cafe": "./dist/cli.js"
+    "flode": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -21,7 +21,7 @@
     "cli": "npx tsx src/cli.ts"
   },
   "dependencies": {
-    "@cafe/shared": "workspace:*",
+    "@flode/shared": "workspace:*",
     "commander": "^12.0.0",
     "elkjs": "^0.11.0",
     "graphlib": "^2.1.8",

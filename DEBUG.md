@@ -1,4 +1,4 @@
-# C.A.F.E. Debug Mode
+# FLODE Debug Mode
 
 I've added comprehensive debugging to help identify the issue with your custom panel not retrieving data from Home Assistant.
 
@@ -62,11 +62,11 @@ The debug system now tracks:
 When working correctly, you should see:
 
 ```
-[C.A.F.E.] CafePanel custom element registered successfully
-[C.A.F.E.] Setting hass object in custom element { hasHass: true, statesCount: 378, ... }
-[C.A.F.E.] App component rendering { hasExternalHass: true, ... }
-[C.A.F.E.] Setting global hass instance { source: 'external', statesCount: 378, ... }
-[C.A.F.E.] Global hass instance set successfully
+[FLODE] CafePanel custom element registered successfully
+[FLODE] Setting hass object in custom element { hasHass: true, statesCount: 378, ... }
+[FLODE] App component rendering { hasExternalHass: true, ... }
+[FLODE] Setting global hass instance { source: 'external', statesCount: 378, ... }
+[FLODE] Global hass instance set successfully
 ```
 
 ## Troubleshooting
@@ -76,7 +76,7 @@ Check the browser console for these patterns:
 ### If no hass object is being passed:
 
 ```
-[C.A.F.E.] Setting hass object in custom element { hasHass: false, ... }
+[FLODE] Setting hass object in custom element { hasHass: false, ... }
 ```
 
 → Issue is with Home Assistant not passing the hass object to the custom element
@@ -84,7 +84,7 @@ Check the browser console for these patterns:
 ### If hass object is empty:
 
 ```
-[C.A.F.E.] Setting hass object in custom element { hasHass: true, statesCount: 0, ... }
+[FLODE] Setting hass object in custom element { hasHass: true, statesCount: 0, ... }
 ```
 
 → Home Assistant is passing an empty or invalid hass object
@@ -92,7 +92,7 @@ Check the browser console for these patterns:
 ### If global hass isn't being set:
 
 ```
-[C.A.F.E.] No effective hass available to set globally
+[FLODE] No effective hass available to set globally
 ```
 
 → Issue with hass object propagation from custom element to React app

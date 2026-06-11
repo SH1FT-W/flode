@@ -24,8 +24,7 @@ export const WaitNodeValidationSchema = z
       return hasTemplate || hasTrigger;
     },
     {
-      message:
-        'Wait node requires either a template condition or trigger. Use a Delay node for simple time-based pauses.',
+      message: 'errors:validation.wait.templateOrTriggerRequired',
       path: ['_root'],
     }
   );
@@ -48,7 +47,7 @@ export const ActionNodeValidationSchema = z
     if (!hasEvent && !hasService) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Either a service (e.g. light.turn_on) or an event name is required',
+        message: 'errors:validation.action.serviceOrEventRequired',
         path: ['service'],
       });
       return;
@@ -57,7 +56,7 @@ export const ActionNodeValidationSchema = z
     if (hasService && !data.service!.includes('.')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Service must be in domain.service format (e.g., light.turn_on)',
+        message: 'errors:validation.action.serviceFormat',
         path: ['service'],
       });
     }
@@ -111,7 +110,7 @@ export const TriggerNodeValidationSchema = z
     if (!triggerType || triggerType.trim() === '') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Trigger platform is required',
+        message: 'errors:validation.trigger.platformRequired',
         path: ['trigger'],
       });
       return;
@@ -122,7 +121,7 @@ export const TriggerNodeValidationSchema = z
         if (!hasEntityId(data.entity_id)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Entity is required for state triggers',
+            message: 'errors:validation.trigger.entityRequired.state',
             path: ['entity_id'],
           });
         }
@@ -132,17 +131,17 @@ export const TriggerNodeValidationSchema = z
         if (!hasEntityId(data.entity_id)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Entity is required for numeric state triggers',
+            message: 'errors:validation.trigger.entityRequired.numericState',
             path: ['entity_id'],
           });
         }
         break;
 
       case 'event':
-        if (!data.event_type || data.event_type.trim() === '') {
+        if (!data.event_type || (typeof data.event_type === 'string' && data.event_type.trim() === '')) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Event type is required',
+            message: 'errors:validation.trigger.eventTypeRequired',
             path: ['event_type'],
           });
         }
@@ -152,7 +151,7 @@ export const TriggerNodeValidationSchema = z
         if (!data.at) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Time value is required',
+            message: 'errors:validation.trigger.timeRequired',
             path: ['at'],
           });
         }
@@ -162,7 +161,7 @@ export const TriggerNodeValidationSchema = z
         if (!data.topic || data.topic.trim() === '') {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'MQTT topic is required',
+            message: 'errors:validation.trigger.mqttTopicRequired',
             path: ['topic'],
           });
         }
@@ -172,7 +171,7 @@ export const TriggerNodeValidationSchema = z
         if (!data.webhook_id || data.webhook_id.trim() === '') {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Webhook ID is required',
+            message: 'errors:validation.trigger.webhookIdRequired',
             path: ['webhook_id'],
           });
         }
@@ -182,7 +181,7 @@ export const TriggerNodeValidationSchema = z
         if (!data.device_id || data.device_id.trim() === '') {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Device is required',
+            message: 'errors:validation.trigger.deviceRequired',
             path: ['device_id'],
           });
         }
@@ -192,14 +191,14 @@ export const TriggerNodeValidationSchema = z
         if (!hasEntityId(data.entity_id)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Entity is required for zone triggers',
+            message: 'errors:validation.trigger.entityRequired.zone',
             path: ['entity_id'],
           });
         }
         if (!data.zone || data.zone.trim() === '') {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Zone is required',
+            message: 'errors:validation.trigger.zoneRequired',
             path: ['zone'],
           });
         }
@@ -212,8 +211,8 @@ export const TriggerNodeValidationSchema = z
             code: z.ZodIssueCode.custom,
             message:
               triggerType === 'sun'
-                ? 'Sun event (sunrise/sunset) is required'
-                : 'Home Assistant event (start/shutdown) is required',
+                ? 'errors:validation.trigger.sunEventRequired'
+                : 'errors:validation.trigger.haEventRequired',
             path: ['event'],
           });
         }
@@ -223,7 +222,7 @@ export const TriggerNodeValidationSchema = z
         if (!data.value_template || data.value_template.trim() === '') {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Template is required',
+            message: 'errors:validation.trigger.templateRequired',
             path: ['value_template'],
           });
         }
@@ -248,7 +247,7 @@ export const DelayNodeValidationSchema = z
       return true;
     },
     {
-      message: 'Delay value is required',
+      message: 'errors:validation.delay.valueRequired',
       path: ['delay'],
     }
   );
@@ -258,7 +257,7 @@ export const DelayNodeValidationSchema = z
  */
 export const ConditionNodeValidationSchema = z
   .object({
-    condition: z.string().min(1, 'Condition type is required'),
+    condition: z.string().min(1, 'errors:validation.condition.typeRequired'),
     entity_id: z.unknown().optional(),
     state: z.unknown().optional(),
     value_template: z.string().optional(),
@@ -273,14 +272,14 @@ export const ConditionNodeValidationSchema = z
         if (!hasEntityId(data.entity_id)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Entity is required for state conditions',
+            message: 'errors:validation.condition.entityRequired.state',
             path: ['entity_id'],
           });
         }
         if (!data.state || (typeof data.state === 'string' && data.state.trim() === '')) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'State value is required',
+            message: 'errors:validation.condition.stateRequired',
             path: ['state'],
           });
         }
@@ -290,7 +289,7 @@ export const ConditionNodeValidationSchema = z
         if (!hasEntityId(data.entity_id)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Entity is required for numeric state conditions',
+            message: 'errors:validation.condition.entityRequired.numericState',
             path: ['entity_id'],
           });
         }
@@ -300,7 +299,7 @@ export const ConditionNodeValidationSchema = z
         if (!hasValidTriggerId(data.id)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Trigger ID is required',
+            message: 'errors:validation.condition.triggerIdRequired',
             path: ['id'],
           });
         }
@@ -310,7 +309,7 @@ export const ConditionNodeValidationSchema = z
         if (!data.value_template || data.value_template.trim() === '') {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Template is required',
+            message: 'errors:validation.condition.templateRequired',
             path: ['value_template'],
           });
         }
@@ -320,14 +319,14 @@ export const ConditionNodeValidationSchema = z
         if (!hasEntityId(data.entity_id)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Entity is required for zone conditions',
+            message: 'errors:validation.condition.entityRequired.zone',
             path: ['entity_id'],
           });
         }
         if (!data.zone || data.zone.trim() === '') {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Zone is required',
+            message: 'errors:validation.condition.zoneRequired',
             path: ['zone'],
           });
         }
@@ -337,11 +336,25 @@ export const ConditionNodeValidationSchema = z
         if (!data.device_id || data.device_id.trim() === '') {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Device is required',
+            message: 'errors:validation.condition.deviceRequired',
             path: ['device_id'],
           });
         }
         break;
+
+      case 'or':
+      case 'and':
+      case 'not': {
+        const conditions = (data as Record<string, unknown>).conditions;
+        if (!Array.isArray(conditions) || conditions.length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'errors:validation.condition.groupConditionsRequired',
+            path: ['conditions'],
+          });
+        }
+        break;
+      }
     }
   });
 
@@ -359,7 +372,7 @@ export const SetVariablesNodeValidationSchema = z
       return Object.keys(data.variables).length > 0;
     },
     {
-      message: 'At least one variable must be defined',
+      message: 'errors:validation.setVariables.atLeastOne',
       path: ['variables'],
     }
   );

@@ -65,7 +65,7 @@
     "warnings": "Warnungen",
     "successLoading": "Erfolgreich importiert! Lade Flow...",
     "tipLabel": "Tipp:",
-    "tipText": "Wenn Ihre Automatisierung mit C.A.F.E. erstellt wurde, werden Knotenpositionen beibehalten. Andernfalls werden Knoten automatisch in einem lesbaren Layout angeordnet.",
+    "tipText": "Wenn Ihre Automatisierung mit FLODE erstellt wurde, werden Knotenpositionen beibehalten. Andernfalls werden Knoten automatisch in einem lesbaren Layout angeordnet.",
     "importing": "Importiere...",
     "import": "Importieren",
     "errors": {

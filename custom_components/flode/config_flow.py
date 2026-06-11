@@ -1,4 +1,4 @@
-"""Config flow for C.A.F.E. integration."""
+"""Config flow for FLODE integration."""
 from __future__ import annotations
 
 import logging
@@ -17,8 +17,8 @@ _LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema({})
 
 
-class CafeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for C.A.F.E."""
+class FlodeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for FLODE."""
 
     VERSION = 1
 
@@ -27,12 +27,11 @@ class CafeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Handle the initial step."""
         if user_input is not None:
-            # Check if already configured
             await self.async_set_unique_id(DOMAIN)
             self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
-                title="C.A.F.E.", 
+                title="FLODE",
                 data={}
             )
 
@@ -40,7 +39,7 @@ class CafeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
             description_placeholders={
-                "name": "C.A.F.E.",
+                "name": "FLODE",
                 "description": "Visual automation editor for Home Assistant"
             }
         )
@@ -50,4 +49,4 @@ class CafeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
 
-        return self.async_create_entry(title="C.A.F.E.", data={})
+        return self.async_create_entry(title="FLODE", data={})

@@ -1,4 +1,4 @@
-import { FlowTranspiler } from '@cafe/transpiler';
+import { FlowTranspiler } from '@flode/transpiler';
 import type { Edge } from '@xyflow/react';
 import { Play, RotateCcw, Square } from 'lucide-react';
 import { useCallback, useState } from 'react';

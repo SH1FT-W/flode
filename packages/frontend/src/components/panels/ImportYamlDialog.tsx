@@ -1,4 +1,4 @@
-import { transpiler } from '@cafe/transpiler';
+import { transpiler } from '@flode/transpiler';
 import { useReactFlow } from '@xyflow/react';
 import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import { useState } from 'react';
@@ -23,7 +23,7 @@ interface ImportYamlDialogProps {
 }
 
 export function ImportYamlDialog({ isOpen, onClose, onImportSuccess }: ImportYamlDialogProps) {
-  const { t } = useTranslation(['common', 'dialogs']);
+  const { t } = useTranslation(['common', 'dialogs', 'errors']);
   const [yamlText, setYamlText] = useState('');
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export function ImportYamlDialog({ isOpen, onClose, onImportSuccess }: ImportYam
       const result = await transpiler.fromYaml(yamlText);
 
       if (!result.success) {
-        setError(result.errors?.join('\n') || 'Failed to parse YAML. Please check the format.');
+        setError(result.errors?.join('\n') || t('errors:import.parseFailed'));
         setImporting(false);
         return;
       }
@@ -73,7 +73,7 @@ export function ImportYamlDialog({ isOpen, onClose, onImportSuccess }: ImportYam
         }, 1000);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      setError(err instanceof Error ? err.message : t('errors:api.unknownError'));
     } finally {
       setImporting(false);
     }

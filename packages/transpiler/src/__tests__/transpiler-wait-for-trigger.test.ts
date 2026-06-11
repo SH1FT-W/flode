@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { FlowGraph } from '@cafe/shared';
+import type { FlowGraph } from '@flode/shared';
 import { load as yamlLoad } from 'js-yaml';
 import { v4 as uuidv4 } from 'uuid';
 import { FlowTranspiler } from '../FlowTranspiler';

@@ -1,4 +1,4 @@
-import type { TriggerPlatform, WaitNode } from '@cafe/shared';
+import type { TriggerPlatform, WaitNode } from '@flode/shared';
 import { Trash2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { FieldError } from '@/components/forms/FieldError';
@@ -127,7 +127,7 @@ export function WaitFields({ node, onChange }: WaitFieldsProps) {
                     <SelectContent>
                       {Object.keys(TRIGGER_PLATFORM_FIELDS).map((p) => (
                         <SelectItem key={p} value={p}>
-                          {p}
+                          {t(`nodes:triggers.platforms.${p}`, { defaultValue: p })}
                         </SelectItem>
                       ))}
                     </SelectContent>

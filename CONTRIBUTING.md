@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for considering contributing to C.A.F.E. This document explains how to set up the repository locally, run the project, run tests, and the preferred workflow for making changes, opening pull requests and preparing releases.
+Thank you for considering contributing to FLODE This document explains how to set up the repository locally, run the project, run tests, and the preferred workflow for making changes, opening pull requests and preparing releases.
 
 **Please read these guidelines before opening a PR.**
 
@@ -81,4 +81,4 @@ If you need to run a command inside a package, change into that package director
 
 - If you are unsure about something, open an issue or ask maintainers on the project's communication channel.
 
-Thank you for helping improve C.A.F.E.! We appreciate careful, well-tested contributions.
+Thank you for helping improve FLODE! We appreciate careful, well-tested contributions.

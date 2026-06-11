@@ -1,4 +1,4 @@
-import type { FlowEdge, FlowGraph } from '@cafe/shared';
+import type { FlowEdge, FlowGraph } from '@flode/shared';
 import graphlib from 'graphlib';
 
 const { Graph, alg } = graphlib;

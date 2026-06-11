@@ -8,7 +8,51 @@
     "noAction": "Automation must have at least one action node. Please add an action from the node palette.",
     "validationFailed": "Validation failed: {{errors}}",
     "transpileFailed": "Failed to transpile flow to automation config",
-    "noAutomationId": "No automation ID set. Use saveAutomation() for new automations."
+    "noAutomationId": "No automation ID set. Use saveAutomation() for new automations.",
+    "trigger": {
+      "platformRequired": "Trigger platform is required",
+      "entityRequired": {
+        "state": "Entity is required for state triggers",
+        "numericState": "Entity is required for numeric state triggers",
+        "zone": "Entity is required for zone triggers"
+      },
+      "eventTypeRequired": "Event type is required",
+      "timeRequired": "Time value is required",
+      "mqttTopicRequired": "MQTT topic is required",
+      "webhookIdRequired": "Webhook ID is required",
+      "deviceRequired": "Device is required",
+      "zoneRequired": "Zone is required",
+      "sunEventRequired": "Sun event (sunrise/sunset) is required",
+      "haEventRequired": "Home Assistant event (start/shutdown) is required",
+      "templateRequired": "Template is required"
+    },
+    "action": {
+      "serviceOrEventRequired": "Either a service (e.g. light.turn_on) or an event name is required",
+      "serviceFormat": "Service must be in domain.service format (e.g., light.turn_on)"
+    },
+    "wait": {
+      "templateOrTriggerRequired": "Wait node requires either a template condition or trigger. Use a Delay node for simple time-based pauses."
+    },
+    "delay": {
+      "valueRequired": "Delay value is required"
+    },
+    "condition": {
+      "typeRequired": "Condition type is required",
+      "entityRequired": {
+        "state": "Entity is required for state conditions",
+        "numericState": "Entity is required for numeric state conditions",
+        "zone": "Entity is required for zone conditions"
+      },
+      "stateRequired": "State value is required",
+      "triggerIdRequired": "Trigger ID is required",
+      "templateRequired": "Template is required",
+      "zoneRequired": "Zone is required",
+      "deviceRequired": "Device is required",
+      "groupConditionsRequired": "At least one condition must be defined"
+    },
+    "setVariables": {
+      "atLeastOne": "At least one variable must be defined"
+    }
   },
   "connection": {
     "noConnection": "No Home Assistant connection available",

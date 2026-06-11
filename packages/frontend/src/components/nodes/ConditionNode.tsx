@@ -109,13 +109,13 @@ export const ConditionNode = memo(function ConditionNode({
         {data.after && (
           <div className="opacity-75">
             {'after: '}
-            {data.after}
+            {typeof data.after === 'string' ? data.after : String(data.after)}
           </div>
         )}
         {data.before && (
           <div className="opacity-75">
             {'before: '}
-            {data.before}
+            {typeof data.before === 'string' ? data.before : String(data.before)}
           </div>
         )}
         {data.zone && (

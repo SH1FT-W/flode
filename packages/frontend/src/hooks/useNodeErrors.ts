@@ -1,5 +1,6 @@
-import type { NodeValidationError } from '@cafe/shared';
+import type { NodeValidationError } from '@flode/shared';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFlowStore } from '@/store/flow-store';
 
 /**
@@ -13,37 +14,35 @@ export function useNodeErrors(nodeId: string): {
   getFieldError: (fieldPath: string) => string | undefined;
   getRootError: () => string | undefined;
 } {
+  const { t } = useTranslation();
   const errors = useFlowStore((s) => s.nodeErrors.get(nodeId));
 
   const result = useMemo(() => {
     const errorList = errors ?? [];
 
-    /**
-     * Get error message for a specific field path.
-     * @param fieldPath - The field path (e.g., 'service', 'delay', 'wait_template')
-     */
+    // Translate a message — messages from validation.ts are i18n keys like
+    // 'errors:validation.trigger.entityRequired.state'. If the key exists in
+    // the current language it is translated; otherwise the key itself is shown.
+    const translateMessage = (message: string): string => t(message, { defaultValue: message });
+
     const getFieldError = (fieldPath: string): string | undefined => {
       const fieldError = errorList.find((e) => e.path.includes(fieldPath));
-      return fieldError?.message;
+      return fieldError ? translateMessage(fieldError.message) : undefined;
     };
 
-    /**
-     * Get root-level error (errors with path '_root' or empty path).
-     * Used for cross-field validation errors.
-     */
     const getRootError = (): string | undefined => {
       const rootError = errorList.find((e) => e.path.includes('_root') || e.path.length === 0);
-      return rootError?.message;
+      return rootError ? translateMessage(rootError.message) : undefined;
     };
 
     return {
       hasErrors: errorList.length > 0,
       errors: errorList,
-      errorMessages: errorList.map((e) => e.message),
+      errorMessages: errorList.map((e) => translateMessage(e.message)),
       getFieldError,
       getRootError,
     };
-  }, [errors]);
+  }, [errors, t]);
 
   return result;
 }

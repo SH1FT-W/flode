@@ -10,7 +10,7 @@ declare const window: Window & {
   hass?: HomeAssistant;
 };
 
-class CafePanelWrapper extends HTMLElement {
+class FlodePanelWrapper extends HTMLElement {
   private _messageHandler?: (event: MessageEvent) => void;
   private iframe: HTMLIFrameElement | null = null;
   private _hass: HomeAssistant | undefined = undefined;
@@ -48,7 +48,7 @@ class CafePanelWrapper extends HTMLElement {
 
     // Create iframe pointing to the app
     this.iframe = document.createElement('iframe');
-    this.iframe.src = '/cafe-hass/index.html';
+    this.iframe.src = '/flode-hass/index.html';
     this.iframe.style.width = '100%';
     this.iframe.style.height = '100%';
     this.iframe.style.border = 'none';
@@ -85,6 +85,6 @@ class CafePanelWrapper extends HTMLElement {
 }
 
 // Register the custom element
-if (!customElements.get('cafe-panel')) {
-  customElements.define('cafe-panel', CafePanelWrapper);
+if (!customElements.get('flode-panel')) {
+  customElements.define('flode-panel', FlodePanelWrapper);
 }

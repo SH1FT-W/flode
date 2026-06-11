@@ -4,9 +4,10 @@ import type {
   FlowMetadata,
   FlowNode,
   NodeValidationError,
-} from '@cafe/shared';
-import { validateNodeData } from '@cafe/shared';
-import { FlowTranspiler } from '@cafe/transpiler';
+} from '@flode/shared';
+import { validateNodeData } from '@flode/shared';
+import { FlowTranspiler } from '@flode/transpiler';
+import { t as i18t } from 'i18next';
 import {
   addEdge,
   applyEdgeChanges,
@@ -75,6 +76,9 @@ export interface ConditionNodeData {
   attribute?: string;
   for?: string | { hours?: number; minutes?: number; seconds?: number };
 
+  // Nested conditions for and/or/not group types
+  conditions?: ConditionNodeData[];
+
   [key: string]: unknown;
 }
 
@@ -134,6 +138,9 @@ export interface FlowState {
 
   // Automation metadata (mode, max, max_exceeded, etc.)
   flowMetadata: FlowMetadata;
+
+  // User-defined root-level variables (preserved across import/export round-trips)
+  userVariables: Record<string, unknown> | undefined;
 
   // Selection state
   selectedNodeId: string | null;
@@ -257,6 +264,7 @@ const initialState = {
   flowName: 'Untitled Automation',
   flowDescription: '',
   flowMetadata: defaultFlowMetadata,
+  userVariables: undefined,
   nodes: [],
   edges: [],
   selectedNodeId: null,
@@ -453,9 +461,7 @@ export const useFlowStore = create<FlowState>()(
 
           // Check for empty automation
           if (graph.nodes.length === 0) {
-            throw new Error(
-              'Cannot save empty automation. Please add at least one trigger and one action node.'
-            );
+            throw new Error(i18t('errors:validation.emptyAutomation'));
           }
 
           // Check for minimum required nodes
@@ -463,15 +469,11 @@ export const useFlowStore = create<FlowState>()(
           const actions = graph.nodes.filter((n) => n.type === 'action');
 
           if (triggers.length === 0) {
-            throw new Error(
-              'Automation must have at least one trigger node. Please add a trigger from the node palette.'
-            );
+            throw new Error(i18t('errors:validation.noTrigger'));
           }
 
           if (actions.length === 0) {
-            throw new Error(
-              'Automation must have at least one action node. Please add an action from the node palette.'
-            );
+            throw new Error(i18t('errors:validation.noAction'));
           }
 
           const transpiler = new FlowTranspiler();
@@ -480,7 +482,7 @@ export const useFlowStore = create<FlowState>()(
           const validation = transpiler.validate(graph);
 
           if (validation.errors.length > 0) {
-            console.error('C.A.F.E.: Validation errors:', validation.errors);
+            console.error('FLODE: Validation errors:', validation.errors);
             throw new Error(
               `Validation failed: ${validation.errors.map((e) => e.message).join(', ')}`
             );
@@ -542,7 +544,7 @@ export const useFlowStore = create<FlowState>()(
           throw new Error('No automation ID set. Use saveAutomation() for new automations.');
         }
 
-        console.log('C.A.F.E.: Updating automation with ID from store:', state.automationId);
+        console.log('FLODE: Updating automation with ID from store:', state.automationId);
 
         set({ isSaving: true });
 
@@ -564,9 +566,7 @@ export const useFlowStore = create<FlowState>()(
 
           // Check for empty automation
           if (graph.nodes.length === 0) {
-            throw new Error(
-              'Cannot save empty automation. Please add at least one trigger and one action node.'
-            );
+            throw new Error(i18t('errors:validation.emptyAutomation'));
           }
 
           // Check for minimum required nodes
@@ -574,15 +574,11 @@ export const useFlowStore = create<FlowState>()(
           const actions = graph.nodes.filter((n) => n.type === 'action');
 
           if (triggers.length === 0) {
-            throw new Error(
-              'Automation must have at least one trigger node. Please add a trigger from the node palette.'
-            );
+            throw new Error(i18t('errors:validation.noTrigger'));
           }
 
           if (actions.length === 0) {
-            throw new Error(
-              'Automation must have at least one action node. Please add an action from the node palette.'
-            );
+            throw new Error(i18t('errors:validation.noAction'));
           }
 
           const transpiler = new FlowTranspiler();
@@ -761,14 +757,14 @@ export const useFlowStore = create<FlowState>()(
             // Add missing required fields for different node types
             if (n.type === 'trigger' && !nodeData.trigger) {
               console.warn(
-                `C.A.F.E.: Trigger node ${n.id} missing trigger type, adding default 'state'`
+                `FLODE: Trigger node ${n.id} missing trigger type, adding default 'state'`
               );
               nodeData.trigger = 'state';
             }
 
             if (n.type === 'action' && !nodeData.service) {
               console.warn(
-                `C.A.F.E.: Action node ${n.id} missing service, adding default 'light.turn_on'`
+                `FLODE: Action node ${n.id} missing service, adding default 'light.turn_on'`
               );
               nodeData.service = 'light.turn_on';
             }
@@ -793,6 +789,7 @@ export const useFlowStore = create<FlowState>()(
             })) as FlowEdge[],
           metadata: state.flowMetadata,
           version: 1,
+          userVariables: state.userVariables,
         };
       },
 
@@ -835,6 +832,7 @@ export const useFlowStore = create<FlowState>()(
           flowName: graph.name,
           flowDescription: graph.description || '',
           flowMetadata: importedMetadata,
+          userVariables: graph.userVariables,
           nodes,
           edges,
           selectedNodeId: null,
@@ -905,7 +903,7 @@ export const useFlowStore = create<FlowState>()(
       },
     }),
     {
-      name: 'cafe-flow-storage',
+      name: 'flode-flow-storage',
       storage: cafeIndexedDBStorage,
       partialize: persistSelector,
       version: 1,
