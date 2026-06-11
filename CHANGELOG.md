@@ -4,6 +4,25 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.7.6] — 2026-06-11 — Trigger Routing & Layout
+
+### Added
+- **Visuelle Trigger-Routing-Linien für `choose:`-Blöcke** — Jeder Trigger wird jetzt mit seiner zugehörigen Condition visuell verbunden, sodass die Zuordnung auf einen Blick erkennbar ist
+- **Neuer Edge-Typ `hint`** — Rein visuelle Verbindung (nicht löschbar, wird vom Transpiler ignoriert)
+- **Neuer Edge-Typ `choose-chain`** (unsichtbar) — Technische Kante für Choose-Erkennung, wird nicht gerendert
+
+### Bug Fixes
+- **`id:`-Feld leer im Properties-Panel** — HA API liefert Condition-IDs als Array (`['akku_ueber_80']`); Parser normalisiert jetzt direkt beim Import zu String (betrifft `choose:`- und `if/then/else`-Blöcke)
+- **Edge-`type` wurde beim Import/Export verworfen** — `flow-store` hat `type`-Feld nicht weitergegeben; Fix in `loadFlow` und `toFlowGraph`
+- **Grauer Pfeil-Überlappung auf Nodes** — Custom SVG-Marker in HintEdge ersetzt durch React Flow's eingebautes Marker-System
+- **Topology-Analyzer ignoriert visuelle Kanten** — `hint`-Edges werden jetzt aus Topology-Analyse und `findBackEdges` gefiltert
+
+### Improvements
+- **Automatisches Layout (ELK)** — Hint-Edges werden für Layer-Zuweisung genutzt, Choose-Chain-Edges ausgeschlossen → sauberes 3-Spalten-Layout (Trigger | Conditions | Actions)
+- **`fitView` nach Import** — Delay von 50ms auf 150ms erhöht, `maxZoom: 0.75` gesetzt für konsistentes Zentrieren nach dem Laden
+
+---
+
 ## [0.7.5] — 2026-06-10 — FLODE Rename
 
 ### Breaking Changes
