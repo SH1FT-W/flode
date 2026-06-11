@@ -4,6 +4,14 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.8.0] — 2026-06-11 — Screenshots & Dokumentation
+
+### Added
+- Light- und Dark-Mode-Screenshots in README und `docs/images/` hinzugefügt
+- README: Side-by-Side-Vorschau beider Modi direkt im Header
+
+---
+
 ## [0.7.9] — 2026-06-11 — Choose-Block Trigger-Routing Fix
 
 ### Bug Fixes
