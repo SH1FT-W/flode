@@ -4,6 +4,22 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.7.8] — 2026-06-11 — Choose-Block Visualisierung
+
+### Bug Fixes
+- **Choose-Block: Cases nicht verbunden** — Nach der Eingangs-Bedingung erschienen alle Optionen eines `choose:`-Blocks als getrennte Bäume; jetzt zeigt FLODE für jede Option eine separate Linie vom gemeinsamen Einstiegspunkt (wie im HA-Editor)
+- **Choose-Block: roter Punkt auf Condition-Nodes** — Condition-Nodes der Cases zeigten fälschlicherweise den FALSE-Handle (roter Punkt), weil die interne `choose-chain`-Kante über den FALSE-Handle lief; wird jetzt korrekt ausgeblendet
+- **Choose-Block: Default-Option alleine** — Die Standard-Aktionen (`default:`) eines Choose-Blocks erschienen als eigenständiger, nicht verbundener Block; sind jetzt direkt mit dem Einstiegspunkt verbunden
+- **Stale `_flode_metadata` Positionen** — Veraltete gespeicherte Positionen die einen Choose-Case links vom vorherigen platzierten lösten neu ELK-Layout aus (backwards-choose-chain-Detection)
+- **Bezier-Kurven** — Alle Verbindungslinien zwischen Nodes werden jetzt als sanfte Bezier-Kurve dargestellt statt mit Ecken
+
+### Technisch
+- Neue Edge-Typen: `choose-hint` (sichtbare Verbindung Entry→Case2+/Default), `choose-default` (semantische, unsichtbare Kante Last-Case→Default)
+- ELK-Layout berücksichtigt `choose-hint` für korrektes Layer-Assignment aller Cases
+- Zod-Schema und Graph-Validator für neue Edge-Typen erweitert
+
+---
+
 ## [0.7.7] — 2026-06-11 — Bugfixes & Repo Cleanup
 
 ### Bug Fixes
