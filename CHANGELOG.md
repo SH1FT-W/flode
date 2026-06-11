@@ -4,6 +4,25 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.7.7] — 2026-06-11 — Bugfixes & Repo Cleanup
+
+### Bug Fixes
+- **Import crash bei `conditions: []`** — Choose-Cases mit leerem Conditions-Array (gültige HA-Syntax für leere Default-Weichen) haben einen `undefined is not an object`-Crash verursacht; Filter prüft jetzt explizit auf nicht-leere Arrays
+- **Roter Punkt an while-Bedingung** — FALSE-Handle am Condition-Node wird nur noch angezeigt wenn tatsächlich eine Edge daran hängt; bei `repeat:while:` verschwindet der irreführende rote Punkt
+- **Loop-Pfeil visuelle Verbesserung** — Back-Edges bei `repeat:while/until/count` werden jetzt als gestrichelter Pfeil (`loop-back`-Typ) gerendert, damit der Loop-Charakter auf einen Blick erkennbar ist
+
+### Repo Cleanup (keine funktionalen Änderungen)
+- Alle verbleibenden `cafe_debug`, `cafe_hass_config`, `cafeLogger`, `CAFE_TOGGLE_SIDEBAR` Referenzen auf FLODE-Branding umgestellt
+- Ungeschützte `console.log`-Aufrufe aus Produktionscode entfernt
+- `manifest.json`: ungültiges `documentation_url`-Feld entfernt, `iot_class` → `calculated`
+- `hacs.json`: `"domain": "flode"` ergänzt
+- Issue-Template, CONTRIBUTING.md, CLAUDE.md, DEBUG.md auf FLODE aktualisiert
+- Fake-Testdatei mit hardcoded Automation-ID gelöscht
+- HACS-Validierung läuft jetzt automatisch bei Push/PR
+- `LICENSE`: Copyright-Zeile ergänzt
+
+---
+
 ## [0.7.6] — 2026-06-11 — Trigger Routing & Layout
 
 ### Added

@@ -41,7 +41,7 @@ export class StateMachineStrategy extends BaseStrategy {
     const warnings: string[] = [];
 
     // Strip hint edges (visual-only trigger-routing aids) before any processing
-    flow = { ...flow, edges: flow.edges.filter((e) => e.type !== 'hint') };
+    flow = { ...flow, edges: flow.edges.filter((e) => e.type !== 'hint' && e.type !== 'loop-back') };
 
     // Build trigger-to-action mapping for routing
     const triggerRouting = this.buildTriggerRouting(flow);

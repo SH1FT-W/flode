@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react';
 import { type DragEvent, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChooseChainEdge, DeletableEdge, HintEdge } from '@/components/edges';
+import { ChooseChainEdge, DeletableEdge, HintEdge, LoopBackEdge } from '@/components/edges';
 import {
   ActionNode,
   ConditionNode,
@@ -43,6 +43,7 @@ const edgeTypes: EdgeTypes = {
   deletable: DeletableEdge,
   hint: HintEdge,
   'choose-chain': ChooseChainEdge,
+  'loop-back': LoopBackEdge,
 };
 
 export function FlowCanvas() {
@@ -173,6 +174,11 @@ export function FlowCanvas() {
           style: { strokeWidth: 2, stroke: isDarkMode ? '#94a3b8' : '#64748b' },
           markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#94a3b8' : '#64748b' },
         };
+      }
+
+      // Loop-back edges — dashed style, handled by LoopBackEdge component
+      if (edge.type === 'loop-back') {
+        return { ...edge };
       }
 
       // Determine edge styling based on state (priority: simulation > trace > selection)

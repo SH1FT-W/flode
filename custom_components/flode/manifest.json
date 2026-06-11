@@ -1,7 +1,7 @@
 {
   "domain": "flode",
   "name": "FLODE",
-  "version": "0.7.6",
+  "version": "0.7.7",
   "codeowners": ["@SH1FT-W"],
   "config_flow": true,
   "dependencies": ["frontend", "http"],

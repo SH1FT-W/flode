@@ -27,7 +27,7 @@ export const EdgeSchema = z.object({
    * Edge type — 'hint' edges are visual-only (trigger→condition routing hints)
    * and are ignored by the transpiler.
    */
-  type: z.enum(['default', 'deletable', 'hint', 'choose-chain']).optional(),
+  type: z.enum(['default', 'deletable', 'hint', 'choose-chain', 'loop-back']).optional(),
 });
 export type FlowEdge = z.infer<typeof EdgeSchema>;
 

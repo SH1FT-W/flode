@@ -1,4 +1,4 @@
-import { Handle, type NodeProps, Position } from '@xyflow/react';
+import { Handle, type NodeProps, Position, useEdges } from '@xyflow/react';
 import { t } from 'i18next';
 import { AlertCircle, Ban, GitBranch } from 'lucide-react';
 import { memo } from 'react';
@@ -22,6 +22,8 @@ export const ConditionNode = memo(function ConditionNode({
   const isActive = activeNodeId === id;
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
+  const edges = useEdges();
+  const hasFalseEdge = edges.some((e) => e.source === id && e.sourceHandle === 'false');
 
   const conditionLabels: Record<string, string> = {
     state: 'State',
@@ -170,24 +172,30 @@ export const ConditionNode = memo(function ConditionNode({
         type="source"
         position={Position.Right}
         id="true"
-        style={{ top: '30%' }}
+        style={{ top: hasFalseEdge ? '30%' : '50%' }}
         className="!w-3 !h-3 !bg-green-500 !border-green-700"
       />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="false"
-        style={{ top: '70%' }}
-        className="!w-3 !h-3 !bg-red-500 !border-red-700"
-      />
+      {hasFalseEdge && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="false"
+          style={{ top: '70%' }}
+          className="!w-3 !h-3 !bg-red-500 !border-red-700"
+        />
+      )}
 
       {/* Labels for handles - visible on hover */}
-      <div className="absolute top-[30%] right-[-40px] -translate-y-1/2 transform rounded border border-green-200 bg-white px-1 py-0.5 font-medium text-[10px] text-green-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
-        {t('nodes:conditions.yes')}
-      </div>
-      <div className="absolute top-[70%] right-[-36px] -translate-y-1/2 transform rounded border border-red-200 bg-white px-1 py-0.5 font-medium text-[10px] text-red-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
-        {t('nodes:conditions.no')}
-      </div>
+      {hasFalseEdge && (
+        <div className="absolute top-[30%] right-[-40px] -translate-y-1/2 transform rounded border border-green-200 bg-white px-1 py-0.5 font-medium text-[10px] text-green-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+          {t('nodes:conditions.yes')}
+        </div>
+      )}
+      {hasFalseEdge && (
+        <div className="absolute top-[70%] right-[-36px] -translate-y-1/2 transform rounded border border-red-200 bg-white px-1 py-0.5 font-medium text-[10px] text-red-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+          {t('nodes:conditions.no')}
+        </div>
+      )}
     </div>
   );
 });

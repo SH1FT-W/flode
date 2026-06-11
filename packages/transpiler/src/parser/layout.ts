@@ -20,7 +20,7 @@ export async function applyHeuristicLayout(
     }));
 
     const elkEdges = edges
-      .filter((edge) => edge.type !== 'choose-chain')
+      .filter((edge) => edge.type !== 'choose-chain' && edge.type !== 'loop-back')
       .map((edge) => ({
         id: edge.id,
         sources: [edge.source],

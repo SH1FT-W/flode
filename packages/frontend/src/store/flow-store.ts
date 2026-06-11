@@ -737,11 +737,11 @@ export const useFlowStore = create<FlowState>()(
       },
 
       canDeleteEdge: (edgeId: string) => {
-        // Visual-only edges are not deletable by the user
+        // Visual-only and structural edges are not deletable by the user
         if (edgeId.startsWith('hint-') || edgeId.startsWith('choose-chain-')) return false;
         const state = get();
         const edge = state.edges.find((e) => e.id === edgeId);
-        if (edge?.type === 'hint' || edge?.type === 'choose-chain') return false;
+        if (edge?.type === 'hint' || edge?.type === 'choose-chain' || edge?.type === 'loop-back') return false;
         return true;
       },
 
