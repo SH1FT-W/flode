@@ -13,6 +13,8 @@
 
 ---
 
+> **Fork-Hinweis:** FLODE basiert auf [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) von [@FezVrasta](https://github.com/FezVrasta). Dieses Repository ist ein Fork mit zahlreichen Bugfixes, Verbesserungen und der vollständigen Umbenennung auf FLODE. Änderungen gegenüber dem Original sind im [CHANGELOG](CHANGELOG.md) dokumentiert.
+
 > **Beta:** FLODE ist darauf ausgelegt, keine bestehenden Daten zu überschreiben. Trotzdem empfehlen wir, Automatisierungen vor der Bearbeitung zu sichern.
 
 ## Was ist FLODE?
