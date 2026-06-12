@@ -1,0 +1,16 @@
+FLODE
+Copyright 2026 SH1FT-W
+
+This product is a fork of and includes software from:
+
+  C.A.F.E. (Complex Automation Flow Editor)
+  Copyright (c) Federico Zivolo
+  https://github.com/FezVrasta/cafe-hass
+  Licensed under the MIT License (as declared in the original project's README).
+
+The full text of the original MIT License is reproduced at the end of the
+LICENSE file in this repository and applies to all portions of the code
+that originate from the C.A.F.E. project.
+
+Modifications, additions, and the rebranding to FLODE are
+Copyright 2026 SH1FT-W and are licensed under the Apache License, Version 2.0.
