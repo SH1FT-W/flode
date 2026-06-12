@@ -4,6 +4,18 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.9.2] — 2026-06-12 — Lint & Code-Qualität
+
+### Fixed
+- Alle Biome-Lint-Fehler und Formatierungsprobleme behoben (19 Dateien auto-formatiert)
+- `type="button"` auf Collapse/Expand-Buttons in `ConditionNode` gesetzt (a11y)
+- JSX-Literale in `App.tsx` und `ConditionNode.tsx` korrekt escaped
+- `noEmptyBlockStatements` in `App.tsx` behoben
+- `aria-hidden="true"` auf dekorativen SVG in `LoopBackEdge` gesetzt (a11y)
+- `biome-ignore` Kommentar für unvermeidbar komplexe Graph-Traversal-Funktion in `native.ts`
+
+---
+
 ## [0.9.1] — 2026-06-12 — Code-Qualität & HA-Integration Cleanup
 
 ### Fixed

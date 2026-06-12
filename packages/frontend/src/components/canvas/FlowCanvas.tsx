@@ -170,7 +170,11 @@ export function FlowCanvas() {
       // Invisible semantic flow edges — trigger→case1 in trigger-based choose blocks.
       // Topology/serializer needs them; hint edges already show the visual connection.
       if (edge.type === 'choose-entry') {
-        return { ...edge, style: { opacity: 0, pointerEvents: 'none' as const }, markerEnd: undefined };
+        return {
+          ...edge,
+          style: { opacity: 0, pointerEvents: 'none' as const },
+          markerEnd: undefined,
+        };
       }
 
       // Internal choose-structure edges — shown as thin dashed lines so the red FALSE dot

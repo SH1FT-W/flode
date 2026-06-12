@@ -48,7 +48,9 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
       case 'device':
         return {
           title: data.alias || t('nodes:types.trigger'),
-          subtitle: data.type ? `${data.domain || 'device'}: ${data.type}` : getTriggerLabel(triggerType),
+          subtitle: data.type
+            ? `${data.domain || 'device'}: ${data.type}`
+            : getTriggerLabel(triggerType),
           detail: data.device_id ? `Device: ${String(data.device_id).substring(0, 8)}...` : null,
         };
 

@@ -7,7 +7,6 @@ import type {
 } from '@flode/shared';
 import { validateNodeData } from '@flode/shared';
 import { FlowTranspiler } from '@flode/transpiler';
-import { t as i18t } from 'i18next';
 import {
   addEdge,
   applyEdgeChanges,
@@ -18,6 +17,7 @@ import {
   type Node,
   type NodeChange,
 } from '@xyflow/react';
+import { t as i18t } from 'i18next';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AutomationTrace } from '@/lib/ha-api';
@@ -544,7 +544,6 @@ export const useFlowStore = create<FlowState>()(
           throw new Error('No automation ID set. Use saveAutomation() for new automations.');
         }
 
-
         set({ isSaving: true });
 
         try {
@@ -738,10 +737,23 @@ export const useFlowStore = create<FlowState>()(
 
       canDeleteEdge: (edgeId: string) => {
         // Visual-only and structural edges are not deletable by the user
-        if (edgeId.startsWith('hint-') || edgeId.startsWith('choose-chain-') || edgeId.startsWith('choose-hint-')) return false;
+        if (
+          edgeId.startsWith('hint-') ||
+          edgeId.startsWith('choose-chain-') ||
+          edgeId.startsWith('choose-hint-')
+        )
+          return false;
         const state = get();
         const edge = state.edges.find((e) => e.id === edgeId);
-        if (edge?.type === 'hint' || edge?.type === 'choose-chain' || edge?.type === 'choose-hint' || edge?.type === 'choose-default' || edge?.type === 'choose-entry' || edge?.type === 'loop-back') return false;
+        if (
+          edge?.type === 'hint' ||
+          edge?.type === 'choose-chain' ||
+          edge?.type === 'choose-hint' ||
+          edge?.type === 'choose-default' ||
+          edge?.type === 'choose-entry' ||
+          edge?.type === 'loop-back'
+        )
+          return false;
         return true;
       },
 

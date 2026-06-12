@@ -147,7 +147,13 @@ export function validateGraphStructure(graph: FlowGraph): { valid: boolean; erro
   );
   for (const edge of graph.edges) {
     // Visual-only and structural choose edges are exempt from handle validation
-    if (edge.type === 'hint' || edge.type === 'choose-hint' || edge.type === 'choose-default' || edge.type === 'choose-entry') continue;
+    if (
+      edge.type === 'hint' ||
+      edge.type === 'choose-hint' ||
+      edge.type === 'choose-default' ||
+      edge.type === 'choose-entry'
+    )
+      continue;
     if (conditionNodes.has(edge.source)) {
       if (edge.sourceHandle !== 'true' && edge.sourceHandle !== 'false') {
         errors.push(

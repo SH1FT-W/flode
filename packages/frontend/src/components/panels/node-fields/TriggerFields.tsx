@@ -10,7 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TRIGGER_PLATFORM_FIELDS, getTriggerDefaults, getTriggerFields } from '@/config/triggerFields';
+import {
+  getTriggerDefaults,
+  getTriggerFields,
+  TRIGGER_PLATFORM_FIELDS,
+} from '@/config/triggerFields';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';

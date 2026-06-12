@@ -26,17 +26,25 @@ function getConditionSummary(cond: ConditionNodeData, labelOf: (type: string) =>
       const parts = [
         cond.above !== undefined ? `> ${cond.above}` : null,
         cond.below !== undefined ? `< ${cond.below}` : null,
-      ].filter(Boolean).join(', ');
+      ]
+        .filter(Boolean)
+        .join(', ');
       return entityShort ? `${entityShort}${parts ? ` ${parts}` : ''}` : labelOf('numeric_state');
     }
     case 'zone':
-      return entityShort ? `${entityShort} in ${cond.zone ?? 'zone'}` : cond.zone ?? labelOf('zone');
+      return entityShort
+        ? `${entityShort} in ${cond.zone ?? 'zone'}`
+        : (cond.zone ?? labelOf('zone'));
     case 'template':
       return cond.template
         ? cond.template.slice(0, 28) + (cond.template.length > 28 ? '…' : '')
         : labelOf('template');
     case 'time':
-      return cond.after ? `after ${cond.after}` : cond.before ? `before ${cond.before}` : labelOf('time');
+      return cond.after
+        ? `after ${cond.after}`
+        : cond.before
+          ? `before ${cond.before}`
+          : labelOf('time');
     case 'sun':
       return labelOf('sun');
     case 'device':
@@ -96,7 +104,9 @@ export const ConditionNode = memo(function ConditionNode({
   const hasNested = nestedConditions.length > 0;
   const separator = getConditionLabel(data.condition);
 
-  const visibleCount = expanded ? nestedConditions.length : Math.min(nestedConditions.length, MAX_VISIBLE);
+  const visibleCount = expanded
+    ? nestedConditions.length
+    : Math.min(nestedConditions.length, MAX_VISIBLE);
   const hiddenCount = nestedConditions.length - visibleCount;
 
   return (
@@ -153,21 +163,48 @@ export const ConditionNode = memo(function ConditionNode({
               {Array.isArray(data.entity_id) ? data.entity_id.join(', ') : data.entity_id}
             </div>
           )}
-          {data.state && <div className="opacity-75">{'= '}{data.state}</div>}
-          {data.above !== undefined && <div className="opacity-75">{'> '}{data.above}</div>}
-          {data.below !== undefined && <div className="opacity-75">{'< '}{data.below}</div>}
+          {data.state && (
+            <div className="opacity-75">
+              {'= '}
+              {data.state}
+            </div>
+          )}
+          {data.above !== undefined && (
+            <div className="opacity-75">
+              {'> '}
+              {data.above}
+            </div>
+          )}
+          {data.below !== undefined && (
+            <div className="opacity-75">
+              {'< '}
+              {data.below}
+            </div>
+          )}
           {data.after && (
             <div className="opacity-75">
-              {'after: '}{typeof data.after === 'string' ? data.after : String(data.after)}
+              {'after: '}
+              {typeof data.after === 'string' ? data.after : String(data.after)}
             </div>
           )}
           {data.before && (
             <div className="opacity-75">
-              {'before: '}{typeof data.before === 'string' ? data.before : String(data.before)}
+              {'before: '}
+              {typeof data.before === 'string' ? data.before : String(data.before)}
             </div>
           )}
-          {data.zone && <div className="opacity-75">{'zone: '}{data.zone}</div>}
-          {data.attribute && <div className="opacity-75">{'attr: '}{data.attribute}</div>}
+          {data.zone && (
+            <div className="opacity-75">
+              {'zone: '}
+              {data.zone}
+            </div>
+          )}
+          {data.attribute && (
+            <div className="opacity-75">
+              {'attr: '}
+              {data.attribute}
+            </div>
+          )}
           {data.for && (
             <div className="opacity-75">
               {'for: '}
@@ -178,12 +215,14 @@ export const ConditionNode = memo(function ConditionNode({
           )}
           {data.template && (
             <div className="truncate font-mono text-[10px] opacity-75">
-              {data.template.slice(0, 30)}{'...'}
+              {data.template.slice(0, 30)}
+              {'...'}
             </div>
           )}
           {data.value_template && (
             <div className="truncate font-mono text-[10px] opacity-75">
-              {data.value_template.slice(0, 30)}{'...'}
+              {data.value_template.slice(0, 30)}
+              {'...'}
             </div>
           )}
           {data.id !== undefined && data.id !== null && (
@@ -193,9 +232,7 @@ export const ConditionNode = memo(function ConditionNode({
             </div>
           )}
           {isGroup && (
-            <div className="opacity-75">
-              {t('nodes:conditions.nestedConditions', { count: 0 })}
-            </div>
+            <div className="opacity-75">{t('nodes:conditions.nestedConditions', { count: 0 })}</div>
           )}
         </div>
       )}
@@ -214,10 +251,10 @@ export const ConditionNode = memo(function ConditionNode({
                 </div>
               )}
               <div className="rounded border border-blue-200 bg-white px-2 py-1">
-                <div className="font-semibold text-blue-800 text-[11px]">
+                <div className="font-semibold text-[11px] text-blue-800">
                   {getConditionLabel(cond.condition)}
                 </div>
-                <div className="truncate text-blue-500 text-[10px]">
+                <div className="truncate text-[10px] text-blue-500">
                   {getConditionSummary(cond, getConditionLabel)}
                 </div>
               </div>
@@ -225,16 +262,24 @@ export const ConditionNode = memo(function ConditionNode({
           ))}
           {hiddenCount > 0 && !expanded && (
             <button
-              className="nodrag w-full rounded border border-blue-200 bg-white px-2 py-0.5 text-center text-blue-500 text-[10px] hover:bg-blue-50"
-              onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
+              type="button"
+              className="nodrag w-full rounded border border-blue-200 bg-white px-2 py-0.5 text-center text-[10px] text-blue-500 hover:bg-blue-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(true);
+              }}
             >
-              +{hiddenCount} {t('nodes:conditions.more')}
+              {`+${hiddenCount} `}{t('nodes:conditions.more')}
             </button>
           )}
           {expanded && nestedConditions.length > MAX_VISIBLE && (
             <button
-              className="nodrag w-full rounded border border-blue-200 bg-white px-2 py-0.5 text-center text-blue-500 text-[10px] hover:bg-blue-50"
-              onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+              type="button"
+              className="nodrag w-full rounded border border-blue-200 bg-white px-2 py-0.5 text-center text-[10px] text-blue-500 hover:bg-blue-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(false);
+              }}
             >
               {t('nodes:conditions.collapse')}
             </button>

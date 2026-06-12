@@ -1,5 +1,5 @@
-import type { HomeAssistant } from '@/types/hass';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { HomeAssistant } from '@/types/hass';
 import { HomeAssistantAPI } from '../ha-api';
 
 /**

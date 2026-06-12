@@ -138,7 +138,10 @@ export const TriggerNodeValidationSchema = z
         break;
 
       case 'event':
-        if (!data.event_type || (typeof data.event_type === 'string' && data.event_type.trim() === '')) {
+        if (
+          !data.event_type ||
+          (typeof data.event_type === 'string' && data.event_type.trim() === '')
+        ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: 'errors:validation.trigger.eventTypeRequired',

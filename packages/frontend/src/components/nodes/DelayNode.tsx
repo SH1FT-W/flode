@@ -58,7 +58,9 @@ export const DelayNode = memo(function DelayNode({ id, data, selected }: DelayNo
         <div className="rounded bg-purple-200 p-1">
           <Clock className="h-4 w-4 text-purple-700" />
         </div>
-        <span className="font-semibold text-purple-900 text-sm">{data.alias || t('nodes:types.delay')}</span>
+        <span className="font-semibold text-purple-900 text-sm">
+          {data.alias || t('nodes:types.delay')}
+        </span>
         {stepNumber && (
           <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-purple-600 font-bold text-white text-xs">
             {stepNumber}

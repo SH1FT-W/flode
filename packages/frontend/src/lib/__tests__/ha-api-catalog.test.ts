@@ -1,5 +1,5 @@
-import type { HomeAssistant } from '@/types/hass';
 import { describe, expect, it, vi } from 'vitest';
+import type { HomeAssistant } from '@/types/hass';
 import { HomeAssistantAPI } from '../ha-api';
 
 describe('HomeAssistantAPI catalog helpers', () => {

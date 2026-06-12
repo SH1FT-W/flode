@@ -381,7 +381,7 @@ function App() {
                 </div>
                 <div className="text-muted-foreground text-xs">
                   <span>
-                    {t('titles.appName')} {`v${version}`} · by SH1FT-W
+                    {t('titles.appName')} {`v${version}`}{' · by SH1FT-W'}
                   </span>
                 </div>
               </div>
@@ -491,7 +491,7 @@ function App() {
         <AutomationSaveDialog
           isOpen={saveDialogOpen}
           onClose={() => setSaveDialogOpen(false)}
-          onSaved={() => {}}
+          onSaved={() => { /* dialog closes via onClose */ }}
         />
 
         {/* Clear confirm dialog */}

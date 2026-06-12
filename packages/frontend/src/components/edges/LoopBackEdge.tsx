@@ -37,7 +37,7 @@ export function LoopBackEdge({
 export function LoopBackEdgeMarkers({ isDarkMode }: { isDarkMode: boolean }) {
   const color = isDarkMode ? '#94a3b8' : '#64748b';
   return (
-    <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+    <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
       <defs>
         <marker
           id={`loop-back-arrow-${isDarkMode ? 'dark' : 'light'}`}

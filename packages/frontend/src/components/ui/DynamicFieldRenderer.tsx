@@ -116,7 +116,6 @@ export function DynamicFieldRenderer({
           .join(' ');
 
       description = translations[descKey] || '';
-
     } else {
       // Fallback: format the name nicely
       label = name

@@ -11,10 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useHass } from '@/contexts/HassContext';
 import type { DeviceTrigger, TriggerField } from '@/hooks/useDeviceAutomation';
 import { useDeviceAutomation } from '@/hooks/useDeviceAutomation';
 import { useTranslations } from '@/hooks/useTranslations';
-import { useHass } from '@/contexts/HassContext';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
 
@@ -47,10 +47,7 @@ function resolvePlaceholders(
       ? entities.find((e) => e.entity_id === trigger.entity_id)
       : undefined;
     const entityName =
-      (entity?.attributes?.friendly_name as string) ||
-      deviceName ||
-      trigger.entity_id ||
-      '';
+      (entity?.attributes?.friendly_name as string) || deviceName || trigger.entity_id || '';
     result = result.replace(/\{entity_name\}/g, entityName);
   }
   return result;

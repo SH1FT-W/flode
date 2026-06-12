@@ -5,8 +5,8 @@ import { FieldError } from '@/components/forms/FieldError';
 import { FormField } from '@/components/forms/FormField';
 import { Combobox } from '@/components/ui/Combobox';
 import { IdList } from '@/components/ui/IdList';
-import { MultiEntitySelector } from '@/components/ui/MultiEntitySelector';
 import { Input } from '@/components/ui/input';
+import { MultiEntitySelector } from '@/components/ui/MultiEntitySelector';
 import {
   Select,
   SelectContent,
@@ -177,8 +177,12 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
           <FormField label={t('nodes:actions.actionLabel')} required>
             <Combobox
               options={getAllServices().map(({ domain, service, definition }) => {
-                const translatedDomain = t(`nodes:serviceDomains.${domain}`, { defaultValue: prettify(domain) });
-                const translatedAction = t(`nodes:serviceActions.${service}`, { defaultValue: prettify(service) });
+                const translatedDomain = t(`nodes:serviceDomains.${domain}`, {
+                  defaultValue: prettify(domain),
+                });
+                const translatedAction = t(`nodes:serviceActions.${service}`, {
+                  defaultValue: prettify(service),
+                });
                 return {
                   value: `${domain}.${service}`,
                   label: definition?.name || `${translatedDomain}: ${translatedAction}`,
@@ -191,7 +195,9 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
                 <div className="flex flex-col gap-0.5">
                   <span>{option.label}</span>
                   {option.label !== option.value && (
-                    <span className="text-xs text-muted-foreground font-mono">{option.value as string}</span>
+                    <span className="font-mono text-muted-foreground text-xs">
+                      {option.value as string}
+                    </span>
                   )}
                 </div>
               )}
@@ -200,7 +206,9 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
                   <div className="flex flex-col items-start leading-tight">
                     <span>{option.label}</span>
                     {option.label !== option.value && (
-                      <span className="text-xs text-muted-foreground font-mono">{option.value}</span>
+                      <span className="font-mono text-muted-foreground text-xs">
+                        {option.value}
+                      </span>
                     )}
                   </div>
                 ) : null

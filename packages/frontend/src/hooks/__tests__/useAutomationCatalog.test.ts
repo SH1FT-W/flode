@@ -1,5 +1,5 @@
-import type { HassEntity } from '@/types/hass';
 import { describe, expect, it } from 'vitest';
+import type { HassEntity } from '@/types/hass';
 import {
   fuzzyFilterAutomationCatalogItems,
   groupAutomationCatalogByArea,

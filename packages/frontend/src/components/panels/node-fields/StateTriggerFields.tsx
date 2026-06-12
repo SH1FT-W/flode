@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldError } from '@/components/forms/FieldError';
 import { FormField } from '@/components/forms/FormField';
-import { DynamicFieldRenderer } from '@/components/ui/DynamicFieldRenderer';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -14,6 +13,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { DynamicFieldRenderer } from '@/components/ui/DynamicFieldRenderer';
 import { MultiEntitySelector } from '@/components/ui/MultiEntitySelector';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getTriggerFields } from '@/config/triggerFields';
@@ -146,7 +146,7 @@ function StateValueCombobox({
             {showCustomEntry && (
               <CommandGroup>
                 <CommandItem value={query} onSelect={handleSelect}>
-                  <span className="text-muted-foreground text-xs mr-2">
+                  <span className="mr-2 text-muted-foreground text-xs">
                     {t('stateTrigger.useValue')}
                   </span>
                   <span className="font-mono">{query}</span>

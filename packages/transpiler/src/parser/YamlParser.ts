@@ -431,7 +431,7 @@ export class YamlParser {
       if (variables && typeof variables === 'object') {
         const vars = variables as Record<string, unknown>;
         // Support both _flode_metadata (current) and _cafe_metadata (legacy, backward-compat)
-        const raw = vars['_flode_metadata'] ?? vars['_cafe_metadata'];
+        const raw = vars._flode_metadata ?? vars._cafe_metadata;
         if (typeof raw === 'object' && raw !== null) {
           const result = CafeMetadataSchema.safeParse(raw);
           if (result.success) {
@@ -1029,9 +1029,11 @@ export class YamlParser {
    * Always returns type:'trigger' so validateGraphStructure does not fail.
    */
   private createFallbackTriggerNode(nodeId: string, originalData: unknown): TriggerNode {
-    const data = (typeof originalData === 'object' && originalData !== null
-      ? (originalData as Record<string, unknown>)
-      : {}) as Record<string, unknown>;
+    const data = (
+      typeof originalData === 'object' && originalData !== null
+        ? (originalData as Record<string, unknown>)
+        : {}
+    ) as Record<string, unknown>;
 
     // Determine trigger type from various formats:
     // 1. Modern HA: { trigger: 'state', ... }

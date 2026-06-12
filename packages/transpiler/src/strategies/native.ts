@@ -59,7 +59,10 @@ export class NativeStrategy extends BaseStrategy {
     const warnings: string[] = [];
 
     // Strip hint edges (visual-only trigger-routing aids) before any processing
-    flow = { ...flow, edges: flow.edges.filter((e) => e.type !== 'hint' && e.type !== 'choose-hint') };
+    flow = {
+      ...flow,
+      edges: flow.edges.filter((e) => e.type !== 'hint' && e.type !== 'choose-hint'),
+    };
 
     // Structurally detect back-edges using DFS
     this.backEdgeIds = findBackEdges(flow);
@@ -768,7 +771,8 @@ export class NativeStrategy extends BaseStrategy {
     let sourcesWithOpposite = 0;
     for (const src of sources) {
       const edge = flow.edges.find(
-        (e) => e.source === src.id && e.sourceHandle === oppositeHandle && !this.backEdgeIds.has(e.id)
+        (e) =>
+          e.source === src.id && e.sourceHandle === oppositeHandle && !this.backEdgeIds.has(e.id)
       );
       if (edge) {
         oppositeTargets.add(edge.target);
@@ -786,6 +790,7 @@ export class NativeStrategy extends BaseStrategy {
   /**
    * Recursively build action sequence from a node
    */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: recursive graph traversal is inherently complex
   private buildSequenceFromNode(flow: FlowGraph, nodeId: string, visited: Set<string>): unknown[] {
     if (visited.has(nodeId)) {
       return []; // Avoid infinite loops
@@ -986,12 +991,10 @@ export class NativeStrategy extends BaseStrategy {
           ...(defaultStartId ? [defaultStartId] : []),
         ];
         const convergencePoint =
-          allBranchStarts.length >= 2
-            ? this.findConvergencePoint(flow, allBranchStarts)
-            : null;
+          allBranchStarts.length >= 2 ? this.findConvergencePoint(flow, allBranchStarts) : null;
 
         // Build choose options
-        const chooseOptions: Array<Record<string, unknown>> = [];
+        const chooseOptions: Record<string, unknown>[] = [];
         for (const branch of branchInfos) {
           const branchSeq =
             branch.thenNodeIds.length > 0
@@ -1008,12 +1011,7 @@ export class NativeStrategy extends BaseStrategy {
 
         if (defaultStartId) {
           const defSeq = convergencePoint
-            ? this.buildSequenceUntilNode(
-                flow,
-                defaultStartId,
-                convergencePoint,
-                new Set(visited)
-              )
+            ? this.buildSequenceUntilNode(flow, defaultStartId, convergencePoint, new Set(visited))
             : this.buildSequenceFromNode(flow, defaultStartId, new Set(visited));
           if (defSeq.length > 0) {
             chooseAction.default = defSeq;
