@@ -4,6 +4,17 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.9.1] — 2026-06-12 — Code-Qualität & HA-Integration Cleanup
+
+### Fixed
+- `ConfigFlowResult` statt veraltetes `FlowResult` aus `homeassistant.data_entry_flow` (deprecated seit HA 2024.4)
+- Minimale HA-Version in `manifest.json` und `hacs.json` auf `2024.6.0` korrigiert (`StaticPathConfig` erfordert 2024.6)
+- Ungenutzten `import os` und tote `PANEL_URL`-Konstante aus `panel.py` entfernt
+- Leere `async_setup`-Funktion aus `__init__.py` entfernt (bei Config-Flow-Integrationen nicht benötigt)
+- Hacky Panel-Vorab-Entfernung via `hass.data` durch saubere Lifecycle-Logik ersetzt
+
+---
+
 ## [0.9.0] — 2026-06-12 — OR/AND Condition Visualisierung & i18n
 
 ### Added

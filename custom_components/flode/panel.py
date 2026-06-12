@@ -1,5 +1,4 @@
 """Panel for FLODE."""
-import os
 import logging
 from pathlib import Path
 
@@ -11,7 +10,6 @@ from .const import DOMAIN, PANEL_TITLE, PANEL_ICON
 
 _LOGGER = logging.getLogger(__name__)
 
-PANEL_URL = f"/api/{DOMAIN}_panel"
 PANEL_NAME = f"{DOMAIN}-panel"
 
 
@@ -32,12 +30,6 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     import time
     cache_bust = int(time.time())
     module_url = f"/flode-hass/assets/panel-wrapper.js?v={cache_bust}"
-
-    try:
-        hass.data.get("frontend_panels", {}).pop(DOMAIN, None)
-        _LOGGER.info("Removed any existing panel registration")
-    except Exception:
-        pass
 
     await panel_custom.async_register_panel(
         hass,

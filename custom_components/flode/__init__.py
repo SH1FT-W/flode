@@ -2,20 +2,12 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.typing import ConfigType
 
-from .const import DOMAIN
 from .panel import async_register_panel, async_unregister_panel
 
 _LOGGER = logging.getLogger(__name__)
-
-
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the FLODE component."""
-    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
