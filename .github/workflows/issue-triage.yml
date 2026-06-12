@@ -1,0 +1,59 @@
+name: Issue Triage
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            ISSUE NUMBER: ${{ github.event.issue.number }}
+            TITLE: ${{ github.event.issue.title }}
+            BODY: ${{ github.event.issue.body }}
+            AUTHOR: ${{ github.event.issue.user.login }}
+
+            Du bist ein Issue-Triage-Assistent. Analysiere dieses neue Issue:
+
+            1. Kategorisiere es als eines der folgenden:
+               - "bug" (Fehlerbericht / etwas funktioniert nicht)
+               - "enhancement" (Feature-Wunsch / Verbesserungsvorschlag)
+               - "question" (Frage zur Nutzung)
+               - "documentation" (Doku fehlt, ist falsch oder unklar)
+
+            2. Schau mit `gh label list --repo ${{ github.repository }}`,
+               welche Labels im Repo tatsaechlich existieren, und nutze
+               NUR existierende Labels.
+
+            3. Setze das/die passende(n) Label(s) mit:
+               gh issue edit ${{ github.event.issue.number }} --repo ${{ github.repository }} --add-label "label1,label2"
+
+            4. Pruefe mit `gh search issues` ob es ein offensichtliches
+               Duplikat eines bestehenden Issues ist. Falls ja, setze
+               zusaetzlich das Label "duplicate" (falls vorhanden) und
+               hinterlasse einen kurzen, freundlichen Kommentar mit
+               Verweis auf das Original-Issue (#Nummer).
+
+            5. Falls es ein Bug-Report ist, dem wichtige Infos fehlen
+               (keine Reproduktionsschritte, keine Versionsangabe),
+               hinterlasse einen kurzen, hoeflichen Kommentar, der den
+               Autor um die fehlenden Details bittet. Antworte in der
+               Sprache, in der das Issue geschrieben wurde.
+
+            Wichtig:
+            - Erfinde keine neuen Labels.
+            - Schliesse keine Issues, weise niemanden zu.
+            - Halte Kommentare kurz und freundlich.
+
+          claude_args: |
+            --allowedTools "Bash(gh label list:*),Bash(gh issue edit:*),Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue comment:*)"
