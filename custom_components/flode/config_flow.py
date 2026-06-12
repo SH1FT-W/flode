@@ -8,7 +8,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigConfigFlowResult
+from homeassistant.config_entries import ConfigFlowResult
 
 from .const import DOMAIN
 
