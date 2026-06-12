@@ -1,4 +1,6 @@
 <div align="center">
+  <p>🇩🇪 <strong>Deutsch</strong> · <a href="README.en.md">🇬🇧 English</a></p>
+
   <img src="custom_components/flode/brand/icon.png" alt="FLODE Logo" width="120" />
   <h1>FLODE</h1>
   <p><strong>Visueller Flow + Node Editor für Home Assistant</strong></p>
