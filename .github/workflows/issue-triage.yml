@@ -50,6 +50,12 @@ jobs:
                Autor um die fehlenden Details bittet. Antworte in der
                Sprache, in der das Issue geschrieben wurde.
 
+            6. Falls du noch keinen Kommentar hinterlassen hast,
+               hinterlasse eine kurze, freundliche Bestaetigung
+               (1-2 Saetze), dass das Issue triagiert und als
+               <Kategorie> eingeordnet wurde. Antworte in der Sprache,
+               in der das Issue geschrieben wurde.
+
             Wichtig:
             - Erfinde keine neuen Labels.
             - Schliesse keine Issues, weise niemanden zu.
