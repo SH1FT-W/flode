@@ -4,6 +4,22 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.9.0] — 2026-06-12 — OR/AND Condition Visualisierung & i18n
+
+### Added
+- **OR/AND/NOT Container-Nodes**: Gruppen-Bedingungen zeigen ihre verschachtelten Sub-Conditions direkt als Mini-Karten im Node — kein Klick mehr notwendig um die Logik zu verstehen
+- **OR/AND Separator**: Zwischen den Sub-Condition-Karten wird der Gruppen-Typ (OR/AND/NOT) als visueller Trenner angezeigt
+- **Collapse bei vielen Bedingungen**: Ab 4+ Sub-Conditions erscheint ein „+X weitere"-Button zum Ein-/Ausklappen
+
+### Improved
+- **Vollständige i18n für alle Node-Karten**: Alle Typ-Labels in Trigger-, Condition-, Action-, Delay-, Wait- und SetVariables-Nodes werden jetzt dynamisch nach der gewählten Sprache angezeigt (war zuvor hardcoded Englisch)
+- Condition-Typen: `Zustand`, `Numerischer Zustand`, `ODER (Beliebige)`, `UND (Alle)` etc.
+- Trigger-Plattformen: `Zustandsänderung`, `Zeit`, `Ereignis` etc.
+- Fallback-Node-Titel: `Verzögerung`, `Warten auf`, `Variablen setzen`, `Aktion`
+- Alle Node-Komponenten nutzen jetzt den `useTranslation`-Hook statt dem i18next-Singleton
+
+---
+
 ## [0.8.0] — 2026-06-11 — Screenshots & Dokumentation
 
 ### Added

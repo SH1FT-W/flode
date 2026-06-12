@@ -78,6 +78,8 @@
       "not": "NICHT"
     },
     "nestedConditions": "Verschachtelte Bedingungen",
+    "more": "weitere",
+    "collapse": "Weniger anzeigen",
     "yes": "Ja",
     "no": "Nein"
   },
@@ -100,7 +102,8 @@
     "targetAreas": "Ziel-Bereiche",
     "targetAreasDescription": "Bereich-IDs als Ziel",
     "addAreaId": "Bereich-ID hinzufügen...",
-    "fireEvent": "Ereignis auslösen"
+    "fireEvent": "Ereignis auslösen",
+    "entitiesSelected": "{{count}} Entitäten"
   },
   "fieldOptions": {
     "weekday": {

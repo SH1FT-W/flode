@@ -34,7 +34,7 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
     if (!data.target) return null;
     const entityId = data.target.entity_id;
     if (Array.isArray(entityId)) {
-      return `${entityId.length} entities selected`;
+      return t('nodes:actions.entitiesSelected', { count: entityId.length });
     }
     return entityId;
   })();
@@ -74,7 +74,7 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
           <Play className="h-4 w-4 text-green-700" />
         </div>
         <span className="font-semibold text-green-900 text-sm">
-          {data.alias || (isEventAction ? data.event : serviceName) || 'Action'}
+          {data.alias || (isEventAction ? data.event : serviceName) || t('nodes:types.action')}
         </span>
         {stepNumber && (
           <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-green-600 font-bold text-white text-xs">

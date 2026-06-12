@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
-import { t } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, Ban, Variable } from 'lucide-react';
 import { memo } from 'react';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
@@ -16,6 +16,7 @@ export const SetVariablesNode = memo(function SetVariablesNode({
   data,
   selected,
 }: SetVariablesNodeProps) {
+  const { t } = useTranslation(['nodes']);
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
   const { hasErrors, errorMessages } = useNodeErrors(id);
@@ -59,7 +60,7 @@ export const SetVariablesNode = memo(function SetVariablesNode({
         <div className="rounded bg-cyan-200 p-1">
           <Variable className="h-4 w-4 text-cyan-700" />
         </div>
-        <span className="font-semibold text-cyan-900 text-sm">{data.alias || 'Set Variables'}</span>
+        <span className="font-semibold text-cyan-900 text-sm">{data.alias || t('nodes:types.set_variables')}</span>
         {stepNumber && (
           <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-cyan-600 font-bold text-white text-xs">
             {stepNumber}

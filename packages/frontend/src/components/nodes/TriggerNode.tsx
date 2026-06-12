@@ -1,6 +1,7 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { AlertCircle, Ban, Zap } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import { cn } from '@/lib/utils';
 import type { TriggerNodeData } from '@/store/flow-store';
@@ -11,6 +12,7 @@ interface TriggerNodeProps extends NodeProps {
 }
 
 export const TriggerNode = memo(function TriggerNode({ id, data, selected }: TriggerNodeProps) {
+  const { t } = useTranslation(['nodes']);
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
   const { hasErrors, errorMessages } = useNodeErrors(id);
@@ -18,48 +20,53 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
 
-  const triggerLabels: Record<string, string> = {
-    state: 'State Change',
-    time: 'Time',
-    time_pattern: 'Time Pattern',
-    event: 'Event',
-    mqtt: 'MQTT',
-    webhook: 'Webhook',
-    sun: 'Sun',
-    zone: 'Zone',
-    numeric_state: 'Numeric State',
-    template: 'Template',
-    homeassistant: 'Home Assistant',
-    device: 'Device',
+  const triggerPlatformLabels: Record<string, string> = {
+    state: t('nodes:triggers.platforms.state'),
+    numeric_state: t('nodes:triggers.platforms.numeric_state'),
+    time: t('nodes:triggers.platforms.time'),
+    time_pattern: t('nodes:triggers.platforms.time_pattern'),
+    sun: t('nodes:triggers.platforms.sun'),
+    event: t('nodes:triggers.platforms.event'),
+    mqtt: t('nodes:triggers.platforms.mqtt'),
+    webhook: t('nodes:triggers.platforms.webhook'),
+    zone: t('nodes:triggers.platforms.zone'),
+    template: t('nodes:triggers.platforms.template'),
+    homeassistant: t('nodes:triggers.platforms.homeassistant'),
+    device: t('nodes:triggers.platforms.device'),
+    calendar: t('nodes:triggers.platforms.calendar'),
+    geo_location: t('nodes:triggers.platforms.geo_location'),
+    tag: t('nodes:triggers.platforms.tag'),
+    conversation: t('nodes:triggers.platforms.conversation'),
+    persistent_notification: t('nodes:triggers.platforms.persistent_notification'),
   };
+  const getTriggerLabel = (type: string) => triggerPlatformLabels[type] ?? type;
 
-  // Generate display text based on trigger type
   const getDisplayInfo = () => {
     const triggerType = data.trigger;
 
     switch (triggerType) {
       case 'device':
         return {
-          title: data.alias || 'Device Trigger',
-          subtitle: data.type ? `${data.domain || 'device'}: ${data.type}` : 'Device',
+          title: data.alias || t('nodes:types.trigger'),
+          subtitle: data.type ? `${data.domain || 'device'}: ${data.type}` : getTriggerLabel(triggerType),
           detail: data.device_id ? `Device: ${String(data.device_id).substring(0, 8)}...` : null,
         };
 
       case 'state':
         return {
-          title: data.alias || 'State Change',
+          title: data.alias || getTriggerLabel(triggerType),
           subtitle: Array.isArray(data.entity_id)
             ? `${data.entity_id.length} entities:\n${data.entity_id.join(', ')}`
-            : data.entity_id || 'State',
+            : data.entity_id || getTriggerLabel(triggerType),
           detail: data.to ? `to: ${data.to}` : null,
         };
 
       case 'numeric_state':
         return {
-          title: data.alias || 'Numeric State',
+          title: data.alias || getTriggerLabel(triggerType),
           subtitle: Array.isArray(data.entity_id)
             ? data.entity_id.join(', ')
-            : data.entity_id || 'Numeric State',
+            : data.entity_id || getTriggerLabel(triggerType),
           detail:
             data.above || data.below
               ? `${data.above ? `>${data.above}` : ''}${data.above && data.below ? ' ' : ''}${data.below ? `<${data.below}` : ''}`
@@ -68,15 +75,15 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
 
       case 'event':
         return {
-          title: data.alias || 'Event',
-          subtitle: triggerLabels[triggerType],
+          title: data.alias || getTriggerLabel(triggerType),
+          subtitle: getTriggerLabel(triggerType),
           detail: data.event_type || null,
         };
 
       case 'time':
         return {
-          title: data.alias || 'Time',
-          subtitle: triggerLabels[triggerType],
+          title: data.alias || getTriggerLabel(triggerType),
+          subtitle: getTriggerLabel(triggerType),
           detail: data.at
             ? typeof data.at === 'string'
               ? data.at
@@ -86,29 +93,29 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
 
       case 'sun':
         return {
-          title: data.alias || 'Sun',
-          subtitle: triggerLabels[triggerType],
+          title: data.alias || getTriggerLabel(triggerType),
+          subtitle: getTriggerLabel(triggerType),
           detail: data.event ? `${data.event}${data.offset ? ` ${data.offset}` : ''}` : null,
         };
 
       case 'mqtt':
         return {
-          title: data.alias || 'MQTT',
-          subtitle: triggerLabels[triggerType],
+          title: data.alias || getTriggerLabel(triggerType),
+          subtitle: getTriggerLabel(triggerType),
           detail: data.topic || null,
         };
 
       case 'webhook':
         return {
-          title: data.alias || 'Webhook',
-          subtitle: triggerLabels[triggerType],
+          title: data.alias || getTriggerLabel(triggerType),
+          subtitle: getTriggerLabel(triggerType),
           detail: data.webhook_id || null,
         };
 
       case 'zone':
         return {
-          title: data.alias || 'Zone',
-          subtitle: triggerLabels[triggerType],
+          title: data.alias || getTriggerLabel(triggerType),
+          subtitle: getTriggerLabel(triggerType),
           detail:
             data.zone ||
             (Array.isArray(data.entity_id) ? data.entity_id.join(', ') : data.entity_id) ||
@@ -117,8 +124,8 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
 
       default:
         return {
-          title: data.alias || triggerLabels[triggerType] || 'Trigger',
-          subtitle: triggerLabels[triggerType] || triggerType,
+          title: data.alias || getTriggerLabel(triggerType) || t('nodes:types.trigger'),
+          subtitle: getTriggerLabel(triggerType) || triggerType,
           detail: null,
         };
     }

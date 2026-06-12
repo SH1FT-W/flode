@@ -58,7 +58,7 @@ export const WaitNode = memo(function WaitNode({ id, data, selected }: WaitNodeP
         <div className="rounded bg-orange-200 p-1">
           <Hourglass className="h-4 w-4 text-orange-700" />
         </div>
-        <span className="font-semibold text-orange-900 text-sm">{data.alias || 'Wait for'}</span>
+        <span className="font-semibold text-orange-900 text-sm">{data.alias || t('nodes:types.wait')}</span>
         {stepNumber && (
           <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-orange-600 font-bold text-white text-xs">
             {stepNumber}

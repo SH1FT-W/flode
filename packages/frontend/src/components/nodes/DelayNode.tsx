@@ -1,6 +1,7 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { AlertCircle, Ban, Clock } from 'lucide-react';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import { cn } from '@/lib/utils';
 import type { DelayNodeData } from '@/store/flow-store';
@@ -12,6 +13,7 @@ interface DelayNodeProps extends NodeProps {
 }
 
 export const DelayNode = memo(function DelayNode({ id, data, selected }: DelayNodeProps) {
+  const { t } = useTranslation(['nodes']);
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
   const { hasErrors, errorMessages } = useNodeErrors(id);
@@ -56,7 +58,7 @@ export const DelayNode = memo(function DelayNode({ id, data, selected }: DelayNo
         <div className="rounded bg-purple-200 p-1">
           <Clock className="h-4 w-4 text-purple-700" />
         </div>
-        <span className="font-semibold text-purple-900 text-sm">{data.alias || 'Delay'}</span>
+        <span className="font-semibold text-purple-900 text-sm">{data.alias || t('nodes:types.delay')}</span>
         {stepNumber && (
           <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-purple-600 font-bold text-white text-xs">
             {stepNumber}
