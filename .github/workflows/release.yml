@@ -50,6 +50,18 @@ jobs:
           echo "Archive erstellt:"
           ls -la *.zip *.tar.gz
 
+      - name: Extract Changelog section
+        id: changelog
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          BODY=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          {
+            echo "body<<EOF"
+            echo "$BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
@@ -57,4 +69,5 @@ jobs:
             flode.zip
             flode.tar.gz
           tag_name: ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.body }}
           token: ${{ secrets.GITHUB_TOKEN }}
