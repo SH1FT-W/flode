@@ -9,5 +9,6 @@
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/SH1FT-W/flode/issues",
+  "homeassistant": "2024.6.0",
   "requirements": []
 }
