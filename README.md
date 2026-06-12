@@ -117,5 +117,5 @@ Apache 2.0 — siehe [LICENSE](LICENSE)
 ---
 
 <div align="center">
-  <sub>Entwickelt von <strong>SH1FT-W</strong> · Aktiv weiterentwickelt mit <a href="https://claude.ai">Claude (Anthropic)</a></sub>
+  <sub>Fork von <strong>SH1FT-W</strong>, basierend auf <a href="https://github.com/FezVrasta/cafe-hass">C.A.F.E.</a> von Federico Zivolo · Aktiv weiterentwickelt mit <a href="https://claude.ai">Claude (Anthropic)</a></sub>
 </div>
