@@ -16,6 +16,11 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Erlaubt das Triagieren von Issues auch von Nutzern ohne
+          # Schreibrechte (externe Reporter). Sicher hier, weil der Job
+          # nur minimale Rechte hat (issues: write) und das automatisch
+          # rotierende GITHUB_TOKEN statt eines PAT verwendet.
+          allowed_non_write_users: "*"
           prompt: |
             REPO: ${{ github.repository }}
             ISSUE NUMBER: ${{ github.event.issue.number }}
