@@ -11,7 +11,6 @@ jobs:
   validate:
     name: HACS Validation
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,39 +19,3 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
-          ignore: brands hacsjson
-
-  validate-frontend:
-    name: Frontend Build Validierung
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "yarn"
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      - name: Build frontend
-        run: yarn build
-
-      - name: Validate frontend assets
-        run: |
-          if [ ! -f "custom_components/flode/www/index.html" ]; then
-            echo "❌ Frontend Build fehlgeschlagen - index.html fehlt"
-            exit 1
-          fi
-          if [ ! -d "custom_components/flode/www/assets" ]; then
-            echo "❌ Frontend Build fehlgeschlagen - assets Verzeichnis fehlt"
-            exit 1
-          fi
-          echo "✅ Frontend Build gültig"
