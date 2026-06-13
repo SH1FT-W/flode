@@ -4,6 +4,20 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.9.3] — 2026-06-13 — CI & Manifest Fixes
+
+### Fixed
+- `homeassistant` key removed from `manifest.json` (not a valid manifest field, belongs in `hacs.json` only)
+- Manifest keys sorted per hassfest requirements (domain, name, then alphabetical)
+- HACS validation workflow: removed `ignore` flags to comply with HACS submission requirements
+- Added hassfest validation workflow for integration compliance
+
+---
+
+All notable changes to FLODE are documented here.
+
+---
+
 ## [0.9.2] — 2026-06-12 — Lint & Code-Qualität
 
 ### Fixed
