@@ -1,0 +1,20 @@
+alias: Top-Level Variables Round-Trip
+description: Tests that top-level variables section is preserved in round-trip
+variables:
+  target_light: light.living_room
+  brightness_day: 80
+  brightness_night: 30
+  lookup_map:
+    morning: "06:00:00"
+    evening: "20:00:00"
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.motion
+    to: "on"
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: "{{ target_light }}"
+    data:
+      brightness_pct: "{{ brightness_day }}"
+mode: single

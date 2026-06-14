@@ -4,6 +4,22 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.9.4] — 2026-06-14 — Stop Action & Variables Bugfixes
+
+### Fixed
+- **Stop Action Node**: Stop-Nodes (`stop: "Meldung"`) werden jetzt orange mit OctagonX-Icon dargestellt statt grün wie reguläre Aktionen
+- **Stop Action Properties Panel**: Stop-Nodes zeigen jetzt den korrekten Typ "Ausführung stoppen" im Panel mit eigenem Stop-Meldung-Input und "Als Fehler markieren"-Toggle
+- **Stop/Error in "Zusätzliche Eigenschaften"**: `stop` und `error` wurden fälschlicherweise im Zusätzliche-Eigenschaften-Panel angezeigt — jetzt korrekt als behandelte Properties konfiguriert
+- **Top-Level `variables:` Round-Trip** (C.A.F.E. #210): `variables:` Section auf Automation-Ebene blieb beim YAML-Export erhalten — bisher wurden diese beim Exportieren entfernt
+- **Versionsnummer in UI**: `manifest.json` Version war nie aktualisiert worden — alle Builds zeigten fälschlicherweise "v0.9.2"
+
+### Added
+- i18n: `nodes:types.stop`, `nodes:actions.stopExecution`, `nodes:actions.stopError`, `nodes:actions.stopMessageLabel`, `nodes:actions.markAsError`, `nodes:actions.actionTypes.stop` (DE + EN)
+- Test-Fixture `34-toplevel-variables.yaml` für Variables-Round-Trip
+- Tests: `toplevel-variables-roundtrip.test.ts` (3 Tests)
+
+---
+
 ## [0.9.3] — 2026-06-13 — CI & Manifest Fixes
 
 ### Fixed

@@ -190,6 +190,11 @@ export class NativeStrategy extends BaseStrategy {
     automation.actions = actions;
     automation.mode = flow.metadata?.mode ?? 'single';
 
+    // Preserve top-level variables from original YAML (round-trip)
+    if (flow.userVariables && Object.keys(flow.userVariables).length > 0) {
+      automation.variables = flow.userVariables;
+    }
+
     // Add optional metadata
     if (flow.metadata?.max) {
       automation.max = flow.metadata.max;

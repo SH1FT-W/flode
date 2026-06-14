@@ -3,6 +3,7 @@
     "trigger": "Auslöser",
     "condition": "Bedingung",
     "action": "Aktion",
+    "stop": "Stopp",
     "delay": "Verzögerung",
     "wait": "Warten auf",
     "set_variables": "Variablen setzen",
@@ -88,7 +89,8 @@
     "actionTypeLabel": "Aktionstyp",
     "actionTypes": {
       "service": "Dienst aufrufen",
-      "event": "Ereignis auslösen"
+      "event": "Ereignis auslösen",
+      "stop": "Ausführung stoppen"
     },
     "actionLabel": "Aktion",
     "eventNameLabel": "Ereignisname",
@@ -103,7 +105,12 @@
     "targetAreasDescription": "Bereich-IDs als Ziel",
     "addAreaId": "Bereich-ID hinzufügen...",
     "fireEvent": "Ereignis auslösen",
-    "entitiesSelected": "{{count}} Entitäten"
+    "entitiesSelected": "{{count}} Entitäten",
+    "stopExecution": "Ausführung anhalten",
+    "stopError": "Als Fehler markieren",
+    "stopMessageLabel": "Stop-Meldung",
+    "stopMessagePlaceholder": "z.B. Bedingung nicht erfüllt",
+    "markAsError": "Als Fehler markieren"
   },
   "fieldOptions": {
     "weekday": {
