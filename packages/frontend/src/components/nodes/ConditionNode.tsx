@@ -99,6 +99,10 @@ export const ConditionNode = memo(function ConditionNode({
   };
   const getConditionLabel = (type: string) => conditionTypeLabels[type] ?? type;
 
+  const nodeData = data as ConditionNodeData & { _chooseCase?: number; _chooseCaseTotal?: number };
+  const chooseCase = nodeData._chooseCase;
+  const chooseCaseTotal = nodeData._chooseCaseTotal;
+
   const isGroup = data.condition === 'or' || data.condition === 'and' || data.condition === 'not';
   const nestedConditions = isGroup && Array.isArray(data.conditions) ? data.conditions : [];
   const hasNested = nestedConditions.length > 0;
@@ -121,6 +125,11 @@ export const ConditionNode = memo(function ConditionNode({
         hasErrors && 'border-red-500 ring-2 ring-red-400'
       )}
     >
+      {chooseCase !== undefined && chooseCaseTotal !== undefined && (
+        <div className="absolute -top-3 left-2 rounded-full bg-indigo-600 px-2 py-0.5 font-medium text-white text-[10px] shadow-sm">
+          {t('nodes:conditions.caseLabel', { index: chooseCase, total: chooseCaseTotal })}
+        </div>
+      )}
       {hasErrors && (
         <div
           className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"

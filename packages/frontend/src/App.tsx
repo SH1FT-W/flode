@@ -191,7 +191,9 @@ function App() {
 
   return (
     <ErrorBoundary
-      FallbackComponent={({ error }) => (
+      FallbackComponent={({ error }) => {
+        const err = error instanceof Error ? error : new Error(String(error));
+        return (
         <Dialog open={true} onOpenChange={reloadApp}>
           <DialogContent className="flex w-[90vw] max-w-full flex-col">
             <DialogHeader>
@@ -202,16 +204,17 @@ function App() {
 
             <div className="space-y-4">
               <pre className="max-h-60 overflow-auto rounded bg-red-100 p-4 text-red-800 text-sm">
-                {error.message}
+                {err.message}
                 <br />
-                {error.stack}
+                {err.stack}
               </pre>
               <div>{t('dialogs:error.refreshPrompt')}</div>
               <Button onClick={reloadApp}>{t('buttons.refresh')}</Button>
             </div>
           </DialogContent>
         </Dialog>
-      )}
+        );
+      }}
     >
       <ReactFlowProvider>
         <div className="flex h-screen flex-col bg-background">

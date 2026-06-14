@@ -177,14 +177,12 @@ export function FlowCanvas() {
         };
       }
 
-      // Internal choose-structure edges — shown as thin dashed lines so the red FALSE dot
-      // on condition nodes has a visible connection target
+      // Internal choose-structure edges — invisible, topology only
       if (edge.type === 'choose-chain' || edge.type === 'choose-default') {
-        const color = isDarkMode ? '#64748b' : '#94a3b8';
         return {
           ...edge,
-          style: { strokeWidth: 1, stroke: color, strokeDasharray: '4 4', opacity: 0.45 },
-          markerEnd: { type: MarkerType.ArrowClosed, color },
+          style: { opacity: 0, pointerEvents: 'none' as const },
+          markerEnd: undefined,
         };
       }
 
@@ -194,17 +192,6 @@ export function FlowCanvas() {
           ...edge,
           style: { strokeWidth: 2, stroke: isDarkMode ? '#94a3b8' : '#64748b' },
           markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#94a3b8' : '#64748b' },
-        };
-      }
-
-      // Choose-hint: same style as regular edges — shows all branches from the entry node
-      if (edge.type === 'choose-hint') {
-        const color = isDarkMode ? '#94a3b8' : '#64748b';
-        return {
-          ...edge,
-          type: 'default',
-          style: { strokeWidth: 2, stroke: color },
-          markerEnd: { type: MarkerType.ArrowClosed, color },
         };
       }
 

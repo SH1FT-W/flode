@@ -4,6 +4,22 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.9.5] — 2026-06-14 — Choose-Block Visualisierung, State-Dropdown & Dependency-Updates
+
+### Added
+- **Choose-Block Case Labels**: Erstes Bedingungsknoten jedes Choose-Falls zeigt jetzt einen Indigo-Pill-Badge ("Fall 1/3", "Fall 2/3", "Fall 3/3") — erleichtert die visuelle Unterscheidung mehrerer Branches im selben Choose-Block
+- **State-Dropdown in Bedingungsfeldern**: Zustand-Feld in Zustandsbedingungen zeigt jetzt eine Dropdown-Liste mit passenden Zuständen für die gewählte Entität (analog zu Auslösern)
+- **Übersetzte Zustandswerte**: Zustandswerte werden in der UI-Sprache angezeigt (on→An, off→Aus, home→Zuhause, etc.) mit optionalem englischen Suffix bei abweichenden Werten
+- **GitHub Actions Node.js 24**: Alle Workflows nutzen jetzt `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` um die Deprecation-Warnung für Node.js 20 zu vermeiden
+
+### Fixed
+- **react-error-boundary 6.1.x**: Breaking Change (`error: Error` → `error: unknown`) in `FallbackComponent` behoben
+
+### Changed
+- Dependency-Updates (minor/patch): `@xyflow/react`, `zustand`, `react-hook-form`, `react-error-boundary`, `fuse.js`, alle `@radix-ui/*`, `zod`, `elkjs`, `@biomejs/biome`, `turbo`, `tsx`, `glob`
+
+---
+
 ## [0.9.4] — 2026-06-14 — Stop Action & Variables Bugfixes
 
 ### Fixed

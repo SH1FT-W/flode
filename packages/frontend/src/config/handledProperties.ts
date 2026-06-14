@@ -11,6 +11,8 @@ export const HANDLED_PROPERTIES = {
     'alias', // Always handled by common alias field
     'enabled', // Handled by common enabled switch
     '_conditionId', // Internal property
+    '_chooseCase', // Internal: case index for visual label
+    '_chooseCaseTotal', // Internal: total cases for visual label
   ],
 
   // Trigger properties handled by TriggerFields component

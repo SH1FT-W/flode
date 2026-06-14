@@ -110,6 +110,8 @@ actions:
       - conditions:
           - condition: template
             value_template: "{{ states('cover.velux_blind') != 'closed' }}"
+            _chooseCase: 1
+            _chooseCaseTotal: 1
         sequence:
           - action: cover.close_cover
             target:
@@ -117,6 +119,8 @@ actions:
       - conditions:
           - condition: template
             value_template: "{{ states('cover.main_blind') != 'closed' }}"
+            _chooseCase: 1
+            _chooseCaseTotal: 1
         sequence: []
   - action: cover.close_cover
     target:
@@ -167,6 +171,8 @@ actions:
   - choose:
       - conditions:
           - condition: and
+            _chooseCase: 1
+            _chooseCaseTotal: 2
             conditions:
               - condition: state
                 entity_id: binary_sensor.occupancy
@@ -182,6 +188,8 @@ actions:
               temperature: 22
       - conditions:
           - condition: and
+            _chooseCase: 2
+            _chooseCaseTotal: 2
             conditions:
               - condition: state
                 entity_id: binary_sensor.occupancy
@@ -646,6 +654,8 @@ actions:
       - conditions:
           - condition: trigger
             id: arriving
+            _chooseCase: 1
+            _chooseCaseTotal: 2
           - condition: template
             value_template: |
               {{ (as_timestamp(now()) - as_timestamp(trigger.from_state.last_changed)) > 3600 }}
@@ -670,6 +680,8 @@ actions:
                   message: Welcome back! Turning on the water heater now.
       - conditions:
           - condition: or
+            _chooseCase: 2
+            _chooseCaseTotal: 2
             conditions:
               - condition: trigger
                 id: leaving
@@ -767,6 +779,8 @@ actions:
       - conditions:
           - condition: trigger
             id: playing
+            _chooseCase: 1
+            _chooseCaseTotal: 2
         sequence:
           - action: light.turn_off
             target:
@@ -778,6 +792,8 @@ actions:
       - conditions:
           - condition: trigger
             id: paused
+            _chooseCase: 2
+            _chooseCaseTotal: 2
         sequence:
           - action: light.turn_on
             target:
@@ -792,25 +808,25 @@ variables:
     nodes:
       trigger_test_0_124:
         x: 40
-        "y": 214
+        "y": 277
       trigger_test_1_125:
         x: 40
-        "y": 46
+        "y": 137
       condition_test_2_126:
         x: 360
-        "y": 137
+        "y": 200
       condition_test_3_127:
         x: 700
-        "y": 200
+        "y": 263
       action_test_4_128:
         x: 1040
-        "y": 210
+        "y": 273
       condition_test_5_129:
         x: 700
-        "y": 360
+        "y": 423
       action_test_6_130:
         x: 1040
-        "y": 370
+        "y": 433
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -969,6 +985,8 @@ actions:
       - conditions:
           - condition: trigger
             id: NightOff
+            _chooseCase: 1
+            _chooseCaseTotal: 3
         sequence:
           - if:
               - condition: state
@@ -1005,6 +1023,8 @@ actions:
             id:
               - light-toggled-on
               - fan-switch-toggled-on
+            _chooseCase: 2
+            _chooseCaseTotal: 3
           - condition: time
             after: "05:45:00"
             before: "21:00:00"
@@ -1026,6 +1046,8 @@ actions:
             id:
               - light-toggled-off
               - fan-switch-toggled-off
+            _chooseCase: 3
+            _chooseCaseTotal: 3
           - condition: time
             after: "05:45:00"
             before: "21:00:00"
@@ -1154,6 +1176,8 @@ actions:
       - conditions:
           - condition: trigger
             id: machine_on
+            _chooseCase: 1
+            _chooseCaseTotal: 2
           - condition: state
             entity_id: input_boolean.wasmachine_status
             state: "off"
@@ -1169,6 +1193,8 @@ actions:
       - conditions:
           - condition: trigger
             id: machine_off
+            _chooseCase: 2
+            _chooseCaseTotal: 2
           - condition: state
             entity_id: input_boolean.wasmachine_status
             state: "on"
@@ -1250,6 +1276,8 @@ triggers:
     id: ZapfenstreichAn
 conditions:
   - condition: and
+    _chooseCase: 1
+    _chooseCaseTotal: 1
     conditions:
       - condition: state
         entity_id: input_boolean.zapfenstreich
@@ -1781,6 +1809,8 @@ actions:
       - condition: template
         enabled: false
         value_template: "{{ action_type == 'activity_call' }}"
+        _chooseCase: 1
+        _chooseCaseTotal: 1
     then:
       - alias: Execute Universal Activity Orchestrator
         action: script.universal_media_activity_orchestrator

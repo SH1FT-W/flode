@@ -4,60 +4,55 @@ import { useTranslation } from 'react-i18next';
 import { FieldError } from '@/components/forms/FieldError';
 import { FormField } from '@/components/forms/FormField';
 import { DynamicFieldRenderer } from '@/components/ui/DynamicFieldRenderer';
+import { Input } from '@/components/ui/input';
 import { MultiEntitySelector } from '@/components/ui/MultiEntitySelector';
-import { getTriggerFields } from '@/config/triggerFields';
+import { getConditionFields } from '@/config/conditionFields';
 import { useHass } from '@/contexts/HassContext';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
 import { GENERIC_STATES, StateValueCombobox, getStateSuggestions } from './StateValueCombobox';
 
-interface StateTriggerFieldsProps {
+interface StateConditionFieldsProps {
   node: FlowNode;
   onChange: (key: string, value: unknown) => void;
   entities: HassEntity[];
 }
 
-/**
- * Fields for the `state` trigger platform.
- * Renders entity_id, to/from state selectors with live state suggestions, and the `for` duration.
- */
-export function StateTriggerFields({ node, onChange, entities }: StateTriggerFieldsProps) {
+export function StateConditionFields({ node, onChange, entities }: StateConditionFieldsProps) {
   const { t } = useTranslation(['nodes', 'common']);
   const { getFieldError } = useNodeErrors(node.id);
   const { entities: contextEntities } = useHass();
 
   const allEntities = entities.length > 0 ? entities : contextEntities;
 
-  const entityIdRaw = (node.data as Record<string, unknown>).entity_id;
+  const nodeData = node.data as Record<string, unknown>;
+  const entityIdRaw = nodeData.entity_id;
   const entityIds: string[] = Array.isArray(entityIdRaw)
     ? entityIdRaw
     : typeof entityIdRaw === 'string' && entityIdRaw
       ? [entityIdRaw]
       : [];
 
-  const toValue = getNodeDataString(node, 'to');
-  const fromValue = getNodeDataString(node, 'from');
+  const stateValue = getNodeDataString(node, 'state');
+  const attributeValue = getNodeDataString(node, 'attribute');
 
-  // Collect state suggestions from all selected entities
   const stateSuggestions = useMemo(() => {
     if (entityIds.length === 0) return GENERIC_STATES;
-    const allSuggestions = new Set<string>();
+    const all = new Set<string>();
     for (const id of entityIds) {
       for (const s of getStateSuggestions(id, allEntities)) {
-        allSuggestions.add(s);
+        all.add(s);
       }
     }
-    return Array.from(allSuggestions);
+    return Array.from(all);
   }, [entityIds, allEntities]);
 
-  // The `for` field uses the existing DynamicFieldRenderer
-  const forField = getTriggerFields('state').find((f) => f.name === 'for');
+  const forField = getConditionFields('state').find((f) => f.name === 'for');
 
   return (
     <>
-      {/* Entity selector */}
-      <FormField label={t('nodes:triggers.fields.entityId')} required>
+      <FormField label={t('nodes:fieldLabels.entity_id')} required>
         <MultiEntitySelector
           value={entityIds}
           onChange={(value) => onChange('entity_id', value)}
@@ -67,31 +62,29 @@ export function StateTriggerFields({ node, onChange, entities }: StateTriggerFie
         <FieldError message={getFieldError('entity_id')} />
       </FormField>
 
-      {/* To State */}
-      <FormField label={t('nodes:triggers.fields.toState')}>
+      <FormField label={t('nodes:fieldLabels.state')} required>
         <StateValueCombobox
-          value={toValue}
-          onChange={(v) => onChange('to', v || undefined)}
+          value={stateValue}
+          onChange={(v) => onChange('state', v || undefined)}
           suggestions={stateSuggestions}
-          placeholder={t('nodes:triggers.fields.toStatePlaceholder')}
+          placeholder={t('nodes:fieldPlaceholders.state')}
+        />
+        <FieldError message={getFieldError('state')} />
+      </FormField>
+
+      <FormField label={t('nodes:fieldLabels.attribute')}>
+        <Input
+          type="text"
+          value={attributeValue}
+          onChange={(e) => onChange('attribute', e.target.value || undefined)}
+          placeholder={t('nodes:fieldPlaceholders.attribute')}
         />
       </FormField>
 
-      {/* From State */}
-      <FormField label={t('nodes:triggers.fields.fromState')}>
-        <StateValueCombobox
-          value={fromValue}
-          onChange={(v) => onChange('from', v || undefined)}
-          suggestions={stateSuggestions}
-          placeholder={t('nodes:triggers.fields.fromStatePlaceholder')}
-        />
-      </FormField>
-
-      {/* For Duration */}
       {forField && (
         <DynamicFieldRenderer
           field={forField}
-          value={(node.data as Record<string, unknown>)[forField.name]}
+          value={nodeData[forField.name]}
           onChange={(value) => onChange(forField.name, value)}
           entities={allEntities}
           error={getFieldError(forField.name)}

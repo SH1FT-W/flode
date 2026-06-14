@@ -314,7 +314,7 @@ export class YamlParser {
         const nodePositionMap = new Map(metaNodes.map((n) => [n.id, n.position.x]));
         const hasBackwardsChooseChain = edges.some(
           (e) =>
-            (e.type === 'choose-chain' || e.type === 'choose-hint') &&
+            e.type === 'choose-chain' &&
             (nodePositionMap.get(e.target) ?? 0) < (nodePositionMap.get(e.source) ?? 0) - 100
         );
         nodesWithPositions = hasBackwardsChooseChain
@@ -2061,9 +2061,6 @@ export class YamlParser {
       return Array.isArray(conds) ? conds.length > 0 : Boolean(conds);
     });
 
-    // Keep the entry point IDs to add choose-hint edges from entry to case 2+
-    const originalPreviousIds = [...previousNodeIds];
-
     // Track what nodes should connect to the next condition (false path of current)
     let currentPreviousIds = [...previousNodeIds];
 
@@ -2101,6 +2098,8 @@ export class YamlParser {
               // Preserve id for trigger conditions
               id: condition.id as string | undefined,
               enabled: getNodeEnabled(),
+              // Mark first condition of each case for visual case label
+              ...(i === 0 ? { _chooseCase: choiceIndex + 1, _chooseCaseTotal: validChoices.length } : {}),
             },
           };
         } else {
@@ -2141,7 +2140,11 @@ export class YamlParser {
             id: conditionId,
             type: 'condition',
             position: { x: 0, y: 0 },
-            data,
+            data: {
+              ...data,
+              // Mark first condition of each case for visual case label
+              ...(i === 0 ? { _chooseCase: choiceIndex + 1, _chooseCaseTotal: validChoices.length } : {}),
+            },
           };
         }
 
@@ -2208,18 +2211,6 @@ export class YamlParser {
           (e as Record<string, unknown>).type = 'choose-chain';
         }
         edges.push(e);
-      }
-
-      // For case 2+: add a visible choose-hint edge from the original entry node to this case.
-      // Only add from CONDITION entry nodes — trigger nodes already have hint edges to their
-      // matching conditions, so adding choose-hint from triggers creates crossed lines.
-      if (choiceIndex > 0 && originalPreviousIds.length > 0) {
-        for (const entryId of originalPreviousIds) {
-          if (!conditionNodeIds.has(entryId)) continue;
-          const hintEdge = this.createEdge(entryId, firstConditionId);
-          (hintEdge as Record<string, unknown>).type = 'choose-hint';
-          edges.push(hintEdge);
-        }
       }
 
       // Chain condition nodes together with 'true' edges
@@ -2292,24 +2283,11 @@ export class YamlParser {
         );
         if (falseEdge && localConditionIds.has(lastConditionId)) {
           falseEdge.sourceHandle = 'false';
-          // Mark as choose-default so the UI hides this edge (choose-hint from entry already shows it)
           (falseEdge as Record<string, unknown>).type = 'choose-default';
         }
         // The last node in the default sequence is the output
         const lastNodeId = defaultResult.nodes[defaultResult.nodes.length - 1].id;
         outputNodeIds.push(lastNodeId);
-
-        // Add choose-hint from entry to first default node so the default branch
-        // also appears connected to the entry point (same as case 2+).
-        // Only add from CONDITION entry nodes (same reason as case 2+ above).
-        if (originalPreviousIds.length > 0) {
-          for (const entryId of originalPreviousIds) {
-            if (!conditionNodeIds.has(entryId)) continue;
-            const defaultHintEdge = this.createEdge(entryId, firstDefaultId);
-            (defaultHintEdge as Record<string, unknown>).type = 'choose-hint';
-            edges.push(defaultHintEdge);
-          }
-        }
       }
     } else if (validChoices.length > 0) {
       // No default - the last condition's false path is an implicit output

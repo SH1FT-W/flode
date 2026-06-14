@@ -22,5 +22,13 @@ export function ChooseChainEdge({
     targetPosition,
   });
 
-  return <BaseEdge path={edgePath} style={{ strokeWidth: 0, opacity: 0 }} />;
+  return (
+    <BaseEdge
+      path={edgePath}
+      style={{
+        strokeWidth: 0,
+        opacity: 0,
+      }}
+    />
+  );
 }

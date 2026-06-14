@@ -21,6 +21,7 @@ import type { ConditionNodeData } from '@/store/flow-store';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
 import { DeviceConditionFields } from './DeviceConditionFields';
+import { StateConditionFields } from './StateConditionFields';
 
 interface ConditionFieldsProps {
   node: FlowNode;
@@ -61,6 +62,11 @@ export function ConditionFields({ node, onChange, entities }: ConditionFieldsPro
   };
 
   const renderConditionFields = () => {
+    // State condition: entity-aware state dropdown + attribute + duration
+    if (conditionType === 'state') {
+      return <StateConditionFields node={node} onChange={onChange} entities={entities} />;
+    }
+
     // Device conditions use a special component with DeviceSelector
     if (conditionType === 'device') {
       return <DeviceConditionFields node={node} onChange={onChange} />;
