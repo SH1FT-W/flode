@@ -6,7 +6,7 @@
   <p><strong>Visual Flow + Node Editor for Home Assistant</strong></p>
 
   <p>
-    <img alt="Version" src="https://img.shields.io/badge/version-0.9.5-blue?style=flat-square" />
+    <img alt="Version" src="https://img.shields.io/badge/version-0.9.6-blue?style=flat-square" />
     <img alt="HA Version" src="https://img.shields.io/badge/HA-2024.6%2B-brightgreen?style=flat-square" />
     <img alt="HACS" src="https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat-square" />
     <img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square" />
