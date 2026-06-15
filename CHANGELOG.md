@@ -4,6 +4,18 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.9.6] — 2026-06-15 — Templated Delay & Top-Level Keys Round-Trip
+
+### Fixed
+- **#221 — Templated delay / wait timeout (Objekt-Form)**: Delay- und Wait-Felder (`hours`, `minutes`, `seconds`, `milliseconds`) akzeptieren jetzt `string | number` — Template-Strings wie `{{ states('input_number.delay_minutes') | int(5) }}` wurden bisher von Zod abgelehnt und verhinderten den Import der Automation
+- **#220 — Top-Level Automations-Keys gehen beim Speichern verloren**: `trigger_variables`, `initial_state: false` und `trace` wurden beim Export nicht zurückgeschrieben. Ursache war ein hartkodiertes 7-Felder-Objekt in `createAutomation`/`updateAutomation` (ha-api.ts) das alle anderen Keys stillschweigend verwarf. Behoben durch vollständiges Spread des Config-Objekts
+
+### Tests
+- `issue-221-templated-delay.test.ts` (5 Tests)
+- `issue-220-toplevel-keys-roundtrip.test.ts` (6 Tests)
+
+---
+
 ## [0.9.5] — 2026-06-14 — Choose-Block Visualisierung, State-Dropdown & Dependency-Updates
 
 ### Added
