@@ -441,16 +441,19 @@ export class HomeAssistantAPI {
       // Generate a numeric ID like Home Assistant uses
       const automationId = config.id || Date.now().toString();
 
-      // Ensure the config has the required fields for Home Assistant (plural forms)
+      // Spread all fields from config so nothing is accidentally stripped,
+      // then normalise the keys HA requires (plural trigger/condition/action forms).
+      const { trigger, condition, action, ...rest } = config as Record<string, unknown>;
       const configWithId = {
+        ...rest,
         id: automationId,
         alias: config.alias || `FLODE Automation ${automationId}`,
         description: config.description || '',
-        triggers: config.trigger || config.triggers || [],
-        conditions: config.condition || config.conditions || [],
-        actions: config.action || config.actions || [],
+        triggers: (trigger as unknown[] | undefined) || (config.triggers as unknown[]) || [],
+        conditions: (condition as unknown[] | undefined) || (config.conditions as unknown[]) || [],
+        actions: (action as unknown[] | undefined) || (config.actions as unknown[]) || [],
         mode: config.mode || 'single',
-        variables: config.variables || {},
+        variables: (config.variables as Record<string, unknown>) || {},
       };
 
       // Step 1: Create/save the automation configuration using REST API
@@ -492,16 +495,19 @@ export class HomeAssistantAPI {
    */
   async updateAutomation(automationId: string, config: AutomationConfig): Promise<void> {
     try {
-      // Ensure the config has the correct structure that HA expects (plural forms)
+      // Spread all fields from config so nothing is accidentally stripped,
+      // then normalise the keys HA requires (plural trigger/condition/action forms).
+      const { trigger, condition, action, ...rest } = config as Record<string, unknown>;
       const configWithId = {
+        ...rest,
         id: automationId,
         alias: config.alias || `FLODE Automation ${automationId}`,
         description: config.description || '',
-        triggers: config.trigger || config.triggers || [],
-        conditions: config.condition || config.conditions || [],
-        actions: config.action || config.actions || [],
+        triggers: (trigger as unknown[] | undefined) || (config.triggers as unknown[]) || [],
+        conditions: (condition as unknown[] | undefined) || (config.conditions as unknown[]) || [],
+        actions: (action as unknown[] | undefined) || (config.actions as unknown[]) || [],
         mode: config.mode || 'single',
-        variables: config.variables || {},
+        variables: (config.variables as Record<string, unknown>) || {},
       };
 
       // Use POST method for updates (HA doesn't support PUT for automation config updates)
