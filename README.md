@@ -9,7 +9,7 @@
   [![HA Version](https://img.shields.io/badge/HA-2024.1%2B-brightgreen?style=flat-square)](https://www.home-assistant.io)
   [![Lizenz](https://img.shields.io/badge/lizenz-Apache%202.0-orange?style=flat-square)](LICENSE)
   [![Status](https://img.shields.io/badge/status-beta-yellow?style=flat-square)](https://github.com/SH1FT-W/flode/releases)
-  [![Tests](https://img.shields.io/badge/tests-267%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
+  [![Tests](https://img.shields.io/badge/tests-204%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
   [![HACS](https://img.shields.io/badge/HACS-custom-blueviolet?style=flat-square)](https://hacs.xyz)
 
   <br/>
@@ -119,7 +119,7 @@ flode/
 - **Frontend:** React 18, Vite, Tailwind CSS, React Flow (xyflow), Zustand, i18next
 - **Transpiler:** TypeScript, js-yaml, ELK Layout-Engine
 - **Validierung:** Zod Schemas
-- **Tests:** Vitest (267 Tests)
+- **Tests:** Vitest (204 Tests)
 - **HA-Integration:** Python, Custom Panel via `panel_custom`
 
 ---
