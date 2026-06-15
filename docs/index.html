@@ -287,7 +287,7 @@
     <span class="pill pill-amber">Beta</span>
     <span class="pill pill-gray">Apache 2.0</span>
     <span class="pill pill-gray">HACS</span>
-    <span class="pill pill-gray">187 Tests</span>
+    <span class="pill pill-gray test-count">… Tests</span>
   </div>
 </section>
 
@@ -522,6 +522,18 @@
       document.querySelectorAll('.version-tag').forEach(el => el.textContent = 'latest');
     });
 
+
+  // Testzahl live aus README laden (parst "Vitest (NNN Tests)")
+  fetch('https://api.github.com/repos/SH1FT-W/flode/contents/README.md')
+    .then(r => r.json())
+    .then(data => {
+      const text = atob(data.content.replace(/\n/g, ''));
+      const match = text.match(/Vitest\s*\((\d+)\s*Tests?\)/i);
+      if (match) {
+        document.querySelectorAll('.test-count').forEach(el => el.textContent = match[1] + ' Tests');
+      }
+    })
+    .catch(() => {});
   // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
