@@ -1,90 +1,103 @@
 <div align="center">
-  <p>🇩🇪 <strong>Deutsch</strong> · <a href="README.en.md">🇬🇧 English</a></p>
+  <img src="custom_components/flode/brand/icon.png" width="100" alt="FLODE Logo" />
 
-  <img src="custom_components/flode/brand/icon.png" alt="FLODE Logo" width="120" />
   <h1>FLODE</h1>
+
   <p><strong>Visueller Flow + Node Editor für Home Assistant</strong></p>
 
-  <p>
-    <img alt="Version" src="https://img.shields.io/badge/version-0.9.5-blue?style=flat-square" />
-    <img alt="HA Version" src="https://img.shields.io/badge/HA-2024.6%2B-brightgreen?style=flat-square" />
-    <img alt="HACS" src="https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat-square" />
-    <img alt="Lizenz" src="https://img.shields.io/badge/lizenz-Apache%202.0-orange?style=flat-square" />
-    <img alt="Status" src="https://img.shields.io/badge/status-beta-yellow?style=flat-square" />
-  </p>
+  [![Release](https://img.shields.io/github/v/release/SH1FT-W/flode?style=flat-square&color=2F81F7&label=version)](https://github.com/SH1FT-W/flode/releases/latest)
+  [![HA Version](https://img.shields.io/badge/HA-2024.1%2B-brightgreen?style=flat-square)](https://www.home-assistant.io)
+  [![Lizenz](https://img.shields.io/badge/lizenz-Apache%202.0-orange?style=flat-square)](LICENSE)
+  [![Status](https://img.shields.io/badge/status-beta-yellow?style=flat-square)](https://github.com/SH1FT-W/flode/releases)
+  [![Tests](https://img.shields.io/badge/tests-187%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
+  [![HACS](https://img.shields.io/badge/HACS-custom-blueviolet?style=flat-square)](https://hacs.xyz)
 
-  <table>
-    <tr>
-      <td align="center"><b>Light Mode</b></td>
-      <td align="center"><b>Dark Mode</b></td>
-    </tr>
-    <tr>
-      <td><img src="docs/images/flode-light.png" alt="FLODE Light Mode" width="480" /></td>
-      <td><img src="docs/images/flode-dark.png" alt="FLODE Dark Mode" width="480" /></td>
-    </tr>
-  </table>
+  <br/>
+
+  [🌐 **Website**](https://sh1ft-w.github.io/flode) · [📦 Installation](#installation) · [📋 Changelog](CHANGELOG.md) · [🐛 Issues](https://github.com/SH1FT-W/flode/issues)
+
+  <br/>
+
+  | Light Mode | Dark Mode |
+  |:---:|:---:|
+  | ![FLODE Light Mode](docs/images/flode-light.png) | ![FLODE Dark Mode](docs/images/flode-dark.png) |
+
 </div>
 
 ---
 
-> **Fork-Hinweis:** FLODE basiert auf [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) von [@FezVrasta](https://github.com/FezVrasta). Dieses Repository ist ein Fork mit zahlreichen Bugfixes, Verbesserungen und der vollständigen Umbenennung auf FLODE. Änderungen gegenüber dem Original sind im [CHANGELOG](CHANGELOG.md) dokumentiert.
+> **Fork-Hinweis:** FLODE basiert auf [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) von [@FezVrasta](https://github.com/FezVrasta) — mit zahlreichen Bugfixes, neuen Features und vollständiger Umbenennung. Alle Änderungen sind im [CHANGELOG](CHANGELOG.md) dokumentiert.
+>
+> **⚠️ Beta:** FLODE ist darauf ausgelegt, keine bestehenden Daten zu überschreiben. Trotzdem empfehlen wir, Automatisierungen vor der Bearbeitung zu sichern.
 
-> **Beta:** FLODE ist darauf ausgelegt, keine bestehenden Daten zu überschreiben. Trotzdem empfehlen wir, Automatisierungen vor der Bearbeitung zu sichern.
+---
 
 ## Was ist FLODE?
 
-**FLODE** ist ein visueller Flow-Editor für Home Assistant Automatisierungen — inspiriert von Node-RED, aber ohne externen Server. Du zeichnest deine Automatisierungen als Diagramme und FLODE übersetzt sie automatisch in **100 % natives Home Assistant YAML**, das direkt im HA-Kern gespeichert wird. Kein Vendor Lock-in. Kein externer Dienst. Automatisierungen bleiben vollständig im integrierten HA-Editor bearbeitbar.
+**FLODE** ist ein visueller Flow-Editor für Home Assistant Automatisierungen — inspiriert von Node-RED, aber ohne externen Server. Du zeichnest deine Automatisierungen als Diagramme und FLODE übersetzt sie automatisch in **100 % natives Home Assistant YAML**, das direkt im HA-Kern gespeichert wird.
+
+Kein Vendor Lock-in. Kein externer Dienst. Automatisierungen bleiben vollständig im integrierten HA-Editor bearbeitbar.
+
+---
 
 ## Funktionen
 
-- **Visueller Flow-Editor** — Trigger, Bedingungen und Aktionen per Drag-and-Drop auf einer Leinwand
-- **100 % natives YAML** — Die Ausgabe ist Standard-HA-Automatisierungs-YAML, kein proprietäres Format
-- **Bidirektional** — Bestehende HA-Automatisierungen importieren, visuell bearbeiten und zurückspeichern
-- **Trace-Integration** — Flows mit der offiziellen HA Trace-Ansicht debuggen
-- **State-Machine-Unterstützung** — Komplexe Schleifen und Verzweigungen via automatischem State-Machine-Muster
-- **Deutsch & Englisch** — Vollständige i18n-Unterstützung
-- **Dark & Light Mode** — Folgt dem eingestellten HA-Theme
+| Feature | Beschreibung |
+|---|---|
+| 🎯 **Visueller Editor** | Trigger, Bedingungen und Aktionen per Drag-and-Drop auf einer Leinwand |
+| 📄 **100 % natives YAML** | Kein proprietäres Format — Standard HA-Automatisierungs-YAML |
+| 🔄 **Bidirektional** | Bestehende HA-Automatisierungen importieren, bearbeiten, zurückspeichern |
+| 🐛 **Trace-Integration** | Flows mit der offiziellen HA Trace-Ansicht debuggen |
+| 🔀 **State Machines** | Komplexe Schleifen via automatischem State-Machine-Muster |
+| 🌍 **DE & EN** | Vollständige i18n-Unterstützung |
+| 🌗 **Dark & Light Mode** | Folgt automatisch dem eingestellten HA-Theme |
 
-## Installation
-
-### Über HACS (empfohlen)
-
-**Schaltfläche (ein Klick):**
-
-[![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
-
-**Manuell in HACS:**
-
-1. HACS öffnen → Integrationen → ⋮ → Benutzerdefinierte Repositories
-2. URL `https://github.com/SH1FT-W/flode` eingeben, Typ **Integration** wählen → Hinzufügen
-3. HACS → Integrationen → Nach **FLODE** suchen → Installieren
-4. Home Assistant neu starten
-5. **Einstellungen → Integrationen → Integration hinzufügen → FLODE**
-
-### Manuell (ohne HACS)
-
-1. Neueste Version von der [Releases-Seite](https://github.com/SH1FT-W/flode/releases) herunterladen (`flode.zip`)
-2. Archiv entpacken und den Ordner `flode/` nach `config/custom_components/flode/` kopieren
-3. Home Assistant neu starten
-4. **Einstellungen → Integrationen → Integration hinzufügen → FLODE**
-
-## Verwendung
-
-Nach der Einrichtung erscheint **FLODE** in der HA-Seitenleiste. Einfach anklicken, um den Flow-Editor zu öffnen.
-
-- **Neue Automatisierung** — Mit einem Trigger-Knoten beginnen, Bedingungen und Aktionen hinzufügen
-- **Bestehende importieren** — Über das Ordner-Symbol eine vorhandene HA-Automatisierung laden
-- **Speichern** — Speichert direkt in Home Assistant als native Automatisierung
-- **YAML exportieren** — Generierten YAML-Code jederzeit ansehen oder kopieren
+---
 
 ## Knotentypen
 
 | Knoten | Farbe | Beschreibung |
 |---|---|---|
-| Trigger | Gelb | Was die Automatisierung startet (Zustand, Zeit, Ereignis, ...) |
-| Bedingung | Blau | Filter — läuft nur weiter, wenn die Bedingung erfüllt ist |
-| Aktion | Grün | Was passiert (Dienst aufrufen, Ereignis auslösen, Verzögerung, ...) |
-| OR / AND / NOT | Lila | Mehrere Bedingungen gruppieren |
+| **Trigger** | 🟡 Gelb | Was die Automatisierung startet — Zustand, Zeit, Ereignis, … |
+| **Bedingung** | 🔵 Blau | Filter — läuft nur weiter, wenn die Bedingung erfüllt ist |
+| **Aktion** | 🟢 Grün | Was passiert — Dienst aufrufen, Ereignis, Verzögerung, … |
+| **OR / AND / NOT** | 🟣 Lila | Mehrere Bedingungen und Trigger logisch verknüpfen |
+
+---
+
+## Installation
+
+### Via HACS (empfohlen)
+
+[![In HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
+
+**Manuell in HACS:**
+
+1. HACS öffnen → Integrationen → ⋮ → **Benutzerdefinierte Repositories**
+2. URL `https://github.com/SH1FT-W/flode` eingeben, Typ **Integration** → Hinzufügen
+3. HACS → Integrationen → Nach **FLODE** suchen → Installieren
+4. Home Assistant **neu starten**
+5. Einstellungen → Integrationen → Integration hinzufügen → **FLODE**
+
+### Manuell (ohne HACS)
+
+1. Neueste Version von der [Releases-Seite](https://github.com/SH1FT-W/flode/releases) herunterladen (`flode.zip`)
+2. Ordner `flode/` nach `config/custom_components/flode/` kopieren
+3. Home Assistant neu starten
+4. Einstellungen → Integrationen → Integration hinzufügen → **FLODE**
+
+---
+
+## Verwendung
+
+Nach der Einrichtung erscheint **FLODE** in der HA-Seitenleiste.
+
+- **Neue Automatisierung** — Mit einem Trigger-Knoten beginnen, Bedingungen und Aktionen verbinden
+- **Bestehende importieren** — Über das Ordner-Symbol eine vorhandene HA-Automatisierung laden
+- **Speichern** — Speichert direkt in Home Assistant als native Automatisierung
+- **YAML exportieren** — Generierten YAML-Code jederzeit ansehen oder kopieren
+
+---
 
 ## Projektstruktur
 
@@ -109,9 +122,13 @@ flode/
 - **Tests:** Vitest (267 Tests)
 - **HA-Integration:** Python, Custom Panel via `panel_custom`
 
+---
+
 ## Changelog
 
 Alle Änderungen findest du in der [CHANGELOG.md](CHANGELOG.md).
+
+---
 
 ## Lizenz
 
