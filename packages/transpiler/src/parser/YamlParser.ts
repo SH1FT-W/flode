@@ -2170,8 +2170,27 @@ export class YamlParser {
       const firstConditionId = choiceConditionNodes[0].id;
       const lastConditionId = choiceConditionNodes[choiceConditionNodes.length - 1].id;
 
-      // Add visual hint edges: matching trigger → first condition of this choice
-      if (triggerIdToNodeId.size > 0) {
+      // Fan-out: for cases beyond the first, add a visible hint edge from each original
+      // entry node (e.g. the Vorlage/gate) directly to this case's first condition.
+      // This shows "Vorlage → Fall 1, Vorlage → Fall 2" as a fork, while the invisible
+      // choose-chain edge still exists for transpiler topology.
+      if (choiceIndex > 0) {
+        for (const entryId of previousNodeIds) {
+          const fanHandle = conditionNodeIds.has(entryId) ? 'true' : undefined;
+          const fanEdge = this.createEdge(entryId, firstConditionId, fanHandle);
+          (fanEdge as Record<string, unknown>).type = 'hint';
+          edges.push(fanEdge);
+        }
+      }
+
+      // Add visual hint edges: matching trigger → first condition of this choice.
+      // Only when triggers are direct predecessors of this choose block (no root-level
+      // condition node sits between them). If previousNodeIds contains only condition
+      // nodes from an outer scope, the trigger→case connection is already implied
+      // through the visible Vorlage→case path and adding a hint edge would create a
+      // misleading bypass line that skips the gate.
+      const triggersAreDirectPredecessors = previousNodeIds.some((id) => triggerNodeIds.has(id));
+      if (triggerIdToNodeId.size > 0 && triggersAreDirectPredecessors) {
         for (const condNode of choiceConditionNodes) {
           const condData = condNode.data as Record<string, unknown>;
           if (condData.condition === 'trigger' && condData.id) {

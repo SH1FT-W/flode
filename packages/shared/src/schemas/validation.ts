@@ -41,6 +41,9 @@ export const ActionNodeValidationSchema = z
   })
   .passthrough()
   .superRefine((data, ctx) => {
+    // Opaque repeat nodes (repeat.count / repeat.while / repeat.until) are valid without service/event
+    if (data.repeat !== null && typeof data.repeat === 'object') return;
+
     const hasEvent = typeof data.event === 'string' && data.event.trim() !== '';
     const hasService = typeof data.service === 'string' && data.service.trim() !== '';
 

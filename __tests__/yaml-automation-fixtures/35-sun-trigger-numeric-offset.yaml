@@ -1,0 +1,20 @@
+alias: Sun trigger with numeric offset
+description: "Issue #9: sun trigger offset accepts number (seconds), string (HH:MM:SS), and dict forms"
+triggers:
+  - trigger: sun
+    event: sunset
+    offset: 0
+  - trigger: sun
+    event: sunset
+    offset: -1800
+  - trigger: sun
+    event: sunrise
+    offset: 3600
+  - trigger: sun
+    event: sunset
+    offset: "-00:30:00"
+actions:
+  - action: notify.persistent_notification
+    data:
+      message: Sun trigger fired
+mode: single

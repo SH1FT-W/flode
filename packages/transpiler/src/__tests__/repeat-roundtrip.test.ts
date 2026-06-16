@@ -153,7 +153,7 @@ actions:
 mode: single
 `;
 
-    it('should parse repeat.count into exploded nodes', async () => {
+    it('should parse repeat.count into exploded state machine nodes', async () => {
       const result = await parser.parse(yaml);
       expect(result.success).toBe(true);
       expect(result.graph).toBeDefined();
@@ -167,6 +167,10 @@ mode: single
       const setVarNodes = graph.nodes.filter((n) => n.type === 'set_variables');
       expect(setVarNodes.length).toBe(2);
 
+      // Init node should be the one initializing counter to 0
+      const initNode = setVarNodes.find((n) => Object.values(n.data.variables as Record<string, unknown>).includes(0));
+      expect(initNode).toBeDefined();
+
       // Should have a condition node for the counter check
       const conditionNodes = graph.nodes.filter((n) => n.type === 'condition');
       expect(conditionNodes.length).toBe(1);
@@ -175,7 +179,6 @@ mode: single
       // Should have a structurally-detected back-edge
       const backEdgeIds = findBackEdges(graph);
       expect(backEdgeIds.size).toBe(1);
-      // The back-edge source should be the condition node (count pattern: condition →(true)→ body)
       const backEdge = graph.edges.find((e) => backEdgeIds.has(e.id))!;
       expect(backEdge.source).toBe(conditionNodes[0].id);
     });

@@ -65,6 +65,7 @@
   },
   "conditions": {
     "caseLabel": "Fall {{index}} / {{total}}",
+    "defaultLabel": "Sonst",
     "conditionLabel": "Bedingungstyp",
     "types": {
       "state": "Zustand",
@@ -111,7 +112,11 @@
     "stopError": "Als Fehler markieren",
     "stopMessageLabel": "Stop-Meldung",
     "stopMessagePlaceholder": "z.B. Bedingung nicht erfüllt",
-    "markAsError": "Als Fehler markieren"
+    "markAsError": "Als Fehler markieren",
+    "repeatLabel": "{{n}}× Wiederholen",
+    "repeatSequenceLabel": "Sequenz",
+    "repeatActions_one": "{{count}} Aktion",
+    "repeatActions_other": "{{count}} Aktionen"
   },
   "fieldOptions": {
     "weekday": {

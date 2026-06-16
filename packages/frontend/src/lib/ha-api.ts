@@ -514,9 +514,17 @@ export class HomeAssistantAPI {
       await this.fetchRestAPI(`config/automation/config/${automationId}`, 'POST', configWithId);
     } catch (error) {
       console.error('FLODE: Failed to update automation:', error);
-      throw new Error(
-        `Failed to update automation: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      let detail: string;
+      if (error instanceof Error) {
+        detail = error.message;
+      } else {
+        try {
+          detail = JSON.stringify(error, null, 2);
+        } catch {
+          detail = String(error);
+        }
+      }
+      throw new Error(`Failed to update automation: ${detail}`);
     }
   }
 

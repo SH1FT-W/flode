@@ -13,11 +13,24 @@ export async function applyHeuristicLayout(
 ): Promise<FlowNode[]> {
   try {
     // Convert to ELK graph format
-    const elkNodes = nodes.map((node) => ({
-      id: node.id,
-      width: getNodeWidth(node.type),
-      height: getNodeHeight(node.type),
-    }));
+    const elkNodes = nodes.map((node) => {
+      // biome-ignore lint/suspicious/noExplicitAny: ELK types are loose
+      const elkNode: any = {
+        id: node.id,
+        width: getNodeWidth(node.type),
+        height: getNodeHeight(node.type),
+      };
+      // Give condition nodes fixed-order ports so ELK knows true=top, false=bottom
+      // and can route edges without crossing them.
+      if (node.type === 'condition') {
+        elkNode.layoutOptions = { 'elk.portConstraints': 'FIXED_ORDER' };
+        elkNode.ports = [
+          { id: `${node.id}__true`, properties: { 'port.side': 'EAST', 'port.index': '0' } },
+          { id: `${node.id}__false`, properties: { 'port.side': 'EAST', 'port.index': '1' } },
+        ];
+      }
+      return elkNode;
+    });
 
     const elkEdges = edges
       .filter(
@@ -26,11 +39,21 @@ export async function applyHeuristicLayout(
           edge.type !== 'choose-default' &&
           edge.type !== 'loop-back'
       )
-      .map((edge) => ({
-        id: edge.id,
-        sources: [edge.source],
-        targets: [edge.target],
-      }));
+      .map((edge) => {
+        // biome-ignore lint/suspicious/noExplicitAny: ELK types are loose
+        const elkEdge: any = {
+          id: edge.id,
+          sources: [edge.source],
+          targets: [edge.target],
+        };
+        // Wire edges from condition nodes to their port so ELK respects ordering
+        if (edge.sourceHandle === 'true') {
+          elkEdge.sources = [`${edge.source}__true`];
+        } else if (edge.sourceHandle === 'false') {
+          elkEdge.sources = [`${edge.source}__false`];
+        }
+        return elkEdge;
+      });
 
     const graph = {
       id: 'root',
@@ -68,7 +91,8 @@ export async function applyHeuristicLayout(
     // choose-hint edges help ELK place case 2+ nodes correctly when the choose entry
     // is a condition node. For trigger-entry automations (no choose-hint), fixChooseChainLayout
     // aligns cases vertically as a fallback.
-    return fixChooseChainLayout(positionedNodes, edges);
+    const afterChain = fixChooseChainLayout(positionedNodes, edges);
+    return fixChooseDefaultLayout(afterChain, edges);
   } catch (_error) {
     // Fallback to simple grid layout if ELK fails
     return applyFallbackLayout(nodes);
@@ -132,6 +156,50 @@ export function fixChooseChainLayout(nodes: FlowNode[], edges: FlowEdge[]): Flow
       }
 
       currentEdge = ccBySource.get(targetId);
+    }
+  }
+
+  return nodes.map((n) => ({ ...n, position: posMap.get(n.id) ?? n.position }));
+}
+
+/**
+ * Post-process positions to place choose-default (Sonst/Otherwise) nodes.
+ * ELK excludes choose-default edges, so the default node has no ELK position.
+ * This function places it below the last case's subtree, aligned horizontally
+ * with the last case's source condition node.
+ */
+export function fixChooseDefaultLayout(nodes: FlowNode[], edges: FlowEdge[]): FlowNode[] {
+  const chooseDefaultEdges = edges.filter((e) => e.type === 'choose-default');
+  if (chooseDefaultEdges.length === 0) return nodes;
+
+  const posMap = new Map(nodes.map((n) => [n.id, { ...n.position }]));
+  const nodeTypeMap = new Map(nodes.map((n) => [n.id, n.type ?? 'action']));
+
+  for (const edge of chooseDefaultEdges) {
+    const sourcePos = posMap.get(edge.source);
+    if (!sourcePos) continue;
+
+    // Compute the bottom of the source case's subtree
+    const subtreeIds = getSubtreeIds(edge.source, edges);
+    let bottomY = sourcePos.y + getNodeHeight(nodeTypeMap.get(edge.source) ?? 'action');
+    for (const id of subtreeIds) {
+      const pos = posMap.get(id);
+      if (pos) {
+        bottomY = Math.max(bottomY, pos.y + getNodeHeight(nodeTypeMap.get(id) ?? 'action'));
+      }
+    }
+
+    // Place the default subtree below the source case, aligned on X
+    const defaultSubtreeIds = getSubtreeIds(edge.target, edges);
+    const defaultTargetPos = posMap.get(edge.target);
+    if (!defaultTargetPos) continue;
+
+    const dx = sourcePos.x - defaultTargetPos.x;
+    const dy = bottomY + 60 - defaultTargetPos.y;
+
+    for (const id of [edge.target, ...defaultSubtreeIds]) {
+      const pos = posMap.get(id);
+      if (pos) posMap.set(id, { x: pos.x + dx, y: pos.y + dy });
     }
   }
 
