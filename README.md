@@ -1,6 +1,4 @@
 <div align="center">
-  <p>🇬🇧 <strong>English</strong> &nbsp;·&nbsp; <a href="README.de.md">🇩🇪 Deutsch</a></p>
-
   <img src="custom_components/flode/brand/icon.png" width="100" alt="FLODE Logo" />
 
   <h1>FLODE</h1>
