@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
-import { AlertCircle, Ban, OctagonX, Play } from 'lucide-react';
+import { AlertCircle, Ban, OctagonX, Play, RotateCcw } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
@@ -32,6 +32,16 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
   }
 
   const isEventAction = !isStopAction && typeof data.event === 'string' && data.event.trim() !== '';
+
+  const repeatData =
+    !isStopAction && data.repeat !== null && typeof data.repeat === 'object'
+      ? (data.repeat as Record<string, unknown>)
+      : null;
+  const isRepeatAction = repeatData !== null && repeatData.count !== undefined;
+  const repeatCount = isRepeatAction ? repeatData.count : undefined;
+  const repeatSeqLength = isRepeatAction
+    ? (Array.isArray(repeatData.sequence) ? repeatData.sequence.length : 0)
+    : 0;
 
   // Get target entity display
   const targetDisplay = (() => {
@@ -92,6 +102,64 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
           </div>
           {stopMessage && <div className="truncate opacity-75 italic">{stopMessage}</div>}
         </div>
+      </div>
+    );
+  }
+
+  if (isRepeatAction) {
+    return (
+      <div
+        className={cn(
+          'relative min-w-[180px] rounded-lg border-2 border-purple-400 bg-purple-50 px-4 py-3',
+          'transition-all duration-200',
+          selected && 'ring-2 ring-purple-500 ring-offset-2',
+          isActive && 'node-active ring-4 ring-purple-500',
+          isDisabled && 'border-dashed opacity-50 grayscale',
+          hasErrors && 'border-red-500 ring-2 ring-red-400'
+        )}
+      >
+        {hasErrors && (
+          <div
+            className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+            title={errorMessages.join('\n')}
+          >
+            <AlertCircle className="h-3 w-3" />
+          </div>
+        )}
+        {isDisabled && !hasErrors && (
+          <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-white shadow-sm">
+            <Ban className="h-3 w-3" />
+          </div>
+        )}
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="!w-3 !h-3 !bg-purple-500 !border-purple-700"
+        />
+        <div className="mb-1 flex items-center gap-2">
+          <div className="rounded bg-purple-200 p-1">
+            <RotateCcw className="h-4 w-4 text-purple-700" />
+          </div>
+          <span className="font-semibold text-purple-900 text-sm">
+            {data.alias ||
+              t('nodes:actions.repeatLabel', { n: String(repeatCount) })}
+          </span>
+          {stepNumber && (
+            <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-purple-600 font-bold text-white text-xs">
+              {stepNumber}
+            </div>
+          )}
+        </div>
+        {repeatSeqLength > 0 && (
+          <div className="text-purple-700 text-xs font-medium opacity-70">
+            {t('nodes:actions.repeatActions', { count: repeatSeqLength })}
+          </div>
+        )}
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="!w-3 !h-3 !bg-purple-500 !border-purple-700"
+        />
       </div>
     );
   }

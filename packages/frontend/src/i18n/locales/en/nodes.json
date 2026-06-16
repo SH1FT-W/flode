@@ -65,6 +65,7 @@
   },
   "conditions": {
     "caseLabel": "Case {{index}} / {{total}}",
+    "defaultLabel": "Otherwise",
     "conditionLabel": "Condition Type",
     "types": {
       "state": "State",
@@ -111,7 +112,11 @@
     "stopError": "Mark as error",
     "stopMessageLabel": "Stop message",
     "stopMessagePlaceholder": "e.g. Condition not met",
-    "markAsError": "Mark as error"
+    "markAsError": "Mark as error",
+    "repeatLabel": "{{n}}× Repeat",
+    "repeatSequenceLabel": "Sequence",
+    "repeatActions_one": "{{count}} action",
+    "repeatActions_other": "{{count}} actions"
   },
   "variables": {
     "variableCount_one": "{{count}} variable",

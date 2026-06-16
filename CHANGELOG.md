@@ -4,6 +4,24 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [0.9.7] — 2026-06-16 — Sun Trigger Offset Fix & Choose Block Layout
+
+### Fixed
+- **#9 — Sun trigger `offset` as a number**: Numeric offsets like `offset: -1800` (seconds as integer) were rejected by Zod with `expected string, received number`, preventing import of any sun-trigger automation with a numeric offset. The schema now accepts `string | number | Record<string, number>` — mirrors the fix applied to delay/wait fields in #221
+- Minor bug fixes
+- **Choose block: misleading direct lines when a root condition gates the block**: When a top-level condition (e.g. a template gate) precedes a choose block, FLODE previously drew visible hint edges directly from the triggers to each case condition node — visually bypassing the gate and implying an independent execution path. Hint edges are now only created when triggers are direct predecessors of the choose block (no intermediate condition node)
+
+### Added
+- **Choose default "Otherwise" edge**: The default branch of a choose block is now connected via a visible dashed edge labelled "Otherwise" (DE: "Sonst") — previously the default node appeared disconnected with no visible incoming edge
+- **Choose fan-out visualization**: From the second case onward, FLODE draws a direct edge from the entry node (gate condition / trigger) to each case — all cases appear as equal branches from a common entry point instead of an invisible chain
+- **ELK port constraints for condition nodes**: Condition nodes now carry explicit ELK ports (`true` top, `false` bottom) with `FIXED_ORDER` constraint — eliminates edge crossings between yes/no paths in the automatic layout
+
+### Tests
+- New fixture `35-sun-trigger-numeric-offset.yaml` covering numeric offsets `0`, `-1800`, `3600` and string offset `"-00:30:00"`
+- 282 tests total (278 + 4 new)
+
+---
+
 ## [0.9.6] — 2026-06-15 — Templated Delay & Top-Level Keys Round-Trip
 
 ### Fixed

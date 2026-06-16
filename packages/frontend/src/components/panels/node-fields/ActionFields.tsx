@@ -64,6 +64,13 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
   const responseVariable = getNodeDataString(node, 'response_variable');
   const [showResponseVariable, setShowResponseVariable] = useState(!!responseVariable);
 
+  // Detect opaque repeat node (repeat.count stored in data.repeat)
+  const repeatData =
+    nodeData.repeat !== null && typeof nodeData.repeat === 'object'
+      ? (nodeData.repeat as Record<string, unknown>)
+      : null;
+  const isRepeatNode = repeatData !== null && repeatData.count !== undefined;
+
   // Determine action type: stop > event > service
   const actionType = stopMessage !== undefined ? 'stop' : eventName ? 'event' : 'service';
 
@@ -156,6 +163,26 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
   // Check if we have any device or area targets (to show those fields)
   const hasDeviceTargets = targetDeviceIdArray.length > 0;
   const hasAreaTargets = targetAreaIdArray.length > 0;
+
+  if (isRepeatNode) {
+    const seqLength = Array.isArray(repeatData!.sequence) ? repeatData!.sequence.length : 0;
+    return (
+      <>
+        <FormField label={t('nodes:actions.actionTypeLabel')}>
+          <div className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-purple-800 text-sm font-medium">
+            {t('nodes:actions.repeatLabel', { n: String(repeatData!.count) })}
+          </div>
+        </FormField>
+        {seqLength > 0 && (
+          <FormField label={t('nodes:actions.repeatSequenceLabel')}>
+            <div className="text-muted-foreground text-sm">
+              {t('nodes:actions.repeatActions', { count: seqLength })}
+            </div>
+          </FormField>
+        )}
+      </>
+    );
+  }
 
   return (
     <>

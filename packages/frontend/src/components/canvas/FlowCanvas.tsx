@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react';
 import { type DragEvent, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChooseChainEdge, DeletableEdge, HintEdge, LoopBackEdge } from '@/components/edges';
+import { ChooseChainEdge, ChooseDefaultEdge, DeletableEdge, HintEdge, LoopBackEdge } from '@/components/edges';
 import {
   ActionNode,
   ConditionNode,
@@ -43,6 +43,7 @@ const edgeTypes: EdgeTypes = {
   deletable: DeletableEdge,
   hint: HintEdge,
   'choose-chain': ChooseChainEdge,
+  'choose-default': ChooseDefaultEdge,
   'loop-back': LoopBackEdge,
 };
 
@@ -177,11 +178,20 @@ export function FlowCanvas() {
         };
       }
 
-      // Internal choose-structure edges — invisible, topology only
-      if (edge.type === 'choose-chain' || edge.type === 'choose-default') {
+      // choose-chain — invisible, topology only (fan-out hint edges replace it visually)
+      if (edge.type === 'choose-chain') {
         return {
           ...edge,
           style: { opacity: 0, pointerEvents: 'none' as const },
+          markerEnd: undefined,
+        };
+      }
+
+      // choose-default — subtle dashed "Sonst/Otherwise" edge, rendered by ChooseDefaultEdge
+      if (edge.type === 'choose-default') {
+        return {
+          ...edge,
+          style: {},
           markerEnd: undefined,
         };
       }

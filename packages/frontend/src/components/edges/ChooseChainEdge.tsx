@@ -1,9 +1,9 @@
 import { BaseEdge, type EdgeProps, getSmoothStepPath } from '@xyflow/react';
 
 /**
- * Visual connector between choose-block condition nodes.
- * Indicates "these branches belong to the same choose block" without implying
- * data flows from one to the other. Rendered as a thin faint dashed line, no arrow.
+ * Invisible topology edge between consecutive choose-block cases.
+ * The transpiler needs this edge; visually the fan-out hint edges
+ * from the entry node to each case replace it.
  */
 export function ChooseChainEdge({
   sourceX,
@@ -22,13 +22,5 @@ export function ChooseChainEdge({
     targetPosition,
   });
 
-  return (
-    <BaseEdge
-      path={edgePath}
-      style={{
-        strokeWidth: 0,
-        opacity: 0,
-      }}
-    />
-  );
+  return <BaseEdge path={edgePath} style={{ strokeWidth: 0, opacity: 0 }} />;
 }

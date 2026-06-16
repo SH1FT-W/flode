@@ -781,7 +781,7 @@ export const useFlowStore = create<FlowState>()(
               nodeData.trigger = 'state';
             }
 
-            if (n.type === 'action' && !nodeData.service) {
+            if (n.type === 'action' && !nodeData.service && !nodeData.repeat && !nodeData.event && !('stop' in nodeData)) {
               console.warn(
                 `FLODE: Action node ${n.id} missing service, adding default 'light.turn_on'`
               );
