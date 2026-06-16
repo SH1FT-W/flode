@@ -7,44 +7,44 @@ All notable changes to FLODE are documented here.
 ## [0.9.6] — 2026-06-15 — Templated Delay & Top-Level Keys Round-Trip
 
 ### Fixed
-- **#221 — Templated delay / wait timeout (Objekt-Form)**: Delay- und Wait-Felder (`hours`, `minutes`, `seconds`, `milliseconds`) akzeptieren jetzt `string | number` — Template-Strings wie `{{ states('input_number.delay_minutes') | int(5) }}` wurden bisher von Zod abgelehnt und verhinderten den Import der Automation
-- **#220 — Top-Level Automations-Keys gehen beim Speichern verloren**: `trigger_variables`, `initial_state: false` und `trace` wurden beim Export nicht zurückgeschrieben. Ursache war ein hartkodiertes 7-Felder-Objekt in `createAutomation`/`updateAutomation` (ha-api.ts) das alle anderen Keys stillschweigend verwarf. Behoben durch vollständiges Spread des Config-Objekts
+- **#221 — Templated delay / wait timeout (object form)**: Delay and wait fields (`hours`, `minutes`, `seconds`, `milliseconds`) now accept `string | number` — template strings like `{{ states('input_number.delay_minutes') | int(5) }}` were previously rejected by Zod and prevented importing the automation
+- **#220 — Top-level automation keys lost on save**: `trigger_variables`, `initial_state: false` and `trace` were not written back on export. The root cause was a hardcoded 7-field object in `createAutomation`/`updateAutomation` (ha-api.ts) that silently discarded all other keys. Fixed by fully spreading the config object
 
 ### Tests
-- `issue-221-templated-delay.test.ts` (5 Tests)
-- `issue-220-toplevel-keys-roundtrip.test.ts` (6 Tests)
+- `issue-221-templated-delay.test.ts` (5 tests)
+- `issue-220-toplevel-keys-roundtrip.test.ts` (6 tests)
 
 ---
 
-## [0.9.5] — 2026-06-14 — Choose-Block Visualisierung, State-Dropdown & Dependency-Updates
+## [0.9.5] — 2026-06-14 — Choose Block Visualization, State Dropdown & Dependency Updates
 
 ### Added
-- **Choose-Block Case Labels**: Erstes Bedingungsknoten jedes Choose-Falls zeigt jetzt einen Indigo-Pill-Badge ("Fall 1/3", "Fall 2/3", "Fall 3/3") — erleichtert die visuelle Unterscheidung mehrerer Branches im selben Choose-Block
-- **State-Dropdown in Bedingungsfeldern**: Zustand-Feld in Zustandsbedingungen zeigt jetzt eine Dropdown-Liste mit passenden Zuständen für die gewählte Entität (analog zu Auslösern)
-- **Übersetzte Zustandswerte**: Zustandswerte werden in der UI-Sprache angezeigt (on→An, off→Aus, home→Zuhause, etc.) mit optionalem englischen Suffix bei abweichenden Werten
-- **GitHub Actions Node.js 24**: Alle Workflows nutzen jetzt `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` um die Deprecation-Warnung für Node.js 20 zu vermeiden
+- **Choose block case labels**: The first condition node of each choose case now shows an indigo pill badge ("Case 1/3", "Case 2/3", "Case 3/3") — makes it easier to visually distinguish multiple branches in the same choose block
+- **State dropdown in condition fields**: The state field in state conditions now shows a dropdown list with matching states for the selected entity (analogous to triggers)
+- **Translated state values**: State values are displayed in the UI language (on→On, off→Off, home→Home, etc.) with an optional English suffix when values differ
+- **GitHub Actions Node.js 24**: All workflows now use `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` to avoid the Node.js 20 deprecation warning
 
 ### Fixed
-- **react-error-boundary 6.1.x**: Breaking Change (`error: Error` → `error: unknown`) in `FallbackComponent` behoben
+- **react-error-boundary 6.1.x**: Fixed breaking change (`error: Error` → `error: unknown`) in `FallbackComponent`
 
 ### Changed
-- Dependency-Updates (minor/patch): `@xyflow/react`, `zustand`, `react-hook-form`, `react-error-boundary`, `fuse.js`, alle `@radix-ui/*`, `zod`, `elkjs`, `@biomejs/biome`, `turbo`, `tsx`, `glob`
+- Dependency updates (minor/patch): `@xyflow/react`, `zustand`, `react-hook-form`, `react-error-boundary`, `fuse.js`, all `@radix-ui/*`, `zod`, `elkjs`, `@biomejs/biome`, `turbo`, `tsx`, `glob`
 
 ---
 
 ## [0.9.4] — 2026-06-14 — Stop Action & Variables Bugfixes
 
 ### Fixed
-- **Stop Action Node**: Stop-Nodes (`stop: "Meldung"`) werden jetzt orange mit OctagonX-Icon dargestellt statt grün wie reguläre Aktionen
-- **Stop Action Properties Panel**: Stop-Nodes zeigen jetzt den korrekten Typ "Ausführung stoppen" im Panel mit eigenem Stop-Meldung-Input und "Als Fehler markieren"-Toggle
-- **Stop/Error in "Zusätzliche Eigenschaften"**: `stop` und `error` wurden fälschlicherweise im Zusätzliche-Eigenschaften-Panel angezeigt — jetzt korrekt als behandelte Properties konfiguriert
-- **Top-Level `variables:` Round-Trip** (C.A.F.E. #210): `variables:` Section auf Automation-Ebene blieb beim YAML-Export erhalten — bisher wurden diese beim Exportieren entfernt
-- **Versionsnummer in UI**: `manifest.json` Version war nie aktualisiert worden — alle Builds zeigten fälschlicherweise "v0.9.2"
+- **Stop action node**: Stop nodes (`stop: "Message"`) are now rendered in orange with an OctagonX icon instead of green like regular actions
+- **Stop action properties panel**: Stop nodes now show the correct type "Stop execution" in the panel with a dedicated stop message input and "Mark as error" toggle
+- **Stop/Error in "Additional properties"**: `stop` and `error` were incorrectly shown in the additional properties panel — now correctly configured as handled properties
+- **Top-level `variables:` round-trip** (C.A.F.E. #210): `variables:` section at the automation level was preserved during YAML export — previously these were removed on export
+- **Version number in UI**: `manifest.json` version was never updated — all builds incorrectly showed "v0.9.2"
 
 ### Added
 - i18n: `nodes:types.stop`, `nodes:actions.stopExecution`, `nodes:actions.stopError`, `nodes:actions.stopMessageLabel`, `nodes:actions.markAsError`, `nodes:actions.actionTypes.stop` (DE + EN)
-- Test-Fixture `34-toplevel-variables.yaml` für Variables-Round-Trip
-- Tests: `toplevel-variables-roundtrip.test.ts` (3 Tests)
+- Test fixture `34-toplevel-variables.yaml` for variables round-trip
+- Tests: `toplevel-variables-roundtrip.test.ts` (3 tests)
 
 ---
 
@@ -62,117 +62,117 @@ All notable changes to FLODE are documented here.
 
 ---
 
-## [0.9.2] — 2026-06-12 — Lint & Code-Qualität
+## [0.9.2] — 2026-06-12 — Lint & Code Quality
 
 ### Fixed
-- Alle Biome-Lint-Fehler und Formatierungsprobleme behoben (19 Dateien auto-formatiert)
-- `type="button"` auf Collapse/Expand-Buttons in `ConditionNode` gesetzt (a11y)
-- JSX-Literale in `App.tsx` und `ConditionNode.tsx` korrekt escaped
-- `noEmptyBlockStatements` in `App.tsx` behoben
-- `aria-hidden="true"` auf dekorativen SVG in `LoopBackEdge` gesetzt (a11y)
-- `biome-ignore` Kommentar für unvermeidbar komplexe Graph-Traversal-Funktion in `native.ts`
+- Fixed all Biome lint errors and formatting issues (19 files auto-formatted)
+- Added `type="button"` to collapse/expand buttons in `ConditionNode` (a11y)
+- JSX literals correctly escaped in `App.tsx` and `ConditionNode.tsx`
+- Fixed `noEmptyBlockStatements` in `App.tsx`
+- Added `aria-hidden="true"` to decorative SVG in `LoopBackEdge` (a11y)
+- Added `biome-ignore` comment for unavoidably complex graph traversal function in `native.ts`
 
 ---
 
-## [0.9.1] — 2026-06-12 — Code-Qualität & HA-Integration Cleanup
+## [0.9.1] — 2026-06-12 — Code Quality & HA Integration Cleanup
 
 ### Fixed
-- `ConfigFlowResult` statt veraltetes `FlowResult` aus `homeassistant.data_entry_flow` (deprecated seit HA 2024.4)
-- Minimale HA-Version in `manifest.json` und `hacs.json` auf `2024.6.0` korrigiert (`StaticPathConfig` erfordert 2024.6)
-- Ungenutzten `import os` und tote `PANEL_URL`-Konstante aus `panel.py` entfernt
-- Leere `async_setup`-Funktion aus `__init__.py` entfernt (bei Config-Flow-Integrationen nicht benötigt)
-- Hacky Panel-Vorab-Entfernung via `hass.data` durch saubere Lifecycle-Logik ersetzt
+- `ConfigFlowResult` instead of deprecated `FlowResult` from `homeassistant.data_entry_flow` (deprecated since HA 2024.4)
+- Minimum HA version in `manifest.json` and `hacs.json` corrected to `2024.6.0` (`StaticPathConfig` requires 2024.6)
+- Removed unused `import os` and dead `PANEL_URL` constant from `panel.py`
+- Removed empty `async_setup` function from `__init__.py` (not needed for config flow integrations)
+- Replaced hacky preemptive panel removal via `hass.data` with clean lifecycle logic
 
 ---
 
-## [0.9.0] — 2026-06-12 — OR/AND Condition Visualisierung & i18n
+## [0.9.0] — 2026-06-12 — OR/AND Condition Visualization & i18n
 
 ### Added
-- **OR/AND/NOT Container-Nodes**: Gruppen-Bedingungen zeigen ihre verschachtelten Sub-Conditions direkt als Mini-Karten im Node — kein Klick mehr notwendig um die Logik zu verstehen
-- **OR/AND Separator**: Zwischen den Sub-Condition-Karten wird der Gruppen-Typ (OR/AND/NOT) als visueller Trenner angezeigt
-- **Collapse bei vielen Bedingungen**: Ab 4+ Sub-Conditions erscheint ein „+X weitere"-Button zum Ein-/Ausklappen
+- **OR/AND/NOT container nodes**: Group conditions now show their nested sub-conditions directly as mini cards in the node — no click required to understand the logic
+- **OR/AND separator**: Between sub-condition cards, the group type (OR/AND/NOT) is displayed as a visual separator
+- **Collapse for many conditions**: With 4+ sub-conditions, a "+X more" button appears to toggle expansion
 
 ### Improved
-- **Vollständige i18n für alle Node-Karten**: Alle Typ-Labels in Trigger-, Condition-, Action-, Delay-, Wait- und SetVariables-Nodes werden jetzt dynamisch nach der gewählten Sprache angezeigt (war zuvor hardcoded Englisch)
-- Condition-Typen: `Zustand`, `Numerischer Zustand`, `ODER (Beliebige)`, `UND (Alle)` etc.
-- Trigger-Plattformen: `Zustandsänderung`, `Zeit`, `Ereignis` etc.
-- Fallback-Node-Titel: `Verzögerung`, `Warten auf`, `Variablen setzen`, `Aktion`
-- Alle Node-Komponenten nutzen jetzt den `useTranslation`-Hook statt dem i18next-Singleton
+- **Full i18n for all node cards**: All type labels in trigger, condition, action, delay, wait and setVariables nodes are now displayed dynamically according to the selected language (previously hardcoded English)
+- Condition types: `State`, `Numeric state`, `OR (Any)`, `AND (All)` etc.
+- Trigger platforms: `State change`, `Time`, `Event` etc.
+- Fallback node titles: `Delay`, `Wait for`, `Set variables`, `Action`
+- All node components now use the `useTranslation` hook instead of the i18next singleton
 
 ---
 
-## [0.8.0] — 2026-06-11 — Screenshots & Dokumentation
+## [0.8.0] — 2026-06-11 — Screenshots & Documentation
 
 ### Added
-- Light- und Dark-Mode-Screenshots in README und `docs/images/` hinzugefügt
-- README: Side-by-Side-Vorschau beider Modi direkt im Header
+- Light and dark mode screenshots added to README and `docs/images/`
+- README: Side-by-side preview of both modes directly in the header
 
 ---
 
-## [0.7.9] — 2026-06-11 — Choose-Block Trigger-Routing Fix
+## [0.7.9] — 2026-06-11 — Choose Block Trigger Routing Fix
 
 ### Bug Fixes
-- **Gekreuzte Linien bei Trigger-basierten Choose-Blöcken** — Automationen mit mehreren Triggern und trigger-ID-Conditions (z. B. iPad-Akku-Automation) zeigten gekreuzte blaue Linien, weil alle Trigger mit dem ersten Case verbunden wurden. Jetzt wird jeder Trigger nur noch mit seinem passenden Case verbunden (via hint-Edge). Die internen Fluss-Kanten sind unsichtbar (`choose-entry`-Typ).
-- **Backward-Detection zu sensitiv** — Minimale x-Unterschiede in gespeicherten Metadaten (z. B. 15 px) lösten unnötige ELK-Neuberechnungen aus; Schwellenwert auf 100 px erhöht.
+- **Crossed lines in trigger-based choose blocks** — Automations with multiple triggers and trigger-ID conditions (e.g. iPad battery automation) showed crossed blue lines because all triggers were connected to the first case. Now each trigger is only connected to its matching case (via hint edge). Internal flow edges are invisible (`choose-entry` type).
+- **Backward detection too sensitive** — Minor x-differences in saved metadata (e.g. 15 px) triggered unnecessary ELK recalculations; threshold increased to 100 px.
 
-### Technisch
-- Neuer Edge-Typ `choose-entry`: semantische, unsichtbare Verbindung Trigger→Case1 (für Topology/Serializer notwendig)
-- ELK-Layout schließt jetzt `hint`-Edges ein (für korrekte Layer-Zuweisung bei trigger-basierten Choose-Blöcken)
-- `fixChooseChainLayout` als Fallback für frische Layouts ohne Metadaten wiederhergestellt
+### Technical
+- New edge type `choose-entry`: semantic, invisible connection Trigger→Case1 (required for topology/serializer)
+- ELK layout now includes `hint` edges (for correct layer assignment in trigger-based choose blocks)
+- `fixChooseChainLayout` restored as fallback for fresh layouts without metadata
 
 ---
 
-## [0.7.8] — 2026-06-11 — Choose-Block Visualisierung
+## [0.7.8] — 2026-06-11 — Choose Block Visualization
 
 ### Bug Fixes
-- **Choose-Block: Cases nicht verbunden** — Nach der Eingangs-Bedingung erschienen alle Optionen eines `choose:`-Blocks als getrennte Bäume; jetzt zeigt FLODE für jede Option eine separate Linie vom gemeinsamen Einstiegspunkt (wie im HA-Editor)
-- **Choose-Block: roter Punkt auf Condition-Nodes** — Condition-Nodes der Cases zeigten fälschlicherweise den FALSE-Handle (roter Punkt), weil die interne `choose-chain`-Kante über den FALSE-Handle lief; wird jetzt korrekt ausgeblendet
-- **Choose-Block: Default-Option alleine** — Die Standard-Aktionen (`default:`) eines Choose-Blocks erschienen als eigenständiger, nicht verbundener Block; sind jetzt direkt mit dem Einstiegspunkt verbunden
-- **Stale `_flode_metadata` Positionen** — Veraltete gespeicherte Positionen die einen Choose-Case links vom vorherigen platzierten lösten neu ELK-Layout aus (backwards-choose-chain-Detection)
-- **Bezier-Kurven** — Alle Verbindungslinien zwischen Nodes werden jetzt als sanfte Bezier-Kurve dargestellt statt mit Ecken
+- **Choose block: cases not connected** — After the entry condition, all options of a `choose:` block appeared as separate trees; FLODE now shows a separate line from the common entry point for each option (like the HA editor)
+- **Choose block: red dot on condition nodes** — Condition nodes of cases incorrectly showed the FALSE handle (red dot) because the internal `choose-chain` edge ran through the FALSE handle; now correctly hidden
+- **Choose block: default option alone** — The default actions (`default:`) of a choose block appeared as a standalone, unconnected block; now directly connected to the entry point
+- **Stale `_flode_metadata` positions** — Outdated saved positions that placed a choose case to the left of the previous one triggered a new ELK layout (backwards-choose-chain detection)
+- **Bezier curves** — All connection lines between nodes are now rendered as smooth Bezier curves instead of with corners
 
-### Technisch
-- Neue Edge-Typen: `choose-hint` (sichtbare Verbindung Entry→Case2+/Default), `choose-default` (semantische, unsichtbare Kante Last-Case→Default)
-- ELK-Layout berücksichtigt `choose-hint` für korrektes Layer-Assignment aller Cases
-- Zod-Schema und Graph-Validator für neue Edge-Typen erweitert
+### Technical
+- New edge types: `choose-hint` (visible connection Entry→Case2+/Default), `choose-default` (semantic, invisible edge Last-Case→Default)
+- ELK layout accounts for `choose-hint` for correct layer assignment of all cases
+- Zod schema and graph validator extended for new edge types
 
 ---
 
 ## [0.7.7] — 2026-06-11 — Bugfixes & Repo Cleanup
 
 ### Bug Fixes
-- **Import crash bei `conditions: []`** — Choose-Cases mit leerem Conditions-Array (gültige HA-Syntax für leere Default-Weichen) haben einen `undefined is not an object`-Crash verursacht; Filter prüft jetzt explizit auf nicht-leere Arrays
-- **Roter Punkt an while-Bedingung** — FALSE-Handle am Condition-Node wird nur noch angezeigt wenn tatsächlich eine Edge daran hängt; bei `repeat:while:` verschwindet der irreführende rote Punkt
-- **Loop-Pfeil visuelle Verbesserung** — Back-Edges bei `repeat:while/until/count` werden jetzt als gestrichelter Pfeil (`loop-back`-Typ) gerendert, damit der Loop-Charakter auf einen Blick erkennbar ist
+- **Import crash with `conditions: []`** — Choose cases with an empty conditions array (valid HA syntax for empty default branches) caused an `undefined is not an object` crash; filter now explicitly checks for non-empty arrays
+- **Red dot on while condition** — FALSE handle on the condition node is now only shown when an edge is actually attached to it; the misleading red dot disappears for `repeat:while:`
+- **Loop arrow visual improvement** — Back edges for `repeat:while/until/count` are now rendered as a dashed arrow (`loop-back` type) so the loop character is recognizable at a glance
 
-### Repo Cleanup (keine funktionalen Änderungen)
-- Alle verbleibenden `cafe_debug`, `cafe_hass_config`, `cafeLogger`, `CAFE_TOGGLE_SIDEBAR` Referenzen auf FLODE-Branding umgestellt
-- Ungeschützte `console.log`-Aufrufe aus Produktionscode entfernt
-- `manifest.json`: ungültiges `documentation_url`-Feld entfernt, `iot_class` → `calculated`
-- `hacs.json`: `"domain": "flode"` ergänzt
-- Issue-Template, CONTRIBUTING.md, CLAUDE.md, DEBUG.md auf FLODE aktualisiert
-- Fake-Testdatei mit hardcoded Automation-ID gelöscht
-- HACS-Validierung läuft jetzt automatisch bei Push/PR
-- `LICENSE`: Copyright-Zeile ergänzt
+### Repo Cleanup (no functional changes)
+- All remaining `cafe_debug`, `cafe_hass_config`, `cafeLogger`, `CAFE_TOGGLE_SIDEBAR` references updated to FLODE branding
+- Unguarded `console.log` calls removed from production code
+- `manifest.json`: removed invalid `documentation_url` field, `iot_class` → `calculated`
+- `hacs.json`: added `"domain": "flode"`
+- Issue template, CONTRIBUTING.md, CLAUDE.md, DEBUG.md updated to FLODE
+- Fake test file with hardcoded automation ID deleted
+- HACS validation now runs automatically on push/PR
+- `LICENSE`: copyright line added
 
 ---
 
 ## [0.7.6] — 2026-06-11 — Trigger Routing & Layout
 
 ### Added
-- **Visuelle Trigger-Routing-Linien für `choose:`-Blöcke** — Jeder Trigger wird jetzt mit seiner zugehörigen Condition visuell verbunden, sodass die Zuordnung auf einen Blick erkennbar ist
-- **Neuer Edge-Typ `hint`** — Rein visuelle Verbindung (nicht löschbar, wird vom Transpiler ignoriert)
-- **Neuer Edge-Typ `choose-chain`** (unsichtbar) — Technische Kante für Choose-Erkennung, wird nicht gerendert
+- **Visual trigger routing lines for `choose:` blocks** — Each trigger is now visually connected to its corresponding condition, making the assignment recognizable at a glance
+- **New edge type `hint`** — Purely visual connection (not deletable, ignored by the transpiler)
+- **New edge type `choose-chain`** (invisible) — Technical edge for choose detection, not rendered
 
 ### Bug Fixes
-- **`id:`-Feld leer im Properties-Panel** — HA API liefert Condition-IDs als Array (`['akku_ueber_80']`); Parser normalisiert jetzt direkt beim Import zu String (betrifft `choose:`- und `if/then/else`-Blöcke)
-- **Edge-`type` wurde beim Import/Export verworfen** — `flow-store` hat `type`-Feld nicht weitergegeben; Fix in `loadFlow` und `toFlowGraph`
-- **Grauer Pfeil-Überlappung auf Nodes** — Custom SVG-Marker in HintEdge ersetzt durch React Flow's eingebautes Marker-System
-- **Topology-Analyzer ignoriert visuelle Kanten** — `hint`-Edges werden jetzt aus Topology-Analyse und `findBackEdges` gefiltert
+- **`id:` field empty in properties panel** — HA API returns condition IDs as an array (`['battery_above_80']`); parser now normalizes directly on import to string (affects `choose:` and `if/then/else` blocks)
+- **Edge `type` was discarded on import/export** — `flow-store` was not passing through the `type` field; fixed in `loadFlow` and `toFlowGraph`
+- **Grey arrow overlap on nodes** — Custom SVG marker in HintEdge replaced with React Flow's built-in marker system
+- **Topology analyzer ignores visual edges** — `hint` edges are now filtered from topology analysis and `findBackEdges`
 
 ### Improvements
-- **Automatisches Layout (ELK)** — Hint-Edges werden für Layer-Zuweisung genutzt, Choose-Chain-Edges ausgeschlossen → sauberes 3-Spalten-Layout (Trigger | Conditions | Actions)
-- **`fitView` nach Import** — Delay von 50ms auf 150ms erhöht, `maxZoom: 0.75` gesetzt für konsistentes Zentrieren nach dem Laden
+- **Automatic layout (ELK)** — Hint edges are used for layer assignment, choose-chain edges excluded → clean 3-column layout (Triggers | Conditions | Actions)
+- **`fitView` after import** — Delay increased from 50ms to 150ms, `maxZoom: 0.75` set for consistent centering after loading
 
 ---
 
