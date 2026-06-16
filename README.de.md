@@ -8,7 +8,7 @@
   <p><strong>Visueller Flow + Node Editor für Home Assistant</strong></p>
 
   [![Release](https://img.shields.io/badge/version-0.9.6-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
-  [![HA Version](https://img.shields.io/badge/HA-2024.1%2B-brightgreen?style=flat-square)](https://www.home-assistant.io)
+  [![HA Version](https://img.shields.io/badge/HA-2024.6%2B-brightgreen?style=flat-square)](https://www.home-assistant.io)
   [![Lizenz](https://img.shields.io/badge/lizenz-Apache%202.0-orange?style=flat-square)](LICENSE)
   [![Status](https://img.shields.io/badge/status-beta-yellow?style=flat-square)](https://github.com/SH1FT-W/flode/releases)
   [![Tests](https://img.shields.io/badge/tests-278%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
