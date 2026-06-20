@@ -147,7 +147,7 @@ export const ConditionNode = memo(function ConditionNode({
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-blue-500 !border-blue-700"
+        className="w-3! h-3! bg-blue-500! border-blue-700!"
       />
 
       <div className="mb-1 flex items-center gap-2">
@@ -301,7 +301,7 @@ export const ConditionNode = memo(function ConditionNode({
         position={Position.Right}
         id="true"
         style={{ top: hasFalseEdge ? '30%' : '50%' }}
-        className="!w-3 !h-3 !bg-green-500 !border-green-700"
+        className="w-3! h-3! bg-green-500! border-green-700!"
       />
       {hasFalseEdge && (
         <Handle
@@ -309,7 +309,7 @@ export const ConditionNode = memo(function ConditionNode({
           position={Position.Right}
           id="false"
           style={{ top: '70%' }}
-          className="!w-3 !h-3 !bg-red-500 !border-red-700"
+          className="w-3! h-3! bg-red-500! border-red-700!"
         />
       )}
 

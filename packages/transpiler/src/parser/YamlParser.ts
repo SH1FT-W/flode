@@ -2072,6 +2072,26 @@ export class YamlParser {
       return Array.isArray(conds) ? conds.length > 0 : Boolean(conds);
     });
 
+    // A choice with empty/no conditions is vacuously always-true in HA and has no
+    // condition to hang a node off of. Rather than silently dropping its actions
+    // (issue: such a choice disappeared entirely on import), fold the first one's
+    // sequence into the default branch - an always-true case behaves like a
+    // fallback. A second one, or a clash with an explicit `default:`, can't be
+    // merged unambiguously, so we warn instead of silently losing the actions.
+    let syntheticDefaultSequence: unknown;
+    for (const choice of choices) {
+      if (typeof choice !== 'object' || choice === null || validChoices.includes(choice)) continue;
+      const choiceSequence = (choice as Record<string, unknown>).sequence;
+      if (!choiceSequence) continue;
+      if (chooseAction.default || syntheticDefaultSequence) {
+        warnings.push(
+          'Choose block has a choice with empty conditions whose actions could not be preserved (would clash with the default branch).'
+        );
+        continue;
+      }
+      syntheticDefaultSequence = choiceSequence;
+    }
+
     // Track what nodes should connect to the next condition (false path of current)
     let currentPreviousIds = [...previousNodeIds];
 
@@ -2170,17 +2190,15 @@ export class YamlParser {
       const firstConditionId = choiceConditionNodes[0].id;
       const lastConditionId = choiceConditionNodes[choiceConditionNodes.length - 1].id;
 
-      // Fan-out: for cases beyond the first, add a visible hint edge from each original
-      // entry node (e.g. the Vorlage/gate) directly to this case's first condition.
+      // Fan-out: add a visible hint edge from each original entry node (e.g. the
+      // Vorlage/gate, or a trigger) directly to this case's first condition.
       // This shows "Vorlage → Fall 1, Vorlage → Fall 2" as a fork, while the invisible
-      // choose-chain edge still exists for transpiler topology.
-      if (choiceIndex > 0) {
-        for (const entryId of previousNodeIds) {
-          const fanHandle = conditionNodeIds.has(entryId) ? 'true' : undefined;
-          const fanEdge = this.createEdge(entryId, firstConditionId, fanHandle);
-          (fanEdge as Record<string, unknown>).type = 'hint';
-          edges.push(fanEdge);
-        }
+      // choose-entry/choose-chain edge still exists for transpiler topology.
+      for (const entryId of previousNodeIds) {
+        const fanHandle = conditionNodeIds.has(entryId) ? 'true' : undefined;
+        const fanEdge = this.createEdge(entryId, firstConditionId, fanHandle);
+        (fanEdge as Record<string, unknown>).type = 'hint';
+        edges.push(fanEdge);
       }
 
       // Add visual hint edges: matching trigger → first condition of this choice.
@@ -2290,10 +2308,9 @@ export class YamlParser {
     });
 
     // Handle default sequence (connects from last condition's FALSE path)
-    if (chooseAction.default) {
-      const defaultSequence = Array.isArray(chooseAction.default)
-        ? chooseAction.default
-        : [chooseAction.default];
+    if (chooseAction.default || syntheticDefaultSequence) {
+      const rawDefault = chooseAction.default ?? syntheticDefaultSequence;
+      const defaultSequence = Array.isArray(rawDefault) ? rawDefault : [rawDefault];
       const defaultResult = this.parseActions(defaultSequence, {
         warnings,
         previousNodeIds: currentPreviousIds,

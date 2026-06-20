@@ -128,28 +128,28 @@ variables:
     nodes:
       trigger_test_0_185:
         x: 40
-        "y": 101
+        "y": 167
       condition_test_1_186:
         x: 360
-        "y": 91
+        "y": 157
       condition_test_2_187:
         x: 700
-        "y": 74
+        "y": 140
       condition_test_3_188:
         x: 1040
-        "y": 57
+        "y": 123
       condition_test_4_189:
         x: 1380
-        "y": 40
+        "y": 89
       action_test_5_190:
         x: 1720
-        "y": 138
+        "y": 74
       condition_test_6_191:
         x: 2040
-        "y": 74
+        "y": 47
       action_test_7_192:
         x: 2380
-        "y": 67
+        "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -207,7 +207,7 @@ variables:
     nodes:
       trigger_test_0_179:
         x: 40
-        "y": 170
+        "y": 174
       condition_test_1_180:
         x: 360
         "y": 147
@@ -538,49 +538,49 @@ variables:
     nodes:
       trigger_test_0_149:
         x: 40
-        "y": 112
+        "y": 120
       condition_test_1_150:
         x: 360
-        "y": 102
+        "y": 110
       condition_test_2_151:
         x: 700
-        "y": 85
+        "y": 93
       wait_test_3_152:
         x: 1040
-        "y": 83
+        "y": 91
       condition_test_4_153:
         x: 1340
-        "y": 68
+        "y": 76
       action_test_5_154:
         x: 1680
-        "y": 61
+        "y": 69
       delay_test_6_155:
         x: 2000
-        "y": 66
+        "y": 74
       set_variables_test_7_156:
         x: 2300
-        "y": 61
+        "y": 69
       action_test_8_157:
         x: 2620
-        "y": 61
+        "y": 69
       delay_test_9_158:
         x: 2940
-        "y": 66
+        "y": 74
       set_variables_test_10_159:
         x: 3240
-        "y": 61
+        "y": 69
       condition_test_11_160:
         x: 3560
-        "y": 51
+        "y": 55
       action_test_12_161:
         x: 3900
-        "y": 44
+        "y": 48
       delay_test_13_162:
         x: 4220
-        "y": 49
+        "y": 53
       set_variables_test_14_163:
         x: 4520
-        "y": 57
+        "y": 61
       condition_test_15_164:
         x: 4840
         "y": 47
@@ -695,43 +695,43 @@ variables:
     nodes:
       trigger_test_0_136:
         x: 40
-        "y": 320
+        "y": 366
       trigger_test_1_137:
         x: 40
-        "y": 180
+        "y": 226
       trigger_test_2_138:
         x: 40
-        "y": 40
+        "y": 86
       condition_test_3_139:
         x: 360
-        "y": 300
+        "y": 241
       condition_test_4_140:
         x: 700
-        "y": 283
+        "y": 224
       condition_test_5_141:
         x: 1040
-        "y": 266
+        "y": 207
       action_test_6_142:
         x: 1380
-        "y": 239
+        "y": 180
       action_test_7_143:
         x: 1380
-        "y": 379
+        "y": 320
       action_test_8_144:
         x: 1700
-        "y": 379
+        "y": 320
       condition_test_9_145:
         x: 360
-        "y": 519
+        "y": 460
       condition_test_10_146:
         x: 700
-        "y": 502
+        "y": 443
       condition_test_11_147:
         x: 1040
-        "y": 485
+        "y": 426
       action_test_12_148:
         x: 1380
-        "y": 478
+        "y": 419
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -792,13 +792,13 @@ variables:
     nodes:
       trigger_test_0_129:
         x: 40
-        "y": 197
+        "y": 214
       trigger_test_1_130:
         x: 40
-        "y": 57
+        "y": 74
       condition_test_2_131:
         x: 360
-        "y": 64
+        "y": 81
       condition_test_3_132:
         x: 700
         "y": 47
@@ -1060,67 +1060,67 @@ variables:
     nodes:
       trigger_test_0_102:
         x: 40
-        "y": 557
+        "y": 715
       trigger_test_1_103:
         x: 40
-        "y": 417
+        "y": 575
       trigger_test_2_104:
         x: 40
-        "y": 137
+        "y": 295
       trigger_test_3_105:
         x: 40
-        "y": 277
+        "y": 435
       condition_test_4_106:
-        x: 370
-        "y": 538
+        x: 410
+        "y": 457
       condition_test_5_107:
-        x: 710
-        "y": 521
+        x: 750
+        "y": 416
       wait_test_6_108:
-        x: 1070
-        "y": 504
+        x: 1110
+        "y": 313
       action_test_7_109:
-        x: 1390
-        "y": 499
+        x: 1430
+        "y": 315
       action_test_8_110:
-        x: 1050
-        "y": 634
+        x: 1090
+        "y": 443
       condition_test_9_111:
-        x: 370
-        "y": 774
+        x: 410
+        "y": 617
       condition_test_10_112:
-        x: 710
-        "y": 757
+        x: 750
+        "y": 600
       condition_test_11_113:
-        x: 1050
-        "y": 740
+        x: 1090
+        "y": 583
       condition_test_12_114:
-        x: 1390
-        "y": 723
+        x: 1430
+        "y": 566
       action_test_13_115:
-        x: 1730
-        "y": 716
+        x: 1770
+        "y": 559
       condition_test_14_116:
-        x: 370
-        "y": 934
+        x: 410
+        "y": 777
       condition_test_15_117:
-        x: 710
-        "y": 886
+        x: 750
+        "y": 656
       condition_test_16_118:
-        x: 1050
-        "y": 869
+        x: 1090
+        "y": 639
       delay_test_17_119:
-        x: 1410
-        "y": 761
+        x: 1450
+        "y": 531
       action_test_18_120:
-        x: 1730
-        "y": 756
+        x: 1770
+        "y": 526
       delay_test_19_121:
-        x: 1410
-        "y": 901
+        x: 1450
+        "y": 671
       action_test_20_122:
-        x: 1730
-        "y": 896
+        x: 1770
+        "y": 666
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1198,10 +1198,10 @@ variables:
     nodes:
       trigger_test_0_90:
         x: 40
-        "y": 234
+        "y": 225
       trigger_test_1_91:
         x: 40
-        "y": 74
+        "y": 82
       condition_test_2_92:
         x: 360
         "y": 224
@@ -1308,7 +1308,7 @@ variables:
     nodes:
       trigger_test_0_77:
         x: 40
-        "y": 197
+        "y": 201
       condition_test_1_78:
         x: 360
         "y": 187
@@ -1795,13 +1795,13 @@ variables:
     nodes:
       trigger_test_0_43:
         x: 40
-        "y": 57
+        "y": 61
       set_variables_test_1_44:
         x: 360
-        "y": 57
+        "y": 61
       action_test_2_45:
         x: 680
-        "y": 57
+        "y": 61
       condition_test_3_46:
         x: 1000
         "y": 47

@@ -275,7 +275,7 @@ export function DynamicFieldRenderer({
                   <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+              <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width)">
                 {options.map((option) => {
                   const isSelected = values.includes(option.value);
                   return (

@@ -4,6 +4,25 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.0.0] — 2026-06-20 — Major Dependency Overhaul & Choose Block Fixes
+
+### Changed
+- **Major dependency upgrade across the whole monorepo**: React 18 → 19, Tailwind CSS 3 → 4, Vite 5 → 8, Vitest 2 → 4, TypeScript 5.7 → 6.0, `@vitejs/plugin-react` 4 → 6, i18next 25 → 26, react-i18next 16 → 17, `custom-card-helpers` 1.9 → 2.0, `lucide-react` 0.577 → 1.21, `uuid` 13 → 14, `commander` 12 → 15
+- **Building from source now requires Node.js ≥20.19** (Vite 7+ requirement) — only affects contributors building the frontend, not end users
+- Migrated `vitest.workspace.ts` to the `test.projects` field in a root `vitest.config.ts` (the standalone workspace file was removed in Vitest 4)
+- Migrated Tailwind config from `tailwind.config.ts` to CSS-native `@theme` in `index.css`, switched from the PostCSS plugin to `@tailwindcss/vite`
+
+### Fixed
+- **Choose block: first case had no visible connection to its trigger** — every other case showed a fan-out hint edge back to the trigger, but the first case's structural edge was invisible by design with no visible substitute. All cases now consistently show the connection (gap noticed while verifying cafe-hass #201)
+- **Choose block: a choice with `conditions: []` was silently dropped on import** — Home Assistant treats an empty conditions array as vacuously true, but FLODE filtered such choices out before processing, discarding their actions with no warning. They're now folded into the default branch; a genuinely ambiguous case (multiple empty-condition choices, or a clash with an explicit `default:`) produces a warning instead of silent data loss (fixes cafe-hass #181)
+- **Tailwind v4 dark mode was broken** — the canvas stayed on the light background/grid colors instead of switching to dark. Root cause: `@theme { --color-background: hsl(var(--background)) }` gets resolved against `:root` at build time in Tailwind v4 instead of being re-evaluated per element; switched to `@theme inline`
+- Two latent bugs surfaced by the Vitest 4 upgrade: an ineffective `tsconfig.json` exclude pattern (`__tests__` only matched the project root, not nested folders, so compiled test files leaked into `dist/`), and missing `node` ambient types in the transpiler's `tsconfig.json`
+
+### Tests
+- 282 tests, all green across the full dependency upgrade
+
+---
+
 ## [0.9.7] — 2026-06-16 — Sun Trigger Offset Fix & Choose Block Layout
 
 ### Fixed

@@ -53,7 +53,7 @@ export const SetVariablesNode = memo(function SetVariablesNode({
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-cyan-500 !border-cyan-700"
+        className="w-3! h-3! bg-cyan-500! border-cyan-700!"
       />
 
       <div className="mb-1 flex items-center gap-2">
@@ -79,7 +79,7 @@ export const SetVariablesNode = memo(function SetVariablesNode({
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-cyan-500 !border-cyan-700"
+        className="w-3! h-3! bg-cyan-500! border-cyan-700!"
       />
     </div>
   );

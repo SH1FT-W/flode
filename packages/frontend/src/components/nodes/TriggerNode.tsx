@@ -183,7 +183,7 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-amber-500 !border-amber-700"
+        className="w-3! h-3! bg-amber-500! border-amber-700!"
       />
     </div>
   );

@@ -13,7 +13,7 @@ export function FieldError({ message }: FieldErrorProps) {
 
   return (
     <div className="mt-1.5 flex items-center gap-1.5 text-red-600 text-xs">
-      <AlertCircle className="h-3 w-3 flex-shrink-0" />
+      <AlertCircle className="h-3 w-3 shrink-0" />
       <span>{message}</span>
     </div>
   );

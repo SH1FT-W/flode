@@ -30,8 +30,8 @@ interface ComboboxProps<T extends ComboboxOption = ComboboxOption> {
   className?: string;
   buttonClassName?: string;
   disabled?: boolean;
-  renderOption?: (option: T) => JSX.Element;
-  renderValue?: (option: T | undefined) => JSX.Element | null;
+  renderOption?: (option: T) => React.JSX.Element;
+  renderValue?: (option: T | undefined) => React.JSX.Element | null;
   /** Search keys for fuzzy search. Defaults to ['label', 'value'] */
   searchKeys?: string[];
   /** Fuse.js options for customizing fuzzy search behavior */

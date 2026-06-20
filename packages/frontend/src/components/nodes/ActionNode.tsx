@@ -81,7 +81,7 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
         <Handle
           type="target"
           position={Position.Left}
-          className="!w-3 !h-3 !bg-orange-500 !border-orange-700"
+          className="w-3! h-3! bg-orange-500! border-orange-700!"
         />
         <div className="mb-1 flex items-center gap-2">
           <div className="rounded bg-orange-200 p-1">
@@ -134,7 +134,7 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
         <Handle
           type="target"
           position={Position.Left}
-          className="!w-3 !h-3 !bg-purple-500 !border-purple-700"
+          className="w-3! h-3! bg-purple-500! border-purple-700!"
         />
         <div className="mb-1 flex items-center gap-2">
           <div className="rounded bg-purple-200 p-1">
@@ -158,7 +158,7 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
         <Handle
           type="source"
           position={Position.Right}
-          className="!w-3 !h-3 !bg-purple-500 !border-purple-700"
+          className="w-3! h-3! bg-purple-500! border-purple-700!"
         />
       </div>
     );
@@ -191,7 +191,7 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-green-500 !border-green-700"
+        className="w-3! h-3! bg-green-500! border-green-700!"
       />
 
       <div className="mb-1 flex items-center gap-2">
@@ -228,7 +228,7 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-green-500 !border-green-700"
+        className="w-3! h-3! bg-green-500! border-green-700!"
       />
     </div>
   );
