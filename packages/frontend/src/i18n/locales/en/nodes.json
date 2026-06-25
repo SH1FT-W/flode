@@ -7,7 +7,25 @@
     "delay": "Delay",
     "wait": "Wait for",
     "set_variables": "Set Variables",
-    "node": "Node"
+    "node": "Node",
+    "choose": "Choose",
+    "if_else": "If / Else",
+    "repeat_while": "Repeat While",
+    "repeat_count": "Repeat N×",
+    "parallel": "Parallel"
+  },
+  "compoundBlocks": {
+    "sectionLabel": "Flow Control",
+    "groups": {
+      "branching": "Branching",
+      "loops": "Loops",
+      "parallel": "Concurrency"
+    },
+    "choose": "Choose",
+    "if_else": "If / Else",
+    "repeat_while": "Repeat While",
+    "repeat_count": "Repeat N×",
+    "parallel": "Parallel"
   },
   "panel": {
     "selectNode": "Select a node to edit its properties",
@@ -114,6 +132,8 @@
     "stopMessagePlaceholder": "e.g. Condition not met",
     "markAsError": "Mark as error",
     "repeatLabel": "{{n}}× Repeat",
+    "repeatCountLabel": "Repeat count",
+    "repeatCountDescription": "How many times the sequence runs",
     "repeatSequenceLabel": "Sequence",
     "repeatActions_one": "{{count}} action",
     "repeatActions_other": "{{count}} actions"

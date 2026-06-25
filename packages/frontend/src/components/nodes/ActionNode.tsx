@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
-import { AlertCircle, Ban, OctagonX, Play, RotateCcw } from 'lucide-react';
+import { AlertCircle, Ban, Columns2, Hash, OctagonX, Play, RotateCcw } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
@@ -40,7 +40,9 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
   const isRepeatAction = repeatData !== null && repeatData.count !== undefined;
   const repeatCount = isRepeatAction ? repeatData.count : undefined;
   const repeatSeqLength = isRepeatAction
-    ? (Array.isArray(repeatData.sequence) ? repeatData.sequence.length : 0)
+    ? Array.isArray(repeatData.sequence)
+      ? repeatData.sequence.length
+      : 0
     : 0;
 
   // Get target entity display
@@ -138,11 +140,14 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
         />
         <div className="mb-1 flex items-center gap-2">
           <div className="rounded bg-purple-200 p-1">
-            <RotateCcw className="h-4 w-4 text-purple-700" />
+            {data._blockKey === 'repeat_count' ? (
+              <Hash className="h-4 w-4 text-purple-700" />
+            ) : (
+              <RotateCcw className="h-4 w-4 text-purple-700" />
+            )}
           </div>
           <span className="font-semibold text-purple-900 text-sm">
-            {data.alias ||
-              t('nodes:actions.repeatLabel', { n: String(repeatCount) })}
+            {data.alias || t('nodes:actions.repeatLabel', { n: String(repeatCount) })}
           </span>
           {stepNumber && (
             <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-purple-600 font-bold text-white text-xs">
@@ -196,7 +201,11 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
 
       <div className="mb-1 flex items-center gap-2">
         <div className="rounded bg-green-200 p-1">
-          <Play className="h-4 w-4 text-green-700" />
+          {data._blockKey === 'parallel' ? (
+            <Columns2 className="h-4 w-4 text-green-700" />
+          ) : (
+            <Play className="h-4 w-4 text-green-700" />
+          )}
         </div>
         <span className="font-semibold text-green-900 text-sm">
           {data.alias || (isEventAction ? data.event : serviceName) || t('nodes:types.action')}

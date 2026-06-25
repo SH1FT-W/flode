@@ -14,7 +14,13 @@ import {
 } from '@xyflow/react';
 import { type DragEvent, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChooseChainEdge, ChooseDefaultEdge, DeletableEdge, HintEdge, LoopBackEdge } from '@/components/edges';
+import {
+  ChooseChainEdge,
+  ChooseDefaultEdge,
+  DeletableEdge,
+  HintEdge,
+  LoopBackEdge,
+} from '@/components/edges';
 import {
   ActionNode,
   ConditionNode,
@@ -25,6 +31,7 @@ import {
 } from '@/components/nodes';
 import { NodeToolbar } from '@/components/toolbar/NodeToolbar';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { type CompoundBlockKey, createCompoundBlock } from '@/lib/block-factories';
 import { generateNodeId } from '@/lib/utils';
 import { useFlowStore } from '@/store/flow-store';
 import { isMacOS } from '@/utils/useAgentPlatform';
@@ -58,6 +65,7 @@ export function FlowCanvas() {
     onConnect,
     selectNode,
     addNode,
+    addCompound,
     selectedNodeId,
     isSimulating,
     executionPath,
@@ -103,17 +111,30 @@ export function FlowCanvas() {
     (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault();
 
+      const dropPosition = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      // Handle compound blocks (choose, if_else, repeat_while, etc.)
+      const compoundData = event.dataTransfer.getData('application/reactflow-compound');
+      if (compoundData) {
+        try {
+          const { key } = JSON.parse(compoundData) as { key: CompoundBlockKey };
+          const block = createCompoundBlock(key, dropPosition.x, dropPosition.y);
+          addCompound(block.nodes, block.edges);
+        } catch (err) {
+          console.error('Failed to parse dropped compound block data:', err);
+        }
+        return;
+      }
+
+      // Handle simple nodes
       const data = event.dataTransfer.getData('application/reactflow');
       if (!data) return;
 
       try {
         const { type, defaultData } = JSON.parse(data);
-
-        // Get the position where the node was dropped
-        const dropPosition = screenToFlowPosition({
-          x: event.clientX,
-          y: event.clientY,
-        });
 
         // Center the node at the cursor position by offsetting by half node dimensions
         const nodeWidth = 180; // Approximate node width
@@ -136,7 +157,7 @@ export function FlowCanvas() {
         console.error('Failed to parse dropped node data:', err);
       }
     },
-    [screenToFlowPosition, addNode]
+    [screenToFlowPosition, addNode, addCompound]
   );
 
   // Style edges based on simulation state, trace state, and selected node

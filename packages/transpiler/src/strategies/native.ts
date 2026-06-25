@@ -1438,7 +1438,8 @@ export class NativeStrategy extends BaseStrategy {
     function mapCondition(data: Record<string, unknown>): Record<string, unknown> {
       if (!data || typeof data !== 'object') return data;
       // Destructure and exclude internal FLODE fields and legacy 'template' key
-      const { condition, conditions, alias, template, _chooseCase, _chooseCaseTotal, ...rest } = data;
+      const { condition, conditions, alias, template, _chooseCase, _chooseCaseTotal, ...rest } =
+        data;
       const out: Record<string, unknown> = {
         condition: condition,
         ...rest,

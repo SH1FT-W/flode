@@ -12,14 +12,36 @@ export function LoopBackEdge({
   const isDarkMode = useDarkMode();
   const color = isDarkMode ? '#94a3b8' : '#64748b';
 
-  const [edgePath] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
+  // Backward loop-back (target is left of source): route the dashed line
+  // *around* the nodes via a detour over the top, mirroring DeletableEdge,
+  // so it never cuts straight through the loop body.
+  const isBackwardEdge = targetX < sourceX;
+
+  let edgePath: string;
+  if (isBackwardEdge) {
+    const horizontalOffset = 50;
+    const verticalOffset = 100;
+    const startRightX = sourceX + horizontalOffset;
+    const topY = Math.min(sourceY, targetY) - verticalOffset;
+    const endLeftX = targetX - horizontalOffset;
+
+    edgePath =
+      `M ${sourceX},${sourceY} ` +
+      `L ${startRightX},${sourceY} ` +
+      `L ${startRightX},${topY} ` +
+      `L ${endLeftX},${topY} ` +
+      `L ${endLeftX},${targetY} ` +
+      `L ${targetX},${targetY}`;
+  } else {
+    [edgePath] = getBezierPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+    });
+  }
 
   return (
     <BaseEdge

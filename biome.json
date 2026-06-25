@@ -1,9 +1,9 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "complexity": {
         "noExcessiveCognitiveComplexity": {
           "level": "warn",
@@ -47,7 +47,8 @@
         "useFragmentSyntax": "warn",
         "useShorthandFunctionType": "warn",
         "noCommonJs": "error",
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+        "noJsxLiterals": "error"
       },
       "suspicious": {
         "noArrayIndexKey": "off",
@@ -84,8 +85,7 @@
             "attributes": ["className"],
             "functions": ["clsx", "cva", "tw"]
           }
-        },
-        "noJsxLiterals": "error"
+        }
       }
     }
   },
@@ -125,7 +125,7 @@
       "linter": {
         "rules": {
           "a11y": {
-            "recommended": true
+            "preset": "recommended"
           }
         }
       }

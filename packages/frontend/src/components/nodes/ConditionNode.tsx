@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, Position, useEdges } from '@xyflow/react';
-import { AlertCircle, Ban, GitBranch } from 'lucide-react';
+import { AlertCircle, Ban, GitBranch, GitFork, Repeat, Shuffle } from 'lucide-react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
@@ -81,7 +81,9 @@ export const ConditionNode = memo(function ConditionNode({
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
   const edges = useEdges();
-  const hasFalseEdge = edges.some((e) => e.source === id && e.sourceHandle === 'false');
+  const hasFalseEdge =
+    edges.some((e) => e.source === id && e.sourceHandle === 'false') ||
+    data._blockKey === 'repeat_while';
   const [expanded, setExpanded] = useState(false);
 
   const conditionTypeLabels: Record<string, string> = {
@@ -152,7 +154,15 @@ export const ConditionNode = memo(function ConditionNode({
 
       <div className="mb-1 flex items-center gap-2">
         <div className="rounded bg-blue-200 p-1">
-          <GitBranch className="h-4 w-4 text-blue-700" />
+          {data._blockKey === 'choose' ? (
+            <Shuffle className="h-4 w-4 text-blue-700" />
+          ) : data._blockKey === 'if_else' ? (
+            <GitFork className="h-4 w-4 text-blue-700" />
+          ) : data._blockKey === 'repeat_while' ? (
+            <Repeat className="h-4 w-4 text-blue-700" />
+          ) : (
+            <GitBranch className="h-4 w-4 text-blue-700" />
+          )}
         </div>
         <span className="font-semibold text-blue-900 text-sm">
           {data.alias || getConditionLabel(data.condition)}
@@ -278,7 +288,8 @@ export const ConditionNode = memo(function ConditionNode({
                 setExpanded(true);
               }}
             >
-              {`+${hiddenCount} `}{t('nodes:conditions.more')}
+              {`+${hiddenCount} `}
+              {t('nodes:conditions.more')}
             </button>
           )}
           {expanded && nestedConditions.length > MAX_VISIBLE && (

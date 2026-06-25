@@ -7,7 +7,25 @@
     "delay": "Verzögerung",
     "wait": "Warten auf",
     "set_variables": "Variablen setzen",
-    "node": "Knoten"
+    "node": "Knoten",
+    "choose": "Fallunterscheidung",
+    "if_else": "Wenn / Sonst",
+    "repeat_while": "Wiederholen solange",
+    "repeat_count": "N× Wiederholen",
+    "parallel": "Parallel"
+  },
+  "compoundBlocks": {
+    "sectionLabel": "Ablauf-Steuerung",
+    "groups": {
+      "branching": "Verzweigungen",
+      "loops": "Schleifen",
+      "parallel": "Nebenläufig"
+    },
+    "choose": "Fallunterscheidung",
+    "if_else": "Wenn / Sonst",
+    "repeat_while": "Wiederholen solange",
+    "repeat_count": "N× Wiederholen",
+    "parallel": "Parallel"
   },
   "panel": {
     "selectNode": "Wählen Sie einen Knoten, um seine Eigenschaften zu bearbeiten",
@@ -114,6 +132,8 @@
     "stopMessagePlaceholder": "z.B. Bedingung nicht erfüllt",
     "markAsError": "Als Fehler markieren",
     "repeatLabel": "{{n}}× Wiederholen",
+    "repeatCountLabel": "Anzahl Wiederholungen",
+    "repeatCountDescription": "Wie oft die Sequenz ausgeführt wird",
     "repeatSequenceLabel": "Sequenz",
     "repeatActions_one": "{{count}} Aktion",
     "repeatActions_other": "{{count}} Aktionen"

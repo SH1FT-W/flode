@@ -16,23 +16,47 @@ import {
   Wifi,
 } from 'lucide-react';
 
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
 import './index.css';
 import { FlowCanvas } from '@/components/canvas/FlowCanvas';
-import { AutomationImportDialog } from '@/components/panels/AutomationImportDialog';
-import { AutomationSaveDialog } from '@/components/panels/AutomationSaveDialog';
-import { HassSettings } from '@/components/panels/HassSettings';
-import { ImportYamlDialog } from '@/components/panels/ImportYamlDialog';
 import { NodePalette } from '@/components/panels/NodePalette';
 import { PropertyPanel } from '@/components/panels/PropertyPanel';
-import { YamlPreview } from '@/components/panels/YamlPreview';
-import { AutomationTraceViewer } from '@/components/simulator/AutomationTraceViewer';
 import { SpeedControl } from '@/components/simulator/SpeedControl';
-import { TraceSimulator } from '@/components/simulator/TraceSimulator';
 import { Badge } from '@/components/ui/badge';
+
+// Code-split: lazily loaded panels & dialogs (not on the initial critical path).
+// Each only loads when its tab is opened or its dialog is triggered.
+const YamlPreview = lazy(() =>
+  import('@/components/panels/YamlPreview').then((m) => ({ default: m.YamlPreview }))
+);
+const TraceSimulator = lazy(() =>
+  import('@/components/simulator/TraceSimulator').then((m) => ({ default: m.TraceSimulator }))
+);
+const AutomationTraceViewer = lazy(() =>
+  import('@/components/simulator/AutomationTraceViewer').then((m) => ({
+    default: m.AutomationTraceViewer,
+  }))
+);
+const HassSettings = lazy(() =>
+  import('@/components/panels/HassSettings').then((m) => ({ default: m.HassSettings }))
+);
+const ImportYamlDialog = lazy(() =>
+  import('@/components/panels/ImportYamlDialog').then((m) => ({ default: m.ImportYamlDialog }))
+);
+const AutomationImportDialog = lazy(() =>
+  import('@/components/panels/AutomationImportDialog').then((m) => ({
+    default: m.AutomationImportDialog,
+  }))
+);
+const AutomationSaveDialog = lazy(() =>
+  import('@/components/panels/AutomationSaveDialog').then((m) => ({
+    default: m.AutomationSaveDialog,
+  }))
+);
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -56,6 +80,15 @@ import { useHass } from './contexts/HassContext';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useLanguage } from './hooks/useLanguage';
 import { useFlowStore } from './store/flow-store';
+
+/** Lightweight fallback shown while a lazily-loaded panel chunk is fetched. */
+function PanelLoading() {
+  return (
+    <div className="flex h-full items-center justify-center p-6 text-muted-foreground">
+      <Loader2 className="h-5 w-5 animate-spin" />
+    </div>
+  );
+}
 
 type RightPanelTab = 'properties' | 'yaml' | 'simulator';
 
@@ -194,25 +227,25 @@ function App() {
       FallbackComponent={({ error }) => {
         const err = error instanceof Error ? error : new Error(String(error));
         return (
-        <Dialog open={true} onOpenChange={reloadApp}>
-          <DialogContent className="flex w-[90vw] max-w-full flex-col">
-            <DialogHeader>
-              <DialogTitle>{t('dialogs:error.title')}</DialogTitle>
-            </DialogHeader>
+          <Dialog open={true} onOpenChange={reloadApp}>
+            <DialogContent className="flex w-[90vw] max-w-full flex-col">
+              <DialogHeader>
+                <DialogTitle>{t('dialogs:error.title')}</DialogTitle>
+              </DialogHeader>
 
-            <DialogDescription>{t('dialogs:error.description')}</DialogDescription>
+              <DialogDescription>{t('dialogs:error.description')}</DialogDescription>
 
-            <div className="space-y-4">
-              <pre className="max-h-60 overflow-auto rounded bg-red-100 p-4 text-red-800 text-sm">
-                {err.message}
-                <br />
-                {err.stack}
-              </pre>
-              <div>{t('dialogs:error.refreshPrompt')}</div>
-              <Button onClick={reloadApp}>{t('buttons.refresh')}</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+              <div className="space-y-4">
+                <pre className="max-h-60 overflow-auto rounded bg-red-100 p-4 text-red-800 text-sm">
+                  {err.message}
+                  <br />
+                  {err.stack}
+                </pre>
+                <div>{t('dialogs:error.refreshPrompt')}</div>
+                <Button onClick={reloadApp}>{t('buttons.refresh')}</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         );
       }}
     >
@@ -225,13 +258,14 @@ function App() {
               {!actualIsRemote && (
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="shrink-0 text-muted-foreground hover:bg-accent"
+                  size="sm"
+                  className="shrink-0 gap-1.5 text-muted-foreground hover:bg-accent"
                   onClick={handleBackToHA}
                   title={t('titles.backToHA')}
-                  aria-label={t('titles.backToHA')}
+                  aria-label={t('titles.exit')}
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="font-medium">{t('titles.exit')}</span>
                 </Button>
               )}
               {/* Sidebar toggle button, only visible when parent window width <= 870px */}
@@ -384,7 +418,8 @@ function App() {
                 </div>
                 <div className="text-muted-foreground text-xs">
                   <span>
-                    {t('titles.appName')} {`v${version}`}{' · by SH1FT-W'}
+                    {t('titles.appName')} {`v${version}`}
+                    {' · by SH1FT-W'}
                   </span>
                 </div>
               </div>
@@ -419,7 +454,9 @@ function App() {
                     <PropertyPanel />
                   </TabsContent>
                   <TabsContent value="yaml" className="mt-0 flex-1 overflow-hidden">
-                    <YamlPreview />
+                    <Suspense fallback={<PanelLoading />}>
+                      <YamlPreview />
+                    </Suspense>
                   </TabsContent>
                   <TabsContent value="simulator" className="mt-0 flex-1 overflow-hidden">
                     <div className="flex h-full flex-col">
@@ -453,15 +490,17 @@ function App() {
                         <SpeedControl speed={simulationSpeed} onSpeedChange={setSimulationSpeed} />
                       </div>
 
-                      {/* Simulation Section */}
-                      <div className="flex-1 border-b">
-                        <TraceSimulator />
-                      </div>
+                      <Suspense fallback={<PanelLoading />}>
+                        {/* Simulation Section */}
+                        <div className="flex-1 border-b">
+                          <TraceSimulator />
+                        </div>
 
-                      {/* Trace Section */}
-                      <div className="flex-1">
-                        <AutomationTraceViewer />
-                      </div>
+                        {/* Trace Section */}
+                        <div className="flex-1">
+                          <AutomationTraceViewer />
+                        </div>
+                      </Suspense>
                     </div>
                   </TabsContent>
                 </div>
@@ -471,31 +510,47 @@ function App() {
         </div>
 
         {/* Settings modal - Only show when not in panel mode */}
-        {actualIsRemote && (
-          <HassSettings
-            isOpen={settingsOpen || forceSettingsOpen}
-            onClose={() => setSettingsOpen(false)}
-            config={config}
-            onSave={setConfig}
-          />
+        {actualIsRemote && (settingsOpen || forceSettingsOpen) && (
+          <Suspense fallback={null}>
+            <HassSettings
+              isOpen={settingsOpen || forceSettingsOpen}
+              onClose={() => setSettingsOpen(false)}
+              config={config}
+              onSave={setConfig}
+            />
+          </Suspense>
         )}
 
         {/* Import YAML dialog */}
-        <ImportYamlDialog isOpen={importYamlOpen} onClose={() => setImportYamlOpen(false)} />
+        {importYamlOpen && (
+          <Suspense fallback={null}>
+            <ImportYamlDialog isOpen={importYamlOpen} onClose={() => setImportYamlOpen(false)} />
+          </Suspense>
+        )}
 
-        <AutomationImportDialog
-          isOpen={automationImportOpen}
-          onClose={() => {
-            setAutomationImportOpen(false);
-          }}
-        />
+        {automationImportOpen && (
+          <Suspense fallback={null}>
+            <AutomationImportDialog
+              isOpen={automationImportOpen}
+              onClose={() => {
+                setAutomationImportOpen(false);
+              }}
+            />
+          </Suspense>
+        )}
 
         {/* Save Automation dialog */}
-        <AutomationSaveDialog
-          isOpen={saveDialogOpen}
-          onClose={() => setSaveDialogOpen(false)}
-          onSaved={() => { /* dialog closes via onClose */ }}
-        />
+        {saveDialogOpen && (
+          <Suspense fallback={null}>
+            <AutomationSaveDialog
+              isOpen={saveDialogOpen}
+              onClose={() => setSaveDialogOpen(false)}
+              onSaved={() => {
+                /* dialog closes via onClose */
+              }}
+            />
+          </Suspense>
+        )}
 
         {/* Clear confirm dialog */}
         <Dialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>

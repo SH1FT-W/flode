@@ -15,5 +15,3 @@ if (typeof window !== 'undefined') {
     // Ignore if jest-dom is not available
   }
 }
-
-export {};

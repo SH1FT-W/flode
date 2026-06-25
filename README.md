@@ -5,11 +5,10 @@
 
   <p><strong>Visual Flow + Node Editor for Home Assistant</strong></p>
 
-  [![Release](https://img.shields.io/badge/version-1.0.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
+  [![Release](https://img.shields.io/badge/version-1.1.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
   [![HA Version](https://img.shields.io/badge/HA-2024.6%2B-brightgreen?style=flat-square)](https://www.home-assistant.io)
   [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](LICENSE)
-  [![Status](https://img.shields.io/badge/status-beta-yellow?style=flat-square)](https://github.com/SH1FT-W/flode/releases)
-  [![Tests](https://img.shields.io/badge/tests-282%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
+  [![Tests](https://img.shields.io/badge/tests-292%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
   [![HACS](https://img.shields.io/badge/HACS-custom-blueviolet?style=flat-square)](https://hacs.xyz)
 
   <br/>
@@ -28,7 +27,7 @@
 
 > **Fork notice:** FLODE is based on [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) by [@FezVrasta](https://github.com/FezVrasta) — with numerous bug fixes, new features, and a complete rebranding. All changes are documented in the [CHANGELOG](CHANGELOG.md).
 >
-> **⚠️ Beta:** FLODE is designed not to overwrite any existing data. Nevertheless, we recommend backing up your automations before editing them.
+> **Note:** FLODE is designed not to overwrite any existing data. Nevertheless, we recommend backing up your automations before editing them.
 
 ---
 
@@ -119,7 +118,7 @@ flode/
 - **Frontend:** React 18, Vite, Tailwind CSS, React Flow (xyflow), Zustand, i18next
 - **Transpiler:** TypeScript, js-yaml, ELK layout engine
 - **Validation:** Zod schemas
-- **Tests:** Vitest (278 tests)
+- **Tests:** Vitest (292 tests)
 - **HA integration:** Python, custom panel via `panel_custom`
 
 ---

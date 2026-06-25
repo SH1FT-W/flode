@@ -166,12 +166,29 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
 
   if (isRepeatNode) {
     const seqLength = Array.isArray(repeatData!.sequence) ? repeatData!.sequence.length : 0;
+    const countValue =
+      typeof repeatData!.count === 'number' || typeof repeatData!.count === 'string'
+        ? String(repeatData!.count)
+        : '';
+    const handleCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value;
+      const parsed = Number.parseInt(raw, 10);
+      const nextCount = raw === '' ? 1 : Number.isNaN(parsed) ? raw : Math.max(1, parsed);
+      onChange('repeat', { ...repeatData, count: nextCount });
+    };
     return (
       <>
         <FormField label={t('nodes:actions.actionTypeLabel')}>
           <div className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-purple-800 text-sm font-medium">
             {t('nodes:actions.repeatLabel', { n: String(repeatData!.count) })}
           </div>
+        </FormField>
+        <FormField
+          label={t('nodes:actions.repeatCountLabel')}
+          description={t('nodes:actions.repeatCountDescription')}
+          required
+        >
+          <Input type="number" min={1} value={countValue} onChange={handleCountChange} />
         </FormField>
         {seqLength > 0 && (
           <FormField label={t('nodes:actions.repeatSequenceLabel')}>

@@ -60,6 +60,29 @@ export interface HassConfig {
 const STORAGE_KEY = 'flode_hass_config';
 
 /**
+ * Fetch the area / device / entity registries over a WebSocket connection.
+ * `sendMessagePromise<T>` is generic, so each call is typed at the boundary
+ * without `as` casts. Shared by both the remote and panel (externalHass) modes.
+ */
+async function loadRegistries(connection: Connection): Promise<{
+  areas: Map<string, AreaRegistryEntry>;
+  devices: Map<string, DeviceRegistryEntry>;
+  entities: Map<string, EntityRegistryEntry>;
+}> {
+  const [areaList, deviceList, entityList] = await Promise.all([
+    connection.sendMessagePromise<AreaRegistryEntry[]>({ type: 'config/area_registry/list' }),
+    connection.sendMessagePromise<DeviceRegistryEntry[]>({ type: 'config/device_registry/list' }),
+    connection.sendMessagePromise<EntityRegistryEntry[]>({ type: 'config/entity_registry/list' }),
+  ]);
+
+  return {
+    areas: new Map(areaList.map((area) => [area.area_id, area])),
+    devices: new Map(deviceList.map((device) => [device.id, device])),
+    entities: new Map(entityList.map((entity) => [entity.entity_id, entity])),
+  };
+}
+
+/**
  * Load config from localStorage
  */
 function loadConfig(): HassConfig {
@@ -185,46 +208,19 @@ export const HassProvider: FC<
 
         // Subscribe to service registry changes
         const unsubscribeServices = subscribeServices(connection, (services: HassServices) => {
-          setRemoteServices(services as Record<string, Record<string, HassService>>);
+          setRemoteServices(services);
         });
 
         // Fetch device and entity registries
-        const fetchRegistries = async () => {
-          try {
-            // Fetch area registry
-            const areas = (await connection.sendMessagePromise({
-              type: 'config/area_registry/list',
-            })) as AreaRegistryEntry[];
-            const areaMap = new Map<string, AreaRegistryEntry>();
-            for (const area of areas) {
-              areaMap.set(area.area_id, area);
-            }
-            setAreaRegistry(areaMap);
-
-            // Fetch device registry
-            const devices = (await connection.sendMessagePromise({
-              type: 'config/device_registry/list',
-            })) as DeviceRegistryEntry[];
-            const deviceMap = new Map<string, DeviceRegistryEntry>();
-            for (const device of devices) {
-              deviceMap.set(device.id, device);
-            }
-            setDeviceRegistry(deviceMap);
-
-            // Fetch entity registry
-            const entities = (await connection.sendMessagePromise({
-              type: 'config/entity_registry/list',
-            })) as EntityRegistryEntry[];
-            const entityMap = new Map<string, EntityRegistryEntry>();
-            for (const entity of entities) {
-              entityMap.set(entity.entity_id, entity);
-            }
-            setEntityRegistry(entityMap);
-          } catch (error) {
+        loadRegistries(connection)
+          .then(({ areas, devices, entities }) => {
+            setAreaRegistry(areas);
+            setDeviceRegistry(devices);
+            setEntityRegistry(entities);
+          })
+          .catch((error) => {
             console.error('FLODE: Failed to fetch registries:', error);
-          }
-        };
-        fetchRegistries();
+          });
 
         // Cleanup function
         return () => {
@@ -255,43 +251,15 @@ export const HassProvider: FC<
   useEffect(() => {
     if (!externalHass?.connection) return;
 
-    const fetchRegistries = async () => {
-      try {
-        // Fetch area registry
-        const areas = (await externalHass.connection.sendMessagePromise({
-          type: 'config/area_registry/list',
-        })) as AreaRegistryEntry[];
-        const areaMap = new Map<string, AreaRegistryEntry>();
-        for (const area of areas) {
-          areaMap.set(area.area_id, area);
-        }
-        setAreaRegistry(areaMap);
-
-        // Fetch device registry
-        const devices = (await externalHass.connection.sendMessagePromise({
-          type: 'config/device_registry/list',
-        })) as DeviceRegistryEntry[];
-        const deviceMap = new Map<string, DeviceRegistryEntry>();
-        for (const device of devices) {
-          deviceMap.set(device.id, device);
-        }
-        setDeviceRegistry(deviceMap);
-
-        // Fetch entity registry
-        const entities = (await externalHass.connection.sendMessagePromise({
-          type: 'config/entity_registry/list',
-        })) as EntityRegistryEntry[];
-        const entityMap = new Map<string, EntityRegistryEntry>();
-        for (const entity of entities) {
-          entityMap.set(entity.entity_id, entity);
-        }
-        setEntityRegistry(entityMap);
-      } catch (error) {
+    loadRegistries(externalHass.connection)
+      .then(({ areas, devices, entities }) => {
+        setAreaRegistry(areas);
+        setDeviceRegistry(devices);
+        setEntityRegistry(entities);
+      })
+      .catch((error) => {
         console.error('FLODE: Failed to fetch registries from externalHass:', error);
-      }
-    };
-
-    fetchRegistries();
+      });
   }, [externalHass?.connection]);
 
   // Use refs to store frequently changing data without triggering hass object recreation
@@ -322,18 +290,18 @@ export const HassProvider: FC<
     if (shouldUseRemote) {
       // Use remote connection if configured
       // Note: states/services/devices accessed via refs so hass object doesn't recreate on updates
+      // Frontend-only fields (auth, config, locale, user) are intentionally omitted:
+      // they are optional on our HomeAssistant type and FLODE never reads them in
+      // remote mode. This keeps the object cast-free.
       return {
-        auth: null as unknown as HomeAssistant['auth'],
         get connected() {
           return wsConnection.connected;
         },
-        config: {} as unknown as HomeAssistant['config'],
         themes: { darkMode: false },
         panels: {},
         selectedTheme: null,
         panelUrl: '',
         language: 'en',
-        locale: {} as unknown as HomeAssistant['locale'],
         selectedLanguage: null,
         resources: {},
         get devices() {
@@ -346,7 +314,6 @@ export const HassProvider: FC<
         },
         dockedSidebar: false,
         moreInfoEntityId: '',
-        user: null as unknown as HomeAssistant['user'],
         fetchWithAuth: async () => new Response(),
         sendWS: async (...args) => {
           wsConnection.sendMessage(...args);
@@ -358,7 +325,7 @@ export const HassProvider: FC<
         get services() {
           return servicesRef.current;
         },
-        connection: wsConnection as unknown as HomeAssistant['connection'],
+        connection: wsConnection,
         callApi: async (method: string, path: string, data?: unknown) => {
           if (!config.url || !config.token) {
             throw new Error('No authentication configured');

@@ -2130,7 +2130,9 @@ export class YamlParser {
               id: condition.id as string | undefined,
               enabled: getNodeEnabled(),
               // Mark first condition of each case for visual case label
-              ...(i === 0 ? { _chooseCase: choiceIndex + 1, _chooseCaseTotal: validChoices.length } : {}),
+              ...(i === 0
+                ? { _chooseCase: choiceIndex + 1, _chooseCaseTotal: validChoices.length }
+                : {}),
             },
           };
         } else {
@@ -2174,7 +2176,9 @@ export class YamlParser {
             data: {
               ...data,
               // Mark first condition of each case for visual case label
-              ...(i === 0 ? { _chooseCase: choiceIndex + 1, _chooseCaseTotal: validChoices.length } : {}),
+              ...(i === 0
+                ? { _chooseCase: choiceIndex + 1, _chooseCaseTotal: validChoices.length }
+                : {}),
             },
           };
         }

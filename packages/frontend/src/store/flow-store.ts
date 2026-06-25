@@ -6,7 +6,6 @@ import type {
   NodeValidationError,
 } from '@flode/shared';
 import { validateNodeData } from '@flode/shared';
-import { FlowTranspiler } from '@flode/transpiler';
 import {
   addEdge,
   applyEdgeChanges,
@@ -181,6 +180,7 @@ export interface FlowState {
   onConnect: (connection: Connection) => void;
 
   addNode: (node: Node<FlowNodeData>) => void;
+  addCompound: (nodes: Node<FlowNodeData>[], edges: Edge[]) => void;
   updateNodeData: (nodeId: string, data: Partial<FlowNodeData>) => void;
   removeNode: (nodeId: string) => void;
 
@@ -375,6 +375,26 @@ export const useFlowStore = create<FlowState>()(
         get().validateNode(node.id);
       },
 
+      addCompound: (nodes, edges) => {
+        const normalizedNodes = nodes.map((node) =>
+          node.type
+            ? {
+                ...node,
+                data: normalizeNodeData(
+                  node.type,
+                  node.data as Record<string, unknown>
+                ) as FlowNodeData,
+              }
+            : node
+        );
+        set((state) => ({
+          nodes: [...state.nodes, ...normalizedNodes],
+          edges: [...state.edges, ...edges],
+          hasUnsavedChanges: true,
+        }));
+        for (const node of normalizedNodes) get().validateNode(node.id);
+      },
+
       updateNodeData: (nodeId, data) => {
         set((state) => ({
           nodes: state.nodes.map((node) =>
@@ -480,6 +500,7 @@ export const useFlowStore = create<FlowState>()(
             throw new Error(i18t('errors:validation.noAction'));
           }
 
+          const { FlowTranspiler } = await import('@flode/transpiler');
           const transpiler = new FlowTranspiler();
 
           // Validate first
@@ -583,6 +604,7 @@ export const useFlowStore = create<FlowState>()(
             throw new Error(i18t('errors:validation.noAction'));
           }
 
+          const { FlowTranspiler } = await import('@flode/transpiler');
           const transpiler = new FlowTranspiler();
 
           // Validate first
@@ -781,7 +803,13 @@ export const useFlowStore = create<FlowState>()(
               nodeData.trigger = 'state';
             }
 
-            if (n.type === 'action' && !nodeData.service && !nodeData.repeat && !nodeData.event && !('stop' in nodeData)) {
+            if (
+              n.type === 'action' &&
+              !nodeData.service &&
+              !nodeData.repeat &&
+              !nodeData.event &&
+              !('stop' in nodeData)
+            ) {
               console.warn(
                 `FLODE: Action node ${n.id} missing service, adding default 'light.turn_on'`
               );

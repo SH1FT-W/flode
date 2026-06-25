@@ -168,7 +168,9 @@ mode: single
       expect(setVarNodes.length).toBe(2);
 
       // Init node should be the one initializing counter to 0
-      const initNode = setVarNodes.find((n) => Object.values(n.data.variables as Record<string, unknown>).includes(0));
+      const initNode = setVarNodes.find((n) =>
+        Object.values(n.data.variables as Record<string, unknown>).includes(0)
+      );
       expect(initNode).toBeDefined();
 
       // Should have a condition node for the counter check

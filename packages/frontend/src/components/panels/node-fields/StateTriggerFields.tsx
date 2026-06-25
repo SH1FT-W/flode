@@ -10,7 +10,7 @@ import { useHass } from '@/contexts/HassContext';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
-import { GENERIC_STATES, StateValueCombobox, getStateSuggestions } from './StateValueCombobox';
+import { GENERIC_STATES, getStateSuggestions, StateValueCombobox } from './StateValueCombobox';
 
 interface StateTriggerFieldsProps {
   node: FlowNode;

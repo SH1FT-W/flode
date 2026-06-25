@@ -14,6 +14,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    // The large chunks (transpiler+elkjs, code editor) are lazily loaded on
+    // demand, not part of the initial payload — so the default 500 kB warning
+    // is just noise here.
+    chunkSizeWarningLimit: 1700,
     rollupOptions: {
       input: {
         // Main app entry (loaded by iframe via index.html)
@@ -28,6 +32,20 @@ export default defineConfig({
             return 'assets/panel-wrapper.js';
           }
           return 'assets/[name]-[hash].js';
+        },
+        // Split heavy vendor libs into separate, long-term cacheable chunks
+        // so the main bundle stays small and updates don't re-download vendors.
+        manualChunks: (id) => {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('@xyflow') || id.includes('d3-')) return 'vendor-reactflow';
+          if (id.includes('i18next') || id.includes('react-i18next')) return 'vendor-i18n';
+          if (id.includes('@radix-ui')) return 'vendor-radix';
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) {
+            return 'vendor-react';
+          }
+          // Everything else: let Rolldown decide. Deps used only by a lazy
+          // route stay in that lazy chunk instead of bloating a shared vendor.
+          return undefined;
         },
       },
     },

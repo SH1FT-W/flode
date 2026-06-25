@@ -4,6 +4,28 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.1.0] — 2026-06-25 — Flow-Control Blocks, Performance & Hardening
+
+### Added
+- **Flow-control blocks in the node palette** — the Home Assistant control structures that previously couldn't be added from the palette are now first-class draggable blocks: **Choose** (Fallunterscheidung), **If / Else** (Wenn / Sonst), **Repeat While** (Wiederholen solange), **Repeat N×** (N× Wiederholen) and **Parallel**. They are created as ready-to-wire compound blocks (correct nodes, edges and handles) and round-trip to the matching HA YAML (`choose:` / `if`-`then`-`else` / `repeat.while` / `repeat.count` / `parallel:`)
+- **Grouped palette section** — the new blocks live under an "Ablauf-Steuerung / Flow Control" heading, sub-grouped logically into *Branching*, *Loops* and *Concurrency*
+- **Dedicated "repeat count" field** — the N× Repeat block now has a proper number input in the properties panel instead of requiring raw JSON editing
+- **Labelled exit button** — the bare back-arrow in the header is now an explicit "Exit / Beenden" button
+
+### Changed
+- **Much faster initial load via code-splitting** — the main bundle shrank from ~3.3 MB to ~408 KB. The transpiler + ELK layout engine and the YAML code editor are now lazy-loaded on demand, and React / React Flow / Radix / i18next are split into long-term cacheable vendor chunks
+- **Cleaner loop rendering** — the Repeat-While block now lays out as *action → condition* with the loop-back edge routed cleanly *around* the nodes (a detour over the top) instead of cutting diagonally through them, even when the loop body contains multiple nodes
+- The "Beta" status markers were removed from the README and landing page now that the project is stable and well-covered by tests
+
+### Fixed
+- **Type-safety hardening in the Home Assistant bridge** — `contexts/HassContext.tsx` no longer relies on any `as` / `as unknown as` casts (13 → 0). Frontend-only fields the editor never reads are now optional on the `HomeAssistant` type, registry fetches use the generic `sendMessagePromise<T>` boundary, and the duplicated registry-loading logic was consolidated
+
+### Internal
+- Added round-trip tests for the palette block factories (structural + transpile checks for all five blocks); the suite now stands at **292 tests** across all packages
+- Migrated the Biome configuration to 2.5.0 and applied a repo-wide safe autofix (formatting / import & class sorting only)
+
+---
+
 ## [1.0.0] — 2026-06-20 — Major Dependency Overhaul & Choose Block Fixes
 
 ### Changed

@@ -73,7 +73,10 @@ interface StateValueComboboxProps {
   placeholder: string;
 }
 
-function getStateLabel(state: string, t: (key: string, opts: { defaultValue: string }) => string): string {
+function getStateLabel(
+  state: string,
+  t: (key: string, opts: { defaultValue: string }) => string
+): string {
   return t(`nodes:stateValues.${state}`, { defaultValue: state });
 }
 
@@ -160,7 +163,9 @@ export function StateValueCombobox({
                     <CommandItem key={state} value={state} onSelect={handleSelect}>
                       <span>{label}</span>
                       {labelDiffersFromValue(label, state) && (
-                        <span className="ml-1 font-mono text-muted-foreground text-xs">({state})</span>
+                        <span className="ml-1 font-mono text-muted-foreground text-xs">
+                          ({state})
+                        </span>
                       )}
                       <Check
                         className={cn(

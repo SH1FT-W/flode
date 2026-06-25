@@ -15,10 +15,21 @@ export interface HassDevice {
   area_id: string | null;
 }
 
-export interface HomeAssistant extends Omit<CustomCardHomeAssistant, 'services' | 'themes'> {
+export interface HomeAssistant
+  extends Omit<
+    CustomCardHomeAssistant,
+    'services' | 'themes' | 'auth' | 'config' | 'locale' | 'user'
+  > {
   themes: { darkMode: boolean };
   services: HassServices;
   devices: Record<string, HassDevice>;
+  // Frontend-only fields FLODE never reads in remote mode. Kept optional so the
+  // partial remote `hass` object doesn't need placeholder `as unknown as` casts.
+  // In panel mode the real HA frontend supplies them.
+  auth?: CustomCardHomeAssistant['auth'];
+  config?: CustomCardHomeAssistant['config'];
+  locale?: CustomCardHomeAssistant['locale'];
+  user?: CustomCardHomeAssistant['user'];
 }
 
 /**

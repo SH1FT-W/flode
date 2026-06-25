@@ -13,6 +13,7 @@ export const HANDLED_PROPERTIES = {
     '_conditionId', // Internal property
     '_chooseCase', // Internal: case index for visual label
     '_chooseCaseTotal', // Internal: total cases for visual label
+    '_blockKey', // Internal: compound block origin for icon selection
   ],
 
   // Trigger properties handled by TriggerFields component
@@ -77,6 +78,7 @@ export const HANDLED_PROPERTIES = {
     'response_variable', // Response variable for script fields
     'stop',
     'error',
+    'repeat', // Repeat block (count) edited via dedicated count field
     // Legacy/alternative action formats
     'entity_id', // Legacy: often shows up instead of target.entity_id
     'action', // Alternative field name for service
