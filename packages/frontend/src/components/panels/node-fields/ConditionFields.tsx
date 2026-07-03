@@ -94,6 +94,11 @@ export function ConditionFields({ node, onChange, entities }: ConditionFieldsPro
 
     // All other condition types use static field configuration
     const fields = getConditionFields(conditionType);
+    const entityIdValue = nodeData.entity_id;
+    const entityIdContext =
+      typeof entityIdValue === 'string' || Array.isArray(entityIdValue)
+        ? (entityIdValue as string | string[])
+        : undefined;
     return fields.map((field) => (
       <DynamicFieldRenderer
         key={field.name}
@@ -102,6 +107,7 @@ export function ConditionFields({ node, onChange, entities }: ConditionFieldsPro
         onChange={(value) => onChange(field.name, value)}
         entities={entities}
         error={getFieldError(field.name)}
+        entityIdContext={entityIdContext}
       />
     ));
   };

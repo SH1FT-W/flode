@@ -64,6 +64,13 @@ interface DynamicFieldRendererProps {
    * Validation error message to display below the field
    */
   error?: string;
+
+  /**
+   * entity_id of the sibling "entity" field on the same node, if any — scopes
+   * the native attribute picker (field name `attribute`) to that entity's
+   * actual attributes instead of listing every attribute name HA knows.
+   */
+  entityIdContext?: string | string[];
 }
 
 /**
@@ -78,6 +85,7 @@ export function DynamicFieldRenderer({
   domain,
   translations = {},
   error,
+  entityIdContext,
 }: DynamicFieldRendererProps) {
   const { t } = useTranslation(['common', 'nodes']);
   // Extract common properties
@@ -162,6 +170,27 @@ export function DynamicFieldRenderer({
     switch (selectorType) {
       // Text input
       case 'text': {
+        // Attribute name field (e.g. numeric_state condition's "attribute"):
+        // scope to the sibling entity's real attributes when we know it.
+        if (name === 'attribute') {
+          return (
+            <HaSelector
+              selector={{ attribute: { entity_id: entityIdContext } }}
+              value={stringValue}
+              onChange={(v) => onChange(typeof v === 'string' ? v : '')}
+              fallback={
+                <Input
+                  type="text"
+                  value={stringValue}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder={placeholder}
+                  required={required}
+                />
+              }
+            />
+          );
+        }
+
         // Check if this field supports multiple values
         const isMultiple = 'multiple' in field && field.multiple;
 
