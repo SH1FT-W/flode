@@ -301,7 +301,7 @@
 
   <div class="badge-row">
     <span class="pill pill-blue version-tag">…</span>
-    <span class="pill pill-green">HA 2024.6+</span>
+    <span class="pill pill-green ha-version">HA …</span>
     <span class="pill pill-purple">Apache 2.0</span>
     <span class="pill pill-teal">HACS</span>
     <span class="pill pill-green test-count">… Tests</span>
@@ -547,6 +547,17 @@
       const match = text.match(/Vitest\s*\((\d+)\s*Tests?\)/i);
       if (match) {
         document.querySelectorAll('.test-count').forEach(el => el.textContent = match[1] + ' Tests');
+      }
+    })
+    .catch(() => {});
+
+  // Minimum HA version live from hacs.json
+  fetch('https://api.github.com/repos/SH1FT-W/flode/contents/hacs.json')
+    .then(r => r.json())
+    .then(data => {
+      const parsed = JSON.parse(atob(data.content.replace(/\n/g, '')));
+      if (parsed.homeassistant) {
+        document.querySelectorAll('.ha-version').forEach(el => el.textContent = 'HA ' + parsed.homeassistant + '+');
       }
     })
     .catch(() => {});

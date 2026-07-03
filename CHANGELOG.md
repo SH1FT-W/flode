@@ -4,6 +4,29 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.2.0] — 2026-07-03 — Native Home Assistant UI
+
+### Added
+- **Native Home Assistant theming** — FLODE now mirrors HA's active theme (light/dark, custom themes, corner-radius scale) into its own UI at runtime instead of using fixed Tailwind colors.
+- **Native Home Assistant components everywhere** — entity/device/area/service pickers, dropdowns, toggles, and text/number/date/time/duration/template/object fields now use HA's own web components (the same ones you see in HA's built-in automation editor) instead of hand-built equivalents. Falls back automatically to FLODE's previous components when a native one isn't available.
+- **Shadow DOM panel mount** — the panel now shares HA's document via Shadow DOM instead of an iframe, which is what makes loading native components possible in the first place.
+- **One-time compatibility notice** — if a native HA component fails to load or breaks at runtime, FLODE shows a single toast instead of silently degrading field by field, and logs the running HA version once per session to help diagnose future incompatibilities.
+
+### Changed
+- **Duration fields always use the native object picker** — the string/object toggle for Delay/Wait duration values was removed now that the object form has full native UI support; existing string-form durations are still read correctly.
+- **Minimum Home Assistant version raised to 2025.8.0** (previously 2024.6.0) — required for the multi-entity state/attribute selector support the new UI depends on.
+
+### Fixed
+- **Native time picker no longer loses in-progress input** — a re-render bug was overwriting object/array field values on every render even when their content hadn't changed, which reset HA's time selector mid-keystroke.
+- **Delay/Wait/Set-Variables palette entries no longer render white-on-white** — a `:root` CSS selector that never matches inside Shadow DOM silently dropped several color tokens; fixed by targeting `:root, :host`.
+- **`numeric_state` condition's attribute field now autocompletes correctly** against the selected entity's actual attributes.
+
+### Internal
+- Dependency refresh: patch/minor updates across Radix UI, Tailwind, Vite, Turbo, i18next, Biome, and `@types/node`. `js-yaml` and `vite-plugin-css-injected-by-js` were deliberately left on their current major versions pending a dedicated compatibility review.
+- Trimmed the README (removed the redundant Project Structure and Node Types sections) and refreshed its screenshots and badges for the current UI.
+
+---
+
 ## [1.1.0] — 2026-06-25 — Flow-Control Blocks, Performance & Hardening
 
 ### Added
