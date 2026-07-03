@@ -48,19 +48,10 @@ No vendor lock-in. No external service. Automations remain fully editable in HA'
 | 🔄 **Bidirectional** | Import, edit, and save back existing HA automations |
 | 🐛 **Trace integration** | Debug flows with the official HA trace view |
 | 🔀 **State machines** | Complex loops via an automatic state machine pattern |
+| 🧭 **Flow control** | Choose, If/Else, Repeat While, Repeat N×, and Parallel as draggable blocks |
+| 🧩 **Native HA UI** | Uses Home Assistant's own theme and native components (pickers, selects, etc.) wherever possible |
 | 🌍 **DE & EN** | Full i18n support |
 | 🌗 **Dark & light mode** | Automatically follows your configured HA theme |
-
----
-
-## Node Types
-
-| Node | Color | Description |
-|---|---|---|
-| **Trigger** | 🟡 Yellow | What starts the automation — state, time, event, … |
-| **Condition** | 🔵 Blue | Filter — only continues if the condition is met |
-| **Action** | 🟢 Green | What happens — call a service, fire an event, delay, … |
-| **OR / AND / NOT** | 🟣 Purple | Logically combine multiple conditions and triggers |
 
 ---
 
@@ -119,27 +110,12 @@ technical writeup.
 
 ---
 
-## Project Structure
-
-```
-flode/
-├── custom_components/flode/   # HA integration (Python)
-│   ├── brand/                 # Integration icons
-│   ├── translations/          # DE + EN setup texts
-│   └── www/                   # Built frontend files
-├── packages/
-│   ├── frontend/              # React/Vite UI (@flode/frontend)
-│   ├── transpiler/            # YAML ↔ graph logic (@flode/transpiler)
-│   └── shared/                # Zod schemas + types (@flode/shared)
-└── __tests__/                 # YAML round-trip fixtures
-```
-
 ## Technology
 
 - **Frontend:** React 18, Vite, Tailwind CSS, React Flow (xyflow), Zustand, i18next
 - **Transpiler:** TypeScript, js-yaml, ELK layout engine
 - **Validation:** Zod schemas
-- **Tests:** Vitest (292 tests)
+- **Tests:** Vitest (303 tests)
 - **HA integration:** Python, custom panel via `panel_custom`
 
 ---
