@@ -474,6 +474,25 @@ auch Code.
 `modes.dark`) — zum Gegenchecken, dass FLODEs Theme-Sync auch mit
 Nutzer-Themes (nicht nur HAs Default) korrekt funktioniert.
 
-**Noch offen:** `ha-dialog` (Radix-Dialog bleibt, siehe Leitplanken —
-"nur migrieren, wo es ohne Verrenkungen geht"), `numeric_state`-Attribut
+**`ha-dialog` geprüft und bewusst nicht migriert:** Quellcode nachgeschlagen
+(`src/components/ha-dialog.ts`) — nutzt intern `wa-dialog` aus der separaten
+`@home-assistant/webawesome`-Bibliothek, Komposition über benannte Slots
+(`header`/`headerTitle`/`footer`/…) statt einfacher Kinder, eigene Events
+(`opened`/`closed`/`after-show`, kein einheitliches `onOpenChange`). Zusätzlich
+kein Lade-Pfad über `loadCardHelpers()` gefunden — Dialoge werden von keinem
+Lovelace-Karten-Editor importiert (anders als `ha-selector`/`ha-switch`/
+`ha-select`). FLODEs eigener Radix-Dialog bleibt, ist bereits auf HAs echten
+Eckenradius gestylt (Phase 4, Abschnitt 7).
+
+**Zwei weitere Select-Stellen migriert:** Simulator-Bedingungs-Override
+(dabei in eine eigene `ConditionOverrideSelect`-Komponente ausgelagert, um
+eine versehentliche IIFE zu vermeiden — laut `CLAUDE.md` in diesem Repo
+verboten), YAML-Export-Strategie. **Bewusst nicht migriert:**
+`AutomationTraceViewer.tsx`s Trace-Auswahl — Optionen zeigen Icon +
+Zeitstempel + farbiges Status-Badge, `ha-select` kann nur Klartext-Labels
+(+ optionale Sekundärzeile), eine Migration würde die Statusfarbe verlieren.
+`DeviceSelector.tsx` bleibt unverändert (ist bereits nur noch
+`HaSelector`-Fallback, sich selbst darin nativ zu machen wäre zirkulär).
+
+**Noch offen:** `ha-dialog` (siehe oben), `numeric_state`-Attribut
 (Freitext, siehe Phase 3), Icon-Picker (kein Schema-Feld).

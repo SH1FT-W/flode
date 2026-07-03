@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { HaSelect } from '@/ha';
 import { cn } from '@/lib/utils';
 import { useFlowStore } from '@/store/flow-store';
 import { copyToClipboard } from '@/utils/copy-to-clipboard';
@@ -99,19 +100,30 @@ export function YamlPreview() {
       <div className="flex items-center justify-between border-b p-3">
         <h3 className="font-semibold text-foreground text-sm">{t('labels.yamlOutput')}</h3>
         <div className="flex items-center gap-2">
-          <Select
+          <HaSelect
             value={forceStrategy}
-            onValueChange={(value) => setForceStrategy(value as typeof forceStrategy)}
-          >
-            <SelectTrigger className="h-7 w-[120px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="auto">{t('strategy.auto')}</SelectItem>
-              <SelectItem value="native">{t('strategy.native')}</SelectItem>
-              <SelectItem value="state-machine">{t('strategy.stateMachine')}</SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={(v) => setForceStrategy(String(v) as typeof forceStrategy)}
+            options={[
+              { value: 'auto', label: t('strategy.auto') },
+              { value: 'native', label: t('strategy.native') },
+              { value: 'state-machine', label: t('strategy.stateMachine') },
+            ]}
+            fallback={
+              <Select
+                value={forceStrategy}
+                onValueChange={(value) => setForceStrategy(value as typeof forceStrategy)}
+              >
+                <SelectTrigger className="h-7 w-[120px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">{t('strategy.auto')}</SelectItem>
+                  <SelectItem value="native">{t('strategy.native')}</SelectItem>
+                  <SelectItem value="state-machine">{t('strategy.stateMachine')}</SelectItem>
+                </SelectContent>
+              </Select>
+            }
+          />
           <Button
             variant="ghost"
             size="sm"

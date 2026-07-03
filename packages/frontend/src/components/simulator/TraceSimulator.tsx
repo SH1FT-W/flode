@@ -12,8 +12,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { HaSelect } from '@/ha';
 import { cn } from '@/lib/utils';
 import { useFlowStore } from '@/store/flow-store';
+
+interface ConditionOverrideSelectProps {
+  value: boolean | undefined;
+  onChange: (value: boolean | undefined) => void;
+}
+
+/** "random" / "true" / "false" override picker for a single condition node in the simulator panel. */
+function ConditionOverrideSelect({ value, onChange }: ConditionOverrideSelectProps) {
+  const { t } = useTranslation(['simulator']);
+  const currentValue = value === true ? 'true' : value === false ? 'false' : 'random';
+  const handleChange = (val: string) => {
+    onChange(val === 'random' ? undefined : val === 'true');
+  };
+
+  return (
+    <HaSelect
+      value={currentValue}
+      onChange={(v) => handleChange(String(v))}
+      options={[
+        { value: 'random', label: t('simulator:trace.random') },
+        { value: 'true', label: t('simulator:trace.true') },
+        { value: 'false', label: t('simulator:trace.false') },
+      ]}
+      fallback={
+        <Select value={currentValue} onValueChange={handleChange}>
+          <SelectTrigger className="h-7 w-24 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="random">{t('simulator:trace.random')}</SelectItem>
+            <SelectItem value="true">{t('simulator:trace.true')}</SelectItem>
+            <SelectItem value="false">{t('simulator:trace.false')}</SelectItem>
+          </SelectContent>
+        </Select>
+      }
+    />
+  );
+}
 
 export function TraceSimulator() {
   const { t } = useTranslation(['simulator']);
@@ -164,37 +203,19 @@ export function TraceSimulator() {
                 <span className="mr-2 flex-1 truncate text-muted-foreground">
                   {(node.data as { alias?: string }).alias || node.id}
                 </span>
-                <Select
-                  value={
-                    conditionResults[node.id] === true
-                      ? 'true'
-                      : conditionResults[node.id] === false
-                        ? 'false'
-                        : 'random'
-                  }
-                  onValueChange={(val) => {
-                    if (val === 'random') {
+                <ConditionOverrideSelect
+                  value={conditionResults[node.id]}
+                  onChange={(val) => {
+                    if (val === undefined) {
                       setConditionResults((prev) => {
                         const { [node.id]: _, ...rest } = prev;
                         return rest;
                       });
                     } else {
-                      setConditionResults((prev) => ({
-                        ...prev,
-                        [node.id]: val === 'true',
-                      }));
+                      setConditionResults((prev) => ({ ...prev, [node.id]: val }));
                     }
                   }}
-                >
-                  <SelectTrigger className="h-7 w-24 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="random">{t('simulator:trace.random')}</SelectItem>
-                    <SelectItem value="true">{t('simulator:trace.true')}</SelectItem>
-                    <SelectItem value="false">{t('simulator:trace.false')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
               </div>
             ))}
           </div>
