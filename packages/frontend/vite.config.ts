@@ -20,9 +20,11 @@ export default defineConfig({
     chunkSizeWarningLimit: 1700,
     rollupOptions: {
       input: {
-        // Main app entry (loaded by iframe via index.html)
+        // Standalone dev preview only (`yarn dev` / index.html) — the real HA
+        // panel is mounted by panel-wrapper.ts, not this entry.
         main: path.resolve(__dirname, 'index.html'),
-        // Panel wrapper entry (loaded by HA as module)
+        // Panel wrapper entry (loaded by HA as a module; mounts into a Shadow
+        // DOM instead of an iframe, see panel-wrapper.ts for the rationale).
         'panel-wrapper': path.resolve(__dirname, 'src/panel-wrapper.ts'),
       },
       output: {

@@ -1,31 +1,26 @@
 /**
- * Minimal wrapper for Home Assistant panel integration.
- * This web component receives the hass object from HA, exposes it on window,
- * and loads the actual app in an iframe for proper document isolation.
+ * Home Assistant panel entry point for FLODE.
+ *
+ * Mounts the React app directly into a Shadow DOM on this custom element
+ * (no iframe) so FLODE shares HA's document — required for native HA web
+ * components (ha-entity-picker, ha-selector, ...) to work, since they live
+ * in HA's document-wide `customElements` registry which an iframe cannot see.
+ * See docs/ha-native-migration.md section 0 for the full rationale.
+ *
+ * The shadow root keeps FLODE's Tailwind styles from leaking into HA's own
+ * UI (and vice versa) without the iframe's document isolation.
  */
+import { type FlodeAppHandle, mountFlodeApp } from './app-mount';
+import cssText from './index.css?inline';
 import type { HomeAssistant } from './types/hass';
 
-// Type for window with hass
-declare const window: Window & {
-  hass?: HomeAssistant;
-};
-
 class FlodePanelWrapper extends HTMLElement {
-  private _messageHandler?: (event: MessageEvent) => void;
-  private iframe: HTMLIFrameElement | null = null;
-  private _hass: HomeAssistant | undefined = undefined;
+  private _hass: HomeAssistant | undefined;
+  private appHandle: FlodeAppHandle | null = null;
 
-  // Properties that HA will set
   set hass(value: HomeAssistant | undefined) {
     this._hass = value;
-    // Expose hass on window so iframe can access via window.parent.hass
-    window.hass = value;
-
-    // Notify the iframe of the update if it has registered a listener
-    const iframeWindow = this.iframe?.contentWindow as (Window & typeof globalThis) | null;
-    if (iframeWindow?.setHass) {
-      iframeWindow.setHass(value);
-    }
+    this.appHandle?.update(value);
   }
 
   get hass() {
@@ -33,54 +28,33 @@ class FlodePanelWrapper extends HTMLElement {
   }
 
   connectedCallback() {
-    // Style the wrapper to fill the container
     this.style.display = 'block';
     this.style.width = '100%';
     this.style.height = '100%';
     this.style.position = 'relative';
 
-    // Detect dark mode from hass to set initial background and avoid white flash
+    const shadow = this.attachShadow({ mode: 'open' });
+
+    const style = document.createElement('style');
+    style.textContent = cssText;
+    shadow.appendChild(style);
+
+    const appRoot = document.createElement('div');
+    appRoot.style.width = '100%';
+    appRoot.style.height = '100%';
+
+    // Avoid a white/black flash before React's first theme-sync effect runs.
     const isDarkMode = this._hass?.themes?.darkMode ?? false;
-    // These match the CSS variables in index.css:
-    // Light: --background: 0 0% 100% (white)
-    // Dark: --background: 222.2 84% 4.9% (dark blue)
-    const bgColor = isDarkMode ? 'hsl(222.2, 84%, 4.9%)' : 'hsl(0, 0%, 100%)';
+    appRoot.style.background = isDarkMode ? 'hsl(222.2, 84%, 4.9%)' : 'hsl(0, 0%, 100%)';
 
-    // Create iframe pointing to the app
-    this.iframe = document.createElement('iframe');
-    this.iframe.src = '/flode-hass/index.html';
-    this.iframe.style.width = '100%';
-    this.iframe.style.height = '100%';
-    this.iframe.style.border = 'none';
-    this.iframe.style.display = 'block';
-    this.iframe.style.background = bgColor;
-    // Allow same-origin access
-    this.iframe.setAttribute('allow', 'clipboard-read *; clipboard-write *');
+    shadow.appendChild(appRoot);
 
-    this.appendChild(this.iframe);
-
-    // Listen for messages from the iframe to trigger sidebar toggle
-    this._messageHandler = (event: MessageEvent) => {
-      // Only accept messages from our iframe
-      if (event.source !== this.iframe?.contentWindow) return;
-      if (event.data && event.data.type === 'FLODE_TOGGLE_SIDEBAR') {
-        this.dispatchEvent(new Event('hass-toggle-menu', { bubbles: true, composed: true }));
-      }
-    };
-    window.addEventListener('message', this._messageHandler);
+    this.appHandle = mountFlodeApp(appRoot, { initialHass: this._hass });
   }
 
   disconnectedCallback() {
-    if (this.iframe) {
-      this.removeChild(this.iframe);
-      this.iframe = null;
-    }
-    // Clean up window properties
-    window.hass = undefined;
-    if (this._messageHandler) {
-      window.removeEventListener('message', this._messageHandler);
-      this._messageHandler = undefined;
-    }
+    this.appHandle?.unmount();
+    this.appHandle = null;
   }
 }
 

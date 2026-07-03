@@ -2,6 +2,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePortalContainer } from '@/contexts/AppRootContext';
 import { cn } from '@/lib/utils';
 
 const Dialog = DialogPrimitive.Root;
@@ -34,8 +35,9 @@ const DialogContent = React.forwardRef<
   }
 >(({ className, children, container, ...props }, ref) => {
   const { t } = useTranslation(['common']);
+  const portalContainer = usePortalContainer();
   return (
-    <DialogPortal container={container}>
+    <DialogPortal container={container ?? portalContainer}>
       <DialogOverlay />
       <DialogPrimitive.Content
         ref={ref}

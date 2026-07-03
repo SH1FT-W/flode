@@ -182,15 +182,15 @@ werden (Phase 1, in Koordination mit dem Shadow-DOM-Umbau aus Phase 2).
 | Bereich | Status |
 |---|---|
 | Architektur-Entscheidung (Shadow DOM) | ✅ entschieden (03.07.2026) |
-| Panel-Umbau Iframe → Shadow DOM | offen |
+| Panel-Umbau Iframe → Shadow DOM | ✅ umgesetzt + im Browser verifiziert (03.07.2026) |
 | Theming (HA-CSS-Variablen) | ✅ migriert (03.07.2026) |
-| `haComponentLoader.ts` | offen |
-| `HaElement.tsx` + Convenience-Wrapper | offen |
-| `HaEntityPicker` | offen |
-| `HaIconPicker` | offen |
-| `HaSelector` (action) | offen |
-| `HaSelector` (device/area) | offen |
-| Attribut-Autocomplete | offen |
+| `haComponentLoader.ts` | ✅ fertig (03.07.2026) |
+| `HaElement.tsx` + Convenience-Wrapper | ✅ fertig (03.07.2026) |
+| `HaEntityPicker` | ✅ fertig, im Browser verifiziert (Autocomplete/Icons/Friendly Names) |
+| `HaIconPicker` | ✅ Wrapper fertig, noch nicht in einem echten Feld verbaut (folgt Phase 3) |
+| `HaSelector` (generisch, inkl. action) | ✅ Wrapper fertig, noch nicht in einem echten Feld verbaut (folgt Phase 3) |
+| `HaSelector` (device/area) | ✅ über generischen `HaSelector` abgedeckt (folgt Phase 3) |
+| Attribut-Autocomplete | offen (Phase 3) |
 | Dialoge (`ha-dialog`) | offen (Phase 4, optional) |
 
 ## 4. Phase 1 — Ergebnis (03.07.2026)
@@ -252,3 +252,72 @@ werden (Phase 1, in Koordination mit dem Shadow-DOM-Umbau aus Phase 2).
 - Neue `ChooseDefaultEdge.tsx` (4 Hex-Literale für Linie/Label) ebenfalls auf
   `hsl(var(--muted))`/`hsl(var(--muted-foreground))`/`hsl(var(--border))`
   migriert, `isDarkMode`-Branching entfernt.
+
+## 5. Phase 2 — Ergebnis (03.07.2026)
+
+**Panel-Umbau (Iframe → Shadow DOM):**
+- `panel-wrapper.ts`: kein `<iframe>` mehr, stattdessen `attachShadow({mode:'open'})`
+  auf dem `flode-panel`-Custom-Element. Kompiliertes CSS wird per
+  `import cssText from './index.css?inline'` (Vite-Bordmittel) als `<style>`
+  direkt in den Shadow Root injiziert.
+- **`app-mount.tsx`** (neu): geteilte Mount-Logik, von `panel-wrapper.ts`
+  (Panel-Modus, echtes `hass`) UND `main.tsx` (Standalone-Dev, Remote-Modus)
+  genutzt — beide rendern exakt denselben Baum in einen Container, der immer
+  als "App-Root" fungiert (siehe unten). `main.tsx` ist dadurch auf ~10 Zeilen
+  geschrumpft, die komplette `isInHaIframe()`/`window.setHass`-Bridge-Logik
+  ist weg.
+- **`contexts/AppRootContext.tsx`** (neu): stellt das Mount-Element bereit,
+  dient als (a) Ziel für `useHaThemeSync`/`.dark`-Klasse (ersetzt
+  `document.documentElement`/`document.body`, die im Panel-Modus jetzt HAs
+  eigenes, geteiltes `<html>`/`<body>` wären — dürfen nicht mutiert werden),
+  (b) Default-Portal-Container für Radix-Overlays.
+- **Radix-Portale**: `dialog.tsx`/`dropdown-menu.tsx`/`popover.tsx`/`select.tsx`
+  nutzen jetzt `usePortalContainer()` als Default für ihren bereits
+  vorhandenen `container`-Prop (vorher: nirgends gesetzt → Radix' Default
+  `document.body`, hätte die Shadow-Boundary durchbrochen). Betrifft
+  transitiv auch `Combobox.tsx` (nutzt `PopoverContent` intern) und damit
+  `EntitySelector`/Service-Picker in `ActionFields.tsx` — kein Einzel-Umbau
+  an den ~24 Call-Sites nötig.
+- **`App.tsx`**: `window.parent.postMessage(...)` für den Sidebar-Toggle
+  ersetzt durch ein direktes `CustomEvent('hass-toggle-menu', {bubbles:true,
+  composed:true})` auf dem App-Root-Element — `composed:true` lässt es die
+  Shadow-Boundary automatisch überqueren, HAs eigener Listener fängt es wie
+  bei jeder anderen Karte/jedem Panel. `window.parent ?? window`-Fallbacks
+  (Resize-Listener, `history.back()`) entfernt, da es ohne Iframe keine
+  Fenster-Grenze mehr gibt.
+- **`types/global.d.ts`**: `window.hass`/`window.setHass` entfernt (obsolet).
+- **Verifiziert im Browser** (Nutzer, 03.07.2026): Panel rendert korrekt
+  gestylt, Dialoge/Dropdowns/Selects rendern sauber an der richtigen Stelle,
+  Sidebar-Toggle funktioniert, Theme-Wechsel funktioniert weiterhin. Ein
+  initialer Fehlalarm (Standalone-Verbindungsdialog erschien) stellte sich
+  als Browser-Cache heraus (alter Bundle vor dem Neu-Deploy), nicht als Bug.
+
+**Wrapper-Infrastruktur (`src/ha/`):**
+- `haComponentLoader.ts`: `ensureHaComponents(names)` — Cache + In-Flight-
+  Dedupe pro Komponentenname, `window.loadCardHelpers()` + Config-Element
+  einer Probe-Card (`entities` für Picker, `button` für Icon/Selector) zum
+  Erzwingen der Registrierung, `customElements.whenDefined()` mit 3s-Timeout,
+  löst nie ab (immer `Promise<boolean>`, nie reject) — Aufrufer fallen bei
+  `false` auf Eigenbau-Komponenten zurück.
+- `HaElement.tsx`: generischer Wrapper — setzt `properties` (inkl. `hass`
+  aus Context) als echte JS-Properties bei jedem Render neu, verdrahtet
+  `events` (`value-changed` u. a.) per `addEventListener`/Cleanup.
+- `HaEntityPicker`, `HaIconPicker`, `HaSelector` (generisch, deckt
+  Entity/Device/Area/Action/Number/Boolean/Select-Selectors über den
+  `selector`-Prop ab): jeweils mit `fallback`-Prop, Default `null`.
+- `useHaComponentsAvailable(names)`: kapselt `ensureHaComponents` als Hook,
+  von jedem Wrapper genutzt, um zwischen nativer Komponente und `fallback`
+  zu entscheiden.
+- **Demo/Akzeptanztest**: `AutomationSettingsPanel.tsx`, Abschnitt "Native
+  HA-Komponenten" — `HaEntityPicker` mit `EntitySelector` (Eigenbau) als
+  Fallback, plus Live-Status-Text. Im Browser verifiziert: im Panel-Modus
+  erscheint der native Picker mit funktionierendem Autocomplete/Icons/
+  Friendly Names.
+- **Noch offen**: `HaIconPicker`/`HaSelector` sind fertig, aber noch in
+  keinem echten Formularfeld verbaut (folgt in Phase 3 bei der eigentlichen
+  Picker-Migration). Standalone-Dev-Fallback (kein Browser, daher nicht
+  browser-visuell geprüft) — Build/Typecheck bestätigen nur, dass der Code
+  korrekt kompiliert, nicht, dass die Konsole im Standalone-Modus fehlerfrei
+  bleibt.
+- **Fehlerbehandlung**: bewusst noch ohne Error Boundary um die Wrapper —
+  das ist explizit Phase 5 ("Error Boundary um jeden HA-Wrapper").

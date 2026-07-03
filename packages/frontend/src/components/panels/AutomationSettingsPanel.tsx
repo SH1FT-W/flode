@@ -1,6 +1,8 @@
 import type { AutomationMode, MaxExceeded } from '@flode/shared';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormField } from '@/components/forms/FormField';
+import { EntitySelector } from '@/components/ui/EntitySelector';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -11,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { HaEntityPicker, useHaComponentsAvailable } from '@/ha';
 import { useFlowStore } from '@/store/flow-store';
 
 const AUTOMATION_MODES: AutomationMode[] = ['single', 'restart', 'queued', 'parallel'];
@@ -28,6 +31,13 @@ export function AutomationSettingsPanel() {
 
   const mode = flowMetadata.mode ?? 'single';
   const showMaxFields = MODES_WITH_MAX.has(mode);
+
+  // Phase 2 acceptance demo (docs/ha-native-migration.md) — not persisted,
+  // just proves HaEntityPicker resolves real entities/icons/friendly names
+  // in panel mode and falls back cleanly to FLODE's own EntitySelector
+  // (below) in standalone dev, where native HA components can't load.
+  const [demoEntity, setDemoEntity] = useState('');
+  const nativeComponentsAvailable = useHaComponentsAvailable(['ha-entity-picker']);
 
   const handleModeChange = (value: string) => {
     const newMode = value as AutomationMode;
@@ -146,6 +156,30 @@ export function AutomationSettingsPanel() {
           )}
         </>
       )}
+
+      <Separator />
+
+      <FormField
+        label="Native HA-Komponenten"
+        description={
+          nativeComponentsAvailable
+            ? 'ha-entity-picker aktiv (Autocomplete, Icons, Friendly Names von HA).'
+            : 'Fallback aktiv — native Komponenten nicht verfügbar (Standalone-Modus oder inkompatible HA-Version).'
+        }
+      >
+        <HaEntityPicker
+          value={demoEntity}
+          onChange={setDemoEntity}
+          label="Test-Entity"
+          fallback={
+            <EntitySelector
+              value={demoEntity}
+              onChange={setDemoEntity}
+              placeholder="Test-Entity (FLODE-Fallback)"
+            />
+          }
+        />
+      </FormField>
     </div>
   );
 }

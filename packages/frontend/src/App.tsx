@@ -76,6 +76,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { version } from '../../../custom_components/flode/manifest.json';
+import { useAppRoot } from './contexts/AppRootContext';
 import { useHass } from './contexts/HassContext';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useHaThemeSync } from './hooks/useHaThemeSync';
@@ -95,15 +96,17 @@ type RightPanelTab = 'properties' | 'yaml' | 'simulator';
 
 function App() {
   const { t } = useTranslation(['common', 'errors', 'dialogs']);
+  const appRoot = useAppRoot();
 
-  // Sidebar toggle button handler
+  // Sidebar toggle button handler — `composed: true` lets the event cross the
+  // Shadow DOM boundary so HA's own `hass-toggle-menu` listener catches it.
   const handleSidebarToggle = () => {
-    window.parent.postMessage({ type: 'FLODE_TOGGLE_SIDEBAR' }, '*');
+    appRoot?.dispatchEvent(new CustomEvent('hass-toggle-menu', { bubbles: true, composed: true }));
   };
 
-  // Navigate back to Home Assistant (only in panel mode)
+  // Navigate back to Home Assistant
   const handleBackToHA = () => {
-    window.parent.history.back();
+    window.history.back();
   };
 
   const {
@@ -133,10 +136,7 @@ function App() {
   const [importDropdownOpen, setImportDropdownOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
-  const [parentWidth, setParentWidth] = useState(() => {
-    const win = window.parent ?? window;
-    return win.innerWidth;
-  });
+  const [parentWidth, setParentWidth] = useState(() => window.innerWidth);
   const forceSettingsOpen = actualIsRemote && (config.url === '' || config.token === '');
   const isDark = useDarkMode();
 
@@ -146,17 +146,16 @@ function App() {
   useHaThemeSync();
 
   useEffect(() => {
-    document.body.classList.toggle('dark', isDark);
-  }, [isDark]);
+    appRoot?.classList.toggle('dark', isDark);
+  }, [isDark, appRoot]);
 
   useEffect(() => {
-    const win = window.parent ?? window;
     const handleResize = () => {
-      setParentWidth(win.innerWidth);
+      setParentWidth(window.innerWidth);
     };
 
-    win.addEventListener('resize', handleResize);
-    return () => win.removeEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleImport = () => {

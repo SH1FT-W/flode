@@ -2,6 +2,7 @@ import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { Check, ChevronRight, Circle } from 'lucide-react';
 import * as React from 'react';
 
+import { usePortalContainer } from '@/contexts/AppRootContext';
 import { cn } from '@/lib/utils';
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
@@ -58,8 +59,9 @@ const DropdownMenuContent = React.forwardRef<
     container?: HTMLElement | null;
   }
 >(({ className, sideOffset = 4, container, ...props }, ref) => {
+  const portalContainer = usePortalContainer();
   return (
-    <DropdownMenuPrimitive.Portal container={container}>
+    <DropdownMenuPrimitive.Portal container={container ?? portalContainer}>
       <DropdownMenuPrimitive.Content
         ref={ref}
         sideOffset={sideOffset}

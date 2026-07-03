@@ -1,102 +1,15 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { I18nextProvider } from 'react-i18next';
-import App from './App';
-import { HassProvider } from './contexts/HassContext';
-import i18n from './i18n';
+/**
+ * Standalone dev entry (index.html — `yarn dev` / local preview only).
+ * The production HA panel is mounted by panel-wrapper.ts instead, straight
+ * into a Shadow DOM. See app-mount.tsx for the shared mounting logic.
+ */
+import { mountFlodeApp } from './app-mount';
 import { logger } from './lib/logger';
-import type { HomeAssistant } from './types/hass';
 
-// Global types are declared in types/global.d.ts
-
-/**
- * Check if we're running inside an iframe within Home Assistant
- */
-function isInHaIframe(): boolean {
-  try {
-    // Check if we're in an iframe and parent has hass
-    return window.parent !== window && 'hass' in window.parent;
-  } catch {
-    // Cross-origin access will throw
-    return false;
-  }
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  logger.error('No #root element found');
+} else {
+  logger.info('FLODE starting in standalone mode');
+  mountFlodeApp(rootElement, { forceMode: 'remote' });
 }
-
-/**
- * Get hass from parent window (when running in iframe)
- */
-function getParentHass(): HomeAssistant | undefined {
-  try {
-    const parentHass = window.parent.hass;
-    if (parentHass && typeof parentHass === 'object' && 'states' in parentHass) {
-      return parentHass as HomeAssistant;
-    }
-  } catch {
-    // Cross-origin or not available
-  }
-  return undefined;
-}
-
-/**
- * Main app renderer - handles both iframe and standalone modes
- */
-function renderApp() {
-  const rootElement = document.getElementById('root');
-  if (!rootElement) {
-    logger.error('No #root element found');
-    return;
-  }
-
-  const inHaIframe = isInHaIframe();
-  logger.info('FLODE starting', { inHaIframe });
-
-  if (inHaIframe) {
-    // Running inside HA iframe - use parent's hass object
-    logger.debug('Running in HA iframe mode');
-
-    const root = ReactDOM.createRoot(rootElement);
-
-    // Function to render the app with a specific hass object
-    const render = (hass?: HomeAssistant) => {
-      logger.debug('Rendering with hass', {
-        hasHass: !!hass,
-        statesCount: hass?.states ? Object.keys(hass.states).length : 0,
-      });
-
-      root.render(
-        <React.StrictMode>
-          <I18nextProvider i18n={i18n}>
-            <HassProvider externalHass={hass}>
-              <App />
-            </HassProvider>
-          </I18nextProvider>
-        </React.StrictMode>
-      );
-    };
-
-    // Expose setHass to the parent window (panel-wrapper.ts)
-    window.setHass = (newHass: HomeAssistant | undefined) => {
-      render(newHass);
-    };
-
-    // Initial render with current parent hass
-    render(getParentHass());
-  } else {
-    // Standalone mode - use remote connection
-    logger.debug('Running in standalone mode');
-
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(
-      <React.StrictMode>
-        <I18nextProvider i18n={i18n}>
-          <HassProvider forceMode="remote">
-            <App />
-          </HassProvider>
-        </I18nextProvider>
-      </React.StrictMode>
-    );
-  }
-}
-
-// Start the app
-renderApp();
