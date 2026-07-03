@@ -15,11 +15,28 @@ import {
   getTriggerFields,
   TRIGGER_PLATFORM_FIELDS,
 } from '@/config/triggerFields';
+import { HaSelect } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
 import { DeviceTriggerFields } from './DeviceTriggerFields';
 import { StateTriggerFields } from './StateTriggerFields';
+
+const TRIGGER_PLATFORMS: TriggerPlatform[] = [
+  'state',
+  'numeric_state',
+  'time',
+  'time_pattern',
+  'sun',
+  'event',
+  'mqtt',
+  'webhook',
+  'zone',
+  'template',
+  'homeassistant',
+  'device',
+  'calendar',
+];
 
 interface TriggerFieldsProps {
   node: FlowNode;
@@ -68,32 +85,28 @@ export function TriggerFields({ node, onChange, entities }: TriggerFieldsProps) 
   return (
     <>
       <FormField label={t('nodes:triggers.platformLabel')} required>
-        <Select value={effectiveTriggerType} onValueChange={handleTriggerTypeChange}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="state">{t('nodes:triggers.platforms.state')}</SelectItem>
-            <SelectItem value="numeric_state">
-              {t('nodes:triggers.platforms.numeric_state')}
-            </SelectItem>
-            <SelectItem value="time">{t('nodes:triggers.platforms.time')}</SelectItem>
-            <SelectItem value="time_pattern">
-              {t('nodes:triggers.platforms.time_pattern')}
-            </SelectItem>
-            <SelectItem value="sun">{t('nodes:triggers.platforms.sun')}</SelectItem>
-            <SelectItem value="event">{t('nodes:triggers.platforms.event')}</SelectItem>
-            <SelectItem value="mqtt">{t('nodes:triggers.platforms.mqtt')}</SelectItem>
-            <SelectItem value="webhook">{t('nodes:triggers.platforms.webhook')}</SelectItem>
-            <SelectItem value="zone">{t('nodes:triggers.platforms.zone')}</SelectItem>
-            <SelectItem value="template">{t('nodes:triggers.platforms.template')}</SelectItem>
-            <SelectItem value="homeassistant">
-              {t('nodes:triggers.platforms.homeassistant')}
-            </SelectItem>
-            <SelectItem value="device">{t('nodes:triggers.platforms.device')}</SelectItem>
-            <SelectItem value="calendar">{t('nodes:triggers.platforms.calendar')}</SelectItem>
-          </SelectContent>
-        </Select>
+        <HaSelect
+          value={effectiveTriggerType}
+          onChange={(v) => handleTriggerTypeChange(String(v))}
+          options={TRIGGER_PLATFORMS.map((platform) => ({
+            value: platform,
+            label: t(`nodes:triggers.platforms.${platform}`),
+          }))}
+          fallback={
+            <Select value={effectiveTriggerType} onValueChange={handleTriggerTypeChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TRIGGER_PLATFORMS.map((platform) => (
+                  <SelectItem key={platform} value={platform}>
+                    {t(`nodes:triggers.platforms.${platform}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
       </FormField>
 
       {/* Dynamic fields based on trigger type */}

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { HaSwitch } from '@/ha';
+import { HaSelect, HaSwitch } from '@/ha';
 import { type PropertyType, usePropertyEditor } from '@/hooks/usePropertyEditor';
 
 interface PropertyEditorProps {
@@ -94,20 +94,34 @@ export function PropertyEditor({
           </FormField>
 
           <FormField label={t('nodes:panel.type')}>
-            <Select
+            <HaSelect
               value={editor.state.type}
-              onValueChange={(value: PropertyType) => editor.setType(value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="string">{t('nodes:triggers.dataTypes.string')}</SelectItem>
-                <SelectItem value="number">{t('nodes:triggers.dataTypes.number')}</SelectItem>
-                <SelectItem value="boolean">{t('nodes:triggers.dataTypes.boolean')}</SelectItem>
-                <SelectItem value="array">{t('nodes:triggers.dataTypes.json')}</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(value) => editor.setType(value as PropertyType)}
+              options={[
+                { value: 'string', label: t('nodes:triggers.dataTypes.string') },
+                { value: 'number', label: t('nodes:triggers.dataTypes.number') },
+                { value: 'boolean', label: t('nodes:triggers.dataTypes.boolean') },
+                { value: 'array', label: t('nodes:triggers.dataTypes.json') },
+              ]}
+              fallback={
+                <Select
+                  value={editor.state.type}
+                  onValueChange={(value: PropertyType) => editor.setType(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="string">{t('nodes:triggers.dataTypes.string')}</SelectItem>
+                    <SelectItem value="number">{t('nodes:triggers.dataTypes.number')}</SelectItem>
+                    <SelectItem value="boolean">
+                      {t('nodes:triggers.dataTypes.boolean')}
+                    </SelectItem>
+                    <SelectItem value="array">{t('nodes:triggers.dataTypes.json')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              }
+            />
           </FormField>
 
           <FormField label={t('nodes:panel.value')}>

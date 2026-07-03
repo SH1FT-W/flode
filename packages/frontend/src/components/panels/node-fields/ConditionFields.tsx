@@ -16,12 +16,27 @@ import {
   getConditionFields,
   isLogicalGroupType,
 } from '@/config/conditionFields';
+import { HaSelect } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { ConditionNodeData } from '@/store/flow-store';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
 import { DeviceConditionFields } from './DeviceConditionFields';
 import { StateConditionFields } from './StateConditionFields';
+
+const CONDITION_TYPES: ConditionType[] = [
+  'state',
+  'numeric_state',
+  'template',
+  'time',
+  'sun',
+  'zone',
+  'device',
+  'trigger',
+  'and',
+  'or',
+  'not',
+];
 
 interface ConditionFieldsProps {
   node: FlowNode;
@@ -94,26 +109,28 @@ export function ConditionFields({ node, onChange, entities }: ConditionFieldsPro
   return (
     <>
       <FormField label={t('nodes:conditions.conditionLabel')} required>
-        <Select value={conditionType} onValueChange={handleConditionTypeChange}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="state">{t('nodes:conditions.types.state')}</SelectItem>
-            <SelectItem value="numeric_state">
-              {t('nodes:conditions.types.numeric_state')}
-            </SelectItem>
-            <SelectItem value="template">{t('nodes:conditions.types.template')}</SelectItem>
-            <SelectItem value="time">{t('nodes:conditions.types.time')}</SelectItem>
-            <SelectItem value="sun">{t('nodes:conditions.types.sun')}</SelectItem>
-            <SelectItem value="zone">{t('nodes:conditions.types.zone')}</SelectItem>
-            <SelectItem value="device">{t('nodes:conditions.types.device')}</SelectItem>
-            <SelectItem value="trigger">{t('nodes:conditions.types.trigger')}</SelectItem>
-            <SelectItem value="and">{t('nodes:conditions.types.and')}</SelectItem>
-            <SelectItem value="or">{t('nodes:conditions.types.or')}</SelectItem>
-            <SelectItem value="not">{t('nodes:conditions.types.not')}</SelectItem>
-          </SelectContent>
-        </Select>
+        <HaSelect
+          value={conditionType}
+          onChange={(v) => handleConditionTypeChange(String(v))}
+          options={CONDITION_TYPES.map((type) => ({
+            value: type,
+            label: t(`nodes:conditions.types.${type}`),
+          }))}
+          fallback={
+            <Select value={conditionType} onValueChange={handleConditionTypeChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONDITION_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {t(`nodes:conditions.types.${type}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
       </FormField>
 
       {renderConditionFields()}

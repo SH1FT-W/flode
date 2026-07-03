@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useHass } from '@/contexts/HassContext';
-import { HaSelector, HaServicePicker, HaSwitch } from '@/ha';
+import { HaSelect, HaSelector, HaServicePicker, HaSwitch } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataObject, getNodeDataString } from '@/utils/nodeData';
@@ -212,16 +212,27 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
     <>
       {/* Action type selector */}
       <FormField label={t('nodes:actions.actionTypeLabel')} required>
-        <Select value={actionType} onValueChange={handleActionTypeChange}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="service">{t('nodes:actions.actionTypes.service')}</SelectItem>
-            <SelectItem value="event">{t('nodes:actions.actionTypes.event')}</SelectItem>
-            <SelectItem value="stop">{t('nodes:actions.actionTypes.stop')}</SelectItem>
-          </SelectContent>
-        </Select>
+        <HaSelect
+          value={actionType}
+          onChange={(v) => handleActionTypeChange(String(v))}
+          options={[
+            { value: 'service', label: t('nodes:actions.actionTypes.service') },
+            { value: 'event', label: t('nodes:actions.actionTypes.event') },
+            { value: 'stop', label: t('nodes:actions.actionTypes.stop') },
+          ]}
+          fallback={
+            <Select value={actionType} onValueChange={handleActionTypeChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="service">{t('nodes:actions.actionTypes.service')}</SelectItem>
+                <SelectItem value="event">{t('nodes:actions.actionTypes.event')}</SelectItem>
+                <SelectItem value="stop">{t('nodes:actions.actionTypes.stop')}</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+        />
       </FormField>
 
       {actionType === 'stop' ? (

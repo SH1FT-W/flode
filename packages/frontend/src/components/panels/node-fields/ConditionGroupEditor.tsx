@@ -17,6 +17,7 @@ import {
   isLogicalGroupType,
 } from '@/config/conditionFields';
 import { useHass } from '@/contexts/HassContext';
+import { HaSelect } from '@/ha';
 import { cn } from '@/lib/utils';
 import type { ConditionNodeData } from '@/store/flow-store';
 import type { HassEntity } from '@/types/hass';
@@ -105,18 +106,25 @@ function ConditionCard({
     <div className={cn('space-y-3 rounded-md border bg-card p-3', depth > 0 && 'bg-muted/30')}>
       {/* Header row: type selector and delete button */}
       <div className="flex items-center justify-between gap-2">
-        <Select value={cond.condition || 'state'} onValueChange={handleTypeChange}>
-          <SelectTrigger className="w-full max-w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {CONDITION_TYPES.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {t(opt.labelKey)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <HaSelect
+          value={cond.condition || 'state'}
+          onChange={(v) => handleTypeChange(String(v))}
+          options={CONDITION_TYPES.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))}
+          fallback={
+            <Select value={cond.condition || 'state'} onValueChange={handleTypeChange}>
+              <SelectTrigger className="w-full max-w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONDITION_TYPES.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {t(opt.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
         <Button
           size="icon"
           variant="ghost"

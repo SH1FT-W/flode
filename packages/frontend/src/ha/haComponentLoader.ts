@@ -40,6 +40,9 @@ const PROBE_CARD_BY_COMPONENT: Record<string, string> = {
   'ha-service-picker': 'button',
   // entities-card's editor imports ha-switch directly (verified via `gh search code`, 03.07.2026).
   'ha-switch': 'entities',
+  // hui-todo-list-card.ts imports ha-select at module top level (verified via `gh api`, 03.07.2026).
+  // No lovelace card reliably pulls in ha-textfield/ha-textarea, so those aren't wrapped here.
+  'ha-select': 'todo-list',
 };
 
 /** Component names already confirmed registered — never re-probed. */

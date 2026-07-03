@@ -15,6 +15,13 @@ export interface HaElementProps {
   className?: string;
 }
 
+/** Cheap, order-independent enough for the small config objects/arrays HA selectors take. */
+function isEqualValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 /**
  * Generic React wrapper around a single HA custom element. This is the ONLY
  * place that should touch a `ha-*` tag directly — typed convenience
@@ -26,18 +33,26 @@ export interface HaElementProps {
 export function HaElement({ tag, properties, events, className }: HaElementProps) {
   const ref = useRef<HTMLElement>(null);
   const { hass } = useHass();
+  // Tracks the last value actually written per property, so passing a fresh
+  // object/array literal each render (e.g. `selector={{ time: {} }}`) with
+  // the same content doesn't look like a change to the target element. Some
+  // HA components (e.g. ha-selector) tear down and rebuild their internal
+  // sub-component whenever a property's *reference* changes, which would
+  // otherwise reset user input (e.g. mid-typing in a time field) on every
+  // unrelated re-render.
+  const lastValues = useRef<Record<string, unknown>>({});
 
-  // Re-set properties (incl. fresh `hass`) on every render — pickers need a
-  // live `hass` to resolve entity states, friendly names, and icons.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     // Custom elements have an element-specific property surface TypeScript
     // can't know about — this is the external-API boundary the cast exists for.
     const target = el as unknown as Record<string, unknown>;
-    target.hass = hass;
-    for (const [key, value] of Object.entries(properties ?? {})) {
+    const allProps = { ...properties, hass };
+    for (const [key, value] of Object.entries(allProps)) {
+      if (isEqualValue(lastValues.current[key], value)) continue;
       target[key] = value;
+      lastValues.current[key] = value;
     }
   });
 

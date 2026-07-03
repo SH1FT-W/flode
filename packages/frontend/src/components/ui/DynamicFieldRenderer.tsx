@@ -24,7 +24,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import type { FieldConfig } from '@/config/triggerFields';
-import { HaEntityPicker, HaSelector, HaSwitch } from '@/ha';
+import { HaEntityPicker, HaSelect, HaSelector, HaSwitch } from '@/ha';
 import type { TriggerField } from '@/hooks/useDeviceAutomation';
 import type { HassEntity } from '@/types/hass';
 
@@ -174,21 +174,36 @@ export function DynamicFieldRenderer({
               : [];
 
           return (
-            <IdList
-              values={values}
-              onChange={onChange}
-              placeholder={placeholder || t('common:placeholders.addValue')}
+            <HaSelector
+              selector={{ text: { multiple: true } }}
+              value={values}
+              onChange={(v) => onChange(Array.isArray(v) ? v : [])}
+              fallback={
+                <IdList
+                  values={values}
+                  onChange={onChange}
+                  placeholder={placeholder || t('common:placeholders.addValue')}
+                />
+              }
             />
           );
         }
 
         return (
-          <Input
-            type="text"
+          <HaSelector
+            selector={{ text: {} }}
             value={stringValue}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
+            onChange={(v) => onChange(typeof v === 'string' ? v : '')}
             required={required}
+            fallback={
+              <Input
+                type="text"
+                value={stringValue}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                required={required}
+              />
+            }
           />
         );
       }
@@ -196,12 +211,26 @@ export function DynamicFieldRenderer({
       // Number input
       case 'number':
         return (
-          <Input
-            type="number"
-            value={numberValue ?? ''}
-            onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-            placeholder={placeholder}
+          <HaSelector
+            selector={{
+              number: {
+                min: typeof selectorConfig.min === 'number' ? selectorConfig.min : undefined,
+                max: typeof selectorConfig.max === 'number' ? selectorConfig.max : undefined,
+                mode: 'box',
+              },
+            }}
+            value={numberValue}
+            onChange={(v) => onChange(typeof v === 'number' ? v : v ? Number(v) : null)}
             required={required}
+            fallback={
+              <Input
+                type="number"
+                value={numberValue ?? ''}
+                onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+                placeholder={placeholder}
+                required={required}
+              />
+            }
           />
         );
 
@@ -271,52 +300,66 @@ export function DynamicFieldRenderer({
           };
 
           return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full justify-between font-normal">
-                  <span className={values.length === 0 ? 'text-muted-foreground' : ''}>
-                    {getDisplayText()}
-                  </span>
-                  <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width)">
-                {options.map((option) => {
-                  const isSelected = values.includes(option.value);
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={option.value}
-                      checked={isSelected}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          onChange([...values, option.value]);
-                        } else {
-                          onChange(values.filter((v) => v !== option.value));
-                        }
-                      }}
-                    >
-                      {option.label}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <HaSelector
+              selector={{ select: { options, multiple: true } }}
+              value={values}
+              onChange={(v) => onChange(Array.isArray(v) ? v : [])}
+              fallback={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between font-normal">
+                      <span className={values.length === 0 ? 'text-muted-foreground' : ''}>
+                        {getDisplayText()}
+                      </span>
+                      <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width)">
+                    {options.map((option) => {
+                      const isSelected = values.includes(option.value);
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={option.value}
+                          checked={isSelected}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              onChange([...values, option.value]);
+                            } else {
+                              onChange(values.filter((v) => v !== option.value));
+                            }
+                          }}
+                        >
+                          {option.label}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
+            />
           );
         }
 
         return (
-          <Select value={stringValue} onValueChange={onChange}>
-            <SelectTrigger>
-              <SelectValue placeholder={placeholder || t('common:placeholders.select')} />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <HaSelect
+            value={stringValue}
+            onChange={onChange}
+            options={options}
+            fallback={
+              <Select value={stringValue} onValueChange={onChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder={placeholder || t('common:placeholders.select')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          />
         );
       }
 
@@ -389,13 +432,21 @@ export function DynamicFieldRenderer({
       // Template editor
       case 'template':
         return (
-          <Textarea
+          <HaSelector
+            selector={{ template: {} }}
             value={stringValue}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder || t('placeholders.enterTemplate')}
-            className="font-mono text-sm"
-            rows={4}
+            onChange={(v) => onChange(typeof v === 'string' ? v : '')}
             required={required}
+            fallback={
+              <Textarea
+                value={stringValue}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder || t('placeholders.enterTemplate')}
+                className="font-mono text-sm"
+                rows={4}
+                required={required}
+              />
+            }
           />
         );
 
@@ -406,41 +457,67 @@ export function DynamicFieldRenderer({
       // Object/JSON input
       case 'object':
         return (
-          <Textarea
-            value={typeof value === 'object' ? JSON.stringify(value, null, 2) : stringValue}
-            onChange={(e) => {
-              try {
-                onChange(JSON.parse(e.target.value));
-              } catch {
-                onChange(e.target.value);
-              }
-            }}
-            placeholder={placeholder || t('placeholders.jsonExample')}
-            className="font-mono text-sm"
-            rows={4}
+          <HaSelector
+            selector={{ object: {} }}
+            value={value}
+            onChange={onChange}
             required={required}
+            fallback={
+              <Textarea
+                value={typeof value === 'object' ? JSON.stringify(value, null, 2) : stringValue}
+                onChange={(e) => {
+                  try {
+                    onChange(JSON.parse(e.target.value));
+                  } catch {
+                    onChange(e.target.value);
+                  }
+                }}
+                placeholder={placeholder || t('placeholders.jsonExample')}
+                className="font-mono text-sm"
+                rows={4}
+                required={required}
+              />
+            }
           />
         );
 
       // Time input
       case 'time':
         return (
-          <Input
-            type="time"
+          <HaSelector
+            // no_second matches the previous <input type="time"> granularity (HH:MM, no seconds)
+            // so the stored value format doesn't change.
+            selector={{ time: { no_second: true } }}
             value={stringValue}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(v) => onChange(typeof v === 'string' ? v : '')}
             required={required}
+            fallback={
+              <Input
+                type="time"
+                value={stringValue}
+                onChange={(e) => onChange(e.target.value)}
+                required={required}
+              />
+            }
           />
         );
 
       // Date input
       case 'date':
         return (
-          <Input
-            type="date"
+          <HaSelector
+            selector={{ date: {} }}
             value={stringValue}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(v) => onChange(typeof v === 'string' ? v : '')}
             required={required}
+            fallback={
+              <Input
+                type="date"
+                value={stringValue}
+                onChange={(e) => onChange(e.target.value)}
+                required={required}
+              />
+            }
           />
         );
 

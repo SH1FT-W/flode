@@ -194,6 +194,10 @@ werden (Phase 1, in Koordination mit dem Shadow-DOM-Umbau aus Phase 2).
 | `HaSelector` (action) | **bewusst nicht verwendet** — recherchiert und verworfen, siehe Phase-3-Ergebnis |
 | Attribut-Autocomplete | ✅ fertig für State-Condition; `numeric_state`-Attribut (via `DynamicFieldRenderer`) bleibt Freitext (kein `entity_id`-Kontext dort verfügbar, nicht umgesetzt) |
 | `HaSwitch` (neu, `ha-switch`) | ✅ fertig, im Browser verifiziert — alle 9 Toggle-Stellen app-weit migriert |
+| `HaSelect` (neu, `ha-select`) | ✅ fertig, im Browser verifiziert — 10 Stellen (Modus, Aktionstyp, Bedingungstyp, Trigger-Plattform, Device-Trigger-Typ, Wait-Typ, Property-Typ u. a.) |
+| `HaSelector` (text/number/template/object/date/time/duration/select-multiple) | ✅ fertig, im Browser verifiziert — deckt praktisch den kompletten `DynamicFieldRenderer` ab, plus Delay/Wait-Timeout/Set-Variables |
+| Ecken-Radius (HA-Design-Tokens) | ✅ fertig, im HA-Quellcode verifizierte Werte (`core.globals.ts`) — Buttons=Pill, Dialoge=24px, Karten/Inputs=4–16px-Skala |
+| **Kritischer Fix: `:root` matcht nichts im Shadow DOM** | ✅ behoben (03.07.2026) — siehe Abschnitt 7 |
 | Dialoge (`ha-dialog`) | offen (Phase 4, optional) |
 | Textfelder/Select (`ha-textfield`/`ha-select`) | offen (Phase 4, optional) |
 
@@ -388,3 +392,88 @@ Store-Contract nicht verändert hat, nur die Eingabe-UI). Build + Deploy nach
 jedem Schritt, alle Schritte vom Nutzer im Browser gegengecheckt (inkl.
 False-Positive-Analyse: orange Hover-Färbung auf Buttons ist HAs echte
 `accent-color`, kein CSS-Leck).
+
+## 7. Phase 4 — Ergebnis (03.07.2026)
+
+**`HaSwitch`** (neu, `ha-switch`): eigenes Event-Muster (`change`-Event statt
+`value-changed`, `checked`-Property statt `detail.value`) — dokumentiert in
+`HaSwitch.tsx`. Alle 9 Toggle-Stellen app-weit migriert (Node
+aktiviert/deaktiviert, Response-Variable, Dauer-Modus, boolesche
+Property-/Service-Data-Felder, Stop-Action-Fehlerflag,
+Automation-Import-Aktiviert-Toggle).
+
+**`HaSelect`** (neu, `ha-select`): `selected`-Event (nicht `value-changed`),
+nimmt ein `options`-Array direkt als Property. 10 Stellen migriert (Modus,
+Aktionstyp, Bedingungstyp, Trigger-Plattform, Device-Trigger-Typ,
+Wait-Typ+Trigger-Plattform, Property-Typ, Bedingungsgruppen-Typ,
+Service-Data-Select-Feld über `HaSelector` statt `HaSelect`, da dort bereits
+ein echtes HA-`selector`-Objekt vorliegt).
+
+**Wichtiger Fund — `ha-selector` deckt fast alles über den `button`-Card-Probe
+ab, kein `ha-textfield`:** Im HA-Quellcode nachgeschlagen (`src/data/selector.ts`):
+`ha-textfield` existiert in aktuellen HA-Versionen nicht mehr als eigenständige
+Komponente (nur `ha-textarea`, aber ohne verlässlichen Lovelace-Lade-Pfad).
+Stattdessen deckt `ha-selector` über die Selector-Typen `text`, `number`,
+`template`, `object`, `date`, `time`, `duration` praktisch alle verbleibenden
+Feldtypen ab — da `ha-selector` seine Untertypen selbst dynamisch nachlädt,
+reicht die bereits vorhandene Registrierung (`button`-Card-Probe), keine
+weiteren Einträge in der Probe-Tabelle nötig. Migriert in
+`DynamicFieldRenderer.tsx` (text einzeln/mehrfach, number, template, object,
+date, time, select-mehrfach), `DurationField.tsx` (Dauer-Objektmodus),
+`WaitFields.tsx` (wait_template), `SetVariablesFields.tsx` (Name+Wert).
+
+**Ecken-Radius:** Im HA-Quellcode verifizierte Design-Tokens
+(`core.globals.ts`, `--ha-border-radius-*`) statt geschätzter Werte:
+Buttons/`ha-button` → Pill-Form (verifiziert), Dialoge/`ha-dialog` → 24px
+(verifiziert), Karten/Inputs/Dropdowns → 4–16px-Skala. Umgesetzt in
+`index.css` (neue `--ha-radius-*`-Variablen) und den zentralen Primitives
+(`button.tsx`, `dialog.tsx`).
+
+**Kritischer Bugfix — zwei verschachtelte Probleme, beide vom Nutzer im
+Browser gefunden:**
+1. *Native Zeit-Eingabe ließ sich nicht antippen:* `HaElement.tsx` setzte bei
+   jedem React-Render ALLE Properties neu, auch Objekte/Arrays aus frischen
+   Inline-Literalen (`selector={{time: {...}}}`). Lit-Komponenten wie
+   `ha-selector` erkennen Referenzänderungen als "Property geändert" und
+   bauen ihre interne Unterkomponente komplett neu auf — bei jedem
+   Tastendruck-bedingten Re-Render, was Nutzereingaben in mehrteiligen
+   Feldern (Stunde/Minute) sofort wieder verwarf. **Fix:** `HaElement.tsx`
+   vergleicht jetzt Property-Werte inhaltlich (JSON-Vergleich für
+   Objekte/Arrays) gegen den zuletzt tatsächlich gesetzten Wert und schreibt
+   nur bei echten Änderungen — betraf potenziell alle Wrapper, nicht nur
+   Zeit, war dort durch die mehrteilige Tastatureingabe nur am sichtbarsten.
+2. *Verzögerung/Warten/Variablen-Einträge im Node-Palette-Sidebar waren
+   weiß/unsichtbar:* `:root { --delay: ...; }` in `index.css` matcht seit dem
+   Shadow-DOM-Umbau (Phase 2) **nichts mehr** — `:root` trifft laut
+   CSS-Spezifikation ausschließlich das echte `<html>`-Element, niemals ein
+   Element innerhalb eines Shadow Roots. Farben, die zusätzlich per
+   `lib/ha-theme.ts` als Inline-Style auf ein echtes Element im Shadow-Baum
+   geschrieben werden (background/foreground/primary/trigger/condition/
+   action/…), funktionierten dadurch "zufällig" weiter; alle nicht
+   HA-synchronisierten, rein statischen Variablen (`--delay`/`--wait`/
+   `--variables`, auch die neuen `--ha-radius-*`) waren seit Phase 2 witzlos
+   und fielen auf ungültige/leere CSS-Werte zurück. **Fix:** `:root` →
+   `:root, :host` in `index.css` — `:host` matcht das `flode-panel`-Element,
+   wenn das Stylesheet im Shadow Root läuft; `:root` bleibt für den
+   Standalone-Dev-Modus (kein Shadow Root) zuständig. Browser bzw. CSS-Parser
+   ignorieren nicht-treffende Teile einer Selektor-Liste automatisch, daher
+   funktioniert dieselbe Regel in beiden Kontexten.
+
+**String/Objekt-Toggle bei Dauer-Feldern entfernt:** Nutzer-Nachfrage, warum
+der Switch überhaupt nötig ist. HA erlaubt in YAML sowohl
+`delay: "00:00:05"` als auch `delay: {hours: 0, minutes: 0, seconds: 5}` —
+beide Formate sind für HA gleichwertig, aber nur die Objekt-Form hat einen
+nativen Picker. `DurationInput` parst bestehende String-Werte beim Laden
+automatisch ins Objekt, schreibt aber ab jetzt immer die Objekt-Form —
+Switch/Zeichenketten-Eingabe komplett entfernt, vereinfacht sowohl UI als
+auch Code.
+
+**Test-Themes:** Zwei HA-Themes mit deutlich anderen Farben installiert
+(`ha-test/config/themes/graphite_purple.yaml`,
+`ha-test/config/themes/sunset_forest.yaml`, beide mit `modes.light`/
+`modes.dark`) — zum Gegenchecken, dass FLODEs Theme-Sync auch mit
+Nutzer-Themes (nicht nur HAs Default) korrekt funktioniert.
+
+**Noch offen:** `ha-dialog` (Radix-Dialog bleibt, siehe Leitplanken —
+"nur migrieren, wo es ohne Verrenkungen geht"), `numeric_state`-Attribut
+(Freitext, siehe Phase 3), Icon-Picker (kein Schema-Feld).

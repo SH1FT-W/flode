@@ -93,22 +93,29 @@ export function ServiceDataFields({
               required={field.required}
               description={field.description}
             >
-              <Select
-                value={String(currentValue === '' ? '__NONE__' : (currentValue ?? '__NONE__'))}
-                onValueChange={(value) => onChange(fieldName, value === '__NONE__' ? '' : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('placeholders.none')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__NONE__">{t('placeholders.none')}</SelectItem>
-                  {config.options?.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <HaSelector
+                selector={field.selector ?? { select: { options: config.options ?? [] } }}
+                value={currentValue ?? ''}
+                onChange={(value) => onChange(fieldName, value ?? '')}
+                fallback={
+                  <Select
+                    value={String(currentValue === '' ? '__NONE__' : (currentValue ?? '__NONE__'))}
+                    onValueChange={(value) => onChange(fieldName, value === '__NONE__' ? '' : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('placeholders.none')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__NONE__">{t('placeholders.none')}</SelectItem>
+                      {config.options?.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                }
+              />
             </FormField>
           );
         }

@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormField } from '@/components/forms/FormField';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { HaSwitch } from '@/ha';
+import { HaSelector } from '@/ha';
 
 export type DurationValue =
   | string
@@ -15,6 +13,26 @@ export type DurationValue =
       milliseconds?: number | string;
     };
 
+type DurationObject = {
+  hours?: number | string;
+  minutes?: number | string;
+  seconds?: number | string;
+  milliseconds?: number | string;
+};
+
+/** Parses a legacy "HH:MM:SS[.ms]" string into the object shape — HA accepts both formats equally, but only the object form has a native picker. */
+function parseDurationString(value: string): DurationObject {
+  const match = /^([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2})(?:\.(\d{1,3}))?$/.exec(value);
+  if (!match) return {};
+  const [, h, m, s, ms] = match;
+  return {
+    hours: Number(h),
+    minutes: Number(m),
+    seconds: Number(s),
+    ...(ms ? { milliseconds: Number(ms) } : {}),
+  };
+}
+
 export interface DurationInputProps {
   value: DurationValue;
   onChange: (val: DurationValue) => void;
@@ -22,45 +40,15 @@ export interface DurationInputProps {
 
 /**
  * Reusable duration input component without label/description wrapper.
- * Supports both string (HH:MM:SS) and object ({ hours, minutes, seconds, milliseconds }) formats.
+ * Reads legacy string values ("HH:MM:SS") for backward compatibility, but
+ * always writes the `{ hours, minutes, seconds, milliseconds }` object HA's
+ * native duration selector uses — both formats are equally valid in HA
+ * automation YAML, and only the object form has a native picker.
  */
 export function DurationInput({ value, onChange }: DurationInputProps) {
   const { t } = useTranslation(['common', 'nodes']);
-  const isString = typeof value === 'string';
-  const obj = !isString && typeof value === 'object' && value !== null ? value : {};
-  const [useString, setUseString] = useState(isString);
-
-  const handleToggle = (checked: boolean) => {
-    setUseString(checked);
-    if (checked) {
-      // Convert object to string (default HH:MM:SS)
-      const h = obj.hours ?? 0;
-      const m = obj.minutes ?? 0;
-      const s = obj.seconds ?? 0;
-      const ms = obj.milliseconds ?? 0;
-      const base = [h, m, s].map((n) => n.toString().padStart(2, '0')).join(':');
-      const str = ms ? `${base}.${ms}` : base;
-      onChange(str);
-    } else {
-      // Convert string to object (parse HH:MM:SS[.ms])
-      if (isString) {
-        const match = /^([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2})(?:\.(\d{1,3}))?$/.exec(
-          value as string
-        );
-        if (match) {
-          const [, h, m, s, ms] = match;
-          onChange({
-            hours: Number(h),
-            minutes: Number(m),
-            seconds: Number(s),
-            ...(ms ? { milliseconds: Number(ms) } : {}),
-          });
-        } else {
-          onChange({});
-        }
-      }
-    }
-  };
+  const obj: DurationObject =
+    typeof value === 'string' ? parseDurationString(value) : (value ?? {});
 
   const handleObjChange = (field: 'hours' | 'minutes' | 'seconds' | 'milliseconds', v: string) => {
     const num = v === '' ? undefined : Number(v);
@@ -78,24 +66,19 @@ export function DurationInput({ value, onChange }: DurationInputProps) {
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <span className="text-muted-foreground text-xs">{t('nodes:durationField.string')}</span>
-        <HaSwitch
-          checked={useString}
-          onChange={handleToggle}
-          fallback={<Switch checked={useString} onCheckedChange={handleToggle} />}
-        />
-        <span className="text-muted-foreground text-xs">{t('nodes:durationField.object')}</span>
-      </div>
-      {useString ? (
-        <Input
-          type="text"
-          value={isString ? value : ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={t('nodes:durationField.placeholder')}
-        />
-      ) : (
+    <HaSelector
+      selector={{ duration: { enable_millisecond: true } }}
+      value={obj}
+      onChange={(v) => {
+        if (!v || typeof v !== 'object') return;
+        const cleaned = Object.fromEntries(
+          Object.entries(v as Record<string, unknown>).filter(
+            ([, val]) => val !== undefined && val !== null
+          )
+        );
+        onChange(cleaned);
+      }}
+      fallback={
         <div className="flex gap-2">
           <div className="flex-1">
             <Label className="text-muted-foreground text-xs">
@@ -150,8 +133,8 @@ export function DurationInput({ value, onChange }: DurationInputProps) {
             />
           </div>
         </div>
-      )}
-    </div>
+      }
+    />
   );
 }
 

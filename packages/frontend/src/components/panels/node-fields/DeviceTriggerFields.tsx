@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useHass } from '@/contexts/HassContext';
-import { HaSelector } from '@/ha';
+import { HaSelect, HaSelector } from '@/ha';
 import type { DeviceTrigger, TriggerField } from '@/hooks/useDeviceAutomation';
 import { useDeviceAutomation } from '@/hooks/useDeviceAutomation';
 import { useTranslations } from '@/hooks/useTranslations';
@@ -172,6 +172,17 @@ export function DeviceTriggerFields({ node, onChange, entities }: DeviceTriggerF
     t,
   ]);
 
+  const handleTriggerTypeSelected = (value: string) => {
+    const trigger = availableDeviceTriggers.find((tr) => buildCompositeValue(tr) === value);
+    if (trigger) {
+      onChange('type', trigger.type);
+      onChange('domain', trigger.domain);
+      onChange('subtype', trigger.subtype ?? undefined);
+      // Set entity_id from the trigger — required by HA for device automation triggers
+      onChange('entity_id', trigger.entity_id ?? undefined);
+    }
+  };
+
   return (
     <>
       {/* Device selector */}
@@ -195,33 +206,31 @@ export function DeviceTriggerFields({ node, onChange, entities }: DeviceTriggerF
       {/* Trigger type selector - show dropdown if API data available, otherwise show as text */}
       {deviceId && availableDeviceTriggers.length > 0 ? (
         <FormField label={t('labels.triggerType')} required>
-          <Select
+          <HaSelect
             value={selectedCompositeValue}
-            onValueChange={(value) => {
-              // Find the trigger by its composite value
-              const trigger = availableDeviceTriggers.find(
-                (tr) => buildCompositeValue(tr) === value
-              );
-              if (trigger) {
-                onChange('type', trigger.type);
-                onChange('domain', trigger.domain);
-                onChange('subtype', trigger.subtype ?? undefined);
-                // Set entity_id from the trigger — required by HA for device automation triggers
-                onChange('entity_id', trigger.entity_id ?? undefined);
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t('placeholders.selectTriggerType')} />
-            </SelectTrigger>
-            <SelectContent>
-              {availableDeviceTriggers.map((trigger) => (
-                <SelectItem key={buildCompositeValue(trigger)} value={buildCompositeValue(trigger)}>
-                  {getTriggerLabel(trigger, translations, allEntities, deviceName)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(v) => handleTriggerTypeSelected(String(v))}
+            options={availableDeviceTriggers.map((trigger) => ({
+              value: buildCompositeValue(trigger),
+              label: getTriggerLabel(trigger, translations, allEntities, deviceName),
+            }))}
+            fallback={
+              <Select value={selectedCompositeValue} onValueChange={handleTriggerTypeSelected}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('placeholders.selectTriggerType')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableDeviceTriggers.map((trigger) => (
+                    <SelectItem
+                      key={buildCompositeValue(trigger)}
+                      value={buildCompositeValue(trigger)}
+                    >
+                      {getTriggerLabel(trigger, translations, allEntities, deviceName)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          />
         </FormField>
       ) : (
         /* Show existing type/domain as read-only when API not available */

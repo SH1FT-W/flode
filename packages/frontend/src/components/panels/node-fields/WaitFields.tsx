@@ -15,7 +15,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { getTriggerFields, TRIGGER_PLATFORM_FIELDS } from '@/config/triggerFields';
-import { HaSwitch } from '@/ha';
+import { HaSelect, HaSelector, HaSwitch } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { TriggerNodeData } from '@/store/flow-store';
 import { getNodeData, getNodeDataString } from '@/utils/nodeData';
@@ -69,15 +69,25 @@ export function WaitFields({ node, onChange }: WaitFieldsProps) {
       <FieldError message={rootError} />
 
       <FormField label={t('nodes:wait.waitType')} description={t('nodes:wait.waitTypeDescription')}>
-        <Select value={waitType} onValueChange={handleWaitTypeChange}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="template">{t('nodes:wait.types.template')}</SelectItem>
-            <SelectItem value="trigger">{t('nodes:wait.types.triggers')}</SelectItem>
-          </SelectContent>
-        </Select>
+        <HaSelect
+          value={waitType}
+          onChange={(v) => handleWaitTypeChange(String(v) as 'template' | 'trigger')}
+          options={[
+            { value: 'template', label: t('nodes:wait.types.template') },
+            { value: 'trigger', label: t('nodes:wait.types.triggers') },
+          ]}
+          fallback={
+            <Select value={waitType} onValueChange={handleWaitTypeChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="template">{t('nodes:wait.types.template')}</SelectItem>
+                <SelectItem value="trigger">{t('nodes:wait.types.triggers')}</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+        />
       </FormField>
 
       {waitType === 'template' && (
@@ -86,12 +96,20 @@ export function WaitFields({ node, onChange }: WaitFieldsProps) {
           required
           description={t('nodes:wait.waitTemplateDescription')}
         >
-          <Textarea
+          <HaSelector
+            selector={{ template: {} }}
             value={waitTemplate || ''}
-            onChange={(e) => onChange('wait_template', e.target.value)}
-            className="font-mono"
-            rows={3}
-            placeholder={t('nodes:placeholders.waitTemplate')}
+            onChange={(v) => onChange('wait_template', typeof v === 'string' ? v : '')}
+            required
+            fallback={
+              <Textarea
+                value={waitTemplate || ''}
+                onChange={(e) => onChange('wait_template', e.target.value)}
+                className="font-mono"
+                rows={3}
+                placeholder={t('nodes:placeholders.waitTemplate')}
+              />
+            }
           />
           <FieldError message={getFieldError('wait_template')} />
         </FormField>
@@ -118,21 +136,31 @@ export function WaitFields({ node, onChange }: WaitFieldsProps) {
                   </Button>
                 </div>
                 <FormField label={t('nodes:wait.triggerPlatformLabel', 'Platform')}>
-                  <Select
+                  <HaSelect
                     value={trigger.trigger}
-                    onValueChange={(p) => handleTriggerChange(index, 'trigger', p)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.keys(TRIGGER_PLATFORM_FIELDS).map((p) => (
-                        <SelectItem key={p} value={p}>
-                          {t(`nodes:triggers.platforms.${p}`, { defaultValue: p })}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(p) => handleTriggerChange(index, 'trigger', String(p))}
+                    options={Object.keys(TRIGGER_PLATFORM_FIELDS).map((p) => ({
+                      value: p,
+                      label: t(`nodes:triggers.platforms.${p}`, { defaultValue: p }),
+                    }))}
+                    fallback={
+                      <Select
+                        value={trigger.trigger}
+                        onValueChange={(p) => handleTriggerChange(index, 'trigger', p)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(TRIGGER_PLATFORM_FIELDS).map((p) => (
+                            <SelectItem key={p} value={p}>
+                              {t(`nodes:triggers.platforms.${p}`, { defaultValue: p })}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    }
+                  />
                 </FormField>
 
                 {getTriggerFields(trigger.trigger as TriggerPlatform).map((field) => (

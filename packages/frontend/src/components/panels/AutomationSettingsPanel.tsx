@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { HaEntityPicker, useHaComponentsAvailable } from '@/ha';
+import { HaEntityPicker, HaSelect, useHaComponentsAvailable } from '@/ha';
 import { useFlowStore } from '@/store/flow-store';
 
 const AUTOMATION_MODES: AutomationMode[] = ['single', 'restart', 'queued', 'parallel'];
@@ -99,18 +99,25 @@ export function AutomationSettingsPanel() {
         label={t('automationSettings.mode')}
         description={t('automationSettings.modeDescription')}
       >
-        <Select value={mode} onValueChange={handleModeChange}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {AUTOMATION_MODES.map((m) => (
-              <SelectItem key={m} value={m}>
-                {t(`automationSettings.modes.${m}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <HaSelect
+          value={mode}
+          onChange={(v) => handleModeChange(String(v))}
+          options={AUTOMATION_MODES.map((m) => ({ value: m, label: t(`automationSettings.modes.${m}`) }))}
+          fallback={
+            <Select value={mode} onValueChange={handleModeChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AUTOMATION_MODES.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {t(`automationSettings.modes.${m}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
         <p className="text-muted-foreground text-xs">
           {t(`automationSettings.modeDescriptions.${mode}`)}
         </p>
@@ -136,22 +143,35 @@ export function AutomationSettingsPanel() {
               label={t('automationSettings.maxExceeded')}
               description={t('automationSettings.maxExceededDescription')}
             >
-              <Select
+              <HaSelect
                 value={flowMetadata.max_exceeded ?? 'none'}
-                onValueChange={handleMaxExceededChange}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t('placeholders.none')}</SelectItem>
-                  {MAX_EXCEEDED_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {t(`automationSettings.maxExceededOptions.${opt}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(v) => handleMaxExceededChange(String(v))}
+                options={[
+                  { value: 'none', label: t('placeholders.none') },
+                  ...MAX_EXCEEDED_OPTIONS.map((opt) => ({
+                    value: opt,
+                    label: t(`automationSettings.maxExceededOptions.${opt}`),
+                  })),
+                ]}
+                fallback={
+                  <Select
+                    value={flowMetadata.max_exceeded ?? 'none'}
+                    onValueChange={handleMaxExceededChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t('placeholders.none')}</SelectItem>
+                      {MAX_EXCEEDED_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {t(`automationSettings.maxExceededOptions.${opt}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                }
+              />
             </FormField>
           )}
         </>

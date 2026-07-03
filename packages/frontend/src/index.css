@@ -62,9 +62,15 @@
   --color-variables: hsl(var(--variables));
   --color-variables-foreground: hsl(var(--variables-foreground));
 
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  /* HA's real corner-radius scale (home-assistant/frontend's core.globals.ts,
+     fixed global constants, not per-theme) — verified against source
+     03.07.2026, not per-component guesses. */
+  --radius-sm: var(--ha-radius-sm);
+  --radius-md: var(--ha-radius-md);
+  --radius-lg: var(--ha-radius-lg);
+  --radius-xl: var(--ha-radius-xl);
+  --radius-dialog: var(--ha-radius-dialog);
+  --radius-pill: var(--ha-radius-pill);
 }
 
 /*
@@ -86,7 +92,14 @@
 }
 
 @layer base {
-  :root {
+  /* :host matches the flode-panel custom element itself when this stylesheet
+     runs inside its Shadow DOM (panel mode); :root matches the real <html>
+     in standalone dev, where there's no shadow root at all. :root alone
+     never matches anything inside a shadow tree — that silently broke every
+     variable below that isn't also mirrored via lib/ha-theme.ts's inline
+     style writes (which target a real in-tree element, not :root). */
+  :root,
+  :host {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -106,7 +119,19 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+
+    /* HA's corner-radius scale — fixed global constants (not per-theme,
+       not synced via lib/ha-theme.ts), matching home-assistant/frontend's
+       core.globals.ts exactly. Small controls (inputs, dropdown items) use
+       sm; cards/panels use lg (= --ha-card-border-radius default); dialogs
+       use the verified ha-dialog radius; buttons default to a full pill,
+       matching ha-button's own default (--ha-button-border-radius). */
+    --ha-radius-sm: 4px;
+    --ha-radius-md: 8px;
+    --ha-radius-lg: 12px;
+    --ha-radius-xl: 16px;
+    --ha-radius-dialog: 24px;
+    --ha-radius-pill: 9999px;
 
     /* Status colors — mirrored from HA's warning/success/info-color at runtime, see lib/ha-theme.ts */
     --warning: 39 100% 50%;

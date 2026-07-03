@@ -6,6 +6,7 @@ import { FormField } from '@/components/forms/FormField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { HaSelector } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import { getNodeDataObject } from '@/utils/nodeData';
 
@@ -85,11 +86,18 @@ export function SetVariablesFields({ node, onChange }: SetVariablesFieldsProps) 
 
             <div className="space-y-3">
               <FormField label={t('nodes:setVariablesFields.name')}>
-                <Input
+                <HaSelector
+                  selector={{ text: {} }}
                   value={key}
-                  onChange={(e) => handleKeyChange(key, e.target.value)}
-                  placeholder={t('nodes:setVariablesFields.namePlaceholder')}
-                  className="font-mono text-sm"
+                  onChange={(v) => handleKeyChange(key, typeof v === 'string' ? v : '')}
+                  fallback={
+                    <Input
+                      value={key}
+                      onChange={(e) => handleKeyChange(key, e.target.value)}
+                      placeholder={t('nodes:setVariablesFields.namePlaceholder')}
+                      className="font-mono text-sm"
+                    />
+                  }
                 />
               </FormField>
 
@@ -97,11 +105,18 @@ export function SetVariablesFields({ node, onChange }: SetVariablesFieldsProps) 
                 label={t('nodes:setVariablesFields.value')}
                 description={t('nodes:setVariablesFields.valueDescription')}
               >
-                <Textarea
+                <HaSelector
+                  selector={{ template: {} }}
                   value={String(value ?? '')}
-                  onChange={(e) => handleValueChange(key, e.target.value)}
-                  placeholder={t('nodes:setVariablesFields.valuePlaceholder')}
-                  className="font-mono text-sm"
+                  onChange={(v) => handleValueChange(key, typeof v === 'string' ? v : '')}
+                  fallback={
+                    <Textarea
+                      value={String(value ?? '')}
+                      onChange={(e) => handleValueChange(key, e.target.value)}
+                      placeholder={t('nodes:setVariablesFields.valuePlaceholder')}
+                      className="font-mono text-sm"
+                    />
+                  }
                 />
               </FormField>
             </div>
