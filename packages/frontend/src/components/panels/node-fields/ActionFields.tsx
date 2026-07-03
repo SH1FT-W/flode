@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useHass } from '@/contexts/HassContext';
-import { HaSelector, HaServicePicker } from '@/ha';
+import { HaSelector, HaServicePicker, HaSwitch } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataObject, getNodeDataString } from '@/utils/nodeData';
@@ -236,9 +236,15 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
             />
           </FormField>
           <FormField label={t('nodes:actions.markAsError')}>
-            <Switch
+            <HaSwitch
               checked={isStopError}
-              onCheckedChange={(checked) => onChange('error', checked || undefined)}
+              onChange={(checked) => onChange('error', checked || undefined)}
+              fallback={
+                <Switch
+                  checked={isStopError}
+                  onCheckedChange={(checked) => onChange('error', checked || undefined)}
+                />
+              }
             />
           </FormField>
         </>

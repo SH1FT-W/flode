@@ -4,6 +4,7 @@ import { FormField } from '@/components/forms/FormField';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { HaSwitch } from '@/ha';
 
 interface ResponseVariableFieldProps {
   response: { optional?: boolean };
@@ -39,6 +40,12 @@ export function ResponseVariableField({
       )}
     </>
   );
+  const handleToggle = (checked: boolean) => {
+    setShowResponseVariable(checked);
+    if (!checked) {
+      onChange('response_variable', undefined);
+    }
+  };
   if (response.optional) {
     return (
       <FormField
@@ -46,15 +53,16 @@ export function ResponseVariableField({
         description={t('nodes:responseVariableField.optionalDescription')}
       >
         <div className="mb-2 flex items-center gap-3">
-          <Switch
+          <HaSwitch
             checked={showResponseVariable}
-            onCheckedChange={(checked: boolean) => {
-              setShowResponseVariable(checked);
-              if (!checked) {
-                onChange('response_variable', undefined);
-              }
-            }}
-            id="response-variable-switch"
+            onChange={handleToggle}
+            fallback={
+              <Switch
+                checked={showResponseVariable}
+                onCheckedChange={handleToggle}
+                id="response-variable-switch"
+              />
+            }
           />
           <label htmlFor="response-variable-switch" className="cursor-pointer select-none text-sm">
             {t('nodes:responseVariableField.useResponseVariable')}

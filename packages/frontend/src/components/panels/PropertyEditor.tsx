@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { HaSwitch } from '@/ha';
 import { type PropertyType, usePropertyEditor } from '@/hooks/usePropertyEditor';
 
 interface PropertyEditorProps {
@@ -112,9 +113,15 @@ export function PropertyEditor({
           <FormField label={t('nodes:panel.value')}>
             {editor.state.type === 'boolean' ? (
               <div className="flex items-center space-x-2">
-                <Switch
+                <HaSwitch
                   checked={editor.state.value === 'true'}
-                  onCheckedChange={(checked) => editor.setValue(checked ? 'true' : 'false')}
+                  onChange={(checked) => editor.setValue(checked ? 'true' : 'false')}
+                  fallback={
+                    <Switch
+                      checked={editor.state.value === 'true'}
+                      onCheckedChange={(checked) => editor.setValue(checked ? 'true' : 'false')}
+                    />
+                  }
                 />
                 <Label className="text-sm">
                   {editor.state.value === 'true' ? t('boolean.true') : t('boolean.false')}
@@ -198,7 +205,11 @@ function PropertyDisplay({ name, value, onChange, onDelete }: PropertyDisplayPro
 
       {typeof value === 'boolean' ? (
         <div className="flex items-center space-x-2">
-          <Switch checked={value} onCheckedChange={(checked) => onChange(checked)} />
+          <HaSwitch
+            checked={value}
+            onChange={onChange}
+            fallback={<Switch checked={value} onCheckedChange={(checked) => onChange(checked)} />}
+          />
           <Label className="text-sm">{value ? t('boolean.true') : t('boolean.false')}</Label>
         </div>
       ) : Array.isArray(value) ? (

@@ -193,7 +193,9 @@ werden (Phase 1, in Koordination mit dem Shadow-DOM-Umbau aus Phase 2).
 | `HaSelector` (state/attribute) | ✅ fertig, im Browser verifiziert — "Zu/Von Zustand" (Trigger), "Zustand"/"Attribut" (Condition) |
 | `HaSelector` (action) | **bewusst nicht verwendet** — recherchiert und verworfen, siehe Phase-3-Ergebnis |
 | Attribut-Autocomplete | ✅ fertig für State-Condition; `numeric_state`-Attribut (via `DynamicFieldRenderer`) bleibt Freitext (kein `entity_id`-Kontext dort verfügbar, nicht umgesetzt) |
+| `HaSwitch` (neu, `ha-switch`) | ✅ fertig, im Browser verifiziert — alle 9 Toggle-Stellen app-weit migriert |
 | Dialoge (`ha-dialog`) | offen (Phase 4, optional) |
+| Textfelder/Select (`ha-textfield`/`ha-select`) | offen (Phase 4, optional) |
 
 ## 4. Phase 1 — Ergebnis (03.07.2026)
 

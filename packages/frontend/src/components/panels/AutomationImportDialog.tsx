@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { HaSwitch } from '@/ha';
 import {
   type AutomationCatalogSortColumn,
   type AutomationCatalogSortDirection,
@@ -137,6 +138,21 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
       }
       return next;
     });
+  };
+
+  const handleToggleAutomationEnabled = async (
+    automation: AutomationCatalogItem,
+    checked: boolean
+  ) => {
+    try {
+      const api = getHomeAssistantAPI(hass, hassConfig);
+      await api.setAutomationState(automation.entity_id, checked);
+      toast.success(
+        checked ? t('dialogs:import.automationEnabled') : t('dialogs:import.automationDisabled')
+      );
+    } catch {
+      toast.error(t('dialogs:import.updateStateFailed'));
+    }
   };
 
   const toggleSelectAllVisible = () => {
@@ -509,25 +525,21 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
                           )}
                         </div>
                         <div className="w-[80px] px-3 py-2 text-center align-top">
-                          <Switch
+                          <HaSwitch
                             checked={automation.enabled}
-                            onCheckedChange={async (checked) => {
-                              try {
-                                const api = getHomeAssistantAPI(hass, hassConfig);
-                                await api.setAutomationState(automation.entity_id, checked);
-                                toast.success(
-                                  checked
-                                    ? t('dialogs:import.automationEnabled')
-                                    : t('dialogs:import.automationDisabled')
-                                );
-                              } catch {
-                                toast.error(t('dialogs:import.updateStateFailed'));
-                              }
-                            }}
-                            aria-label={
-                              automation.enabled
-                                ? t('dialogs:import.columns.enabled')
-                                : t('dialogs:import.disabled')
+                            onChange={(checked) => handleToggleAutomationEnabled(automation, checked)}
+                            fallback={
+                              <Switch
+                                checked={automation.enabled}
+                                onCheckedChange={(checked) =>
+                                  handleToggleAutomationEnabled(automation, checked)
+                                }
+                                aria-label={
+                                  automation.enabled
+                                    ? t('dialogs:import.columns.enabled')
+                                    : t('dialogs:import.disabled')
+                                }
+                              />
                             }
                           />
                         </div>

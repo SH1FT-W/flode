@@ -38,6 +38,8 @@ const PROBE_CARD_BY_COMPONENT: Record<string, string> = {
   // button-card's editor pulls in hui-action-editor -> ha-service-control -> ha-service-picker
   // (verified against home-assistant/frontend source, 03.07.2026).
   'ha-service-picker': 'button',
+  // entities-card's editor imports ha-switch directly (verified via `gh search code`, 03.07.2026).
+  'ha-switch': 'entities',
 };
 
 /** Component names already confirmed registered — never re-probed. */

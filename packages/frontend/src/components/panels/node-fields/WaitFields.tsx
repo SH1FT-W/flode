@@ -15,6 +15,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { getTriggerFields, TRIGGER_PLATFORM_FIELDS } from '@/config/triggerFields';
+import { HaSwitch } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { TriggerNodeData } from '@/store/flow-store';
 import { getNodeData, getNodeDataString } from '@/utils/nodeData';
@@ -163,9 +164,15 @@ export function WaitFields({ node, onChange }: WaitFieldsProps) {
           label={t('nodes:wait.continueOnTimeout')}
           description={t('nodes:wait.continueOnTimeoutDescription')}
         >
-          <Switch
+          <HaSwitch
             checked={node.data.continue_on_timeout ?? true}
-            onCheckedChange={(checked) => onChange('continue_on_timeout', checked)}
+            onChange={(checked) => onChange('continue_on_timeout', checked)}
+            fallback={
+              <Switch
+                checked={node.data.continue_on_timeout ?? true}
+                onCheckedChange={(checked) => onChange('continue_on_timeout', checked)}
+              />
+            }
           />
         </FormField>
       )}

@@ -24,7 +24,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import type { FieldConfig } from '@/config/triggerFields';
-import { HaEntityPicker, HaSelector } from '@/ha';
+import { HaEntityPicker, HaSelector, HaSwitch } from '@/ha';
 import type { TriggerField } from '@/hooks/useDeviceAutomation';
 import type { HassEntity } from '@/types/hass';
 
@@ -209,7 +209,11 @@ export function DynamicFieldRenderer({
       case 'boolean':
         return (
           <div className="flex items-center space-x-2">
-            <Switch checked={booleanValue} onCheckedChange={onChange} />
+            <HaSwitch
+              checked={booleanValue}
+              onChange={onChange}
+              fallback={<Switch checked={booleanValue} onCheckedChange={onChange} />}
+            />
             <span className="text-muted-foreground text-sm">
               {booleanValue ? t('dynamicField.enabled') : t('dynamicField.disabled')}
             </span>

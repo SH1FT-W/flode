@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { getHandledProperties } from '@/config/handledProperties';
 import { useHass } from '@/contexts/HassContext';
+import { HaSwitch } from '@/ha';
 import { useFlowStore } from '@/store/flow-store';
 import type { HassEntity } from '@/types/hass';
 import { Separator } from '../ui/separator';
@@ -134,10 +135,16 @@ export function PropertyPanel() {
         <Label htmlFor="node-enabled" className="text-sm">
           {t('labels.enabled')}
         </Label>
-        <Switch
-          id="node-enabled"
+        <HaSwitch
           checked={selectedNode.data.enabled !== false}
-          onCheckedChange={(checked) => handleChange('enabled', checked ? undefined : false)}
+          onChange={(checked) => handleChange('enabled', checked ? undefined : false)}
+          fallback={
+            <Switch
+              id="node-enabled"
+              checked={selectedNode.data.enabled !== false}
+              onCheckedChange={(checked) => handleChange('enabled', checked ? undefined : false)}
+            />
+          }
         />
       </div>
 

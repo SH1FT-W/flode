@@ -4,6 +4,7 @@ import { FormField } from '@/components/forms/FormField';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { HaSwitch } from '@/ha';
 
 export type DurationValue =
   | string
@@ -80,7 +81,11 @@ export function DurationInput({ value, onChange }: DurationInputProps) {
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground text-xs">{t('nodes:durationField.string')}</span>
-        <Switch checked={useString} onCheckedChange={handleToggle} />
+        <HaSwitch
+          checked={useString}
+          onChange={handleToggle}
+          fallback={<Switch checked={useString} onCheckedChange={handleToggle} />}
+        />
         <span className="text-muted-foreground text-xs">{t('nodes:durationField.object')}</span>
       </div>
       {useString ? (
