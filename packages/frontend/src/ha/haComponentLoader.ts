@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { notifyHaComponentIssue } from './haAvailabilityNotice';
 
 /**
  * Minimal shape of HA's `window.loadCardHelpers()` — undocumented internal
@@ -83,11 +84,16 @@ async function probe(name: string): Promise<boolean> {
     if (ok) {
       confirmed.add(name);
     } else {
-      logger.debug(`[FLODE] HA component "${name}" did not register within ${LOAD_TIMEOUT_MS}ms`);
+      // We ARE inside HA (loadCardHelpers exists) but the component still
+      // didn't show up — a genuine incompatibility worth surfacing, unlike
+      // the loadCardHelpers-missing case above (expected in standalone dev).
+      notifyHaComponentIssue(
+        `HA component "${name}" did not register within ${LOAD_TIMEOUT_MS}ms`
+      );
     }
     return ok;
   } catch (error) {
-    logger.debug(`[FLODE] Failed to load HA component "${name}"`, error);
+    notifyHaComponentIssue(`Failed to load HA component "${name}": ${String(error)}`);
     return false;
   }
 }

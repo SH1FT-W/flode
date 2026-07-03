@@ -48,6 +48,7 @@ export function HaSelect({
       events={{
         selected: (ev) => onChange((ev.detail as { value: string | number | undefined }).value),
       }}
+      fallback={fallback}
     />
   );
 }

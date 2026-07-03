@@ -55,6 +55,7 @@ export function HaSelector({
       events={{
         'value-changed': (ev) => onChange((ev.detail as { value: unknown }).value),
       }}
+      fallback={fallback}
     />
   );
 }

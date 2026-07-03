@@ -16,7 +16,7 @@ import {
   Wifi,
 } from 'lucide-react';
 
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
@@ -74,6 +74,7 @@ import {
 import { ResizablePanel } from '@/components/ui/resizable-panel';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { version } from '../../../custom_components/flode/manifest.json';
 import { useAppRoot } from './contexts/AppRootContext';
@@ -144,6 +145,19 @@ function App() {
   useLanguage();
   // Sync HA theme colors (custom theme + light/dark fallbacks) onto our CSS vars
   useHaThemeSync();
+
+  // Version guard: log which HA version we're running against, once —
+  // the src/ha/ wrapper layer targets undocumented internal API that can
+  // change between releases, so this is the first thing to check when a
+  // native component mysteriously stops working. `hass` gets a new object
+  // on every entity update, so this only fires once via the ref guard.
+  const loggedVersion = useRef(false);
+  useEffect(() => {
+    if (!loggedVersion.current && hass?.config?.version) {
+      loggedVersion.current = true;
+      logger.info(`Running against Home Assistant ${hass.config.version}`);
+    }
+  }, [hass]);
 
   useEffect(() => {
     appRoot?.classList.toggle('dark', isDark);

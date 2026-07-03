@@ -25,6 +25,7 @@ export function HaIconPicker({ value, onChange, label, disabled, fallback = null
       events={{
         'value-changed': (ev) => onChange((ev.detail as { value: string }).value),
       }}
+      fallback={fallback}
     />
   );
 }

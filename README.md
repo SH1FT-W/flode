@@ -98,6 +98,27 @@ After setup, **FLODE** appears in the HA sidebar.
 
 ---
 
+## Native Home Assistant UI
+
+FLODE renders directly inside HA's own document (no iframe) and, wherever
+possible, uses HA's **own native components** instead of custom-built ones —
+entity/device/area pickers, the service picker, dropdowns, toggles, and most
+form fields (text, number, date, time, duration, templates, JSON) all come
+straight from Home Assistant, so they get HA's live entity data, icons,
+friendly names, and — automatically, no configuration needed — your active
+HA theme, including light/dark mode and custom themes.
+
+These are undocumented, internal HA components without a stability
+guarantee. FLODE checks for each one before using it and **falls back to its
+own equivalent control** if it isn't available (e.g. very old or very new HA
+versions, or when running FLODE outside of Home Assistant during
+development) — you'll see a one-time notice if that happens, but the editor
+keeps working either way. See
+[`docs/ha-native-migration.md`](docs/ha-native-migration.md) for the full
+technical writeup.
+
+---
+
 ## Project Structure
 
 ```

@@ -29,6 +29,7 @@ export function HaSwitch({ checked, onChange, disabled, fallback = null }: HaSwi
       events={{
         change: (ev) => onChange((ev.currentTarget as unknown as { checked: boolean }).checked),
       }}
+      fallback={fallback}
     />
   );
 }

@@ -30,6 +30,7 @@ export function HaServicePicker({ value, onChange, label, disabled, fallback = n
       events={{
         'value-changed': (ev) => onChange((ev.detail as { value: string }).value),
       }}
+      fallback={fallback}
     />
   );
 }

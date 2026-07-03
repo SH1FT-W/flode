@@ -41,6 +41,7 @@ export function HaEntityPicker({
       events={{
         'value-changed': (ev) => onChange((ev.detail as { value: string }).value),
       }}
+      fallback={fallback}
     />
   );
 }

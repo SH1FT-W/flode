@@ -496,3 +496,55 @@ Zeitstempel + farbiges Status-Badge, `ha-select` kann nur Klartext-Labels
 
 **Noch offen:** `ha-dialog` (siehe oben), `numeric_state`-Attribut
 (Freitext, siehe Phase 3), Icon-Picker (kein Schema-Feld).
+
+## 8. Phase 5 — Ergebnis (03.07.2026)
+
+**Fehlerbehandlung:** `HaElement.tsx` fängt jetzt Fehler beim Setzen von
+Properties per `try/catch` ab (kein React-`ErrorBoundary`, da der Fehler in
+einem `useEffect` auftritt — Error Boundaries fangen das nicht) und rendert
+bei einem Fehler dauerhaft den `fallback` der jeweiligen typisierten
+Komponente. Alle sechs Wrapper (`HaEntityPicker`, `HaIconPicker`,
+`HaSelector`, `HaServicePicker`, `HaSelect`, `HaSwitch`) reichen ihren
+`fallback` jetzt sowohl für "nicht verfügbar" (Ladefehler,
+`useHaComponentsAvailable`) als auch für "zur Laufzeit kaputtgegangen"
+(neuer Mechanismus) an `HaElement` durch.
+
+**Einmalige UI-Notice:** `src/ha/haAvailabilityNotice.ts` — zeigt beim
+ersten Lade- oder Laufzeitfehler einen dezenten Sonner-Toast ("Native
+HA-Komponenten nicht verfügbar"), danach nur noch Logging (`logger.warn`,
+selbst hinter FLODEs Debug-Flag). Fehlendes `window.loadCardHelpers`
+(Standalone-Dev-Modus, erwartet) löst bewusst **keine** Notice aus — nur ein
+Fehlschlag, obwohl wir nachweislich in HA laufen, gilt als echtes Problem.
+
+**Versions-Guard:** `App.tsx` loggt einmalig `hass.config.version` beim
+ersten Empfang eines echten `hass`-Objekts (`logger.info`, per Ref-Flag
+entprellt gegen die häufigen `hass`-Objekt-Neuerstellungen).
+
+**Doku:** README um Abschnitt "Native Home Assistant UI" ergänzt (Nutzer-
+perspektive: was ist nativ, was passiert beim Fallback, Link hierher).
+CHANGELOG.md bewusst nicht von Hand ergänzt — wird laut Repo-Konvention erst
+beim tatsächlichen Release aus der Commit-Historie generiert; die Commit-
+Messages dieser fünf Phasen sind dafür bereits ausführlich genug.
+
+### Manuelle Test-Checkliste (vor einem Release durchzugehen)
+
+- [ ] **Hell/Dunkel:** HA-Theme in den Nutzereinstellungen zwischen hell und
+      dunkel umschalten, FLODE-Panel beobachten (kein Reload nötig)
+- [ ] **Custom Theme:** Eines der Test-Themes
+      (`ha-test/config/themes/graphite_purple.yaml` oder
+      `sunset_forest.yaml`, oder ein eigenes) aktivieren, Farben in FLODE
+      gegenchecken (Primär-/Akzentfarbe, Node-Farben, Status-Farben)
+- [ ] **Entity-Picker mit vielen Entities (Performance):** In einer
+      HA-Instanz mit >500 Entities einen Trigger-/Action-Node öffnen,
+      Entity-Feld antippen — Tippgeschwindigkeit/Scroll-Performance der
+      nativen Dropdown-Liste prüfen
+- [ ] **Standalone-Dev-Modus:** `yarn dev` außerhalb von HA starten,
+      Browser-Konsole auf Fehler prüfen — alle Felder sollten sauber auf
+      FLODEs Eigenbau-Fallback zurückfallen, keine Crashes
+- [ ] **Mobile (Companion App):** Panel in der HA-Companion-App öffnen,
+      native Picker/Dialoge/Toggles auf Touch-Bedienbarkeit prüfen
+      (insbesondere Zeit-/Dauer-Eingabe, Mehrfachauswahl)
+- [ ] **YAML-Snapshot-Tests grün:** `yarn workspace @flode/frontend test
+      --run` — insbesondere die Transpiler-Roundtrip-Fixtures
+      (`lib/__tests__/roundtrip-integration.test.ts`) müssen unverändert
+      bestehen bleiben
