@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { type CompoundBlockKey, createCompoundBlock } from '@/lib/block-factories';
+import { NODE_COLORS } from '@/lib/node-colors';
 import { cn, generateNodeId } from '@/lib/utils';
 import { useFlowStore } from '@/store/flow-store';
 
@@ -32,7 +33,7 @@ export const nodeTypes = [
     type: 'trigger',
     labelKey: 'nodes:types.trigger',
     icon: Zap,
-    color: 'bg-amber-100 border-amber-400 text-amber-700 hover:bg-amber-200',
+    color: NODE_COLORS.trigger.palette,
     defaultData: {
       trigger: 'state',
       entity_id: '',
@@ -42,7 +43,7 @@ export const nodeTypes = [
     type: 'condition',
     labelKey: 'nodes:types.condition',
     icon: GitBranch,
-    color: 'bg-blue-100 border-blue-400 text-blue-700 hover:bg-blue-200',
+    color: NODE_COLORS.condition.palette,
     defaultData: {
       condition: 'state',
       entity_id: '',
@@ -52,7 +53,7 @@ export const nodeTypes = [
     type: 'action',
     labelKey: 'nodes:types.action',
     icon: Play,
-    color: 'bg-green-100 border-green-400 text-green-700 hover:bg-green-200',
+    color: NODE_COLORS.action.palette,
     defaultData: {
       service: 'light.turn_on',
     },
@@ -61,7 +62,7 @@ export const nodeTypes = [
     type: 'delay',
     labelKey: 'nodes:types.delay',
     icon: Clock,
-    color: 'bg-purple-100 border-purple-400 text-purple-700 hover:bg-purple-200',
+    color: NODE_COLORS.delay.palette,
     defaultData: {
       delay: '00:00:05',
     },
@@ -70,7 +71,7 @@ export const nodeTypes = [
     type: 'wait',
     labelKey: 'nodes:types.wait',
     icon: Hourglass,
-    color: 'bg-orange-100 border-orange-400 text-orange-700 hover:bg-orange-200',
+    color: NODE_COLORS.wait.palette,
     defaultData: {
       wait_template: '',
       timeout: '00:01:00',
@@ -80,7 +81,7 @@ export const nodeTypes = [
     type: 'set_variables',
     labelKey: 'nodes:types.set_variables',
     icon: Variable,
-    color: 'bg-cyan-100 border-cyan-400 text-cyan-700 hover:bg-cyan-200',
+    color: NODE_COLORS.variables.palette,
     defaultData: {
       variables: {},
     },
@@ -100,35 +101,35 @@ const compoundTypes = [
     key: 'choose' as CompoundBlockKey,
     labelKey: 'nodes:compoundBlocks.choose',
     icon: Shuffle,
-    color: 'bg-blue-100 border-blue-400 text-blue-700 hover:bg-blue-200',
+    color: NODE_COLORS.condition.palette,
     group: 'branching',
   },
   {
     key: 'if_else' as CompoundBlockKey,
     labelKey: 'nodes:compoundBlocks.if_else',
     icon: GitFork,
-    color: 'bg-blue-100 border-blue-400 text-blue-700 hover:bg-blue-200',
+    color: NODE_COLORS.condition.palette,
     group: 'branching',
   },
   {
     key: 'repeat_while' as CompoundBlockKey,
     labelKey: 'nodes:compoundBlocks.repeat_while',
     icon: Repeat,
-    color: 'bg-blue-100 border-blue-400 text-blue-700 hover:bg-blue-200',
+    color: NODE_COLORS.condition.palette,
     group: 'loops',
   },
   {
     key: 'repeat_count' as CompoundBlockKey,
     labelKey: 'nodes:compoundBlocks.repeat_count',
     icon: Hash,
-    color: 'bg-purple-100 border-purple-400 text-purple-700 hover:bg-purple-200',
+    color: NODE_COLORS.delay.palette,
     group: 'loops',
   },
   {
     key: 'parallel' as CompoundBlockKey,
     labelKey: 'nodes:compoundBlocks.parallel',
     icon: Columns2,
-    color: 'bg-green-100 border-green-400 text-green-700 hover:bg-green-200',
+    color: NODE_COLORS.action.palette,
     group: 'parallel',
   },
 ] as const satisfies readonly CompoundTypeConfig[];

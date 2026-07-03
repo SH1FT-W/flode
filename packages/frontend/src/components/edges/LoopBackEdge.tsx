@@ -1,6 +1,9 @@
 import { BaseEdge, type EdgeProps, getBezierPath } from '@xyflow/react';
 import { useDarkMode } from '@/hooks/useDarkMode';
 
+// Follows HA's theme via --muted-foreground (see lib/ha-theme.ts), no JS color branching needed.
+const EDGE_COLOR = 'hsl(var(--muted-foreground))';
+
 export function LoopBackEdge({
   sourceX,
   sourceY,
@@ -10,7 +13,6 @@ export function LoopBackEdge({
   targetPosition,
 }: EdgeProps) {
   const isDarkMode = useDarkMode();
-  const color = isDarkMode ? '#94a3b8' : '#64748b';
 
   // Backward loop-back (target is left of source): route the dashed line
   // *around* the nodes via a detour over the top, mirroring DeletableEdge,
@@ -47,7 +49,7 @@ export function LoopBackEdge({
     <BaseEdge
       path={edgePath}
       style={{
-        stroke: color,
+        stroke: EDGE_COLOR,
         strokeWidth: 2,
         strokeDasharray: '6 4',
       }}
@@ -57,7 +59,6 @@ export function LoopBackEdge({
 }
 
 export function LoopBackEdgeMarkers({ isDarkMode }: { isDarkMode: boolean }) {
-  const color = isDarkMode ? '#94a3b8' : '#64748b';
   return (
     <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
       <defs>
@@ -69,7 +70,7 @@ export function LoopBackEdgeMarkers({ isDarkMode }: { isDarkMode: boolean }) {
           refY="3"
           orient="auto"
         >
-          <path d="M0,0 L0,6 L6,3 z" fill={color} />
+          <path d="M0,0 L0,6 L6,3 z" fill={EDGE_COLOR} />
         </marker>
       </defs>
     </svg>

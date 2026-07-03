@@ -15,12 +15,40 @@ export interface HassDevice {
   area_id: string | null;
 }
 
+/**
+ * Flat map of HA theme CSS custom property names (without the leading `--`)
+ * to their resolved values, e.g. `{ "primary-color": "#03a9f4" }`.
+ */
+export type HassThemeVars = Record<string, string>;
+
+/**
+ * A single HA theme entry. Legacy themes put variables directly on the
+ * object; newer themes nest light/dark overrides under `modes`.
+ */
+export interface HassTheme {
+  [cssVar: string]: string | { light?: HassThemeVars; dark?: HassThemeVars } | undefined;
+  modes?: { light?: HassThemeVars; dark?: HassThemeVars };
+}
+
+/**
+ * `hass.themes` — undocumented HA-internal shape (not covered by
+ * custom-card-helpers, which only models 3 legacy variables). Kept loose
+ * since HA does not guarantee stability here.
+ */
+export interface HassThemes {
+  default_theme: string;
+  default_dark_theme?: string | null;
+  themes: Record<string, HassTheme>;
+  darkMode: boolean;
+  theme?: string;
+}
+
 export interface HomeAssistant
   extends Omit<
     CustomCardHomeAssistant,
     'services' | 'themes' | 'auth' | 'config' | 'locale' | 'user'
   > {
-  themes: { darkMode: boolean };
+  themes: HassThemes;
   services: HassServices;
   devices: Record<string, HassDevice>;
   // Frontend-only fields FLODE never reads in remote mode. Kept optional so the

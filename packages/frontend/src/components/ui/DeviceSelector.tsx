@@ -60,7 +60,7 @@ export function DeviceSelector({
     <FormField label={label || t('labels.device')} required={required}>
       {hasDevices ? (
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className={isUnknownDevice ? 'font-mono text-red-600' : undefined}>
+          <SelectTrigger className={isUnknownDevice ? 'font-mono text-destructive' : undefined}>
             <SelectValue placeholder={placeholder || t('placeholders.selectDevice')}>
               {getDisplayValue()}
             </SelectValue>

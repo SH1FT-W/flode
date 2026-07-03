@@ -32,6 +32,36 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+
+  /* Node-type colors — trigger/condition/action derive from HA's
+     warning/info/success-color at runtime (lib/ha-theme.ts);
+     delay/wait/variables are FLODE-only hues without an HA equivalent. */
+  --color-trigger: hsl(var(--trigger));
+  --color-trigger-foreground: hsl(var(--trigger-foreground));
+
+  --color-condition: hsl(var(--condition));
+  --color-condition-foreground: hsl(var(--condition-foreground));
+
+  --color-action: hsl(var(--action));
+  --color-action-foreground: hsl(var(--action-foreground));
+
+  --color-delay: hsl(var(--delay));
+  --color-delay-foreground: hsl(var(--delay-foreground));
+
+  --color-wait: hsl(var(--wait));
+  --color-wait-foreground: hsl(var(--wait-foreground));
+
+  --color-variables: hsl(var(--variables));
+  --color-variables-foreground: hsl(var(--variables-foreground));
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -52,57 +82,6 @@
   ::backdrop,
   ::file-selector-button {
     border-color: var(--color-gray-200, currentcolor);
-  }
-}
-
-/* Ensure C.A.F.E. styles take precedence over Home Assistant styles */
-@layer cafe-overrides {
-  cafe-panel,
-  cafe-panel * {
-    box-sizing: border-box !important;
-  }
-
-  /* Force Tailwind base styles to apply */
-  cafe-panel {
-    font-family:
-      ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-      'Segoe UI Symbol', 'Noto Color Emoji' !important;
-    line-height: 1.5 !important;
-    -webkit-text-size-adjust: 100% !important;
-    -webkit-tap-highlight-color: transparent !important;
-  }
-
-  /* Ensure React Flow styles take precedence */
-  cafe-panel .react-flow {
-    direction: ltr !important;
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  /* Ensure Tailwind utilities work */
-  cafe-panel .bg-white {
-    background-color: rgb(255 255 255) !important;
-  }
-  cafe-panel .bg-gray-100 {
-    background-color: rgb(243 244 246) !important;
-  }
-  cafe-panel .text-gray-900 {
-    color: rgb(17 24 39) !important;
-  }
-  cafe-panel .p-4 {
-    padding: 1rem !important;
-  }
-  cafe-panel .flex {
-    display: flex !important;
-  }
-  cafe-panel .items-center {
-    align-items: center !important;
-  }
-  cafe-panel .justify-between {
-    justify-content: space-between !important;
-  }
-  cafe-panel .gap-4 {
-    gap: 1rem !important;
   }
 }
 
@@ -129,13 +108,28 @@
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
 
-    /* Node type colors */
-    --trigger: 45 93% 47%;
-    --trigger-foreground: 45 93% 10%;
-    --condition: 217 91% 60%;
-    --condition-foreground: 217 91% 10%;
-    --action: 142 76% 36%;
-    --action-foreground: 142 76% 10%;
+    /* Status colors — mirrored from HA's warning/success/info-color at runtime, see lib/ha-theme.ts */
+    --warning: 39 100% 50%;
+    --warning-foreground: 20 14% 10%;
+    --success: 123 41% 44%;
+    --success-foreground: 0 0% 100%;
+    --info: 200 97% 45%;
+    --info-foreground: 0 0% 100%;
+
+    /* Node type colors — trigger/condition/action mirror HA's warning/info/success-color
+       at runtime (lib/ha-theme.ts); delay/wait/variables are FLODE-only hues, not HA-derived. */
+    --trigger: 39 100% 50%;
+    --trigger-foreground: 20 14% 10%;
+    --condition: 200 97% 45%;
+    --condition-foreground: 0 0% 100%;
+    --action: 123 41% 44%;
+    --action-foreground: 0 0% 100%;
+    --delay: 271 81% 56%;
+    --delay-foreground: 0 0% 100%;
+    --wait: 24 95% 53%;
+    --wait-foreground: 0 0% 100%;
+    --variables: 189 94% 43%;
+    --variables-foreground: 0 0% 100%;
   }
 
   .dark {
@@ -159,13 +153,27 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
 
+    /* Status colors - dark mode */
+    --warning: 36 100% 65%;
+    --warning-foreground: 20 14% 10%;
+    --success: 123 38% 57%;
+    --success-foreground: 0 0% 100%;
+    --info: 199 91% 64%;
+    --info-foreground: 20 14% 10%;
+
     /* Node type colors - dark mode */
-    --trigger: 45 93% 55%;
-    --trigger-foreground: 45 93% 95%;
-    --condition: 217 91% 65%;
-    --condition-foreground: 217 91% 95%;
-    --action: 142 76% 45%;
-    --action-foreground: 142 76% 95%;
+    --trigger: 36 100% 65%;
+    --trigger-foreground: 20 14% 10%;
+    --condition: 199 91% 64%;
+    --condition-foreground: 20 14% 10%;
+    --action: 123 38% 57%;
+    --action-foreground: 0 0% 100%;
+    --delay: 271 91% 65%;
+    --delay-foreground: 0 0% 100%;
+    --wait: 27 96% 61%;
+    --wait-foreground: 20 14% 10%;
+    --variables: 186 91% 55%;
+    --variables-foreground: 20 14% 10%;
   }
 }
 
@@ -204,7 +212,7 @@
 
 /* Node active/simulation states */
 .node-active {
-  @apply ring-4 ring-green-500/75;
+  @apply ring-4 ring-success/75;
   animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -222,11 +230,11 @@
 @keyframes save-pulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+    box-shadow: 0 0 0 0 hsl(var(--warning) / 70%);
   }
   50% {
     transform: scale(1.05);
-    box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+    box-shadow: 0 0 0 10px hsl(var(--warning) / 0%);
   }
 }
 

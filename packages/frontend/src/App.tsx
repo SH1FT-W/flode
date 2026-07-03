@@ -78,6 +78,7 @@ import { cn } from '@/lib/utils';
 import { version } from '../../../custom_components/flode/manifest.json';
 import { useHass } from './contexts/HassContext';
 import { useDarkMode } from './hooks/useDarkMode';
+import { useHaThemeSync } from './hooks/useHaThemeSync';
 import { useLanguage } from './hooks/useLanguage';
 import { useFlowStore } from './store/flow-store';
 
@@ -141,6 +142,8 @@ function App() {
 
   // Sync language with Home Assistant
   useLanguage();
+  // Sync HA theme colors (custom theme + light/dark fallbacks) onto our CSS vars
+  useHaThemeSync();
 
   useEffect(() => {
     document.body.classList.toggle('dark', isDark);

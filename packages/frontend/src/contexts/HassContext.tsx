@@ -297,7 +297,7 @@ export const HassProvider: FC<
         get connected() {
           return wsConnection.connected;
         },
-        themes: { darkMode: false },
+        themes: { default_theme: 'default', themes: {}, darkMode: false },
         panels: {},
         selectedTheme: null,
         panelUrl: '',

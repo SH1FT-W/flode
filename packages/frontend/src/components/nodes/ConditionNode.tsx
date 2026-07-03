@@ -3,9 +3,12 @@ import { AlertCircle, Ban, GitBranch, GitFork, Repeat, Shuffle } from 'lucide-re
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
+import { NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
 import { cn } from '@/lib/utils';
 import type { ConditionNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
+
+const COLORS = NODE_COLORS.condition;
 
 interface ConditionNodeProps extends NodeProps {
   data: ConditionNodeData;
@@ -118,64 +121,75 @@ export const ConditionNode = memo(function ConditionNode({
   return (
     <div
       className={cn(
-        'group relative rounded-lg border-2 border-blue-400 bg-blue-50 px-4 py-3',
+        'group relative rounded-lg border-2 px-4 py-3',
+        COLORS.border,
+        COLORS.bg,
         hasNested ? 'min-w-[220px]' : 'min-w-[180px]',
         'transition-all duration-200',
-        selected && 'ring-2 ring-blue-500 ring-offset-2',
-        isActive && 'node-active ring-4 ring-green-500',
+        selected && cn('ring-2 ring-offset-2', COLORS.ring),
+        isActive && NODE_STATE_CLASSES.active,
         isDisabled && 'border-dashed opacity-50 grayscale',
-        hasErrors && 'border-red-500 ring-2 ring-red-400'
+        hasErrors && NODE_STATE_CLASSES.error
       )}
     >
       {chooseCase !== undefined && chooseCaseTotal !== undefined && (
-        <div className="absolute -top-3 left-2 rounded-full bg-indigo-600 px-2 py-0.5 font-medium text-white text-[10px] shadow-sm">
+        <div className="absolute -top-3 left-2 rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground text-[10px] shadow-sm">
           {t('nodes:conditions.caseLabel', { index: chooseCase, total: chooseCaseTotal })}
         </div>
       )}
       {hasErrors && (
         <div
-          className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+          className={cn(
+            'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+            NODE_STATE_CLASSES.errorBadge
+          )}
           title={errorMessages.join('\n')}
         >
           <AlertCircle className="h-3 w-3" />
         </div>
       )}
       {isDisabled && !hasErrors && (
-        <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-white shadow-sm">
+        <div
+          className={cn(
+            'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+            NODE_STATE_CLASSES.disabledBadge
+          )}
+        >
           <Ban className="h-3 w-3" />
         </div>
       )}
 
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="w-3! h-3! bg-blue-500! border-blue-700!"
-      />
+      <Handle type="target" position={Position.Left} className={cn('w-3! h-3!', COLORS.handle)} />
 
       <div className="mb-1 flex items-center gap-2">
-        <div className="rounded bg-blue-200 p-1">
+        <div className={cn('rounded p-1', COLORS.chip)}>
           {data._blockKey === 'choose' ? (
-            <Shuffle className="h-4 w-4 text-blue-700" />
+            <Shuffle className={cn('h-4 w-4', COLORS.text)} />
           ) : data._blockKey === 'if_else' ? (
-            <GitFork className="h-4 w-4 text-blue-700" />
+            <GitFork className={cn('h-4 w-4', COLORS.text)} />
           ) : data._blockKey === 'repeat_while' ? (
-            <Repeat className="h-4 w-4 text-blue-700" />
+            <Repeat className={cn('h-4 w-4', COLORS.text)} />
           ) : (
-            <GitBranch className="h-4 w-4 text-blue-700" />
+            <GitBranch className={cn('h-4 w-4', COLORS.text)} />
           )}
         </div>
-        <span className="font-semibold text-blue-900 text-sm">
+        <span className={cn('font-semibold text-sm', COLORS.text)}>
           {data.alias || getConditionLabel(data.condition)}
         </span>
         {stepNumber && (
-          <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 font-bold text-white text-xs">
+          <div
+            className={cn(
+              'ml-auto flex h-5 w-5 items-center justify-center rounded-full font-bold text-xs',
+              COLORS.badge
+            )}
+          >
             {stepNumber}
           </div>
         )}
       </div>
 
       {!hasNested && (
-        <div className="space-y-0.5 text-blue-700 text-xs">
+        <div className={cn('space-y-0.5 text-xs', COLORS.text)}>
           <div className="font-medium">{getConditionLabel(data.condition)}</div>
           {data.entity_id && (
             <div className="truncate opacity-75">
@@ -262,18 +276,18 @@ export const ConditionNode = memo(function ConditionNode({
             <div key={idx}>
               {idx > 0 && (
                 <div className="flex items-center gap-1 py-0.5">
-                  <div className="h-px flex-1 bg-blue-200" />
-                  <span className="rounded bg-blue-200 px-1.5 font-bold text-[10px] text-blue-600">
+                  <div className="h-px flex-1 bg-condition/20" />
+                  <span className="rounded bg-condition/20 px-1.5 font-bold text-[10px] text-condition">
                     {separator}
                   </span>
-                  <div className="h-px flex-1 bg-blue-200" />
+                  <div className="h-px flex-1 bg-condition/20" />
                 </div>
               )}
-              <div className="rounded border border-blue-200 bg-white px-2 py-1">
-                <div className="font-semibold text-[11px] text-blue-800">
+              <div className="rounded border border-condition/30 bg-card px-2 py-1">
+                <div className="font-semibold text-[11px] text-condition">
                   {getConditionLabel(cond.condition)}
                 </div>
-                <div className="truncate text-[10px] text-blue-500">
+                <div className="truncate text-[10px] text-condition/70">
                   {getConditionSummary(cond, getConditionLabel)}
                 </div>
               </div>
@@ -282,7 +296,7 @@ export const ConditionNode = memo(function ConditionNode({
           {hiddenCount > 0 && !expanded && (
             <button
               type="button"
-              className="nodrag w-full rounded border border-blue-200 bg-white px-2 py-0.5 text-center text-[10px] text-blue-500 hover:bg-blue-50"
+              className="nodrag w-full rounded border border-condition/30 bg-card px-2 py-0.5 text-center text-[10px] text-condition/70 hover:bg-condition/10"
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded(true);
@@ -295,7 +309,7 @@ export const ConditionNode = memo(function ConditionNode({
           {expanded && nestedConditions.length > MAX_VISIBLE && (
             <button
               type="button"
-              className="nodrag w-full rounded border border-blue-200 bg-white px-2 py-0.5 text-center text-[10px] text-blue-500 hover:bg-blue-50"
+              className="nodrag w-full rounded border border-condition/30 bg-card px-2 py-0.5 text-center text-[10px] text-condition/70 hover:bg-condition/10"
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded(false);
@@ -312,7 +326,7 @@ export const ConditionNode = memo(function ConditionNode({
         position={Position.Right}
         id="true"
         style={{ top: hasFalseEdge ? '30%' : '50%' }}
-        className="w-3! h-3! bg-green-500! border-green-700!"
+        className="w-3! h-3! bg-success! border-success!"
       />
       {hasFalseEdge && (
         <Handle
@@ -320,17 +334,17 @@ export const ConditionNode = memo(function ConditionNode({
           position={Position.Right}
           id="false"
           style={{ top: '70%' }}
-          className="w-3! h-3! bg-red-500! border-red-700!"
+          className="w-3! h-3! bg-destructive! border-destructive!"
         />
       )}
 
       {hasFalseEdge && (
-        <div className="absolute top-[30%] right-[-40px] -translate-y-1/2 transform rounded border border-green-200 bg-white px-1 py-0.5 font-medium text-[10px] text-green-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+        <div className="absolute top-[30%] right-[-40px] -translate-y-1/2 transform rounded border border-success/30 bg-card px-1 py-0.5 font-medium text-[10px] text-success opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
           {t('nodes:conditions.yes')}
         </div>
       )}
       {hasFalseEdge && (
-        <div className="absolute top-[70%] right-[-36px] -translate-y-1/2 transform rounded border border-red-200 bg-white px-1 py-0.5 font-medium text-[10px] text-red-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+        <div className="absolute top-[70%] right-[-36px] -translate-y-1/2 transform rounded border border-destructive/30 bg-card px-1 py-0.5 font-medium text-[10px] text-destructive opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
           {t('nodes:conditions.no')}
         </div>
       )}

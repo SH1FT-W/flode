@@ -119,7 +119,7 @@ export function YamlPreview() {
             disabled={!yaml}
             className={cn(
               'h-7 w-7 p-0',
-              copied ? 'bg-green-100 text-green-600 hover:bg-green-100' : 'text-muted-foreground'
+              copied ? 'bg-success/10 text-success hover:bg-success/10' : 'text-muted-foreground'
             )}
           >
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

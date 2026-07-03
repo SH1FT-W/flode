@@ -59,12 +59,12 @@ export function YamlEditor({ yaml, errors, warnings, onYamlChange }: YamlEditorP
       />
 
       {errors && errors.length > 0 && (
-        <div className="border-red-200 border-t bg-red-50 px-3 py-2 text-red-600 text-xs">
+        <div className="border-destructive/20 border-t bg-destructive/10 px-3 py-2 text-destructive text-xs">
           {errors.join('\n')}
         </div>
       )}
       {warnings && warnings.length > 0 && (
-        <div className="border-yellow-200 border-t bg-yellow-50 px-3 py-2 text-xs text-yellow-600">
+        <div className="border-warning/20 border-t bg-warning/10 px-3 py-2 text-warning text-xs">
           {warnings.join('\n')}
         </div>
       )}

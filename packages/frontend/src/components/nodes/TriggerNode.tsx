@@ -3,9 +3,12 @@ import { AlertCircle, Ban, Zap } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
+import { NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
 import { cn } from '@/lib/utils';
 import type { TriggerNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
+
+const COLORS = NODE_COLORS.trigger;
 
 interface TriggerNodeProps extends NodeProps {
   data: TriggerNodeData;
@@ -138,40 +141,55 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
   return (
     <div
       className={cn(
-        'relative min-w-[180px] max-w-[300px] rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3',
+        'relative min-w-[180px] max-w-[300px] rounded-lg border-2 px-4 py-3',
+        COLORS.border,
+        COLORS.bg,
         'transition-all duration-200',
-        selected && 'ring-2 ring-amber-500 ring-offset-2',
-        isActive && 'node-active ring-4 ring-green-500',
+        selected && cn('ring-2 ring-offset-2', COLORS.ring),
+        isActive && NODE_STATE_CLASSES.active,
         isDisabled && 'border-dashed opacity-50 grayscale',
-        hasErrors && 'border-red-500 ring-2 ring-red-400'
+        hasErrors && NODE_STATE_CLASSES.error
       )}
     >
       {hasErrors && (
         <div
-          className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+          className={cn(
+            'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+            NODE_STATE_CLASSES.errorBadge
+          )}
           title={errorMessages.join('\n')}
         >
           <AlertCircle className="h-3 w-3" />
         </div>
       )}
       {isDisabled && !hasErrors && (
-        <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-white shadow-sm">
+        <div
+          className={cn(
+            'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+            NODE_STATE_CLASSES.disabledBadge
+          )}
+        >
           <Ban className="h-3 w-3" />
         </div>
       )}
       <div className="mb-1 flex items-center gap-2">
-        <div className="rounded bg-amber-200 p-1">
-          <Zap className="h-4 w-4 text-amber-700" />
+        <div className={cn('rounded p-1', COLORS.chip)}>
+          <Zap className={cn('h-4 w-4', COLORS.text)} />
         </div>
-        <span className="font-semibold text-amber-900 text-sm">{displayInfo.title}</span>
+        <span className={cn('font-semibold text-sm', COLORS.text)}>{displayInfo.title}</span>
         {stepNumber && (
-          <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-amber-600 font-bold text-white text-xs">
+          <div
+            className={cn(
+              'ml-auto flex h-5 w-5 items-center justify-center rounded-full font-bold text-xs',
+              COLORS.badge
+            )}
+          >
             {stepNumber}
           </div>
         )}
       </div>
 
-      <div className="space-y-0.5 text-amber-700 text-xs">
+      <div className={cn('space-y-0.5 text-xs', COLORS.text)}>
         <div className="line-clamp-2 truncate whitespace-pre-line font-medium">
           {displayInfo.subtitle}
         </div>
@@ -180,11 +198,7 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
         )}
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="w-3! h-3! bg-amber-500! border-amber-700!"
-      />
+      <Handle type="source" position={Position.Right} className={cn('w-3! h-3!', COLORS.handle)} />
     </div>
   );
 });

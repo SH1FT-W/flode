@@ -7,7 +7,6 @@ import {
 } from '@xyflow/react';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useDarkMode } from '@/hooks/useDarkMode';
 import { useFlowStore } from '@/store/flow-store';
 
 /**
@@ -30,7 +29,6 @@ export function DeletableEdge({
   const { setEdges } = useReactFlow();
   const setUnsavedChanges = useFlowStore((state) => state.setUnsavedChanges);
   const canDeleteEdge = useFlowStore((state) => state.canDeleteEdge);
-  const isDarkMode = useDarkMode();
 
   // Detect backward edges (target is to the left of source)
   const isBackwardEdge = targetX < sourceX;
@@ -92,11 +90,11 @@ export function DeletableEdge({
     setUnsavedChanges(true);
   };
 
-  // Compute selected style - blue highlight when selected
+  // Compute selected style - primary-color highlight when selected
   const selectedStyle = selected
     ? {
         ...style,
-        stroke: '#3b82f6',
+        stroke: 'hsl(var(--primary))',
         strokeWidth: 3,
       }
     : (style ?? {});
@@ -111,9 +109,7 @@ export function DeletableEdge({
     'stroke' in finalStyle &&
     typeof finalStyle.stroke === 'string'
       ? finalStyle.stroke
-      : isDarkMode
-        ? '#94a3b8'
-        : '#64748b';
+      : 'hsl(var(--muted-foreground))';
 
   return (
     <>

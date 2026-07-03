@@ -172,7 +172,9 @@ export function EntitySelector({
           ) : null
         }
       />
-      {isUnknown && <div className="mt-1 truncate font-mono text-red-600">{normalizedValue}</div>}
+      {isUnknown && (
+        <div className="mt-1 truncate font-mono text-destructive">{normalizedValue}</div>
+      )}
     </div>
   );
 }

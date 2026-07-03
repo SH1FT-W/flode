@@ -3,9 +3,16 @@ import { AlertCircle, Ban, Columns2, Hash, OctagonX, Play, RotateCcw } from 'luc
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
+import { NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
 import { cn } from '@/lib/utils';
 import type { ActionNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
+
+const ACTION_COLORS = NODE_COLORS.action;
+// stop-action reuses the "wait" token, repeat-action reuses "delay" — same
+// visual family already established for those semantics elsewhere.
+const STOP_COLORS = NODE_COLORS.wait;
+const REPEAT_COLORS = NODE_COLORS.delay;
 
 interface ActionNodeProps extends NodeProps {
   data: ActionNodeData;
@@ -59,46 +66,61 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
     return (
       <div
         className={cn(
-          'relative min-w-[180px] rounded-lg border-2 border-orange-400 bg-orange-50 px-4 py-3',
+          'relative min-w-[180px] rounded-lg border-2 px-4 py-3',
+          STOP_COLORS.border,
+          STOP_COLORS.bg,
           'transition-all duration-200',
-          selected && 'ring-2 ring-orange-500 ring-offset-2',
-          isActive && 'node-active ring-4 ring-orange-500',
+          selected && cn('ring-2 ring-offset-2', STOP_COLORS.ring),
+          isActive && NODE_STATE_CLASSES.active,
           isDisabled && 'border-dashed opacity-50 grayscale',
-          hasErrors && 'border-red-500 ring-2 ring-red-400'
+          hasErrors && NODE_STATE_CLASSES.error
         )}
       >
         {hasErrors && (
           <div
-            className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+            className={cn(
+              'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+              NODE_STATE_CLASSES.errorBadge
+            )}
             title={errorMessages.join('\n')}
           >
             <AlertCircle className="h-3 w-3" />
           </div>
         )}
         {isDisabled && !hasErrors && (
-          <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-white shadow-sm">
+          <div
+            className={cn(
+              'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+              NODE_STATE_CLASSES.disabledBadge
+            )}
+          >
             <Ban className="h-3 w-3" />
           </div>
         )}
         <Handle
           type="target"
           position={Position.Left}
-          className="w-3! h-3! bg-orange-500! border-orange-700!"
+          className={cn('w-3! h-3!', STOP_COLORS.handle)}
         />
         <div className="mb-1 flex items-center gap-2">
-          <div className="rounded bg-orange-200 p-1">
-            <OctagonX className="h-4 w-4 text-orange-700" />
+          <div className={cn('rounded p-1', STOP_COLORS.chip)}>
+            <OctagonX className={cn('h-4 w-4', STOP_COLORS.text)} />
           </div>
-          <span className="font-semibold text-orange-900 text-sm">
+          <span className={cn('font-semibold text-sm', STOP_COLORS.text)}>
             {data.alias || t('nodes:types.stop')}
           </span>
           {stepNumber && (
-            <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-orange-600 font-bold text-white text-xs">
+            <div
+              className={cn(
+                'ml-auto flex h-5 w-5 items-center justify-center rounded-full font-bold text-xs',
+                STOP_COLORS.badge
+              )}
+            >
               {stepNumber}
             </div>
           )}
         </div>
-        <div className="space-y-0.5 text-orange-700 text-xs">
+        <div className={cn('text-xs', STOP_COLORS.text)}>
           <div className="font-medium opacity-70">
             {isStopError ? t('nodes:actions.stopError') : t('nodes:actions.stopExecution')}
           </div>
@@ -112,58 +134,73 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
     return (
       <div
         className={cn(
-          'relative min-w-[180px] rounded-lg border-2 border-purple-400 bg-purple-50 px-4 py-3',
+          'relative min-w-[180px] rounded-lg border-2 px-4 py-3',
+          REPEAT_COLORS.border,
+          REPEAT_COLORS.bg,
           'transition-all duration-200',
-          selected && 'ring-2 ring-purple-500 ring-offset-2',
-          isActive && 'node-active ring-4 ring-purple-500',
+          selected && cn('ring-2 ring-offset-2', REPEAT_COLORS.ring),
+          isActive && NODE_STATE_CLASSES.active,
           isDisabled && 'border-dashed opacity-50 grayscale',
-          hasErrors && 'border-red-500 ring-2 ring-red-400'
+          hasErrors && NODE_STATE_CLASSES.error
         )}
       >
         {hasErrors && (
           <div
-            className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+            className={cn(
+              'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+              NODE_STATE_CLASSES.errorBadge
+            )}
             title={errorMessages.join('\n')}
           >
             <AlertCircle className="h-3 w-3" />
           </div>
         )}
         {isDisabled && !hasErrors && (
-          <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-white shadow-sm">
+          <div
+            className={cn(
+              'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+              NODE_STATE_CLASSES.disabledBadge
+            )}
+          >
             <Ban className="h-3 w-3" />
           </div>
         )}
         <Handle
           type="target"
           position={Position.Left}
-          className="w-3! h-3! bg-purple-500! border-purple-700!"
+          className={cn('w-3! h-3!', REPEAT_COLORS.handle)}
         />
         <div className="mb-1 flex items-center gap-2">
-          <div className="rounded bg-purple-200 p-1">
+          <div className={cn('rounded p-1', REPEAT_COLORS.chip)}>
             {data._blockKey === 'repeat_count' ? (
-              <Hash className="h-4 w-4 text-purple-700" />
+              <Hash className={cn('h-4 w-4', REPEAT_COLORS.text)} />
             ) : (
-              <RotateCcw className="h-4 w-4 text-purple-700" />
+              <RotateCcw className={cn('h-4 w-4', REPEAT_COLORS.text)} />
             )}
           </div>
-          <span className="font-semibold text-purple-900 text-sm">
+          <span className={cn('font-semibold text-sm', REPEAT_COLORS.text)}>
             {data.alias || t('nodes:actions.repeatLabel', { n: String(repeatCount) })}
           </span>
           {stepNumber && (
-            <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-purple-600 font-bold text-white text-xs">
+            <div
+              className={cn(
+                'ml-auto flex h-5 w-5 items-center justify-center rounded-full font-bold text-xs',
+                REPEAT_COLORS.badge
+              )}
+            >
               {stepNumber}
             </div>
           )}
         </div>
         {repeatSeqLength > 0 && (
-          <div className="text-purple-700 text-xs font-medium opacity-70">
+          <div className={cn('text-xs font-medium opacity-70', REPEAT_COLORS.text)}>
             {t('nodes:actions.repeatActions', { count: repeatSeqLength })}
           </div>
         )}
         <Handle
           type="source"
           position={Position.Right}
-          className="w-3! h-3! bg-purple-500! border-purple-700!"
+          className={cn('w-3! h-3!', REPEAT_COLORS.handle)}
         />
       </div>
     );
@@ -172,52 +209,63 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
   return (
     <div
       className={cn(
-        'relative min-w-[180px] rounded-lg border-2 border-green-400 bg-green-50 px-4 py-3',
+        'relative min-w-[180px] rounded-lg border-2 px-4 py-3',
+        ACTION_COLORS.border,
+        ACTION_COLORS.bg,
         'transition-all duration-200',
-        selected && 'ring-2 ring-green-500 ring-offset-2',
-        isActive && 'node-active ring-4 ring-green-500',
+        selected && cn('ring-2 ring-offset-2', ACTION_COLORS.ring),
+        isActive && NODE_STATE_CLASSES.active,
         isDisabled && 'border-dashed opacity-50 grayscale',
-        hasErrors && 'border-red-500 ring-2 ring-red-400'
+        hasErrors && NODE_STATE_CLASSES.error
       )}
     >
       {hasErrors && (
         <div
-          className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+          className={cn(
+            'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+            NODE_STATE_CLASSES.errorBadge
+          )}
           title={errorMessages.join('\n')}
         >
           <AlertCircle className="h-3 w-3" />
         </div>
       )}
       {isDisabled && !hasErrors && (
-        <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-white shadow-sm">
+        <div
+          className={cn(
+            'absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full shadow-sm',
+            NODE_STATE_CLASSES.disabledBadge
+          )}
+        >
           <Ban className="h-3 w-3" />
         </div>
       )}
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="w-3! h-3! bg-green-500! border-green-700!"
-      />
+      <Handle type="target" position={Position.Left} className={cn('w-3! h-3!', ACTION_COLORS.handle)} />
 
       <div className="mb-1 flex items-center gap-2">
-        <div className="rounded bg-green-200 p-1">
+        <div className={cn('rounded p-1', ACTION_COLORS.chip)}>
           {data._blockKey === 'parallel' ? (
-            <Columns2 className="h-4 w-4 text-green-700" />
+            <Columns2 className={cn('h-4 w-4', ACTION_COLORS.text)} />
           ) : (
-            <Play className="h-4 w-4 text-green-700" />
+            <Play className={cn('h-4 w-4', ACTION_COLORS.text)} />
           )}
         </div>
-        <span className="font-semibold text-green-900 text-sm">
+        <span className={cn('font-semibold text-sm', ACTION_COLORS.text)}>
           {data.alias || (isEventAction ? data.event : serviceName) || t('nodes:types.action')}
         </span>
         {stepNumber && (
-          <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-green-600 font-bold text-white text-xs">
+          <div
+            className={cn(
+              'ml-auto flex h-5 w-5 items-center justify-center rounded-full font-bold text-xs',
+              ACTION_COLORS.badge
+            )}
+          >
             {stepNumber}
           </div>
         )}
       </div>
 
-      <div className="space-y-0.5 text-green-700 text-xs">
+      <div className={cn('space-y-0.5 text-xs', ACTION_COLORS.text)}>
         <div className="font-medium">
           {isEventAction ? (
             <span className="opacity-60">{t('nodes:actions.fireEvent')}</span>
@@ -237,7 +285,7 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3! h-3! bg-green-500! border-green-700!"
+        className={cn('w-3! h-3!', ACTION_COLORS.handle)}
       />
     </div>
   );

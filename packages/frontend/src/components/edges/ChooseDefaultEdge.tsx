@@ -1,6 +1,11 @@
 import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getBezierPath } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
-import { useDarkMode } from '@/hooks/useDarkMode';
+
+// Follows HA's theme via CSS vars (see lib/ha-theme.ts), no JS color branching needed.
+const EDGE_COLOR = 'hsl(var(--muted-foreground))';
+const LABEL_BG = 'hsl(var(--muted))';
+const LABEL_TEXT = 'hsl(var(--muted-foreground))';
+const LABEL_BORDER = 'hsl(var(--border))';
 
 export function ChooseDefaultEdge({
   sourceX,
@@ -10,13 +15,7 @@ export function ChooseDefaultEdge({
   sourcePosition,
   targetPosition,
 }: EdgeProps) {
-  const isDarkMode = useDarkMode();
   const { t } = useTranslation('nodes');
-
-  const color = isDarkMode ? '#64748b' : '#94a3b8';
-  const labelBg = isDarkMode ? '#1e293b' : '#f1f5f9';
-  const labelText = isDarkMode ? '#94a3b8' : '#64748b';
-  const labelBorder = isDarkMode ? '#334155' : '#cbd5e1';
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -32,7 +31,7 @@ export function ChooseDefaultEdge({
       <BaseEdge
         path={edgePath}
         style={{
-          stroke: color,
+          stroke: EDGE_COLOR,
           strokeWidth: 2,
         }}
       />
@@ -52,9 +51,9 @@ export function ChooseDefaultEdge({
               fontSize: '11px',
               fontWeight: 500,
               lineHeight: '16px',
-              color: labelText,
-              background: labelBg,
-              border: `1px solid ${labelBorder}`,
+              color: LABEL_TEXT,
+              background: LABEL_BG,
+              border: `1px solid ${LABEL_BORDER}`,
               borderRadius: '10px',
               letterSpacing: '0.01em',
               whiteSpace: 'nowrap',
