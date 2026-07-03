@@ -7,10 +7,16 @@ import { DynamicFieldRenderer } from '@/components/ui/DynamicFieldRenderer';
 import { MultiEntitySelector } from '@/components/ui/MultiEntitySelector';
 import { getTriggerFields } from '@/config/triggerFields';
 import { useHass } from '@/contexts/HassContext';
+import { HaSelector } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
 import { GENERIC_STATES, getStateSuggestions, StateValueCombobox } from './StateValueCombobox';
+
+/** Narrows an `ha-selector` `value-changed` payload to a plain string, or `undefined` if empty/non-string. */
+function toOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value ? value : undefined;
+}
 
 interface StateTriggerFieldsProps {
   node: FlowNode;
@@ -58,32 +64,53 @@ export function StateTriggerFields({ node, onChange, entities }: StateTriggerFie
     <>
       {/* Entity selector */}
       <FormField label={t('nodes:triggers.fields.entityId')} required>
-        <MultiEntitySelector
+        <HaSelector
+          selector={{ entity: { multiple: true } }}
           value={entityIds}
           onChange={(value) => onChange('entity_id', value)}
-          entities={allEntities}
-          placeholder={t('common:placeholders.selectEntity')}
+          fallback={
+            <MultiEntitySelector
+              value={entityIds}
+              onChange={(value) => onChange('entity_id', value)}
+              entities={allEntities}
+              placeholder={t('common:placeholders.selectEntity')}
+            />
+          }
         />
         <FieldError message={getFieldError('entity_id')} />
       </FormField>
 
       {/* To State */}
       <FormField label={t('nodes:triggers.fields.toState')}>
-        <StateValueCombobox
+        <HaSelector
+          selector={{ state: { entity_id: entityIds } }}
           value={toValue}
-          onChange={(v) => onChange('to', v || undefined)}
-          suggestions={stateSuggestions}
-          placeholder={t('nodes:triggers.fields.toStatePlaceholder')}
+          onChange={(v) => onChange('to', toOptionalString(v))}
+          fallback={
+            <StateValueCombobox
+              value={toValue}
+              onChange={(v) => onChange('to', v || undefined)}
+              suggestions={stateSuggestions}
+              placeholder={t('nodes:triggers.fields.toStatePlaceholder')}
+            />
+          }
         />
       </FormField>
 
       {/* From State */}
       <FormField label={t('nodes:triggers.fields.fromState')}>
-        <StateValueCombobox
+        <HaSelector
+          selector={{ state: { entity_id: entityIds } }}
           value={fromValue}
-          onChange={(v) => onChange('from', v || undefined)}
-          suggestions={stateSuggestions}
-          placeholder={t('nodes:triggers.fields.fromStatePlaceholder')}
+          onChange={(v) => onChange('from', toOptionalString(v))}
+          fallback={
+            <StateValueCombobox
+              value={fromValue}
+              onChange={(v) => onChange('from', v || undefined)}
+              suggestions={stateSuggestions}
+              placeholder={t('nodes:triggers.fields.fromStatePlaceholder')}
+            />
+          }
         />
       </FormField>
 

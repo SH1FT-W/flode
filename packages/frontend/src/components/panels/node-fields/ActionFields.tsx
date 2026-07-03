@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useHass } from '@/contexts/HassContext';
+import { HaSelector, HaServicePicker } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataObject, getNodeDataString } from '@/utils/nodeData';
@@ -27,6 +28,12 @@ const MULTI_DOMAIN_SERVICES = new Set(['homeassistant', 'group']);
 
 function prettify(str: string): string {
   return str.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+}
+
+/** Narrows an `ha-selector` `value-changed` payload (always an array for multiple:true selectors) to string[]. */
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === 'string');
 }
 
 /**
@@ -179,7 +186,7 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
     return (
       <>
         <FormField label={t('nodes:actions.actionTypeLabel')}>
-          <div className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-purple-800 text-sm font-medium">
+          <div className="rounded-md border border-delay/30 bg-delay/10 px-3 py-2 text-delay text-sm font-medium">
             {t('nodes:actions.repeatLabel', { n: String(repeatData!.count) })}
           </div>
         </FormField>
@@ -252,43 +259,49 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
         <>
           {/* Call service fields */}
           <FormField label={t('nodes:actions.actionLabel')} required>
-            <Combobox
-              options={getAllServices().map(({ domain, service, definition }) => {
-                const translatedDomain = t(`nodes:serviceDomains.${domain}`, {
-                  defaultValue: prettify(domain),
-                });
-                const translatedAction = t(`nodes:serviceActions.${service}`, {
-                  defaultValue: prettify(service),
-                });
-                return {
-                  value: `${domain}.${service}`,
-                  label: definition?.name || `${translatedDomain}: ${translatedAction}`,
-                };
-              })}
+            <HaServicePicker
               value={serviceName}
               onChange={handleServiceChange}
-              placeholder={t('nodes:actions.selectAction')}
-              renderOption={(option) => (
-                <div className="flex flex-col gap-0.5">
-                  <span>{option.label}</span>
-                  {option.label !== option.value && (
-                    <span className="font-mono text-muted-foreground text-xs">
-                      {option.value as string}
-                    </span>
+              fallback={
+                <Combobox
+                  options={getAllServices().map(({ domain, service, definition }) => {
+                    const translatedDomain = t(`nodes:serviceDomains.${domain}`, {
+                      defaultValue: prettify(domain),
+                    });
+                    const translatedAction = t(`nodes:serviceActions.${service}`, {
+                      defaultValue: prettify(service),
+                    });
+                    return {
+                      value: `${domain}.${service}`,
+                      label: definition?.name || `${translatedDomain}: ${translatedAction}`,
+                    };
+                  })}
+                  value={serviceName}
+                  onChange={handleServiceChange}
+                  placeholder={t('nodes:actions.selectAction')}
+                  renderOption={(option) => (
+                    <div className="flex flex-col gap-0.5">
+                      <span>{option.label}</span>
+                      {option.label !== option.value && (
+                        <span className="font-mono text-muted-foreground text-xs">
+                          {option.value as string}
+                        </span>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-              renderValue={(option) =>
-                option ? (
-                  <div className="flex flex-col items-start leading-tight">
-                    <span>{option.label}</span>
-                    {option.label !== option.value && (
-                      <span className="font-mono text-muted-foreground text-xs">
-                        {option.value}
-                      </span>
-                    )}
-                  </div>
-                ) : null
+                  renderValue={(option) =>
+                    option ? (
+                      <div className="flex flex-col items-start leading-tight">
+                        <span>{option.label}</span>
+                        {option.label !== option.value && (
+                          <span className="font-mono text-muted-foreground text-xs">
+                            {option.value}
+                          </span>
+                        )}
+                      </div>
+                    ) : null
+                  }
+                />
               }
             />
             <FieldError message={getFieldError('service')} />
@@ -297,11 +310,18 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
           {/* Target Entities */}
           {(serviceDefinition?.target || targetEntityIdArray.length > 0) && (
             <FormField label={t('nodes:actions.targetEntities')}>
-              <MultiEntitySelector
+              <HaSelector
+                selector={{ entity: { multiple: true } }}
                 value={targetEntityIdArray}
-                onChange={handleEntityTargetChange}
-                entities={getTargetEntities(serviceName, entities)}
-                placeholder={t('nodes:actions.selectTargetEntities')}
+                onChange={(v) => handleEntityTargetChange(toStringArray(v))}
+                fallback={
+                  <MultiEntitySelector
+                    value={targetEntityIdArray}
+                    onChange={handleEntityTargetChange}
+                    entities={getTargetEntities(serviceName, entities)}
+                    placeholder={t('nodes:actions.selectTargetEntities')}
+                  />
+                }
               />
             </FormField>
           )}
@@ -312,10 +332,17 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
               label={t('nodes:actions.targetDevices')}
               description={t('nodes:actions.targetDevicesDescription')}
             >
-              <IdList
-                values={targetDeviceIdArray}
-                onChange={handleDeviceTargetChange}
-                placeholder={t('nodes:actions.addDeviceId')}
+              <HaSelector
+                selector={{ device: { multiple: true } }}
+                value={targetDeviceIdArray}
+                onChange={(v) => handleDeviceTargetChange(toStringArray(v))}
+                fallback={
+                  <IdList
+                    values={targetDeviceIdArray}
+                    onChange={handleDeviceTargetChange}
+                    placeholder={t('nodes:actions.addDeviceId')}
+                  />
+                }
               />
             </FormField>
           )}
@@ -326,10 +353,17 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
               label={t('nodes:actions.targetAreas')}
               description={t('nodes:actions.targetAreasDescription')}
             >
-              <IdList
-                values={targetAreaIdArray}
-                onChange={handleAreaTargetChange}
-                placeholder={t('nodes:actions.addAreaId')}
+              <HaSelector
+                selector={{ area: { multiple: true } }}
+                value={targetAreaIdArray}
+                onChange={(v) => handleAreaTargetChange(toStringArray(v))}
+                fallback={
+                  <IdList
+                    values={targetAreaIdArray}
+                    onChange={handleAreaTargetChange}
+                    placeholder={t('nodes:actions.addAreaId')}
+                  />
+                }
               />
             </FormField>
           )}

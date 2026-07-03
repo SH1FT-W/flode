@@ -8,10 +8,16 @@ import { Input } from '@/components/ui/input';
 import { MultiEntitySelector } from '@/components/ui/MultiEntitySelector';
 import { getConditionFields } from '@/config/conditionFields';
 import { useHass } from '@/contexts/HassContext';
+import { HaSelector } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import type { HassEntity } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
 import { GENERIC_STATES, getStateSuggestions, StateValueCombobox } from './StateValueCombobox';
+
+/** Narrows an `ha-selector` `value-changed` payload to a plain string, or `undefined` if empty/non-string. */
+function toOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value ? value : undefined;
+}
 
 interface StateConditionFieldsProps {
   node: FlowNode;
@@ -53,31 +59,52 @@ export function StateConditionFields({ node, onChange, entities }: StateConditio
   return (
     <>
       <FormField label={t('nodes:fieldLabels.entity_id')} required>
-        <MultiEntitySelector
+        <HaSelector
+          selector={{ entity: { multiple: true } }}
           value={entityIds}
           onChange={(value) => onChange('entity_id', value)}
-          entities={allEntities}
-          placeholder={t('common:placeholders.selectEntity')}
+          fallback={
+            <MultiEntitySelector
+              value={entityIds}
+              onChange={(value) => onChange('entity_id', value)}
+              entities={allEntities}
+              placeholder={t('common:placeholders.selectEntity')}
+            />
+          }
         />
         <FieldError message={getFieldError('entity_id')} />
       </FormField>
 
       <FormField label={t('nodes:fieldLabels.state')} required>
-        <StateValueCombobox
+        <HaSelector
+          selector={{ state: { entity_id: entityIds, attribute: attributeValue || undefined } }}
           value={stateValue}
-          onChange={(v) => onChange('state', v || undefined)}
-          suggestions={stateSuggestions}
-          placeholder={t('nodes:fieldPlaceholders.state')}
+          onChange={(v) => onChange('state', toOptionalString(v))}
+          fallback={
+            <StateValueCombobox
+              value={stateValue}
+              onChange={(v) => onChange('state', v || undefined)}
+              suggestions={stateSuggestions}
+              placeholder={t('nodes:fieldPlaceholders.state')}
+            />
+          }
         />
         <FieldError message={getFieldError('state')} />
       </FormField>
 
       <FormField label={t('nodes:fieldLabels.attribute')}>
-        <Input
-          type="text"
+        <HaSelector
+          selector={{ attribute: { entity_id: entityIds } }}
           value={attributeValue}
-          onChange={(e) => onChange('attribute', e.target.value || undefined)}
-          placeholder={t('nodes:fieldPlaceholders.attribute')}
+          onChange={(v) => onChange('attribute', toOptionalString(v))}
+          fallback={
+            <Input
+              type="text"
+              value={attributeValue}
+              onChange={(e) => onChange('attribute', e.target.value || undefined)}
+              placeholder={t('nodes:fieldPlaceholders.attribute')}
+            />
+          }
         />
       </FormField>
 

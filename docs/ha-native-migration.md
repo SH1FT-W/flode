@@ -187,10 +187,12 @@ werden (Phase 1, in Koordination mit dem Shadow-DOM-Umbau aus Phase 2).
 | `haComponentLoader.ts` | ✅ fertig (03.07.2026) |
 | `HaElement.tsx` + Convenience-Wrapper | ✅ fertig (03.07.2026) |
 | `HaEntityPicker` | ✅ fertig, im Browser verifiziert (Autocomplete/Icons/Friendly Names) |
-| `HaIconPicker` | ✅ Wrapper fertig, noch nicht in einem echten Feld verbaut (folgt Phase 3) |
-| `HaSelector` (generisch, inkl. action) | ✅ Wrapper fertig, noch nicht in einem echten Feld verbaut (folgt Phase 3) |
-| `HaSelector` (device/area) | ✅ über generischen `HaSelector` abgedeckt (folgt Phase 3) |
-| Attribut-Autocomplete | offen (Phase 3) |
+| `HaIconPicker` | Wrapper fertig, kein Einsatzort — FLODE hat kein `icon`-Feld im Schema, Neuanlage wäre Scope-Erweiterung (nicht umgesetzt) |
+| `HaServicePicker` (neu, `ha-service-picker`) | ✅ fertig, im Browser verifiziert — ersetzt Service-Combobox in `ActionFields.tsx` |
+| `HaSelector` (entity/device/area) | ✅ fertig, im Browser verifiziert — Trigger/Condition/Action-Entity-Felder, Device-Trigger/-Condition, Action-Targets |
+| `HaSelector` (state/attribute) | ✅ fertig, im Browser verifiziert — "Zu/Von Zustand" (Trigger), "Zustand"/"Attribut" (Condition) |
+| `HaSelector` (action) | **bewusst nicht verwendet** — recherchiert und verworfen, siehe Phase-3-Ergebnis |
+| Attribut-Autocomplete | ✅ fertig für State-Condition; `numeric_state`-Attribut (via `DynamicFieldRenderer`) bleibt Freitext (kein `entity_id`-Kontext dort verfügbar, nicht umgesetzt) |
 | Dialoge (`ha-dialog`) | offen (Phase 4, optional) |
 
 ## 4. Phase 1 — Ergebnis (03.07.2026)
@@ -321,3 +323,66 @@ werden (Phase 1, in Koordination mit dem Shadow-DOM-Umbau aus Phase 2).
   bleibt.
 - **Fehlerbehandlung**: bewusst noch ohne Error Boundary um die Wrapper —
   das ist explizit Phase 5 ("Error Boundary um jeden HA-Wrapper").
+
+## 6. Phase 3 — Ergebnis (03.07.2026)
+
+**Wichtiger Zwischenfund — `ha-selector`'s `action`-Selector ist NICHT das,
+was man für eine Service-Auswahl erwartet:** Im Quellcode von
+home-assistant/frontend nachgeschlagen (`src/data/selector.ts`): der
+`action`-Selector bildet eine ganze **Aktions-Sequenz** ab (Liste von
+Action-Configs, wie in Blueprint-Inputs), nicht einen einzelnen
+`domain.service`-String. Für "welchen Service ruft dieser Node auf" gibt es
+stattdessen die eigenständige Komponente **`ha-service-picker`**
+(`value: string`, Format `"domain.service"`, `value-changed` mit
+`ev.detail.value`) — dafür wurde ein neuer Wrapper `HaServicePicker`
+ergänzt. Registrierung läuft über dieselbe `button`-Card-Probe wie
+`ha-selector`, da `hui-button-card-editor` transitiv `hui-action-editor` →
+`ha-service-control` → `ha-service-picker` importiert (verifiziert per
+`gh search code` gegen home-assistant/frontend).
+
+**Weiterer Fund während der Nutzer-Verifikation:** HA hat native `state`-
+und `attribute`-Selektoren (`selector: { state: { entity_id, attribute? } }`,
+`selector: { attribute: { entity_id } }`), die Zustands- bzw.
+Attributvorschläge für eine gegebene Entität liefern — deckt genau das ab,
+was ursprünglich als "Attribut-Autocomplete, keine native Komponente
+gefunden" auf offen gesetzt war. Nachträglich ergänzt in
+`StateTriggerFields.tsx` (Zu/Von-Zustand) und `StateConditionFields.tsx`
+(Zustand + Attribut).
+
+**Migriert (alle mit Fallback auf die bisherige Eigenbau-Komponente,
+im Browser vom Nutzer verifiziert):**
+- `DynamicFieldRenderer.tsx`: `entity`- und `zone`-Fälle (einzeln + mehrfach)
+  → `HaEntityPicker`/`HaSelector`
+- `ActionFields.tsx`: Service-Auswahl → `HaServicePicker`; Target-Entities/
+  -Devices/-Areas → `HaSelector`
+- `StateTriggerFields.tsx`, `StateConditionFields.tsx`: Entity-Feld, Zu/Von-
+  Zustand bzw. Zustand+Attribut → `HaSelector`
+- `DeviceTriggerFields.tsx`, `DeviceConditionFields.tsx`: Device-Auswahl
+  → `HaSelector`
+- `ServiceDataFields.tsx`: dynamische `entity`-Service-Parameter (einzeln +
+  mehrfach) → `HaSelector`/`HaEntityPicker`
+
+**Bewusst nicht migriert:**
+- **Icon-Picker**: kein `icon`-Feld im Datenmodell — Neuanlage wäre eine
+  Schema-/Transpiler-Änderung, außerhalb des Scopes "bestehende Picker
+  migrieren".
+- **`numeric_state`-Condition-Attribut** (`DynamicFieldRenderer.tsx`, Case
+  `'text'`): bleibt Freitext. `DynamicFieldRenderer` kennt nur den Wert des
+  eigenen Feldes, nicht das `entity_id` des Geschwister-Feldes, das der
+  `attribute`-Selector zum Scoping bräuchte — eine saubere Lösung würde
+  `DynamicFieldRenderer`s Prop-Schnittstelle erweitern; zurückgestellt.
+- **`ServiceDataFields.tsx`s andere Typen** (number/select/boolean): HA
+  liefert für jedes Service-Feld bereits ein echtes `field.selector`-Objekt
+  aus der Registry — das ließe sich pauschal 1:1 an `HaSelector` durchreichen
+  statt die Typen einzeln von Hand zu behandeln. Größerer, sauberer Schnitt
+  als das aktuelle Scope (nur Entity-Picker), daher nicht in dieser Phase
+  gemacht — guter Kandidat für einen späteren Aufräum-Pass.
+
+**Verifikation:** `yarn typecheck`/`yarn lint:biome` durchgehend auf
+Baseline (4 Errors/25 Warnings, keine neuen), `yarn workspace @flode/frontend
+test --run` durchgehend 74/74 grün (Transpiler-Roundtrip-Tests unverändert
+bestanden — bestätigt, dass die Picker-Migration den Datenfluss/
+Store-Contract nicht verändert hat, nur die Eingabe-UI). Build + Deploy nach
+jedem Schritt, alle Schritte vom Nutzer im Browser gegengecheckt (inkl.
+False-Positive-Analyse: orange Hover-Färbung auf Buttons ist HAs echte
+`accent-color`, kein CSS-Leck).

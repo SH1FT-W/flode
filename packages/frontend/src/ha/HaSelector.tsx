@@ -25,10 +25,15 @@ export interface HaSelectorProps {
 }
 
 /**
- * `ha-selector` — HA's generic, schema-driven selector. The single most
- * powerful native component: one element covers entity/device/area/number/
- * boolean/select/action (service call with full parameter UI) and more,
- * simply by varying `selector`.
+ * `ha-selector` — HA's generic, schema-driven selector. One element covers
+ * entity/device/area/number/boolean/select and more, simply by varying
+ * `selector`. NOT for picking a single service to call — HA's `action`
+ * selector is for editing a full action *sequence* (a list of action
+ * configs), a different value shape entirely; use `HaServicePicker` for
+ * "which service does this ActionNode call".
+ *
+ * Defaults `required` to `false` (FLODE's fields are mostly optional) —
+ * `ha-selector` itself defaults to `required: true`.
  */
 export function HaSelector({
   selector,
@@ -37,7 +42,7 @@ export function HaSelector({
   label,
   helper,
   disabled,
-  required,
+  required = false,
   fallback = null,
 }: HaSelectorProps) {
   const available = useHaComponentsAvailable(REQUIRED);

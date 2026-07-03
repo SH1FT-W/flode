@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useHass } from '@/contexts/HassContext';
+import { HaSelector } from '@/ha';
 import type { DeviceTrigger, TriggerField } from '@/hooks/useDeviceAutomation';
 import { useDeviceAutomation } from '@/hooks/useDeviceAutomation';
 import { useTranslations } from '@/hooks/useTranslations';
@@ -174,12 +175,21 @@ export function DeviceTriggerFields({ node, onChange, entities }: DeviceTriggerF
   return (
     <>
       {/* Device selector */}
-      <DeviceSelector
+      <HaSelector
+        selector={{ device: {} }}
         value={deviceId}
-        onChange={(val) => onChange('device_id', val)}
+        onChange={(val) => onChange('device_id', typeof val === 'string' ? val : '')}
         label={t('labels.device')}
         required
-        placeholder={t('placeholders.selectDevice')}
+        fallback={
+          <DeviceSelector
+            value={deviceId}
+            onChange={(val) => onChange('device_id', val)}
+            label={t('labels.device')}
+            required
+            placeholder={t('placeholders.selectDevice')}
+          />
+        }
       />
 
       {/* Trigger type selector - show dropdown if API data available, otherwise show as text */}

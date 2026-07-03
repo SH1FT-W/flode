@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FormField } from '@/components/forms/FormField';
 import { DeviceSelector } from '@/components/ui/DeviceSelector';
 import { Input } from '@/components/ui/input';
+import { HaSelector } from '@/ha';
 import { getNodeDataString } from '@/utils/nodeData';
 
 interface DeviceConditionFieldsProps {
@@ -18,12 +19,21 @@ export function DeviceConditionFields({ node, onChange }: DeviceConditionFieldsP
 
   return (
     <>
-      <DeviceSelector
+      <HaSelector
+        selector={{ device: {} }}
         value={deviceId}
-        onChange={(val) => onChange('device_id', val)}
+        onChange={(val) => onChange('device_id', typeof val === 'string' ? val : '')}
         label={t('common:labels.device')}
         required
-        placeholder={t('common:placeholders.selectDevice')}
+        fallback={
+          <DeviceSelector
+            value={deviceId}
+            onChange={(val) => onChange('device_id', val)}
+            label={t('common:labels.device')}
+            required
+            placeholder={t('common:placeholders.selectDevice')}
+          />
+        }
       />
 
       <FormField

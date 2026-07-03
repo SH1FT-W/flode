@@ -35,6 +35,9 @@ const PROBE_CARD_BY_COMPONENT: Record<string, string> = {
   'ha-selector': 'button',
   'ha-device-picker': 'entities',
   'ha-area-picker': 'entities',
+  // button-card's editor pulls in hui-action-editor -> ha-service-control -> ha-service-picker
+  // (verified against home-assistant/frontend source, 03.07.2026).
+  'ha-service-picker': 'button',
 };
 
 /** Component names already confirmed registered — never re-probed. */

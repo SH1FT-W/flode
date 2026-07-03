@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { HaSelector } from '@/ha';
 
 interface ServiceField {
   name?: string;
@@ -150,10 +151,17 @@ export function ServiceDataFields({
                 required={field.required}
                 description={field.description}
               >
-                <MultiEntitySelector
+                <HaSelector
+                  selector={{ entity: { multiple: true } }}
                   value={arrayValue}
                   onChange={(value) => onChange(fieldName, value)}
-                  placeholder={field.example !== undefined ? String(field.example) : undefined}
+                  fallback={
+                    <MultiEntitySelector
+                      value={arrayValue}
+                      onChange={(value) => onChange(fieldName, value)}
+                      placeholder={field.example !== undefined ? String(field.example) : undefined}
+                    />
+                  }
                 />
               </FormField>
             );
@@ -166,10 +174,17 @@ export function ServiceDataFields({
               required={field.required}
               description={field.description}
             >
-              <EntitySelector
-                value={String(currentValue ?? '')}
+              <HaSelector
+                selector={{ entity: {} }}
+                value={currentValue ?? ''}
                 onChange={(value) => onChange(fieldName, value)}
-                placeholder={field.example !== undefined ? String(field.example) : undefined}
+                fallback={
+                  <EntitySelector
+                    value={String(currentValue ?? '')}
+                    onChange={(value) => onChange(fieldName, value)}
+                    placeholder={field.example !== undefined ? String(field.example) : undefined}
+                  />
+                }
               />
             </FormField>
           );

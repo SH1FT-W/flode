@@ -24,6 +24,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import type { FieldConfig } from '@/config/triggerFields';
+import { HaEntityPicker, HaSelector } from '@/ha';
 import type { TriggerField } from '@/hooks/useDeviceAutomation';
 import type { HassEntity } from '@/types/hass';
 
@@ -330,21 +331,34 @@ export function DynamicFieldRenderer({
               : [];
 
           return (
-            <MultiEntitySelector
+            <HaSelector
+              selector={{ entity: { multiple: true } }}
               value={values}
               onChange={onChange}
-              entities={entities}
-              placeholder={placeholder || t('dynamicField.selectEntities')}
+              fallback={
+                <MultiEntitySelector
+                  value={values}
+                  onChange={onChange}
+                  entities={entities}
+                  placeholder={placeholder || t('dynamicField.selectEntities')}
+                />
+              }
             />
           );
         }
 
         return (
-          <EntitySelector
+          <HaEntityPicker
             value={stringValue}
             onChange={onChange}
-            entities={entities}
-            placeholder={placeholder || t('dynamicField.selectEntity')}
+            fallback={
+              <EntitySelector
+                value={stringValue}
+                onChange={onChange}
+                entities={entities}
+                placeholder={placeholder || t('dynamicField.selectEntity')}
+              />
+            }
           />
         );
       }
@@ -352,12 +366,19 @@ export function DynamicFieldRenderer({
       // Zone picker
       case 'zone':
         return (
-          <EntitySelector
+          <HaEntityPicker
             value={stringValue}
             onChange={onChange}
-            entities={entities}
-            domainFilter="zone"
-            placeholder={placeholder || t('dynamicField.selectZone')}
+            includeDomains={['zone']}
+            fallback={
+              <EntitySelector
+                value={stringValue}
+                onChange={onChange}
+                entities={entities}
+                domainFilter="zone"
+                placeholder={placeholder || t('dynamicField.selectZone')}
+              />
+            }
           />
         );
 
