@@ -4,6 +4,36 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.3.0] — 2026-07-04 — Registry Metadata, Full Targeting, Trace Overlay & Deep Links
+
+### Added
+- **Save-dialog metadata** — set icon, category, labels, and area directly when saving an automation, matching HA's own automation editor. Prefills from the entity registry when editing an existing automation, without clobbering fields you're already editing.
+- **Full action targeting** — Action nodes can now target by label and floor, in addition to the existing entity/device/area support.
+- **Native more-info dialogs** — clicking an entity name on a node (trigger, condition, or action target) opens HA's own more-info dialog with history and controls, without leaving FLODE.
+- **Trace overlay on the canvas** — load the last automation run and see it highlighted directly in the diagram: executed nodes in green, errors in red, unreached nodes grayed out, plus trigger/timestamp details in the Debug tab.
+- **Deep links** — `/flode?automation=<entity_id>` opens FLODE with that automation loaded, `/flode?new=1` starts a blank one, making "Edit in FLODE" dashboard buttons possible. FLODE also fires a `flode_automation_saved` event with the entity_id after every save.
+- **Diagnostics download** — standard HA diagnostics (FLODE version, HA version, config options, panel status) via Settings → Devices & Services → FLODE.
+- **Repair issues for lossy imports** — if importing a YAML automation doesn't round-trip losslessly, FLODE now files a persistent Repair issue (Settings → System → Repairs) instead of only a one-time toast.
+- **Language override** — FLODE's integration options (Settings → Devices & Services → FLODE → Configure) now let you pin FLODE's own UI language independent of Home Assistant's active language.
+- **Exit confirmation** — leaving FLODE back to Home Assistant now asks for confirmation first.
+
+### Changed
+- **Toasts use HA's native notification system** when FLODE is running as a real panel, falling back to FLODE's own toasts only in standalone dev mode.
+- **Mobile sidebar toggle now reacts to HA's real `narrow` state** instead of only the browser window's width.
+- **"Exit" moved into FLODE's own sidebar**, above the node palette, styled to match the palette buttons — previously a header button.
+- Removed the "by SH1FT-W" credit line from the sidebar footer.
+
+### Fixed
+- **Integration options were unreachable** — a leftover `config_panel_domain` setting made the integration's gear icon always jump into the FLODE panel instead of opening the options dialog, so the new language override had no way to be configured. Removed.
+
+### Internal
+- Removed the unused `vite-plugin-css-injected-by-js` dependency — the Shadow DOM CSS injection has used Vite's native `?inline` import for a while, this package hadn't been wired into the build in months.
+- Bumped Yarn from 4.12.0 to 4.17.0.
+- Evaluated js-yaml 5 — rejected: it removes the `quotingType`/`forceQuotes` dumper options FLODE relies on for exact YAML formatting, in favor of a new presenter/tag API. Staying on 4.x until that's worth a dedicated migration.
+- Fixed the automation-trace-to-node mapping, which previously guessed node order from canvas Y-position and broke on any manual repositioning — now walks the graph's actual topology.
+
+---
+
 ## [1.2.1] — 2026-07-04 — Dependency Security Patch
 
 ### Internal

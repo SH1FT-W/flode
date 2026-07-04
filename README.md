@@ -5,10 +5,10 @@
 
   <p><strong>Visual Flow + Node Editor for Home Assistant</strong></p>
 
-  [![Release](https://img.shields.io/badge/version-1.2.1-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
+  [![Release](https://img.shields.io/badge/version-1.3.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
   [![HA Version](https://img.shields.io/badge/HA-2025.8%2B-brightgreen?style=flat-square)](https://www.home-assistant.io)
   [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](LICENSE)
-  [![Tests](https://img.shields.io/badge/tests-303%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
+  [![Tests](https://img.shields.io/badge/tests-304%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
   [![HACS](https://img.shields.io/badge/HACS-custom-blueviolet?style=flat-square)](https://hacs.xyz)
 
   <br/>
@@ -46,11 +46,14 @@ No vendor lock-in. No external service. Automations remain fully editable in HA'
 | 🎯 **Visual editor** | Drag and drop triggers, conditions, and actions onto a canvas |
 | 📄 **100% native YAML** | No proprietary format — standard HA automation YAML |
 | 🔄 **Bidirectional** | Import, edit, and save back existing HA automations |
-| 🐛 **Trace integration** | Debug flows with the official HA trace view |
+| 🐛 **Trace overlay** | See a real automation run highlighted directly on the canvas — executed, skipped, and errored nodes, right in the diagram |
 | 🔀 **State machines** | Complex loops via an automatic state machine pattern |
 | 🧭 **Flow control** | Choose, If/Else, Repeat While, Repeat N×, and Parallel as draggable blocks |
-| 🧩 **Native HA UI** | Uses Home Assistant's own theme and native components (pickers, selects, etc.) wherever possible |
-| 🌍 **DE & EN** | Full i18n support |
+| 🧩 **Native HA UI** | Uses Home Assistant's own theme and native components (pickers, selects, more-info dialogs, etc.) wherever possible |
+| 🏷️ **Full metadata & targeting** | Set icon, category, labels, and area on save; target actions by area, device, label, or floor |
+| 🔗 **Deep links** | Open FLODE straight into a specific automation from any dashboard button |
+| 🩺 **Diagnostics & Repairs** | Native HA diagnostics download, and Repair issues for automations that couldn't be imported losslessly |
+| 🌍 **DE & EN** | Full i18n support, with a per-installation language override |
 | 🌗 **Dark & light mode** | Automatically follows your configured HA theme |
 
 ---
@@ -86,6 +89,32 @@ After setup, **FLODE** appears in the HA sidebar.
 - **Import existing** — Load an existing HA automation via the folder icon
 - **Save** — Saves directly to Home Assistant as a native automation
 - **Export YAML** — View or copy the generated YAML code at any time
+
+---
+
+## Deep Links
+
+FLODE can be opened straight into a specific automation (or a blank editor)
+via URL query parameters on its panel path:
+
+- `/flode?automation=automation.xyz` — opens the editor with that automation loaded
+- `/flode?new=1` — starts a blank new automation
+
+This makes "Edit in FLODE" buttons possible from any dashboard, e.g. with a
+`button-card` or the built-in **Button Card**'s `navigate` action:
+
+```yaml
+type: button-card
+name: Edit in FLODE
+icon: mdi:pencil
+tap_action:
+  action: navigate
+  navigation_path: /flode?automation=automation.motion_light_entrance
+```
+
+FLODE also fires a `flode_automation_saved` event on HA's event bus after
+every save, with the automation's `entity_id` in the event data — so other
+automations/scripts can react to "this automation was just edited in FLODE".
 
 ---
 
