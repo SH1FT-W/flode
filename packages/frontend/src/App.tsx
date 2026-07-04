@@ -72,7 +72,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ResizablePanel } from '@/components/ui/resizable-panel';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
@@ -82,6 +81,7 @@ import { useHass } from './contexts/HassContext';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useHaThemeSync } from './hooks/useHaThemeSync';
 import { useLanguage } from './hooks/useLanguage';
+import { useLoadAutomation } from './hooks/useLoadAutomation';
 import { useFlowStore } from './store/flow-store';
 
 /** Lightweight fallback shown while a lazily-loaded panel chunk is fetched. */
@@ -91,6 +91,60 @@ function PanelLoading() {
       <Loader2 className="h-5 w-5 animate-spin" />
     </div>
   );
+}
+
+/**
+ * Deep-link entry points — `/flode?automation=automation.xyz` opens that
+ * automation, `/flode?new=1` starts blank. Query params only (not HA's
+ * `route` property, which carries just prefix/path, no search string).
+ * Rendered inside `<ReactFlowProvider>` (see `App`'s return) because loading
+ * an automation needs `useReactFlow`'s `fitView` — this hook can't be called
+ * from `App` itself, since `App` is the one *creating* that provider, not a
+ * descendant of it. Waits for a real `hass` (needed to resolve
+ * entity_id -> automation_id) and only ever runs once per mount.
+ */
+function DeepLinkHandler() {
+  const { hass } = useHass();
+  const { reset } = useFlowStore();
+  const loadAutomation = useLoadAutomation();
+  const handled = useRef(false);
+
+  useEffect(() => {
+    if (handled.current || !hass) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const automationEntityId = params.get('automation');
+    const isNew = params.get('new') === '1';
+    if (!automationEntityId && !isNew) return;
+
+    handled.current = true;
+
+    if (automationEntityId) {
+      const stateObj = hass.states[automationEntityId];
+      const rawId = stateObj?.attributes?.id;
+      const automationConfigId =
+        typeof rawId === 'string' || typeof rawId === 'number'
+          ? String(rawId)
+          : automationEntityId.replace('automation.', '');
+      loadAutomation({
+        automation_id: automationConfigId,
+        entity_id: automationEntityId,
+        friendly_name:
+          typeof stateObj?.attributes?.friendly_name === 'string'
+            ? stateObj.attributes.friendly_name
+            : undefined,
+      });
+    } else {
+      reset();
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('automation');
+    url.searchParams.delete('new');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+  }, [hass, loadAutomation, reset]);
+
+  return null;
 }
 
 type RightPanelTab = 'properties' | 'yaml' | 'simulator';
@@ -117,6 +171,7 @@ function App() {
     connectionError: actualConnectionError,
     config,
     setConfig,
+    narrow,
   } = useHass();
 
   const {
@@ -137,6 +192,7 @@ function App() {
   const [importDropdownOpen, setImportDropdownOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [parentWidth, setParentWidth] = useState(() => window.innerWidth);
   const forceSettingsOpen = actualIsRemote && (config.url === '' || config.token === '');
   const isDark = useDarkMode();
@@ -266,26 +322,13 @@ function App() {
       }}
     >
       <ReactFlowProvider>
+        <DeepLinkHandler />
         <div className="flex h-screen flex-col bg-background">
           {/* Header */}
           <header className="flex h-14 items-center justify-between gap-4 border-border border-b bg-card px-4 shadow-sm">
             <div className="flex flex-1 items-center gap-4">
-              {/* Back to HA button — only in panel mode (not remote) */}
-              {!actualIsRemote && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0 gap-1.5 text-muted-foreground hover:bg-accent"
-                  onClick={handleBackToHA}
-                  title={t('titles.backToHA')}
-                  aria-label={t('titles.exit')}
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="font-medium">{t('titles.exit')}</span>
-                </Button>
-              )}
-              {/* Sidebar toggle button, only visible when parent window width <= 870px */}
-              {parentWidth <= 870 ? (
+              {/* Sidebar toggle button — HA's own `narrow` in panel mode, viewport width as a standalone-dev fallback (no real `narrow` there) */}
+              {narrow || parentWidth <= 870 ? (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -339,8 +382,6 @@ function App() {
                   <Settings className="h-5 w-5" />
                 </Button>
               )}
-
-              <Separator orientation="vertical" className="h-6" />
 
               {/* Open Automation Button with Import Dropdown */}
               <div className="flex">
@@ -407,6 +448,18 @@ function App() {
           <div className="flex flex-1 overflow-hidden">
             {/* Left sidebar - Node palette */}
             <aside className="flex h-full min-h-0 w-72 flex-col border-border border-r bg-card">
+              {!actualIsRemote && (
+                <div className="border-border border-b p-4 pb-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setExitConfirmOpen(true)}
+                    className="h-auto w-full justify-start gap-3 border-transparent bg-muted py-3 text-muted-foreground hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="font-medium text-sm">{t('titles.exit')}</span>
+                  </Button>
+                </div>
+              )}
               <div className="min-h-0 flex-1 overflow-auto">
                 <NodePalette />
                 <div className="border-t p-4">
@@ -435,7 +488,6 @@ function App() {
                 <div className="text-muted-foreground text-xs">
                   <span>
                     {t('titles.appName')} {`v${version}`}
-                    {' · by SH1FT-W'}
                   </span>
                 </div>
               </div>
@@ -587,6 +639,30 @@ function App() {
                 }}
               >
                 {t('dialogs:import.confirmDiscard')}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Exit confirm dialog */}
+        <Dialog open={exitConfirmOpen} onOpenChange={setExitConfirmOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t('dialogs:exit.confirmTitle')}</DialogTitle>
+              <DialogDescription>{t('dialogs:exit.confirmDescription')}</DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setExitConfirmOpen(false)}>
+                {t('buttons.cancel')}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setExitConfirmOpen(false);
+                  handleBackToHA();
+                }}
+              >
+                {t('dialogs:exit.confirmButton')}
               </Button>
             </div>
           </DialogContent>

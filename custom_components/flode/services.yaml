@@ -1,0 +1,12 @@
+report_import_issue:
+  fields:
+    entity_id:
+      required: true
+      example: "automation.motion_light_entrance"
+      selector:
+        text:
+    warnings:
+      required: true
+      example: '["Unknown action type (...) at index 2"]'
+      selector:
+        object:

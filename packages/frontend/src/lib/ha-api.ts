@@ -20,6 +20,23 @@ export interface EntityRegistryEntry {
   [key: string]: unknown;
 }
 
+/** Response shape of `config/entity_registry/get` — the per-entity detail call, richer than the `list` entries. */
+export interface ExtendedEntityRegistryEntry {
+  entity_id: string;
+  area_id: string | null;
+  labels: string[];
+  categories: Record<string, string>;
+  icon: string | null;
+  [key: string]: unknown;
+}
+
+export interface EntityRegistryEntryUpdate {
+  icon?: string | null;
+  area_id?: string | null;
+  labels?: string[];
+  categories?: Record<string, string | null>;
+}
+
 export interface ZoneCatalogItem {
   entity_id: string;
   zone_id: string;
@@ -45,6 +62,8 @@ export interface AutomationCatalogItem {
 export interface TraceStep {
   path: string;
   timestamp: string;
+  /** Set when this step raised an exception during the real run. */
+  error?: string;
   changed_variables?: Record<string, unknown>;
   result?: {
     result?: boolean;
@@ -52,6 +71,8 @@ export interface TraceStep {
     params?: Record<string, unknown>;
     delay?: number;
     done?: boolean;
+    /** Present on `stop:` action steps — `true` if it stopped due to an error. */
+    error?: boolean;
   };
 }
 
@@ -258,6 +279,32 @@ export class HomeAssistantAPI {
       // In standalone mode, we'd need to implement HTTP requests
       // For now, throw an error as this requires auth tokens
       throw new Error('REST API calls not supported in standalone mode');
+    }
+  }
+
+  /**
+   * Fire a custom event on HA's event bus via the documented
+   * `POST /api/events/<event_type>` REST endpoint — the same mechanism
+   * Developer Tools > Events uses. Lets other automations/scripts react to
+   * FLODE-specific occurrences (e.g. `flode_automation_saved`).
+   */
+  async fireBusEvent(eventType: string, eventData?: Record<string, unknown>): Promise<void> {
+    await this.callAPI('POST', `events/${eventType}`, eventData);
+  }
+
+  /**
+   * Reports a lossy YAML import to FLODE's backend, which files a Repair
+   * issue (Settings > System > Repairs) so the finding survives past the
+   * one-time toast. Best-effort — never blocks or fails the import itself.
+   */
+  async reportImportIssue(entityId: string, warnings: string[]): Promise<void> {
+    try {
+      await this.callService('flode', 'report_import_issue', {
+        entity_id: entityId,
+        warnings,
+      });
+    } catch (error) {
+      console.warn('Failed to report import issue:', error);
     }
   }
 
@@ -623,6 +670,35 @@ export class HomeAssistantAPI {
   }
 
   /**
+   * List categories for a given scope (e.g. "automation").
+   */
+  async getCategories(scope: string): Promise<{ category_id: string; name: string }[]> {
+    try {
+      const result = await this.sendMessage({ type: 'config/category_registry/list', scope });
+      return Array.isArray(result) ? (result as { category_id: string; name: string }[]) : [];
+    } catch (error) {
+      console.error('Failed to get categories:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Create a new category in a given scope. Used by FLODE's own category
+   * field when the native `ha-category-picker` (which handles creation
+   * itself) isn't available in this browser tab.
+   */
+  async createCategory(
+    scope: string,
+    name: string
+  ): Promise<{ category_id: string; name: string }> {
+    return (await this.sendMessage({
+      type: 'config/category_registry/create',
+      scope,
+      name,
+    })) as { category_id: string; name: string };
+  }
+
+  /**
    * Get entities registry
    */
   async getEntities(): Promise<unknown | []> {
@@ -632,6 +708,68 @@ export class HomeAssistantAPI {
       console.error('Failed to get entities:', error);
       return [];
     }
+  }
+
+  /**
+   * Get the extended entity registry entry (area/labels/categories/icon) for a single entity.
+   */
+  async getEntityRegistryEntry(entityId: string): Promise<ExtendedEntityRegistryEntry | null> {
+    try {
+      return (await this.sendMessage({
+        type: 'config/entity_registry/get',
+        entity_id: entityId,
+      })) as ExtendedEntityRegistryEntry;
+    } catch (error) {
+      console.error('Failed to get entity registry entry:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update area/labels/categories/icon on an entity registry entry.
+   */
+  async updateEntityRegistryEntry(
+    entityId: string,
+    updates: EntityRegistryEntryUpdate
+  ): Promise<void> {
+    await this.sendMessage({
+      type: 'config/entity_registry/update',
+      entity_id: entityId,
+      ...updates,
+    });
+  }
+
+  /**
+   * Find an automation's entity_id from its config id, by matching the
+   * `id` state attribute HA exposes on automation entities (same value as
+   * the entity registry's `unique_id`, but readable straight off `states`
+   * without an extra round-trip).
+   */
+  findAutomationEntityId(automationId: string): string | null {
+    const match = this.getAutomations().find(
+      (entity) =>
+        String(entity.attributes.id ?? '') === automationId ||
+        entity.entity_id === `automation.${automationId}`
+    );
+    return match?.entity_id ?? null;
+  }
+
+  /**
+   * Same as `findAutomationEntityId`, but polls briefly — needed right after
+   * creating a new automation, where `automation.reload` has resolved but the
+   * resulting entity's state may not have propagated to `hass.states` yet.
+   */
+  async waitForAutomationEntity(automationId: string, timeoutMs = 5000): Promise<string | null> {
+    const immediate = this.findAutomationEntityId(automationId);
+    if (immediate) return immediate;
+
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const found = this.findAutomationEntityId(automationId);
+      if (found) return found;
+    }
+    return null;
   }
 
   /**

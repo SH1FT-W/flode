@@ -1,4 +1,4 @@
-import type { FlowNode } from '@flode/shared';
+import type { FlowNode, Target } from '@flode/shared';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldError } from '@/components/forms/FieldError';
@@ -137,6 +137,20 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
     onChange('target', Object.keys(newTarget).length > 0 ? newTarget : undefined);
   };
 
+  const handleLabelTargetChange = (value: string[]) => {
+    const currentTarget = getNodeDataObject(node, 'target', {});
+    const newTarget = { ...currentTarget, label_id: value.length > 0 ? value : undefined };
+    if (!newTarget.label_id) delete newTarget.label_id;
+    onChange('target', Object.keys(newTarget).length > 0 ? newTarget : undefined);
+  };
+
+  const handleFloorTargetChange = (value: string[]) => {
+    const currentTarget = getNodeDataObject(node, 'target', {});
+    const newTarget = { ...currentTarget, floor_id: value.length > 0 ? value : undefined };
+    if (!newTarget.floor_id) delete newTarget.floor_id;
+    onChange('target', Object.keys(newTarget).length > 0 ? newTarget : undefined);
+  };
+
   const handleDataFieldChange = (fieldName: string, value: unknown) => {
     const newData = { ...currentData, [fieldName]: value === '' ? undefined : value };
     // Clean up undefined values
@@ -150,12 +164,8 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
     onChange('response_variable', e.target.value === '' ? undefined : e.target.value);
   };
 
-  // Extract target values (entity_id, device_id, area_id)
-  const target = getNodeDataObject(node, 'target', {}) as {
-    entity_id?: string | string[];
-    device_id?: string | string[];
-    area_id?: string | string[];
-  };
+  // Extract target values (entity_id, device_id, area_id, label_id, floor_id)
+  const target = getNodeDataObject(node, 'target', {}) as Target;
 
   // Helper to normalize string | string[] to string[]
   const normalizeToArray = (value: string | string[] | undefined): string[] => {
@@ -166,10 +176,14 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
   const targetEntityIdArray = normalizeToArray(target.entity_id);
   const targetDeviceIdArray = normalizeToArray(target.device_id);
   const targetAreaIdArray = normalizeToArray(target.area_id);
+  const targetLabelIdArray = normalizeToArray(target.label_id);
+  const targetFloorIdArray = normalizeToArray(target.floor_id);
 
-  // Check if we have any device or area targets (to show those fields)
+  // Check if we have any device, area, label or floor targets (to show those fields)
   const hasDeviceTargets = targetDeviceIdArray.length > 0;
   const hasAreaTargets = targetAreaIdArray.length > 0;
+  const hasLabelTargets = targetLabelIdArray.length > 0;
+  const hasFloorTargets = targetFloorIdArray.length > 0;
 
   if (isRepeatNode) {
     const seqLength = Array.isArray(repeatData!.sequence) ? repeatData!.sequence.length : 0;
@@ -379,6 +393,48 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
                     values={targetAreaIdArray}
                     onChange={handleAreaTargetChange}
                     placeholder={t('nodes:actions.addAreaId')}
+                  />
+                }
+              />
+            </FormField>
+          )}
+
+          {/* Target Labels - show if we have label targets or service supports targets */}
+          {(hasLabelTargets || serviceDefinition?.target) && (
+            <FormField
+              label={t('nodes:actions.targetLabels')}
+              description={t('nodes:actions.targetLabelsDescription')}
+            >
+              <HaSelector
+                selector={{ label: { multiple: true } }}
+                value={targetLabelIdArray}
+                onChange={(v) => handleLabelTargetChange(toStringArray(v))}
+                fallback={
+                  <IdList
+                    values={targetLabelIdArray}
+                    onChange={handleLabelTargetChange}
+                    placeholder={t('nodes:actions.addLabelId')}
+                  />
+                }
+              />
+            </FormField>
+          )}
+
+          {/* Target Floors - show if we have floor targets or service supports targets */}
+          {(hasFloorTargets || serviceDefinition?.target) && (
+            <FormField
+              label={t('nodes:actions.targetFloors')}
+              description={t('nodes:actions.targetFloorsDescription')}
+            >
+              <HaSelector
+                selector={{ floor: { multiple: true } }}
+                value={targetFloorIdArray}
+                onChange={(v) => handleFloorTargetChange(toStringArray(v))}
+                fallback={
+                  <IdList
+                    values={targetFloorIdArray}
+                    onChange={handleFloorTargetChange}
+                    placeholder={t('nodes:actions.addFloorId')}
                   />
                 }
               />

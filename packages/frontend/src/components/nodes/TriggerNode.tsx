@@ -2,8 +2,10 @@ import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { AlertCircle, Ban, Zap } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMoreInfo } from '@/hooks/useMoreInfo';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
-import { NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
+import { useTraceNodeState } from '@/hooks/useTraceNodeState';
+import { getTraceStateClass, NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
 import { cn } from '@/lib/utils';
 import type { TriggerNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
@@ -19,6 +21,8 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
   const { hasErrors, errorMessages } = useNodeErrors(id);
+  const openMoreInfo = useMoreInfo();
+  const traceState = useTraceNodeState(id);
   const isActive = activeNodeId === id;
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
@@ -44,7 +48,13 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
   };
   const getTriggerLabel = (type: string) => triggerPlatformLabels[type] ?? type;
 
-  const getDisplayInfo = () => {
+  const getDisplayInfo = (): {
+    title: string;
+    subtitle: string | undefined;
+    /** Set only when `subtitle` is a genuine single entity_id, so it can be made clickable. */
+    subtitleEntityId?: string;
+    detail: unknown;
+  } => {
     const triggerType = data.trigger;
 
     switch (triggerType) {
@@ -63,6 +73,7 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
           subtitle: Array.isArray(data.entity_id)
             ? `${data.entity_id.length} entities:\n${data.entity_id.join(', ')}`
             : data.entity_id || getTriggerLabel(triggerType),
+          subtitleEntityId: !Array.isArray(data.entity_id) ? data.entity_id : undefined,
           detail: data.to ? `to: ${data.to}` : null,
         };
 
@@ -72,6 +83,7 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
           subtitle: Array.isArray(data.entity_id)
             ? data.entity_id.join(', ')
             : data.entity_id || getTriggerLabel(triggerType),
+          subtitleEntityId: !Array.isArray(data.entity_id) ? data.entity_id : undefined,
           detail:
             data.above || data.below
               ? `${data.above ? `>${data.above}` : ''}${data.above && data.below ? ' ' : ''}${data.below ? `<${data.below}` : ''}`
@@ -148,7 +160,8 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
         selected && cn('ring-2 ring-offset-2', COLORS.ring),
         isActive && NODE_STATE_CLASSES.active,
         isDisabled && 'border-dashed opacity-50 grayscale',
-        hasErrors && NODE_STATE_CLASSES.error
+        hasErrors && NODE_STATE_CLASSES.error,
+        getTraceStateClass(traceState)
       )}
     >
       {hasErrors && (
@@ -190,10 +203,23 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
       </div>
 
       <div className={cn('space-y-0.5 text-xs', COLORS.text)}>
-        <div className="line-clamp-2 truncate whitespace-pre-line font-medium">
-          {displayInfo.subtitle}
-        </div>
-        {displayInfo.detail && (
+        {displayInfo.subtitleEntityId ? (
+          <button
+            type="button"
+            className="nodrag line-clamp-2 truncate whitespace-pre-line text-left font-medium hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              openMoreInfo(displayInfo.subtitleEntityId as string);
+            }}
+          >
+            {displayInfo.subtitle}
+          </button>
+        ) : (
+          <div className="line-clamp-2 truncate whitespace-pre-line font-medium">
+            {displayInfo.subtitle}
+          </div>
+        )}
+        {displayInfo.detail != null && displayInfo.detail !== '' && (
           <div className="truncate opacity-75">{String(displayInfo.detail)}</div>
         )}
       </div>

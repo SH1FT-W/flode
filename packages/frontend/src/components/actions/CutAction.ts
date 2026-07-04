@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import { Scissors } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccessToast } from '@/lib/haToast';
 import { copyNodesToClipboard } from './clipboardHelpers';
 import type { NodeAction } from './NodeAction';
 import type { NodeActionContext } from './NodeActionContext';
@@ -20,7 +20,7 @@ export function getCutAction(t: TFunction): NodeAction {
       context.selectedNodes.forEach((node) => {
         context.removeNode(node.id);
       });
-      toast.success(`${count} node${count !== 1 ? 's' : ''} cut`);
+      showSuccessToast(`${count} node${count !== 1 ? 's' : ''} cut`);
     },
   };
 }

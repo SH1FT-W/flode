@@ -3,7 +3,8 @@ import { AlertCircle, Ban, Hourglass } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
-import { NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
+import { useTraceNodeState } from '@/hooks/useTraceNodeState';
+import { getTraceStateClass, NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
 import { cn } from '@/lib/utils';
 import type { WaitNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
@@ -20,6 +21,7 @@ export const WaitNode = memo(function WaitNode({ id, data, selected }: WaitNodeP
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
   const { hasErrors, errorMessages } = useNodeErrors(id);
+  const traceState = useTraceNodeState(id);
   const isActive = activeNodeId === id;
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
@@ -37,7 +39,8 @@ export const WaitNode = memo(function WaitNode({ id, data, selected }: WaitNodeP
         selected && cn('ring-2 ring-offset-2', COLORS.ring),
         isActive && NODE_STATE_CLASSES.active,
         isDisabled && 'border-dashed opacity-50 grayscale',
-        hasErrors && NODE_STATE_CLASSES.error
+        hasErrors && NODE_STATE_CLASSES.error,
+        getTraceStateClass(traceState)
       )}
     >
       {hasErrors && (

@@ -2,6 +2,7 @@
 import logging
 from pathlib import Path
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
@@ -13,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 PANEL_NAME = f"{DOMAIN}-panel"
 
 
-async def async_register_panel(hass: HomeAssistant) -> None:
+async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Register the FLODE panel."""
     www_path = Path(__file__).parent / "www"
 
@@ -39,8 +40,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
         require_admin=True,
-        config={},
-        config_panel_domain=DOMAIN,
+        config={"language": entry.options.get("language", "auto")},
     )
 
     _LOGGER.info("FLODE panel registered successfully")

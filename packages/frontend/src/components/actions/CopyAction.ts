@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import { Copy } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccessToast } from '@/lib/haToast';
 import { copyNodesToClipboard } from './clipboardHelpers';
 import type { NodeAction } from './NodeAction';
 import type { NodeActionContext } from './NodeActionContext';
@@ -15,7 +15,7 @@ export function getCopyAction(t: TFunction): NodeAction {
     isEnabled: (context: NodeActionContext) => context.selectedNodes.length > 0,
     execute: (context: NodeActionContext) => {
       copyNodesToClipboard(context);
-      toast.success(
+      showSuccessToast(
         `${context.selectedNodes.length} node${context.selectedNodes.length !== 1 ? 's' : ''} copied`
       );
     },

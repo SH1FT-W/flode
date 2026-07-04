@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -31,9 +30,11 @@ import {
   type AutomationCatalogSortDirection,
   useAutomationCatalog,
 } from '@/hooks/useAutomationCatalog';
+import { useLoadAutomation } from '@/hooks/useLoadAutomation';
 import { mergeAutomationGraphs } from '@/lib/automation-merge';
 import type { AutomationCatalogItem } from '@/lib/ha-api';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
+import { showErrorToast, showSuccessToast } from '@/lib/haToast';
 import { useFlowStore } from '@/store/flow-store';
 import { useHass } from '../../contexts/HassContext';
 
@@ -53,6 +54,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
   const { hass, config: hassConfig, entities } = useHass();
   const { setFlowName, setAutomationId, reset, fromFlowGraph, hasRealChanges } = useFlowStore();
   const { fitView } = useReactFlow();
+  const loadAutomation = useLoadAutomation();
 
   const { catalogByArea, sortedCatalogItems } = useAutomationCatalog({
     isOpen,
@@ -147,11 +149,11 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
     try {
       const api = getHomeAssistantAPI(hass, hassConfig);
       await api.setAutomationState(automation.entity_id, checked);
-      toast.success(
+      showSuccessToast(
         checked ? t('dialogs:import.automationEnabled') : t('dialogs:import.automationDisabled')
       );
     } catch {
-      toast.error(t('dialogs:import.updateStateFailed'));
+      showErrorToast(t('dialogs:import.updateStateFailed'));
     }
   };
 
@@ -172,64 +174,9 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
   };
 
   const handleImportAutomation = async (automation: AutomationCatalogItem) => {
-    try {
-      const api = getHomeAssistantAPI(hass, hassConfig);
-
-      if (!api.isConnected()) {
-        throw new Error(t('errors:connection.noConnection'));
-      }
-
-      const config = await api.getAutomationConfigWithFallback(
-        automation.automation_id,
-        automation.friendly_name
-      );
-
-      reset();
-
-      if (config) {
-        const yamlString = yamlDump(config, {
-          indent: 2,
-          lineWidth: -1,
-          quotingType: '"',
-          forceQuotes: false,
-        });
-
-        const result = await transpiler.fromYaml(yamlString);
-        if (!result.success || !result.graph) {
-          throw new Error(result.errors?.join('\n') || t('errors:import.parseFailed'));
-        }
-
-        fromFlowGraph(result.graph);
-        setTimeout(() => {
-          fitView({ padding: 0.2, duration: 300, maxZoom: 0.75 });
-        }, 150);
-
-        setFlowName(automation.friendly_name || automation.automation_id);
-        setAutomationId(automation.automation_id);
-
-        toast.success(
-          t('dialogs:import.importSuccess', {
-            name: automation.friendly_name || automation.automation_id,
-          })
-        );
-      } else {
-        setFlowName(automation.friendly_name || automation.automation_id);
-        setAutomationId(automation.automation_id);
-
-        toast.warning(
-          t('dialogs:import.openedWarning', {
-            name: automation.friendly_name || automation.automation_id,
-          }),
-          {
-            description: t('dialogs:import.openedWarningDescription'),
-          }
-        );
-      }
-
+    const success = await loadAutomation(automation);
+    if (success) {
       onClose();
-    } catch (error) {
-      console.error('FLODE: Failed to open automation:', error);
-      toast.error(t('dialogs:import.importFailed', { message: (error as Error).message }));
     }
   };
 
@@ -316,7 +263,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
         fitView({ padding: 0.2, duration: 300, maxZoom: 0.75 });
       }, 150);
 
-      toast.success(
+      showSuccessToast(
         t('dialogs:import.mergeSuccess', {
           count: selectedAutomations.length,
         })
@@ -324,7 +271,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
       onClose();
     } catch (error) {
       console.error('FLODE: Failed to merge automations:', error);
-      toast.error(t('dialogs:import.mergeFailed', { message: (error as Error).message }));
+      showErrorToast(t('dialogs:import.mergeFailed', { message: (error as Error).message }));
     }
   };
 
@@ -527,7 +474,9 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
                         <div className="w-[80px] px-3 py-2 text-center align-top">
                           <HaSwitch
                             checked={automation.enabled}
-                            onChange={(checked) => handleToggleAutomationEnabled(automation, checked)}
+                            onChange={(checked) =>
+                              handleToggleAutomationEnabled(automation, checked)
+                            }
                             fallback={
                               <Switch
                                 checked={automation.enabled}

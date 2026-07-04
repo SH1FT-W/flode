@@ -1,7 +1,10 @@
 export { ensureHaComponents } from './haComponentLoader';
+export { HaAreaPicker, type HaAreaPickerProps } from './HaAreaPicker';
+export { HaCategoryPicker, type HaCategoryPickerProps } from './HaCategoryPicker';
 export { HaElement, type HaElementProps } from './HaElement';
 export { HaEntityPicker, type HaEntityPickerProps } from './HaEntityPicker';
 export { HaIconPicker, type HaIconPickerProps } from './HaIconPicker';
+export { HaLabelsPicker, type HaLabelsPickerProps } from './HaLabelsPicker';
 export { HaSelect, type HaSelectOption, type HaSelectProps } from './HaSelect';
 export { HaSelector, type HaSelectorConfig, type HaSelectorProps } from './HaSelector';
 export { HaServicePicker, type HaServicePickerProps } from './HaServicePicker';

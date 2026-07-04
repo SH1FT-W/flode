@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import { CopyPlus } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccessToast } from '@/lib/haToast';
 import { cloneNodesIntoCanvas } from './clipboardHelpers';
 import type { NodeAction } from './NodeAction';
 import type { NodeActionContext } from './NodeActionContext';
@@ -21,7 +21,7 @@ export function getDuplicateAction(t: TFunction): NodeAction {
 
       cloneNodesIntoCanvas(context.selectedNodes, selectedEdges, context);
 
-      toast.success(
+      showSuccessToast(
         `${context.selectedNodes.length} node${context.selectedNodes.length !== 1 ? 's' : ''} duplicated`
       );
     },

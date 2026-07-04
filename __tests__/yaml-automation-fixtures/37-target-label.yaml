@@ -1,0 +1,13 @@
+alias: Label Target Automation
+description: Turn off everything labeled "energy-hungry" when leaving home
+trigger:
+  - platform: state
+    entity_id: person.daniel
+    to: "not_home"
+action:
+  - service: homeassistant.turn_off
+    target:
+      label_id:
+        - energy-hungry
+        - standby-killer
+mode: single

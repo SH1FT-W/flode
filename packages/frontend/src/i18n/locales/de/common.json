@@ -36,6 +36,7 @@
     "selectTraceRun": "Trace-Ausführung wählen:",
     "traceDetails": "Trace-Details:",
     "trigger": "Auslöser:",
+    "timestamp": "Zeitstempel:",
     "duration": "Dauer:",
     "lastStep": "Letzter Schritt:",
     "executionPath": "Ausführungspfad:",
@@ -98,7 +99,6 @@
     "clearAutomation": "Aktuelle Automatisierung leeren",
     "exportJson": "Flow als JSON exportieren",
     "clickToConfigure": "Klicken um Home Assistant-Verbindung zu konfigurieren",
-    "backToHA": "Zurück zu Home Assistant",
     "exit": "Beenden",
     "openDetached": "Eigenes Fenster öffnen",
     "removeSource": "Quelle aus dem Merge-Workspace entfernen"

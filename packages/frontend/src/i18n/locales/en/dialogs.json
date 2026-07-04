@@ -6,7 +6,12 @@
     "descriptionUpdate": "Update this automation in Home Assistant",
     "nameLabel": "Automation Name",
     "descriptionLabel": "Description (Optional)",
-    "nameConflict": "Name already exists. Use: \"{{suggestedName}}\"?"
+    "nameConflict": "Name already exists. Use: \"{{suggestedName}}\"?",
+    "iconLabel": "Icon (Optional)",
+    "categoryLabel": "Category (Optional)",
+    "categoryPlaceholder": "Type an existing or new category name...",
+    "labelsLabel": "Labels (Optional)",
+    "areaLabel": "Area (Optional)"
   },
   "import": {
     "title": "Open Automation",
@@ -52,6 +57,8 @@
     "importSuccess": "Automation \"{{name}}\" imported successfully!",
     "openedWarning": "Automation \"{{name}}\" opened!",
     "openedWarningDescription": "Could not fetch configuration automatically. You can now create a new flow with the same name.",
+    "lossyImportWarning": "\"{{name}}\" imported, but not perfectly",
+    "lossyImportWarningDescription": "{{count}} part(s) weren't recognized — see Settings > Repairs for details.",
     "importFailed": "Failed to import automation: {{message}}",
     "ID": "ID: {{id}}",
     "otherArea": "Other Area",
@@ -104,8 +111,14 @@
     "description": "An unexpected error occurred in the application. Please see the details below.",
     "refreshPrompt": "Please try refreshing the page. If the problem persists, consider reporting the issue on our GitHub repository."
   },
+  "exit": {
+    "confirmTitle": "Leave FLODE?",
+    "confirmDescription": "This will take you back to Home Assistant.",
+    "confirmButton": "Exit"
+  },
   "traceViewer": {
     "saveAutomationFirst": "Save the automation first to view traces",
-    "noTracesFound": "No automation traces found"
+    "noTracesFound": "No automation traces found",
+    "unmappedSteps": "{{count}} trace step(s) couldn't be matched to a node (nested choose/repeat branch) and were skipped"
   }
 }

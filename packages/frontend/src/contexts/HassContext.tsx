@@ -111,6 +111,10 @@ function saveConfig(config: HassConfig): void {
 interface HassContextProps {
   hass: HomeAssistant | undefined;
   isRemote: boolean;
+  /** HA's real `narrow` panel property (sidebar collapsed / small viewport). Always `false` outside panel mode. */
+  narrow: boolean;
+  /** FLODE's own options-flow language override (`config_flow.py`), e.g. "de"/"en" — `undefined` when set to "auto" or outside panel mode. */
+  languageOverride: string | undefined;
   isLoading: boolean;
   connectionError: string | null;
   entities: HassEntity[];
@@ -128,8 +132,13 @@ interface HassContextProps {
 const HassContext = createContext<HassContextProps | undefined>(undefined);
 
 export const HassProvider: FC<
-  PropsWithChildren<{ forceMode?: 'remote' | 'embedded'; externalHass?: HomeAssistant }>
-> = ({ children, forceMode, externalHass }) => {
+  PropsWithChildren<{
+    forceMode?: 'remote' | 'embedded';
+    externalHass?: HomeAssistant;
+    externalNarrow?: boolean;
+    externalLanguageOverride?: string;
+  }>
+> = ({ children, forceMode, externalHass, externalNarrow, externalLanguageOverride }) => {
   const [config, setConfigState] = useState<HassConfig>(
     forceMode ? loadConfig() : { url: '', token: '' }
   );
@@ -450,6 +459,8 @@ export const HassProvider: FC<
   const value: HassContextProps = {
     hass,
     isRemote: shouldUseRemote,
+    narrow: externalNarrow ?? false,
+    languageOverride: externalLanguageOverride,
     isLoading: shouldUseRemote && hasRemoteConfig ? isLoading : false,
     connectionError: shouldUseRemote ? connectionError : null,
     entities,

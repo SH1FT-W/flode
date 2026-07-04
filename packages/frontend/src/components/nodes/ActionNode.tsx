@@ -2,8 +2,10 @@ import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { AlertCircle, Ban, Columns2, Hash, OctagonX, Play, RotateCcw } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMoreInfo } from '@/hooks/useMoreInfo';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
-import { NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
+import { useTraceNodeState } from '@/hooks/useTraceNodeState';
+import { getTraceStateClass, NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
 import { cn } from '@/lib/utils';
 import type { ActionNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
@@ -23,6 +25,8 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
   const { hasErrors, errorMessages } = useNodeErrors(id);
+  const openMoreInfo = useMoreInfo();
+  const traceState = useTraceNodeState(id);
   const isActive = activeNodeId === id;
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
@@ -52,6 +56,12 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
       : 0
     : 0;
 
+  // Single target entity_id, clickable for HA's more-info dialog — arrays show a count instead.
+  const targetEntityId =
+    !isStopAction && data.target && !Array.isArray(data.target.entity_id)
+      ? data.target.entity_id
+      : undefined;
+
   // Get target entity display
   const targetDisplay = (() => {
     if (isStopAction || !data.target) return null;
@@ -73,7 +83,8 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
           selected && cn('ring-2 ring-offset-2', STOP_COLORS.ring),
           isActive && NODE_STATE_CLASSES.active,
           isDisabled && 'border-dashed opacity-50 grayscale',
-          hasErrors && NODE_STATE_CLASSES.error
+          hasErrors && NODE_STATE_CLASSES.error,
+          getTraceStateClass(traceState)
         )}
       >
         {hasErrors && (
@@ -141,7 +152,8 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
           selected && cn('ring-2 ring-offset-2', REPEAT_COLORS.ring),
           isActive && NODE_STATE_CLASSES.active,
           isDisabled && 'border-dashed opacity-50 grayscale',
-          hasErrors && NODE_STATE_CLASSES.error
+          hasErrors && NODE_STATE_CLASSES.error,
+          getTraceStateClass(traceState)
         )}
       >
         {hasErrors && (
@@ -216,7 +228,8 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
         selected && cn('ring-2 ring-offset-2', ACTION_COLORS.ring),
         isActive && NODE_STATE_CLASSES.active,
         isDisabled && 'border-dashed opacity-50 grayscale',
-        hasErrors && NODE_STATE_CLASSES.error
+        hasErrors && NODE_STATE_CLASSES.error,
+        getTraceStateClass(traceState)
       )}
     >
       {hasErrors && (
@@ -240,7 +253,11 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
           <Ban className="h-3 w-3" />
         </div>
       )}
-      <Handle type="target" position={Position.Left} className={cn('w-3! h-3!', ACTION_COLORS.handle)} />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className={cn('w-3! h-3!', ACTION_COLORS.handle)}
+      />
 
       <div className="mb-1 flex items-center gap-2">
         <div className={cn('rounded p-1', ACTION_COLORS.chip)}>
@@ -279,7 +296,21 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
             </>
           )}
         </div>
-        {targetDisplay && <div className="truncate opacity-75">{targetDisplay}</div>}
+        {targetDisplay &&
+          (targetEntityId ? (
+            <button
+              type="button"
+              className="nodrag truncate text-left opacity-75 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                openMoreInfo(targetEntityId);
+              }}
+            >
+              {targetDisplay}
+            </button>
+          ) : (
+            <div className="truncate opacity-75">{targetDisplay}</div>
+          ))}
       </div>
 
       <Handle

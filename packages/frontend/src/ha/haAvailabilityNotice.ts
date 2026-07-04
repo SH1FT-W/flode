@@ -1,5 +1,5 @@
-import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { showWarningToast } from '@/lib/haToast';
 
 let hasNotified = false;
 
@@ -13,7 +13,7 @@ let hasNotified = false;
 export function notifyHaComponentIssue(context: string): void {
   if (!hasNotified) {
     hasNotified = true;
-    toast.warning('Native HA-Komponenten nicht verfügbar', {
+    showWarningToast('Native HA-Komponenten nicht verfügbar', {
       description: 'FLODE nutzt für einige Felder den eigenen Fallback statt HAs nativer UI.',
       duration: 6000,
     });

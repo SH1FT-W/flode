@@ -25,6 +25,7 @@ export function AutomationTraceViewer() {
     isShowingTrace,
     traceExecutionPath,
     traceTimestamps,
+    traceUnmappedStepCount,
     showTrace,
     hideTrace,
     setActiveNode,
@@ -281,6 +282,10 @@ export function AutomationTraceViewer() {
                 <span className="ml-2 truncate">{traceData.trigger}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-muted-foreground">{t('labels.timestamp')}</span>
+                <span>{formatTimestamp(traceData.timestamp.start)}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('labels.duration')}</span>
                 <span>{formatDuration(traceData.timestamp.start, traceData.timestamp.finish)}</span>
               </div>
@@ -290,6 +295,12 @@ export function AutomationTraceViewer() {
               </div>
             </div>
           </div>
+
+          {traceUnmappedStepCount > 0 && (
+            <div className="rounded bg-amber-50 p-1.5 text-amber-700 text-xs">
+              {t('dialogs:traceViewer.unmappedSteps', { count: traceUnmappedStepCount })}
+            </div>
+          )}
 
           {traceExecutionPath.length > 0 && (
             <div className="border-t pt-2">

@@ -11,6 +11,7 @@ import type {
   HADelay,
   HAWait,
   SetVariablesNode,
+  Target,
   TriggerNode,
   WaitNode,
 } from '@flode/shared';
@@ -1916,13 +1917,7 @@ export class YamlParser {
                     ? actionField
                     : undefined,
               target:
-                typeof target === 'object' && target !== null
-                  ? (target as {
-                      entity_id?: string | string[];
-                      area_id?: string | string[];
-                      device_id?: string | string[];
-                    })
-                  : undefined,
+                typeof target === 'object' && target !== null ? (target as Target) : undefined,
               data:
                 typeof data === 'object' && data !== null
                   ? (data as Record<string, unknown>)

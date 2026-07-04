@@ -47,10 +47,16 @@ export const TargetSchema = z
     entity_id: z.union([EntityIdSchema, z.array(EntityIdSchema)]).optional(),
     area_id: z.union([z.string(), z.array(z.string())]).optional(),
     device_id: z.union([z.string(), z.array(z.string())]).optional(),
+    label_id: z.union([z.string(), z.array(z.string())]).optional(),
+    floor_id: z.union([z.string(), z.array(z.string())]).optional(),
   })
-  .refine((data) => data.entity_id || data.area_id || data.device_id, {
-    message: 'At least one target (entity_id, area_id, or device_id) must be specified',
-  });
+  .refine(
+    (data) => data.entity_id || data.area_id || data.device_id || data.label_id || data.floor_id,
+    {
+      message:
+        'At least one target (entity_id, area_id, device_id, label_id, or floor_id) must be specified',
+    }
+  );
 export type Target = z.infer<typeof TargetSchema>;
 
 /**
@@ -61,6 +67,8 @@ export const OptionalTargetSchema = z
     entity_id: z.union([z.string(), z.array(z.string())]).optional(),
     area_id: z.union([z.string(), z.array(z.string())]).optional(),
     device_id: z.union([z.string(), z.array(z.string())]).optional(),
+    label_id: z.union([z.string(), z.array(z.string())]).optional(),
+    floor_id: z.union([z.string(), z.array(z.string())]).optional(),
   })
   .optional();
 

@@ -1,0 +1,11 @@
+alias: Area Target Automation
+description: Turn off all lights in the living room area
+trigger:
+  - platform: state
+    entity_id: binary_sensor.house_empty
+    to: "on"
+action:
+  - service: light.turn_off
+    target:
+      area_id: living_room
+mode: single

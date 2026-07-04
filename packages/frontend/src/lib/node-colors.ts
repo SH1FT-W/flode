@@ -99,4 +99,24 @@ export const NODE_STATE_CLASSES = {
   errorBadge: 'bg-destructive text-destructive-foreground',
   disabledBadge: 'bg-muted-foreground text-background',
   active: 'node-active ring-4 ring-success',
+  /** Trace overlay (Phase E) — real HA run, distinct from validation `error`/live `active`. */
+  traceExecuted: 'ring-2 ring-emerald-500/60',
+  traceError: 'border-destructive ring-2 ring-destructive/70',
+  traceSkipped: 'opacity-40 grayscale',
 } as const;
+
+export type TraceNodeState = 'executed' | 'error' | 'skipped' | null;
+
+/** Maps a node's `useTraceNodeState` result to the class from `NODE_STATE_CLASSES` above, if any. */
+export function getTraceStateClass(state: TraceNodeState): string | undefined {
+  switch (state) {
+    case 'executed':
+      return NODE_STATE_CLASSES.traceExecuted;
+    case 'error':
+      return NODE_STATE_CLASSES.traceError;
+    case 'skipped':
+      return NODE_STATE_CLASSES.traceSkipped;
+    default:
+      return undefined;
+  }
+}

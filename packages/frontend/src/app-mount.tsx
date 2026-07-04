@@ -8,8 +8,8 @@ import i18n from './i18n';
 import type { HomeAssistant } from './types/hass';
 
 export interface FlodeAppHandle {
-  /** Re-renders with a fresh `hass` object (panel mode only — HA gives us a new one on every update). */
-  update: (hass: HomeAssistant | undefined) => void;
+  /** Re-renders with fresh `hass`/`narrow`/language-override state (panel mode only — HA gives us fresh values on every update). */
+  update: (hass: HomeAssistant | undefined, narrow?: boolean, languageOverride?: string) => void;
   unmount: () => void;
 }
 
@@ -22,16 +22,26 @@ export interface FlodeAppHandle {
  */
 export function mountFlodeApp(
   container: HTMLElement,
-  options: { initialHass?: HomeAssistant; forceMode?: 'remote' } = {}
+  options: {
+    initialHass?: HomeAssistant;
+    initialNarrow?: boolean;
+    initialLanguageOverride?: string;
+    forceMode?: 'remote';
+  } = {}
 ): FlodeAppHandle {
   const root = ReactDOM.createRoot(container);
 
-  const render = (hass?: HomeAssistant) => {
+  const render = (hass?: HomeAssistant, narrow?: boolean, languageOverride?: string) => {
     root.render(
       <React.StrictMode>
         <I18nextProvider i18n={i18n}>
           <AppRootProvider value={container}>
-            <HassProvider externalHass={hass} forceMode={options.forceMode}>
+            <HassProvider
+              externalHass={hass}
+              externalNarrow={narrow}
+              externalLanguageOverride={languageOverride}
+              forceMode={options.forceMode}
+            >
               <App />
             </HassProvider>
           </AppRootProvider>
@@ -40,7 +50,7 @@ export function mountFlodeApp(
     );
   };
 
-  render(options.initialHass);
+  render(options.initialHass, options.initialNarrow, options.initialLanguageOverride);
 
   return {
     update: render,

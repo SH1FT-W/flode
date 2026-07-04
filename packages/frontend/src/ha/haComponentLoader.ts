@@ -46,6 +46,20 @@ const PROBE_CARD_BY_COMPONENT: Record<string, string> = {
   'ha-select': 'todo-list',
 };
 
+/**
+ * Components with NO lovelace card path at all — `ha-category-picker` and
+ * `ha-labels-picker` only ever get imported by config-panel dialogs
+ * (automation/scene save dialogs, registry detail dialogs), never by a
+ * lovelace card editor (verified via `gh search code` across
+ * home-assistant/frontend, 04.07.2026 — every reference lives under
+ * `src/panels/config/`). `loadCardHelpers` can't reach them, so probing via
+ * a card is pointless: only check whether something else already caused HA
+ * to register them (e.g. the user visited Settings > Automations earlier in
+ * this tab), don't treat "not yet registered" as an incompatibility worth a
+ * toast — it's the expected common case, not a version mismatch.
+ */
+const PASSIVE_ONLY = new Set(['ha-category-picker', 'ha-labels-picker']);
+
 /** Component names already confirmed registered — never re-probed. */
 const confirmed = new Set<string>();
 /** In-flight load attempts, keyed by component name, so concurrent callers share one probe. */
@@ -68,6 +82,12 @@ async function probe(name: string): Promise<boolean> {
     return true;
   }
 
+  if (PASSIVE_ONLY.has(name)) {
+    const ok = await waitForDefinition(name, LOAD_TIMEOUT_MS);
+    if (ok) confirmed.add(name);
+    return ok;
+  }
+
   try {
     const loadCardHelpers = window.loadCardHelpers;
     if (!loadCardHelpers) {
@@ -87,9 +107,7 @@ async function probe(name: string): Promise<boolean> {
       // We ARE inside HA (loadCardHelpers exists) but the component still
       // didn't show up — a genuine incompatibility worth surfacing, unlike
       // the loadCardHelpers-missing case above (expected in standalone dev).
-      notifyHaComponentIssue(
-        `HA component "${name}" did not register within ${LOAD_TIMEOUT_MS}ms`
-      );
+      notifyHaComponentIssue(`HA component "${name}" did not register within ${LOAD_TIMEOUT_MS}ms`);
     }
     return ok;
   } catch (error) {

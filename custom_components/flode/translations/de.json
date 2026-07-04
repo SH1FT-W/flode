@@ -10,5 +10,38 @@
     "abort": {
       "already_configured": "FLODE ist bereits eingerichtet"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "FLODE-Optionen",
+        "description": "Überschreibt die Sprache, die FLODEs eigene Oberfläche verwendet, unabhängig von Home Assistants aktiver Sprache.",
+        "data": {
+          "language": "Sprache"
+        }
+      }
+    }
+  },
+  "issues": {
+    "lossy_import": {
+      "title": "FLODE konnte eine importierte Automatisierung nicht vollständig verstehen",
+      "description": "Der Import von **{entity_id}** in FLODE ist nicht verlustfrei round-getrippt — einige Teile der Automatisierung wurden nicht erkannt und fehlen im Editor möglicherweise oder wurden vereinfacht:\n\n{details}\n\nPrüfe die Automatisierung in FLODE und vergleiche sie mit ihrem YAML, bevor du speicherst, um die nicht erkannten Teile nicht zu verlieren."
+    }
+  },
+  "services": {
+    "report_import_issue": {
+      "name": "Verlustbehafteten Import melden",
+      "description": "Erstellt ein Repair-Issue für eine Automatisierung, die FLODE beim Import nicht verlustfrei round-trippen konnte. Wird von FLODEs eigenem Frontend aufgerufen — nicht zur direkten Nutzung gedacht.",
+      "fields": {
+        "entity_id": {
+          "name": "Entity-ID",
+          "description": "Die importierte Automatisierungs-Entity."
+        },
+        "warnings": {
+          "name": "Warnungen",
+          "description": "Die Parser-Warnungen, die erklären, was nicht erkannt wurde."
+        }
+      }
+    }
   }
 }

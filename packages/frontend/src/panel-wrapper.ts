@@ -12,19 +12,46 @@
  */
 import { type FlodeAppHandle, mountFlodeApp } from './app-mount';
 import cssText from './index.css?inline';
+import { registerHaToastTarget } from './lib/haToast';
 import type { HomeAssistant } from './types/hass';
+
+/** Minimal shape of HA's `CustomPanelInfo` — only the bit FLODE's own `config_flow` options populate. */
+interface FlodePanelInfo {
+  config?: {
+    language?: string;
+  };
+}
 
 class FlodePanelWrapper extends HTMLElement {
   private _hass: HomeAssistant | undefined;
+  private _narrow = false;
+  private _languageOverride: string | undefined;
   private appHandle: FlodeAppHandle | null = null;
 
   set hass(value: HomeAssistant | undefined) {
     this._hass = value;
-    this.appHandle?.update(value);
+    this.appHandle?.update(value, this._narrow, this._languageOverride);
   }
 
   get hass() {
     return this._hass;
+  }
+
+  /** Set by HA's panel-loading mechanism (`ha-panel-custom`), same as `hass`. */
+  set narrow(value: boolean) {
+    this._narrow = value;
+    this.appHandle?.update(this._hass, value, this._languageOverride);
+  }
+
+  get narrow() {
+    return this._narrow;
+  }
+
+  /** Set by `ha-panel-custom` — carries `config` from `panel_custom.async_register_panel`, i.e. FLODE's own options-flow settings. */
+  set panel(value: FlodePanelInfo | undefined) {
+    const language = value?.config?.language;
+    this._languageOverride = language && language !== 'auto' ? language : undefined;
+    this.appHandle?.update(this._hass, this._narrow, this._languageOverride);
   }
 
   connectedCallback() {
@@ -49,12 +76,18 @@ class FlodePanelWrapper extends HTMLElement {
 
     shadow.appendChild(appRoot);
 
-    this.appHandle = mountFlodeApp(appRoot, { initialHass: this._hass });
+    this.appHandle = mountFlodeApp(appRoot, {
+      initialHass: this._hass,
+      initialNarrow: this._narrow,
+      initialLanguageOverride: this._languageOverride,
+    });
+    registerHaToastTarget(appRoot);
   }
 
   disconnectedCallback() {
     this.appHandle?.unmount();
     this.appHandle = null;
+    registerHaToastTarget(null);
   }
 }
 

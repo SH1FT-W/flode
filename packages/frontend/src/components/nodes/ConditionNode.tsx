@@ -2,8 +2,10 @@ import { Handle, type NodeProps, Position, useEdges } from '@xyflow/react';
 import { AlertCircle, Ban, GitBranch, GitFork, Repeat, Shuffle } from 'lucide-react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMoreInfo } from '@/hooks/useMoreInfo';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
-import { NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
+import { useTraceNodeState } from '@/hooks/useTraceNodeState';
+import { getTraceStateClass, NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
 import { cn } from '@/lib/utils';
 import type { ConditionNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
@@ -80,6 +82,8 @@ export const ConditionNode = memo(function ConditionNode({
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
   const { hasErrors, errorMessages } = useNodeErrors(id);
+  const openMoreInfo = useMoreInfo();
+  const traceState = useTraceNodeState(id);
   const isActive = activeNodeId === id;
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
@@ -129,7 +133,8 @@ export const ConditionNode = memo(function ConditionNode({
         selected && cn('ring-2 ring-offset-2', COLORS.ring),
         isActive && NODE_STATE_CLASSES.active,
         isDisabled && 'border-dashed opacity-50 grayscale',
-        hasErrors && NODE_STATE_CLASSES.error
+        hasErrors && NODE_STATE_CLASSES.error,
+        getTraceStateClass(traceState)
       )}
     >
       {chooseCase !== undefined && chooseCaseTotal !== undefined && (
@@ -191,11 +196,21 @@ export const ConditionNode = memo(function ConditionNode({
       {!hasNested && (
         <div className={cn('space-y-0.5 text-xs', COLORS.text)}>
           <div className="font-medium">{getConditionLabel(data.condition)}</div>
-          {data.entity_id && (
-            <div className="truncate opacity-75">
-              {Array.isArray(data.entity_id) ? data.entity_id.join(', ') : data.entity_id}
-            </div>
-          )}
+          {data.entity_id &&
+            (Array.isArray(data.entity_id) ? (
+              <div className="truncate opacity-75">{data.entity_id.join(', ')}</div>
+            ) : (
+              <button
+                type="button"
+                className="nodrag truncate text-left opacity-75 hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openMoreInfo(data.entity_id as string);
+                }}
+              >
+                {data.entity_id}
+              </button>
+            ))}
           {data.state && (
             <div className="opacity-75">
               {'= '}

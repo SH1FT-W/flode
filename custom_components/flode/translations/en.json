@@ -10,5 +10,38 @@
     "abort": {
       "already_configured": "FLODE is already configured"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "FLODE Options",
+        "description": "Override the language FLODE's own UI uses, independent of Home Assistant's active language.",
+        "data": {
+          "language": "Language"
+        }
+      }
+    }
+  },
+  "issues": {
+    "lossy_import": {
+      "title": "FLODE couldn't fully understand an imported automation",
+      "description": "Importing **{entity_id}** into FLODE didn't round-trip losslessly — some parts of the automation weren't recognized and may be missing or simplified in the editor:\n\n{details}\n\nCheck the automation in FLODE and compare it against its YAML before saving, to avoid losing the unrecognized parts."
+    }
+  },
+  "services": {
+    "report_import_issue": {
+      "name": "Report lossy import",
+      "description": "Creates a Repair issue for an automation FLODE couldn't round-trip losslessly during import. Called by FLODE's own frontend — not meant to be used directly.",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The automation entity that was imported."
+        },
+        "warnings": {
+          "name": "Warnings",
+          "description": "The parser warnings explaining what wasn't understood."
+        }
+      }
+    }
   }
 }

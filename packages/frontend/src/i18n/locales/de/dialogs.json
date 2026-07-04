@@ -6,7 +6,12 @@
     "descriptionUpdate": "Diese Automatisierung in Home Assistant aktualisieren",
     "nameLabel": "Automatisierungsname",
     "descriptionLabel": "Beschreibung (Optional)",
-    "nameConflict": "Name existiert bereits. Verwenden: \"{{suggestedName}}\"?"
+    "nameConflict": "Name existiert bereits. Verwenden: \"{{suggestedName}}\"?",
+    "iconLabel": "Icon (Optional)",
+    "categoryLabel": "Kategorie (Optional)",
+    "categoryPlaceholder": "Bestehenden oder neuen Kategorienamen eingeben...",
+    "labelsLabel": "Labels (Optional)",
+    "areaLabel": "Bereich (Optional)"
   },
   "import": {
     "title": "Automatisierung öffnen",
@@ -52,6 +57,8 @@
     "importSuccess": "Automatisierung \"{{name}}\" erfolgreich importiert!",
     "openedWarning": "Automatisierung \"{{name}}\" geöffnet!",
     "openedWarningDescription": "Konfiguration konnte nicht automatisch abgerufen werden. Sie können jetzt einen neuen Flow mit demselben Namen erstellen.",
+    "lossyImportWarning": "\"{{name}}\" importiert, aber nicht perfekt",
+    "lossyImportWarningDescription": "{{count}} Teil(e) wurden nicht erkannt — Details unter Einstellungen > Repairs.",
     "importFailed": "Automatisierung konnte nicht importiert werden: {{message}}",
     "ID": "ID: {{id}}",
     "otherArea": "Anderer Bereich",
@@ -104,8 +111,14 @@
     "description": "Ein unerwarteter Fehler ist in der Anwendung aufgetreten. Bitte sehen Sie die Details unten.",
     "refreshPrompt": "Bitte versuchen Sie, die Seite zu aktualisieren. Wenn das Problem weiterhin besteht, melden Sie es bitte in unserem GitHub-Repository."
   },
+  "exit": {
+    "confirmTitle": "FLODE verlassen?",
+    "confirmDescription": "Das bringt dich zurück zu Home Assistant.",
+    "confirmButton": "Beenden"
+  },
   "traceViewer": {
     "saveAutomationFirst": "Speichern Sie zuerst die Automatisierung, um Traces anzuzeigen",
-    "noTracesFound": "Keine Automatisierungs-Traces gefunden"
+    "noTracesFound": "Keine Automatisierungs-Traces gefunden",
+    "unmappedSteps": "{{count}} Trace-Schritt(e) konnten keinem Knoten zugeordnet werden (verschachtelter Choose-/Repeat-Zweig) und wurden übersprungen"
   }
 }

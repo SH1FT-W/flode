@@ -9,17 +9,19 @@ import { useHass } from '../contexts/HassContext';
  * Falls back to browser language if HA language is not available.
  */
 export function useLanguage() {
-  const { hass } = useHass();
+  const { hass, languageOverride } = useHass();
   const { i18n } = useTranslation();
 
   useEffect(() => {
-    // Get language from Home Assistant, browser, or default to 'en'
+    // FLODE's own options-flow override (config_flow.py) takes precedence
+    // over HA's active language when set to anything but "auto".
     const hassLanguage = hass?.language;
     const browserLanguage = navigator.language?.split('-')[0];
-    const targetLanguage = hassLanguage || browserLanguage || 'en';
+    const targetLanguage = languageOverride || hassLanguage || browserLanguage || 'en';
 
     logger.debug('[FLODE] useLanguage effect running', {
       hasHass: !!hass,
+      languageOverride,
       hassLanguage,
       browserLanguage,
       targetLanguage,
@@ -40,7 +42,7 @@ export function useLanguage() {
         );
       }
     }
-  }, [hass, i18n]);
+  }, [hass, languageOverride, i18n]);
 
   return i18n.language;
 }

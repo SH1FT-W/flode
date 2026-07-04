@@ -21,6 +21,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AutomationTrace } from '@/lib/ha-api';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
+import { logger } from '@/lib/logger';
 import { generateUUID } from '@/lib/utils';
 import type { HomeAssistant } from '@/types/hass';
 import { flodeIndexedDBStorage } from '@/utils/indexeddb-storage';
@@ -164,6 +165,12 @@ export interface FlowState {
   traceData: AutomationTrace | null;
   traceExecutionPath: string[];
   traceTimestamps: Record<string, string>;
+  /** Node IDs whose trace step raised an exception. */
+  traceNodeErrors: Record<string, string>;
+  /** Node IDs the graph can reach but the trace never touched (condition blocked, branch not taken, ...). */
+  traceSkippedNodeIds: string[];
+  /** Trace steps that couldn't be mapped to a node (nested choose/repeat paths) — count only, never blocks rendering. */
+  traceUnmappedStepCount: number;
 
   // Shared simulation/trace state
   simulationSpeed: number;
@@ -210,7 +217,7 @@ export interface FlowState {
   clearExecutionPath: () => void;
 
   // Trace
-  showTrace: (traceData: AutomationTrace) => void;
+  showTrace: (traceData: AutomationTrace) => Promise<void>;
   hideTrace: () => void;
   clearTraceExecutionPath: () => void;
 
@@ -284,6 +291,9 @@ const initialState = {
   traceData: null,
   traceExecutionPath: [],
   traceTimestamps: {},
+  traceNodeErrors: {},
+  traceSkippedNodeIds: [],
+  traceUnmappedStepCount: 0,
   simulationSpeed: 800,
   nodeErrors: new Map<string, NodeValidationError[]>(),
   clipboard: null,
@@ -669,69 +679,94 @@ export const useFlowStore = create<FlowState>()(
         })),
       clearExecutionPath: () => set({ executionPath: [] }),
 
-      showTrace: (traceData) => {
+      showTrace: async (traceData) => {
         const traceExecutionPath: string[] = [];
         const traceTimestamps: Record<string, string> = {};
+        const traceNodeErrors: Record<string, string> = {};
+        let traceUnmappedStepCount = 0;
 
-        // Extract execution path and timestamps from trace data
         if (traceData?.trace) {
-          // Get current flow nodes grouped by type and sorted by position
           const state = get();
-          const nodesByType: Record<string, Node<FlowNodeData>[]> = {
+          const graph = state.toFlowGraph();
+
+          // Read-only structural analysis, not the YAML transpile pipeline —
+          // gives execution order that respects the actual graph edges
+          // instead of guessing from node Y-position (broke as soon as a
+          // node was manually repositioned, or the layout wasn't top-down).
+          const { analyzeTopology } = await import('@flode/transpiler');
+          const { topologicalOrder } = analyzeTopology(graph);
+          const orderedIds = topologicalOrder ?? state.nodes.map((n) => n.id);
+
+          // Group node IDs by top-level type, preserving topological order
+          // within each group — this is what HA's flat `action/N`/`trigger/N`
+          // trace path indices are counted against.
+          const nodesById = new Map(state.nodes.map((n) => [n.id, n]));
+          const idsByType: Record<string, string[]> = {
             trigger: [],
             condition: [],
             action: [],
             wait: [],
             delay: [],
           };
-
-          // Group nodes by type and sort them (could be by y-position or order in array)
-          for (const node of state.nodes) {
-            const nodeType = node.type as keyof typeof nodesByType;
-            if (nodesByType[nodeType]) {
-              nodesByType[nodeType].push(node);
+          for (const id of orderedIds) {
+            const nodeType = nodesById.get(id)?.type;
+            if (nodeType && idsByType[nodeType]) {
+              idsByType[nodeType].push(id);
             }
           }
 
-          // Sort each group by y-position to match likely execution order
-          for (const type in nodesByType) {
-            nodesByType[type].sort((a, b) => a.position.y - b.position.y);
-          }
-
-          // Sort trace steps by timestamp to get execution order
           const sortedSteps = Object.entries(traceData.trace)
-            .flatMap(([path, steps]) => {
-              if (Array.isArray(steps)) {
-                return steps.map((step) => ({ ...step, path }));
-              }
-              return [];
-            })
+            .flatMap(([path, steps]) =>
+              Array.isArray(steps) ? steps.map((step) => ({ ...step, path })) : []
+            )
             .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-          // Map trace paths to actual node IDs
           for (const step of sortedSteps) {
             const pathParts = step.path.split('/');
-            const nodeType = pathParts[0]; // trigger, condition, action, etc.
-            const nodeIndex = parseInt(pathParts[1], 10); // 0, 1, 2, etc.
 
-            // Find the corresponding node in our flow
-            const nodesOfType = nodesByType[nodeType] || [];
-            if (nodesOfType[nodeIndex]) {
-              const nodeId = nodesOfType[nodeIndex].id;
+            // Nested paths (choose/repeat branches, e.g. `action/0/choose/1/sequence/0`)
+            // aren't mapped — reconstructing that nesting without touching the
+            // transpiler would just duplicate its topology logic. Counted, never crashes.
+            if (pathParts.length !== 2) {
+              traceUnmappedStepCount++;
+              logger.debug(`[trace] Skipping unmappable step path: ${step.path}`);
+              continue;
+            }
 
-              if (!traceExecutionPath.includes(nodeId)) {
-                traceExecutionPath.push(nodeId);
-                traceTimestamps[nodeId] = step.timestamp;
-              }
+            const [nodeType, indexStr] = pathParts;
+            const nodeIndex = Number.parseInt(indexStr, 10);
+            const nodeId = idsByType[nodeType]?.[nodeIndex];
+
+            if (!nodeId) {
+              traceUnmappedStepCount++;
+              logger.debug(`[trace] No matching node for step path: ${step.path}`);
+              continue;
+            }
+
+            if (!traceExecutionPath.includes(nodeId)) {
+              traceExecutionPath.push(nodeId);
+              traceTimestamps[nodeId] = step.timestamp;
+            }
+
+            const stepError = step.error ?? (step.result?.error ? 'Stopped with error' : undefined);
+            if (stepError) {
+              traceNodeErrors[nodeId] = stepError;
             }
           }
         }
+
+        const traceSkippedNodeIds = get()
+          .nodes.map((n) => n.id)
+          .filter((id) => !traceExecutionPath.includes(id));
 
         set({
           isShowingTrace: true,
           traceData,
           traceExecutionPath,
           traceTimestamps,
+          traceNodeErrors,
+          traceSkippedNodeIds,
+          traceUnmappedStepCount,
           activeNodeId: null,
         });
       },
@@ -741,9 +776,18 @@ export const useFlowStore = create<FlowState>()(
           traceData: null,
           traceExecutionPath: [],
           traceTimestamps: {},
+          traceNodeErrors: {},
+          traceSkippedNodeIds: [],
+          traceUnmappedStepCount: 0,
           activeNodeId: null,
         }),
-      clearTraceExecutionPath: () => set({ traceExecutionPath: [], traceTimestamps: {} }),
+      clearTraceExecutionPath: () =>
+        set({
+          traceExecutionPath: [],
+          traceTimestamps: {},
+          traceNodeErrors: {},
+          traceSkippedNodeIds: [],
+        }),
 
       setSimulationSpeed: (speed) => set({ simulationSpeed: speed }),
       getExecutionStepNumber: (nodeId) => {

@@ -1,0 +1,19 @@
+alias: Mixed Target Automation
+description: Notify a specific entity, device, area, floor and label all at once
+trigger:
+  - platform: state
+    entity_id: binary_sensor.smoke_detector
+    to: "on"
+action:
+  - action: notify.notify
+    target:
+      entity_id: media_player.kitchen_speaker
+      device_id: 4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d
+      area_id:
+        - living_room
+        - kitchen
+      floor_id: ground_floor
+      label_id: critical-alert
+    data:
+      message: Smoke detected!
+mode: single
