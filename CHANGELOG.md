@@ -4,6 +4,13 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.2.1] — 2026-07-04 — Dependency Security Patch
+
+### Internal
+- **Pinned transitive dependencies to patched versions** via `resolutions` — `tar`, `lodash`, `minimatch`, `@isaacs/brace-expansion`, `uuid`, `ip-address`, `picomatch`, and `diff` were all resolving to versions flagged by Dependabot advisories through indirect dependencies (build tooling only — `node-gyp`, `graphlib`, `glob`, `socks-proxy-agent`, `ts-node`, `tinyglobby`); none were reachable from the shipped frontend bundle, but all are now forced to the fixed releases.
+
+---
+
 ## [1.2.0] — 2026-07-03 — Native Home Assistant UI
 
 ### Added
