@@ -118,8 +118,8 @@
   "theme": {
     "toggleLabel": "Theme",
     "auto": "Automatic (your HA setting)",
-    "light": "Home Assistant Light",
-    "dark": "Home Assistant Dark"
+    "light": "Light",
+    "dark": "Dark"
   },
   "combobox": {
     "select": "Select...",
