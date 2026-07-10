@@ -4,6 +4,18 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.3.1] — 2026-07-10 — Light/Dark Theme Override
+
+### Added
+- **Theme toggle in the header** — force FLODE into Home Assistant's own light or dark palette independently of your HA profile's theme, or leave it on "Automatic" to keep following your real HA setting as before. Persisted per browser via `localStorage`.
+
+### Fixed
+- **Native HA components (pickers, selectors, ...) ignored FLODE's theme entirely**, always showing the real HA theme regardless of what FLODE's own chrome displayed — they read Home Assistant's CSS variables directly, which the light/dark override now also overrides in addition to FLODE's own aliased tokens.
+- **Text color leaked in from the real Home Assistant page instead of FLODE's own theme** in panel mode, because FLODE's base color rule targeted `body`, which doesn't exist inside FLODE's Shadow DOM there — invisible on any override that diverged from the actual HA theme (e.g. forcing light while signed into a dark HA profile). Fixed by declaring the color/background explicitly on FLODE's own root element instead of relying on inheritance.
+- **Fallback light/dark colors didn't match Home Assistant's real palette** — several were approximated by hand and had drifted (`primary-color`, `primary-text-color`, `secondary-text-color`), and the status colors (error/warning/success/info) were incorrectly varied between light and dark when real HA keeps them constant. Values are now read directly from `home-assistant/frontend`'s theme source.
+
+---
+
 ## [1.3.0] — 2026-07-04 — Registry Metadata, Full Targeting, Trace Overlay & Deep Links
 
 ### Added

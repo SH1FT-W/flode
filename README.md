@@ -5,7 +5,7 @@
 
   <p><strong>Visual Flow + Node Editor for Home Assistant</strong></p>
 
-  [![Release](https://img.shields.io/badge/version-1.3.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
+  [![Release](https://img.shields.io/badge/version-1.3.1-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
   [![HA Version](https://img.shields.io/badge/HA-2025.8%2B-brightgreen?style=flat-square)](https://www.home-assistant.io)
   [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](LICENSE)
   [![Tests](https://img.shields.io/badge/tests-304%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
@@ -54,7 +54,7 @@ No vendor lock-in. No external service. Automations remain fully editable in HA'
 | 🔗 **Deep links** | Open FLODE straight into a specific automation from any dashboard button |
 | 🩺 **Diagnostics & Repairs** | Native HA diagnostics download, and Repair issues for automations that couldn't be imported losslessly |
 | 🌍 **DE & EN** | Full i18n support, with a per-installation language override |
-| 🌗 **Dark & light mode** | Automatically follows your configured HA theme |
+| 🌗 **Dark & light mode** | Follows your configured HA theme by default, or force light/dark independently via the header toggle |
 
 ---
 
