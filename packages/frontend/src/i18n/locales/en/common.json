@@ -117,7 +117,7 @@
   },
   "theme": {
     "toggleLabel": "Theme",
-    "auto": "Automatic (your HA setting)",
+    "auto": "Auto",
     "light": "Light",
     "dark": "Dark"
   },

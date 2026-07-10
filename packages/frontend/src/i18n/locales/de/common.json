@@ -117,7 +117,7 @@
   },
   "theme": {
     "toggleLabel": "Design",
-    "auto": "Automatisch (eigene HA-Einstellung)",
+    "auto": "Auto",
     "light": "Hell",
     "dark": "Dunkel"
   },
