@@ -9,6 +9,9 @@
     "validationFailed": "Validation failed: {{errors}}",
     "transpileFailed": "Failed to transpile flow to automation config",
     "noAutomationId": "No automation ID set. Use saveAutomation() for new automations.",
+    "node": {
+      "duplicateId": "ID already in use — must be unique within the automation"
+    },
     "trigger": {
       "platformRequired": "Trigger platform is required",
       "entityRequired": {

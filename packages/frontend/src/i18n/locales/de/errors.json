@@ -9,6 +9,9 @@
     "validationFailed": "Validierung fehlgeschlagen: {{errors}}",
     "transpileFailed": "Flow konnte nicht in Automatisierungskonfiguration transpiliert werden",
     "noAutomationId": "Keine Automatisierungs-ID gesetzt. Verwenden Sie saveAutomation() für neue Automatisierungen.",
+    "node": {
+      "duplicateId": "ID bereits vergeben — muss innerhalb der Automatisierung eindeutig sein"
+    },
     "trigger": {
       "platformRequired": "Auslöser-Typ ist erforderlich",
       "entityRequired": {
