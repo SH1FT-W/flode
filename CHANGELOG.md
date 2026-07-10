@@ -4,6 +4,16 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.4.0] — 2026-07-10 — Quick-Add on Connection Drop
+
+### Added
+- **Quick-add menu on empty-canvas connection drop** — drag a connection from a node's handle and release it on empty canvas to get a searchable node picker at the drop point instead of losing the connection. Picking a type creates that node there and auto-wires the dragged connection to it. Direction-aware: dragging from a source handle excludes Trigger (it has no target handle to satisfy the drag); dragging from a target handle offers Trigger but not compound blocks (no single well-defined exit point to wire).
+
+### Fixed
+- **Compound-block entry point was assumed to be the first node, which was wrong for `repeat_while`** — its first node is the loop body, not the while-condition that actually runs first (found while wiring quick-add's auto-connect for compound blocks). `parallel` also has two independent branches with no single entry at all. `block-factories.ts` now returns an explicit `entryNodeIds` per block instead of callers guessing `nodes[0]`.
+
+---
+
 ## [1.3.2] — 2026-07-10 — Undo/Redo
 
 ### Added

@@ -5,10 +5,10 @@
 
   <p><strong>Visual Flow + Node Editor for Home Assistant</strong></p>
 
-  [![Release](https://img.shields.io/badge/version-1.3.2-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
+  [![Release](https://img.shields.io/badge/version-1.4.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
   [![HA Version](https://img.shields.io/badge/HA-2025.8%2B-brightgreen?style=flat-square)](https://www.home-assistant.io)
   [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](LICENSE)
-  [![Tests](https://img.shields.io/badge/tests-309%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
+  [![Tests](https://img.shields.io/badge/tests-316%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
   [![HACS](https://img.shields.io/badge/HACS-custom-blueviolet?style=flat-square)](https://hacs.xyz)
 
   <br/>
@@ -45,6 +45,7 @@ No vendor lock-in. No external service. Automations remain fully editable in HA'
 |---|---|
 | 🎯 **Visual editor** | Drag and drop triggers, conditions, and actions onto a canvas |
 | ↩️ **Undo/Redo** | Cmd+Z / Cmd+Shift+Z on the canvas — rapid changes like a drag or a run of keystrokes coalesce into a single step |
+| ⚡ **Quick-add on drop** | Drag a connection onto empty canvas to search and add the next node, auto-wired |
 | 📄 **100% native YAML** | No proprietary format — standard HA automation YAML |
 | 🔄 **Bidirectional** | Import, edit, and save back existing HA automations |
 | 🐛 **Trace overlay** | See a real automation run highlighted directly on the canvas — executed, skipped, and errored nodes, right in the diagram |
@@ -145,7 +146,7 @@ technical writeup.
 - **Frontend:** React 18, Vite, Tailwind CSS, React Flow (xyflow), Zustand, i18next
 - **Transpiler:** TypeScript, js-yaml, ELK layout engine
 - **Validation:** Zod schemas
-- **Tests:** Vitest (309 tests)
+- **Tests:** Vitest (316 tests)
 - **HA integration:** Python, custom panel via `panel_custom`
 
 ---
