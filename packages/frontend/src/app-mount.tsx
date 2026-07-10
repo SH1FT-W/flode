@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next';
 import App from './App';
 import { AppRootProvider } from './contexts/AppRootContext';
 import { HassProvider } from './contexts/HassContext';
+import { ThemeOverrideProvider } from './contexts/ThemeOverrideContext';
 import i18n from './i18n';
 import type { HomeAssistant } from './types/hass';
 
@@ -29,6 +30,16 @@ export function mountFlodeApp(
     forceMode?: 'remote';
   } = {}
 ): FlodeAppHandle {
+  // `color`/`background-color` must be declared on this exact element, not
+  // just further up (`:host`/`:root`/`body` in index.css) — App.tsx toggles
+  // the `.dark` class on this same `container` (see useAppRoot/AppRootContext),
+  // and CSS custom-property overrides from a class only affect ordinary
+  // properties like `color` that are declared ON that element (or below).
+  // Declaring them higher up locks in whichever mode was active at that
+  // higher element (which never gets `.dark` toggled) and never re-resolves,
+  // so dark mode silently kept rendering light-mode text/background.
+  container.classList.add('bg-background', 'text-foreground');
+
   const root = ReactDOM.createRoot(container);
 
   const render = (hass?: HomeAssistant, narrow?: boolean, languageOverride?: string) => {
@@ -42,7 +53,9 @@ export function mountFlodeApp(
               externalLanguageOverride={languageOverride}
               forceMode={options.forceMode}
             >
-              <App />
+              <ThemeOverrideProvider>
+                <App />
+              </ThemeOverrideProvider>
             </HassProvider>
           </AppRootProvider>
         </I18nextProvider>

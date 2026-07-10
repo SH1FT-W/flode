@@ -115,6 +115,12 @@
     "true": "Wahr",
     "false": "Falsch"
   },
+  "theme": {
+    "toggleLabel": "Design",
+    "auto": "Automatisch (eigene HA-Einstellung)",
+    "light": "Home Assistant Hell",
+    "dark": "Home Assistant Dunkel"
+  },
   "combobox": {
     "select": "Auswählen...",
     "noOptions": "Keine Optionen gefunden."

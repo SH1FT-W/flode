@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAppRoot } from '@/contexts/AppRootContext';
 import { useHass } from '@/contexts/HassContext';
+import { useThemeOverride } from '@/contexts/ThemeOverrideContext';
 import { applyHaTheme } from '@/lib/ha-theme';
 
 /**
@@ -10,13 +11,19 @@ import { applyHaTheme } from '@/lib/ha-theme';
  * `document.documentElement` — in panel mode that's HA's own shared `<html>`,
  * which we must not mutate; the app-root div inside our shadow root is the
  * correct, self-contained target either way.
+ *
+ * Reads FLODE's own light/dark override from ThemeOverrideContext and passes
+ * it straight through to applyHaTheme — same source of truth as useDarkMode,
+ * so the CSS variables set here always agree with components branching on
+ * useDarkMode().
  */
 export function useHaThemeSync() {
   const { hass } = useHass();
   const appRoot = useAppRoot();
+  const { themeOverride } = useThemeOverride();
 
   useEffect(() => {
     if (!appRoot) return;
-    applyHaTheme(appRoot, hass);
-  }, [hass, appRoot]);
+    applyHaTheme(appRoot, hass, themeOverride);
+  }, [hass, appRoot, themeOverride]);
 }

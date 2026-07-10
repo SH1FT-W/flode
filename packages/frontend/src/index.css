@@ -206,6 +206,18 @@
   * {
     @apply border-border;
   }
+  /* :host matches the flode-panel custom element in panel mode — FLODE never
+     has a real <body> inside its Shadow DOM there, so `body` alone left
+     `color` unset and it silently inherited HA's real ambient text color
+     from outside the shadow boundary instead of FLODE's own --foreground.
+     That went unnoticed as long as FLODE only ever mirrored the real HA
+     theme (the inherited color always happened to match), but breaks the
+     moment FLODE's light/dark override diverges from the user's actual HA
+     theme (e.g. forcing light while signed in with a dark HA theme leaves
+     text light-colored on a light background). :root covers standalone dev,
+     which has a real <html>/<body>. */
+  :root,
+  :host,
   body {
     @apply bg-background text-foreground;
   }

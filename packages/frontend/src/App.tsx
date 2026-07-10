@@ -72,6 +72,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ResizablePanel } from '@/components/ui/resizable-panel';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
@@ -199,7 +200,7 @@ function App() {
 
   // Sync language with Home Assistant
   useLanguage();
-  // Sync HA theme colors (custom theme + light/dark fallbacks) onto our CSS vars
+  // Sync HA theme colors (custom theme + light/dark fallbacks, or FLODE's own override) onto our CSS vars
   useHaThemeSync();
 
   // Version guard: log which HA version we're running against, once —
@@ -357,6 +358,8 @@ function App() {
             </div>
 
             <div className="flex items-center gap-2">
+              <ThemeToggle />
+
               {status && (
                 <Badge
                   onClick={() => setSettingsOpen(true)}
