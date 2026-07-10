@@ -1,37 +1,12 @@
-import { useEffect, useState } from 'react';
-import { logger } from '@/lib/logger';
 import { useHass } from '../contexts/HassContext';
 
 /**
- * Hook to detect and sync with Home Assistant's dark mode
- * Uses the hass.themes.darkMode property
+ * Hook to detect and sync with Home Assistant's dark mode.
+ * Reads hass.themes.darkMode directly on every render instead of
+ * caching it in state — avoids stale values when HA mutates the
+ * themes object without replacing the hass reference.
  */
 export function useDarkMode() {
   const { hass } = useHass();
-  const [isDarkMode, setIsDarkMode] = useState(hass?.themes?.darkMode ?? false);
-
-  useEffect(() => {
-    logger.debug('[FLODE] useDarkMode effect running', {
-      hasHass: !!hass,
-      hasStates: !!(hass?.states && Object.keys(hass.states).length > 0),
-      hasThemes: !!hass?.themes,
-      darkMode: hass?.themes?.darkMode,
-    });
-
-    if (hass?.themes?.darkMode !== undefined) {
-      const darkMode = hass.themes.darkMode;
-      logger.debug('[FLODE] Dark mode from hass.themes.darkMode:', darkMode);
-      setIsDarkMode(darkMode);
-    } else if (hass && Object.keys(hass.states || {}).length > 0) {
-      // Hass is available but themes.darkMode is not set, default to false
-      logger.debug(
-        '[FLODE] Hass available but no themes.darkMode property, defaulting to light mode'
-      );
-      setIsDarkMode(false);
-    } else {
-      logger.debug('[FLODE] Hass not available yet or no entities loaded');
-    }
-  }, [hass]);
-
-  return isDarkMode;
+  return hass?.themes?.darkMode ?? false;
 }
