@@ -81,7 +81,7 @@ function edge(source: string, target: string, sourceHandle?: string): Edge {
 
 describe('block-factories: structural output', () => {
   it('createChooseBlock: two condition cases linked by an (invisible) choose-chain', () => {
-    const { nodes, edges } = createChooseBlock(0, 0);
+    const { nodes, edges, entryNodeIds } = createChooseBlock(0, 0);
     const conditions = nodes.filter((n) => n.type === 'condition');
     expect(conditions).toHaveLength(2);
     expect(nodes.every((n) => n.data._blockKey === 'choose')).toBe(true);
@@ -93,18 +93,22 @@ describe('block-factories: structural output', () => {
     expect(chain?.sourceHandle).toBe('false');
     expect(chain?.source).toBe(conditions[0].id);
     expect(chain?.target).toBe(conditions[1].id);
+
+    // A connection into this block should wire to the first case, not the second.
+    expect(entryNodeIds).toEqual([conditions[0].id]);
   });
 
   it('createIfElseBlock: a single bare condition, no edges', () => {
-    const { nodes, edges } = createIfElseBlock(0, 0);
+    const { nodes, edges, entryNodeIds } = createIfElseBlock(0, 0);
     expect(nodes).toHaveLength(1);
     expect(nodes[0].type).toBe('condition');
     expect(nodes[0].data._blockKey).toBe('if_else');
     expect(edges).toHaveLength(0);
+    expect(entryNodeIds).toEqual([nodes[0].id]);
   });
 
   it('createRepeatWhileBlock: action left of condition, true-edge + loop-back', () => {
-    const { nodes, edges } = createRepeatWhileBlock(0, 0);
+    const { nodes, edges, entryNodeIds } = createRepeatWhileBlock(0, 0);
     const condition = nodes.find((n) => n.type === 'condition');
     const action = nodes.find((n) => n.type === 'action');
     expect(condition).toBeDefined();
@@ -122,25 +126,34 @@ describe('block-factories: structural output', () => {
     const loopBack = edges.find((e) => e.type === 'loop-back');
     expect(loopBack?.source).toBe(action!.id);
     expect(loopBack?.target).toBe(condition!.id);
+
+    // The while-condition is evaluated first — a connection into this block
+    // must wire to it, NOT to the loop body (nodes[0] is the action, which
+    // would be wrong).
+    expect(entryNodeIds).toEqual([condition!.id]);
   });
 
   it('createRepeatCountBlock: one opaque action with repeat.count', () => {
-    const { nodes, edges } = createRepeatCountBlock(0, 0);
+    const { nodes, edges, entryNodeIds } = createRepeatCountBlock(0, 0);
     expect(nodes).toHaveLength(1);
     expect(edges).toHaveLength(0);
     const repeat = nodes[0].data.repeat as { count: number; sequence: unknown[] };
     expect(repeat.count).toBe(3);
     expect(nodes[0].data._blockKey).toBe('repeat_count');
+    expect(entryNodeIds).toEqual([nodes[0].id]);
   });
 
   it('createParallelBlock: two independent action branches', () => {
-    const { nodes, edges } = createParallelBlock(0, 0);
+    const { nodes, edges, entryNodeIds } = createParallelBlock(0, 0);
     const actions = nodes.filter((n) => n.type === 'action');
     expect(actions).toHaveLength(2);
     expect(actions.every((n) => n.data._blockKey === 'parallel')).toBe(true);
     expect(edges).toHaveLength(0);
     // Branches are vertically offset so the user can see both.
     expect(actions[0].position.y).not.toBe(actions[1].position.y);
+
+    // Both branches run concurrently — a connection into this block wires to both.
+    expect(entryNodeIds).toEqual([actions[0].id, actions[1].id]);
   });
 });
 

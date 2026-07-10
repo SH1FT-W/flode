@@ -27,6 +27,9 @@
     "repeat_count": "N× Wiederholen",
     "parallel": "Parallel"
   },
+  "quickAdd": {
+    "searchPlaceholder": "Knoten suchen…"
+  },
   "panel": {
     "selectNode": "Wählen Sie einen Knoten, um seine Eigenschaften zu bearbeiten",
     "properties": "Eigenschaften",

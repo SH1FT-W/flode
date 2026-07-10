@@ -5,6 +5,13 @@ import type { ActionNodeData, ConditionNodeData, FlowNodeData } from '@/store/fl
 export type CompoundBlock = {
   nodes: Node<FlowNodeData>[];
   edges: Edge[];
+  /**
+   * Node id(s) that a connection dragged *into* this block should wire to —
+   * the block's actual first-executed step(s). Not necessarily `nodes[0]`:
+   * `repeat_while`'s entry is its while-condition, not its loop body, and
+   * `parallel` has two independent branches that both need wiring, not one.
+   */
+  entryNodeIds: string[];
 };
 
 export type CompoundBlockKey = 'choose' | 'if_else' | 'repeat_while' | 'repeat_count' | 'parallel';
@@ -64,6 +71,7 @@ export function createChooseBlock(baseX: number, baseY: number): CompoundBlock {
         type: 'choose-chain',
       },
     ],
+    entryNodeIds: [c1],
   };
 }
 
@@ -73,6 +81,7 @@ export function createIfElseBlock(baseX: number, baseY: number): CompoundBlock {
   return {
     nodes: [condNode(cond, baseX, baseY, { _blockKey: 'if_else' })],
     edges: [],
+    entryNodeIds: [cond],
   };
 }
 
@@ -89,6 +98,8 @@ export function createRepeatWhileBlock(baseX: number, baseY: number): CompoundBl
       { id: eid(cond, body, 'true'), source: cond, target: body, sourceHandle: 'true' },
       { id: eid(body, cond, 'loop'), source: body, target: cond, type: 'loop-back' },
     ],
+    // The while-condition runs first, not the loop body.
+    entryNodeIds: [cond],
   };
 }
 
@@ -104,6 +115,7 @@ export function createRepeatCountBlock(baseX: number, baseY: number): CompoundBl
       },
     ],
     edges: [],
+    entryNodeIds: [id],
   };
 }
 
@@ -117,6 +129,8 @@ export function createParallelBlock(baseX: number, baseY: number): CompoundBlock
       actionNode(b2, baseX, baseY + 65, { _blockKey: 'parallel' }),
     ],
     edges: [],
+    // Both branches run concurrently — a connection into this block wires to both.
+    entryNodeIds: [b1, b2],
   };
 }
 

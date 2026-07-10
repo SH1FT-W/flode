@@ -88,7 +88,7 @@ export const nodeTypes = [
   },
 ] as const satisfies readonly NodeTypeConfig[];
 
-interface CompoundTypeConfig {
+export interface CompoundTypeConfig {
   key: CompoundBlockKey;
   labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -96,7 +96,7 @@ interface CompoundTypeConfig {
   group: 'branching' | 'loops' | 'parallel';
 }
 
-const compoundTypes = [
+export const compoundTypes = [
   {
     key: 'choose' as CompoundBlockKey,
     labelKey: 'nodes:compoundBlocks.choose',

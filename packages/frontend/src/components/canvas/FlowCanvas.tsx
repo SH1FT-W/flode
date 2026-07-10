@@ -1,4 +1,4 @@
-import type { OnBeforeDelete } from '@xyflow/react';
+import type { OnBeforeDelete, OnConnectEnd } from '@xyflow/react';
 import {
   Background,
   BackgroundVariant,
@@ -12,8 +12,9 @@ import {
   ReactFlow,
   useReactFlow,
 } from '@xyflow/react';
-import { type DragEvent, useCallback, useEffect, useMemo, useRef } from 'react';
+import { type DragEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { QuickAddMenu, type QuickAddPosition } from '@/components/canvas/QuickAddMenu';
 import {
   ChooseChainEdge,
   ChooseDefaultEdge,
@@ -29,12 +30,22 @@ import {
   TriggerNode,
   WaitNode,
 } from '@/components/nodes';
+import type { NodeTypeConfig } from '@/components/panels/NodePalette';
 import { NodeToolbar } from '@/components/toolbar/NodeToolbar';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { type CompoundBlockKey, createCompoundBlock } from '@/lib/block-factories';
+import { buildQuickAddConnections, type QuickAddDirection } from '@/lib/quick-add';
 import { generateNodeId } from '@/lib/utils';
 import { useFlowStore } from '@/store/flow-store';
 import { isMacOS } from '@/utils/useAgentPlatform';
+
+interface QuickAddState {
+  screenPosition: QuickAddPosition;
+  flowPosition: { x: number; y: number };
+  fromNodeId: string;
+  fromHandleId: string | null;
+  direction: QuickAddDirection;
+}
 
 // New node types should be added here as needed!
 const nodeTypes: NodeTypes = {
@@ -76,11 +87,89 @@ export function FlowCanvas() {
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, setViewport } = useReactFlow();
+  const [quickAdd, setQuickAdd] = useState<QuickAddState | null>(null);
 
   // Set initial zoom level
   useEffect(() => {
     setViewport({ x: 0, y: 0, zoom: 0.75 });
   }, [setViewport]);
+
+  // Dropping a dragged connection on empty canvas offers a quick-add menu
+  // instead of just discarding it — see QuickAddMenu.tsx.
+  const onConnectEnd = useCallback<OnConnectEnd>(
+    (event, connectionState) => {
+      // A real (or attempted, near-a-handle) connection was involved —
+      // xyflow already handled it, nothing for us to do.
+      if (connectionState.toNode || !connectionState.fromHandle || !connectionState.fromNode) {
+        return;
+      }
+      // Released outside the canvas entirely (e.g. over the node palette).
+      const targetEl = event.target as Element | null;
+      if (!targetEl?.closest?.('.react-flow__pane')) return;
+
+      const point = 'changedTouches' in event ? event.changedTouches[0] : event;
+      if (!point) return;
+
+      const flowPosition = screenToFlowPosition({ x: point.clientX, y: point.clientY });
+
+      setQuickAdd({
+        screenPosition: { screenX: point.clientX, screenY: point.clientY },
+        flowPosition,
+        fromNodeId: connectionState.fromHandle.nodeId,
+        fromHandleId: connectionState.fromHandle.id ?? null,
+        direction: connectionState.fromHandle.type === 'source' ? 'forward' : 'backward',
+      });
+    },
+    [screenToFlowPosition]
+  );
+
+  const closeQuickAdd = useCallback(() => setQuickAdd(null), []);
+
+  const handleQuickAddSimple = useCallback(
+    (config: NodeTypeConfig) => {
+      if (!quickAdd) return;
+      const nodeWidth = 180;
+      const nodeHeight = 80;
+      const newNode = {
+        id: generateNodeId(config.type),
+        type: config.type,
+        position: {
+          x: quickAdd.flowPosition.x - nodeWidth / 2,
+          y: quickAdd.flowPosition.y - nodeHeight / 2,
+        },
+        data: { ...config.defaultData },
+      };
+      addNode(newNode);
+      for (const connection of buildQuickAddConnections(
+        quickAdd.direction,
+        quickAdd.fromNodeId,
+        quickAdd.fromHandleId,
+        [newNode.id]
+      )) {
+        onConnect(connection);
+      }
+      setQuickAdd(null);
+    },
+    [quickAdd, addNode, onConnect]
+  );
+
+  const handleQuickAddCompound = useCallback(
+    (key: CompoundBlockKey) => {
+      if (!quickAdd) return;
+      const block = createCompoundBlock(key, quickAdd.flowPosition.x, quickAdd.flowPosition.y);
+      addCompound(block.nodes, block.edges);
+      for (const connection of buildQuickAddConnections(
+        quickAdd.direction,
+        quickAdd.fromNodeId,
+        quickAdd.fromHandleId,
+        block.entryNodeIds
+      )) {
+        onConnect(connection);
+      }
+      setQuickAdd(null);
+    },
+    [quickAdd, addCompound, onConnect]
+  );
 
   const onSelectionChange = useCallback(
     ({ nodes: selectedNodes }: OnSelectionChangeParams) => {
@@ -276,6 +365,7 @@ export function FlowCanvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onConnectEnd={onConnectEnd}
         onBeforeDelete={onBeforeDelete}
         onSelectionChange={onSelectionChange}
         onDragOver={onDragOver}
@@ -359,6 +449,14 @@ export function FlowCanvas() {
           </Panel>
         )}
       </ReactFlow>
+
+      <QuickAddMenu
+        position={quickAdd?.screenPosition ?? null}
+        direction={quickAdd?.direction ?? 'forward'}
+        onSelectSimple={handleQuickAddSimple}
+        onSelectCompound={handleQuickAddCompound}
+        onClose={closeQuickAdd}
+      />
     </div>
   );
 }
