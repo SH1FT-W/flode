@@ -464,6 +464,7 @@ __metadata:
     typescript: "npm:^6.0.3"
     vite: "npm:^8.1.3"
     vitest: "npm:^4.1.9"
+    zundo: "npm:^2.3.0"
     zustand: "npm:^5.0.14"
   languageName: unknown
   linkType: soft
@@ -5181,6 +5182,18 @@ __metadata:
   version: 4.4.3
   resolution: "zod@npm:4.4.3"
   checksum: 10c0/7ea31b558e88f9faf44f31dd185e2e1cbf51fed3081787fb96cc2534749b50c0acfc6da7f0922a7353ed092dd358c7d50c28ea96c94d04af64191bd33152eca3
+  languageName: node
+  linkType: hard
+
+"zundo@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "zundo@npm:2.3.0"
+  peerDependencies:
+    zustand: ^4.3.0 || ^5.0.0
+  peerDependenciesMeta:
+    zustand:
+      optional: false
+  checksum: 10c0/673d13570b1029830a7ace37b7946c6d878a6493c565727351bd5791f6e46e4b25eb132f96985137bc3f0aa3c7f69093ef87ea2bfb4aa5805b0eb804e8eaa916
   languageName: node
   linkType: hard
 

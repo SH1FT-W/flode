@@ -142,6 +142,8 @@
   },
   "toolbar": {
     "runAction": "Aktion ausführen",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen",
     "cut": "Ausschneiden",
     "copy": "Kopieren",
     "paste": "Einfügen",

@@ -45,6 +45,7 @@
     "react-i18next": "^17.0.8",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
+    "zundo": "^2.3.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
