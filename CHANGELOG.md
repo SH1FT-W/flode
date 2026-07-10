@@ -4,6 +4,16 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.3.2] — 2026-07-10 — Undo/Redo
+
+### Added
+- **Undo/Redo on the canvas** — Cmd+Z / Cmd+Shift+Z (also Ctrl+Y), plus buttons in the canvas toolbar. Tracks graph content (nodes, edges, name, description, metadata) only — selection, simulation, and clipboard state never create or get reverted by a history entry. Rapid bursts of changes (dragging a node, a run of keystrokes) coalesce into a single undo step instead of one per pointer-move frame. Opening a different automation, or clearing the canvas, resets history so you can't undo into a previous automation.
+
+### Fixed
+- **Externally-controlled value in a log format string** (CodeQL `js/tainted-format-string`) — the deep-link automation ID and a batch-fetch automation ID were interpolated directly into `console.warn` messages; a crafted ID containing `%s`/`%d` could garble the logged output. Passed as a separate `%s` argument instead.
+
+---
+
 ## [1.3.1] — 2026-07-10 — Light/Dark Theme Override
 
 ### Added
