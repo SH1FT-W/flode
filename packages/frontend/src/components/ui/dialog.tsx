@@ -5,7 +5,20 @@ import { useTranslation } from 'react-i18next';
 import { usePortalContainer } from '@/contexts/AppRootContext';
 import { cn } from '@/lib/utils';
 
-const Dialog = DialogPrimitive.Root;
+// `modal` defaults to false: Radix's default `modal=true` wraps children in
+// react-remove-scroll to lock body scroll, which attaches its wheel listener
+// to the outer `document`. FLODE's panel renders inside a Shadow DOM
+// (panel-wrapper.ts), and Shadow DOM event retargeting means that listener
+// never sees the same `event.target` its internal capture-phase handler
+// recorded, so it falls back to blocking every wheel event inside the
+// dialog — nothing scrolls. The Overlay still covers/dims the background and
+// blocks pointer interaction with it either way.
+const Dialog = ({
+  modal = false,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>) => (
+  <DialogPrimitive.Root modal={modal} {...props} />
+);
 
 const DialogTrigger = DialogPrimitive.Trigger;
 

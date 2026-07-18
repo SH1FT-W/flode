@@ -338,8 +338,8 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
           </div>
         </DialogHeader>
 
-        <div className="flex min-h-0 flex-col">
-          <div className="relative mb-4">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="relative mb-4 shrink-0">
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
             <Input
               type="text"
@@ -350,7 +350,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
             />
           </div>
 
-          <div className="max-h-[70vh] overflow-auto rounded-t-md">
+          <div className="min-h-0 flex-1 overflow-auto rounded-t-md">
             <div className="min-w-full">
               <div className="sticky top-0 z-20 bg-background before:absolute before:-top-px before:right-0 before:left-0 before:h-px before:bg-background">
                 <div className="flex">

@@ -59,6 +59,45 @@ const HA_THEME_TOKENS: Record<string, { haVar: string; light: string; dark: stri
 };
 
 /**
+ * Newer MD3 design-system tokens (home-assistant/frontend's
+ * `theme/color/semantic.globals.ts`, resolved from `core.globals.ts`'s
+ * neutral scale) that some native HA components FLODE embeds read directly
+ * for their own internal backgrounds — e.g. `ha-picker-field`'s
+ * `ha-combo-box-item` (the "Entität auswählen" field) and `ha-select`'s
+ * dropdown both use `--ha-color-form-background`. Unlike the legacy
+ * `HA_THEME_TOKENS` set above, these don't reliably inherit into FLODE's
+ * shadow tree from the real HA page even in `'auto'` mode (showed up as a
+ * washed-out light-gray field in dark mode, unrelated to the light/dark
+ * override feature), so they're mirrored explicitly here regardless of
+ * `override` — always matching the same `isDark` state the rest of this
+ * function already resolves.
+ */
+const HA_FORM_TOKENS: Record<string, { light: string; dark: string }> = {
+  'ha-color-form-background': { light: '#f3f3f3', dark: '#363636' },
+  'ha-color-form-background-hover': { light: '#e6e6e6', dark: '#4a4a4a' },
+  'ha-color-form-background-disabled': { light: '#cccccc', dark: '#363636' },
+};
+
+/**
+ * `@home-assistant/webawesome`-based components (the dropdown menu behind
+ * `ha-select`/`ha-dropdown-item`, ...) read `--wa-color-text-normal` for
+ * unselected item text. Real HA maps this to `--primary-text-color` (see
+ * home-assistant/frontend's `theme/color/wa.globals.ts`), but only via a
+ * rule scoped to the real page's `<html>` element — since that's a `var()`
+ * reference rather than a literal value, it's re-resolved wherever
+ * `--wa-color-text-normal` finally gets consumed, which turned out to
+ * resolve incorrectly from inside FLODE's shadow tree (dropdown items
+ * rendered as near-illegible dark-on-dark text even after
+ * `--primary-text-color` itself was fixed), so mirror the same mapping
+ * explicitly here instead of relying on it. `--wa-color-text-quiet` maps to
+ * HA's `--secondary-text-color` for the same reason.
+ */
+const HA_WEBAWESOME_TEXT_TOKENS: Record<string, string> = {
+  'wa-color-text-normal': 'primary-text-color',
+  'wa-color-text-quiet': 'secondary-text-color',
+};
+
+/**
  * FLODE's own light/dark override — independent from Home Assistant's
  * per-user profile theme. `auto` means "don't override, mirror whatever the
  * user has set in HA" (the pre-existing behavior); `light`/`dark` force HA's
@@ -85,6 +124,17 @@ function getActiveThemeVars(themes: HomeAssistant['themes']): HassThemeVars {
   return { ...flatVars, ...mode };
 }
 
+function resolveThemeState(
+  themes: HomeAssistant['themes'],
+  override: ThemeOverride
+): { isDark: boolean; themeVars: HassThemeVars } {
+  const isAuto = override === 'auto';
+  return {
+    themeVars: isAuto ? getActiveThemeVars(themes) : {},
+    isDark: isAuto ? (themes.darkMode ?? false) : override === 'dark',
+  };
+}
+
 /**
  * Resolves HA's current theme (or fallback defaults) into our local CSS
  * custom properties and writes them onto `target` (normally
@@ -96,15 +146,19 @@ function getActiveThemeVars(themes: HomeAssistant['themes']): HassThemeVars {
  * user's real HA theme/dark-mode setting — passing `'auto'` (the default)
  * preserves the original behavior of mirroring `hass.themes` exactly.
  *
- * When forcing `'light'`/`'dark'`, this also writes the underlying HA
- * variable itself (e.g. `--primary-text-color`, `--card-background-color`),
- * not just our aliased token — native HA web components FLODE embeds
- * (entity/area/label pickers, `ha-selector`, ...) read those directly and
- * otherwise keep inheriting the user's real custom theme from the host
- * document via normal CSS custom-property inheritance, which is what
- * produced a visually mixed result (FLODE's own chrome forced to the base
- * palette, native pickers still showing the custom theme). In `'auto'` mode
- * these are explicitly cleared so inheritance from the host resumes.
+ * This also always writes the underlying HA variable itself (e.g.
+ * `--primary-text-color`, `--card-background-color`), not just our aliased
+ * token — native HA web components FLODE embeds (entity/area/label pickers,
+ * `ha-selector`, the `@home-assistant/webawesome`-based dropdown behind
+ * `ha-select`, ...) read those directly. In `'auto'` mode this used to just
+ * `removeProperty` and rely on normal CSS custom-property inheritance from
+ * the host document to fill it back in — that inheritance turned out to be
+ * unreliable for at least some of these components even though they're
+ * normal (non-portaled) descendants of FLODE's shadow tree, showing up as a
+ * hardcoded light fallback (e.g. `var(--card-background-color, ..., #fff)`)
+ * even in dark mode. So auto mode now explicitly sets the same
+ * already-resolved value used for the local alias, instead of clearing and
+ * hoping inheritance resumes.
  */
 export function applyHaTheme(
   target: HTMLElement,
@@ -113,14 +167,14 @@ export function applyHaTheme(
 ): void {
   if (!hass?.themes) return;
 
-  const isAuto = override === 'auto';
-  const themeVars = isAuto ? getActiveThemeVars(hass.themes) : {};
-  const isDark = isAuto ? (hass.themes.darkMode ?? false) : override === 'dark';
+  const { isDark, themeVars } = resolveThemeState(hass.themes, override);
 
   const haVarsSeen = new Set<string>();
+  const haVarValues: Record<string, string> = {};
 
   for (const [localVar, token] of Object.entries(HA_THEME_TOKENS)) {
     const rawValue = themeVars[token.haVar] ?? (isDark ? token.dark : token.light);
+    haVarValues[token.haVar] = rawValue;
     const triplet = toHslTriplet(rawValue);
     if (triplet) {
       target.style.setProperty(`--${localVar}`, triplet);
@@ -128,10 +182,17 @@ export function applyHaTheme(
 
     if (haVarsSeen.has(token.haVar)) continue;
     haVarsSeen.add(token.haVar);
-    if (isAuto) {
-      target.style.removeProperty(`--${token.haVar}`);
-    } else {
-      target.style.setProperty(`--${token.haVar}`, isDark ? token.dark : token.light);
+    target.style.setProperty(`--${token.haVar}`, rawValue);
+  }
+
+  for (const [varName, token] of Object.entries(HA_FORM_TOKENS)) {
+    target.style.setProperty(`--${varName}`, isDark ? token.dark : token.light);
+  }
+
+  for (const [varName, sourceHaVar] of Object.entries(HA_WEBAWESOME_TEXT_TOKENS)) {
+    const rawValue = haVarValues[sourceHaVar];
+    if (rawValue) {
+      target.style.setProperty(`--${varName}`, rawValue);
     }
   }
 }
