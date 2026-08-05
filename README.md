@@ -9,7 +9,7 @@
   [![HA Version](https://img.shields.io/badge/HA-2025.8%2B-brightgreen?style=flat-square)](https://www.home-assistant.io)
   [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](LICENSE)
   [![Tests](https://img.shields.io/badge/tests-316%20passing-3FB950?style=flat-square)](https://github.com/SH1FT-W/flode/actions)
-  [![HACS](https://img.shields.io/badge/HACS-custom-blueviolet?style=flat-square)](https://hacs.xyz)
+  [![HACS](https://img.shields.io/badge/HACS-default-41BDF5?style=flat-square)](https://hacs.xyz)
 
   <br/>
 
@@ -64,15 +64,13 @@ No vendor lock-in. No external service. Automations remain fully editable in HA'
 
 ### Via HACS (recommended)
 
+FLODE is part of the default HACS store — no custom repository needed.
+
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
 
-**Manually in HACS:**
-
-1. Open HACS → Integrations → ⋮ → **Custom repositories**
-2. Enter the URL `https://github.com/SH1FT-W/flode`, select type **Integration** → Add
-3. HACS → Integrations → Search for **FLODE** → Install
-4. **Restart** Home Assistant
-5. Settings → Integrations → Add Integration → **FLODE**
+1. HACS → Integrations → Search for **FLODE** → Install
+2. **Restart** Home Assistant
+3. Settings → Integrations → Add Integration → **FLODE**
 
 ### Manually (without HACS)
 
