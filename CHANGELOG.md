@@ -4,6 +4,13 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.5.2-beta.2] — 2026-09-03 — Form Field Background Follow-Up
+
+### Fixed
+- **Some native picker fields (e.g. "Platform", "Entity") and duration inputs could render with a washed-out light background and barely-visible text even on Home Assistant's own default theme** — FLODE previously guessed this field's background as a hardcoded light/dark literal without ever checking what the real page actually renders it as. It now prefers the browser-computed value from the real page first, same technique as the beta.1 dropdown-contrast fix, falling back to the previous literal only when nothing is computed. Reported as still occurring on a default (non-custom) theme, so this is a best-effort strengthening of the existing mapping rather than a confirmed root-cause fix — please confirm whether this actually resolves it.
+
+---
+
 ## [1.5.2-beta.1] — 2026-09-03 — Custom Theme & Delete-Key Fixes
 
 ### Fixed

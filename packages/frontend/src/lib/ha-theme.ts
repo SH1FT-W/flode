@@ -215,7 +215,14 @@ export function applyHaTheme(
   }
 
   for (const [varName, token] of Object.entries(HA_FORM_TOKENS)) {
-    target.style.setProperty(`--${varName}`, isDark ? token.dark : token.light);
+    // Same reasoning as the HA_THEME_TOKENS loop above: prefer whatever the
+    // real page actually resolved this to over our own guessed literal — the
+    // literal was reverse-engineered against one HA/theme combination and
+    // has no way to track a component the real page itself renders
+    // differently (a later HA release, a different rendering path, ...).
+    const rawValue =
+      (isAuto ? resolveComputedHaVar(varName) : undefined) ?? (isDark ? token.dark : token.light);
+    target.style.setProperty(`--${varName}`, rawValue);
   }
 
   for (const [varName, sourceHaVar] of Object.entries(HA_WEBAWESOME_TEXT_TOKENS)) {
