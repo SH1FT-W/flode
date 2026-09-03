@@ -4,6 +4,14 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.5.2-beta.1] — 2026-09-03 — Custom Theme & Delete-Key Fixes
+
+### Fixed
+- **Dropdown/list text could become unreadable in dark mode with some custom Home Assistant themes** — FLODE copied a theme's raw color value for `ha-select`'s dropdown items, but custom themes can alias one variable to another via `var(--other-var)` instead of a literal color. Copied verbatim into FLODE's own isolated shadow tree, that reference had nothing to resolve against and rendered as unreadable dark-on-dark text (only the selected item, which gets its color set explicitly, stayed legible). FLODE now reads the browser's already-resolved value for the corresponding HA variable instead of the raw theme entry, which is never an unresolved reference regardless of how deep a custom theme's alias chain goes.
+- **Backspace/Delete inside any text field deleted the selected node instead of editing the text** — the global shortcut handler read `event.target` to check whether the user was typing in an input, but FLODE's entire app runs inside a Shadow DOM, and `event.target` is retargeted to the shadow host for a `window`-level listener outside that tree — so the check never actually matched a real `<input>`/`<textarea>`, for any field. Now reads `event.composedPath()[0]`, the true focused element, unaffected by shadow-DOM retargeting.
+
+---
+
 ## [1.4.0] — 2026-07-10 — Quick-Add on Connection Drop
 
 ### Added

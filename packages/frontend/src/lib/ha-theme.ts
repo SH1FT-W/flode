@@ -136,6 +136,26 @@ function resolveThemeState(
 }
 
 /**
+ * Reads the browser-computed (fully resolved) value of an HA CSS variable
+ * off the real page's `<html>`, where HA itself applies the active theme.
+ *
+ * Custom themes are free to alias one variable to another via
+ * `var(--other-var)` instead of a literal color (a documented HA theming
+ * feature) — `hass.themes` exposes that alias as a raw, unresolved string.
+ * Copying it verbatim into FLODE's own isolated shadow tree leaves a
+ * dangling reference (the aliased variable was never copied along with it),
+ * which resolves to nothing/black. `getComputedStyle` instead returns the
+ * value the browser already resolved for the real page, so it's never a raw
+ * `var(...)` reference — safe to copy as-is regardless of how deep the
+ * custom theme's alias chain goes.
+ */
+function resolveComputedHaVar(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
+  return value || undefined;
+}
+
+/**
  * Resolves HA's current theme (or fallback defaults) into our local CSS
  * custom properties and writes them onto `target` (normally
  * `document.documentElement`). Safe to call on every `hass` update — it only
@@ -167,13 +187,22 @@ export function applyHaTheme(
 ): void {
   if (!hass?.themes) return;
 
+  const isAuto = override === 'auto';
   const { isDark, themeVars } = resolveThemeState(hass.themes, override);
 
   const haVarsSeen = new Set<string>();
   const haVarValues: Record<string, string> = {};
 
   for (const [localVar, token] of Object.entries(HA_THEME_TOKENS)) {
-    const rawValue = themeVars[token.haVar] ?? (isDark ? token.dark : token.light);
+    // Prefer the browser-computed value from the real page over the raw
+    // theme dict entry — custom themes may alias it via `var(--other-var)`,
+    // which only resolves correctly on the real page, not once copied
+    // verbatim into FLODE's own isolated shadow tree (see
+    // resolveComputedHaVar's doc comment).
+    const rawValue =
+      (isAuto ? resolveComputedHaVar(token.haVar) : undefined) ??
+      themeVars[token.haVar] ??
+      (isDark ? token.dark : token.light);
     haVarValues[token.haVar] = rawValue;
     const triplet = toHslTriplet(rawValue);
     if (triplet) {

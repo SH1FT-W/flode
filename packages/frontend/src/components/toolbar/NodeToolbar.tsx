@@ -157,9 +157,16 @@ export function NodeToolbar() {
     if (!hasActions) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Skip if user is typing in an input field
-      const target = event.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      // Skip if user is typing in an input field. `event.target` is retargeted
+      // to the shadow host for listeners outside the shadow tree (FLODE's
+      // entire app runs inside one, see panel-wrapper.ts) and would never
+      // report the real focused element — `composedPath()[0]` is always the
+      // true originating element regardless of shadow boundaries.
+      const target = event.composedPath()[0] as HTMLElement | undefined;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
         return;
       }
 
