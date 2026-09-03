@@ -98,6 +98,23 @@ const HA_WEBAWESOME_TEXT_TOKENS: Record<string, string> = {
 };
 
 /**
+ * `ha-dropdown-item`'s hover/focus background (`@home-assistant/webawesome`'s
+ * `dropdown-item.styles.ts`) reads `--wa-color-neutral-fill-normal`, which
+ * real HA maps to `--ha-color-fill-neutral-normal-resting` — `#e6e6e6` in
+ * light mode, but only `#202020` in dark mode (`home-assistant/frontend`'s
+ * `theme/color/core.globals.ts` neutral-10), a mere ~4 levels above the
+ * `#1c1c1c` panel it sits on and barely perceptible as a hover cue. FLODE
+ * doesn't mirror this variable at all today, so dropdown items fall back to
+ * `@home-assistant/webawesome`'s own unthemed default. Deliberately mirrored
+ * here with a *more* visible dark-mode value than HA's own (matching the
+ * `ha-color-form-background-hover` contrast step already used elsewhere in
+ * this file) rather than replicating HA's subtle default.
+ */
+const HA_WEBAWESOME_FILL_TOKENS: Record<string, { light: string; dark: string }> = {
+  'wa-color-neutral-fill-normal': { light: '#e6e6e6', dark: '#4a4a4a' },
+};
+
+/**
  * FLODE's own light/dark override — independent from Home Assistant's
  * per-user profile theme. `auto` means "don't override, mirror whatever the
  * user has set in HA" (the pre-existing behavior); `light`/`dark` force HA's
@@ -239,5 +256,9 @@ export function applyHaTheme(
     if (rawValue) {
       target.style.setProperty(`--${varName}`, rawValue);
     }
+  }
+
+  for (const [varName, token] of Object.entries(HA_WEBAWESOME_FILL_TOKENS)) {
+    target.style.setProperty(`--${varName}`, isDark ? token.dark : token.light);
   }
 }

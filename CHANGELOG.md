@@ -4,6 +4,13 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.5.2-beta.4] — 2026-09-03 — Dropdown Hover Contrast in Dark Mode
+
+### Changed
+- **Hovering an option in a native dropdown (e.g. the trigger "Platform" list) was barely visible in dark mode** — the hover highlight reads `--wa-color-neutral-fill-normal`, which real Home Assistant itself maps to a dark-mode value only ~4 shades lighter than the panel it sits on (technically correct, but a subtle enough step that it's hard to see). FLODE didn't mirror this variable at all before, so it fell through to an unthemed default. Now explicitly set to a more visible shade in dark mode (matching the contrast step already used for input-field hover elsewhere in FLODE) so hovering an option is clearly noticeable; light mode is unchanged.
+
+---
+
 ## [1.5.2-beta.3] — 2026-09-03 — Dropdown Text Unreadable With Manual Light/Dark Override
 
 ### Fixed
