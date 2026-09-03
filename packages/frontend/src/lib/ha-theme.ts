@@ -203,14 +203,23 @@ export function applyHaTheme(
       (isAuto ? resolveComputedHaVar(token.haVar) : undefined) ??
       themeVars[token.haVar] ??
       (isDark ? token.dark : token.light);
-    haVarValues[token.haVar] = rawValue;
     const triplet = toHslTriplet(rawValue);
     if (triplet) {
       target.style.setProperty(`--${localVar}`, triplet);
     }
 
+    // Several local tokens intentionally share the same underlying HA
+    // variable (e.g. `foreground` and `warning-foreground` both write
+    // `primary-text-color`) but disagree on its value outside 'auto' mode —
+    // `warning-foreground`/`trigger-foreground` pin a mode-invariant dark
+    // literal so text stays legible against their own colored badge
+    // background. Only the first entry per haVar actually gets exported
+    // (guarded below), so `haVarValues` — which HA_WEBAWESOME_TEXT_TOKENS
+    // reads back out — must follow the same first-wins rule instead of
+    // being overwritten by whichever entry happens to run last.
     if (haVarsSeen.has(token.haVar)) continue;
     haVarsSeen.add(token.haVar);
+    haVarValues[token.haVar] = rawValue;
     target.style.setProperty(`--${token.haVar}`, rawValue);
   }
 

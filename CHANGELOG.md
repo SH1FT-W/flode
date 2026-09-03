@@ -4,6 +4,13 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.5.2-beta.3] — 2026-09-03 — Dropdown Text Unreadable With Manual Light/Dark Override
+
+### Fixed
+- **Dropdown option text was unreadable (near-black on a dark background) whenever FLODE's own light/dark override (the header toggle) was set explicitly to "Dark" or "Light", instead of "Auto"** — several internal color tokens intentionally share the same underlying Home Assistant variable name (e.g. the generic text color and the always-dark text color used on colored warning/trigger badges both target `primary-text-color`), and only the first one is meant to win. The bookkeeping map that mirrors this value for `ha-select`'s dropdown text was being overwritten by each later entry instead of keeping the first, so whichever entry happened to be declared last silently decided the dropdown's text color. In "Auto" mode this was masked because every entry ends up reading the same real page value regardless; forcing the override exposed the mismatch. Root-caused and reproduced live against a real Home Assistant instance before fixing.
+
+---
+
 ## [1.5.2-beta.2] — 2026-09-03 — Form Field Background Follow-Up
 
 ### Fixed
