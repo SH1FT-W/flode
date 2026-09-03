@@ -4,6 +4,15 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [1.5.3-beta.1] — 2026-09-03 — Mid-Flow Parallel Fan-Out Dropped Branches
+
+### Fixed
+- **Linking one action node (e.g. `scene.create`) to multiple next nodes without an explicit Parallel block silently dropped every branch but the first** — reported as `scene.create` losing all but one of several `light.turn_on` follow-ups after saving and reloading. The state-machine strategy's node-block generators (action, delay, wait, set-variables, and unknown/passthrough nodes) all took only the first outgoing edge as "the" next state and ignored the rest. Multiple outgoing edges from a node are now rendered as a `parallel:` action executing every target, matching the same simplified handling already used for a trigger with multiple targets — each parallel branch is a single action call; continuing further from a fanned-out branch isn't supported yet (deeper multi-step continuation per branch is a bigger follow-up).
+
+Addresses #16 — closing that issue once this has had time to soak.
+
+---
+
 ## [1.5.2] — 2026-09-03 — Dark Mode & Custom Theme Fixes
 
 ### Fixed

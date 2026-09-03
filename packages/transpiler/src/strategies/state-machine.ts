@@ -341,29 +341,62 @@ export class StateMachineStrategy extends BaseStrategy {
       case 'condition':
         return this.generateConditionBlock(node, outgoingEdges);
       case 'action':
-        return this.generateActionBlock(node, outgoingEdges);
+        return this.generateActionBlock(flow, node, outgoingEdges);
       case 'delay':
-        return this.generateDelayBlock(node, outgoingEdges);
+        return this.generateDelayBlock(flow, node, outgoingEdges);
       case 'wait':
-        return this.generateWaitBlock(node, outgoingEdges);
+        return this.generateWaitBlock(flow, node, outgoingEdges);
       case 'set_variables':
-        return this.generateSetVariablesBlock(node, outgoingEdges);
+        return this.generateSetVariablesBlock(flow, node, outgoingEdges);
       default:
-        return this.generatePassthroughBlock(node, outgoingEdges);
+        return this.generatePassthroughBlock(flow, node, outgoingEdges);
     }
+  }
+
+  /**
+   * Builds the sequence steps that advance the state machine after a node's
+   * own action(s) have run. HA has no way to represent "continue to N
+   * different next states" through a single shared `current_node` variable,
+   * so a node with more than one outgoing edge — someone drew several
+   * connections out of a single action/delay/wait/etc. node without an
+   * explicit Parallel block — is rendered as a `parallel:` action executing
+   * each target once it's reached, the same simplified handling already
+   * accepted for a trigger with multiple targets (see
+   * generateParallelEntryBlocks). Each parallel branch is a single action
+   * call and is treated as a leaf: continuing further from a fanned-out
+   * branch isn't supported, matching that existing limitation.
+   */
+  private buildContinuation(flow: FlowGraph, edges: FlowEdge[]): Record<string, unknown>[] {
+    if (edges.length <= 1) {
+      const nextNodeId = edges[0]?.target ?? 'END';
+      return [{ variables: { current_node: nextNodeId } }];
+    }
+
+    const parallelActions = edges.map((edge) => {
+      const targetNode = flow.nodes.find((n) => n.id === edge.target);
+      if (!targetNode) {
+        return { service: 'system_log.write', data: { message: `Unknown node: ${edge.target}` } };
+      }
+      if (targetNode.type === 'action') {
+        return this.buildActionCall(targetNode as ActionNode);
+      }
+      return { service: 'system_log.write', data: { message: `Node: ${edge.target}` } };
+    });
+
+    return [{ parallel: parallelActions }, { variables: { current_node: 'END' } }];
   }
 
   /**
    * Generate block for action node
    * Executes the service call then moves to the next node
    */
-  private generateActionBlock(node: ActionNode, edges: FlowEdge[]): Record<string, unknown> {
+  private generateActionBlock(
+    flow: FlowGraph,
+    node: ActionNode,
+    edges: FlowEdge[]
+  ): Record<string, unknown> {
     const currentNodeId = node.id;
     const actionCall = this.buildActionCall(node);
-
-    // Single outgoing edge - standard behavior
-    const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : nextNodeId;
 
     return {
       conditions: [
@@ -372,14 +405,7 @@ export class StateMachineStrategy extends BaseStrategy {
           value_template: `{{ current_node == "${currentNodeId}" }}`,
         },
       ],
-      sequence: [
-        actionCall,
-        {
-          variables: {
-            current_node: nextNode,
-          },
-        },
-      ],
+      sequence: [actionCall, ...this.buildContinuation(flow, edges)],
     };
   }
 
@@ -662,9 +688,11 @@ export class StateMachineStrategy extends BaseStrategy {
   /**
    * Generate block for delay node
    */
-  private generateDelayBlock(node: DelayNode, edges: FlowEdge[]): Record<string, unknown> {
-    const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : nextNodeId;
+  private generateDelayBlock(
+    flow: FlowGraph,
+    node: DelayNode,
+    edges: FlowEdge[]
+  ): Record<string, unknown> {
     const currentNodeId = node.id;
 
     // Use spread pattern to preserve unknown properties from custom integrations
@@ -686,23 +714,18 @@ export class StateMachineStrategy extends BaseStrategy {
           value_template: `{{ current_node == "${currentNodeId}" }}`,
         },
       ],
-      sequence: [
-        delayAction,
-        {
-          variables: {
-            current_node: nextNode,
-          },
-        },
-      ],
+      sequence: [delayAction, ...this.buildContinuation(flow, edges)],
     };
   }
 
   /**
    * Generate block for wait node
    */
-  private generateWaitBlock(node: WaitNode, edges: FlowEdge[]): Record<string, unknown> {
-    const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : nextNodeId;
+  private generateWaitBlock(
+    flow: FlowGraph,
+    node: WaitNode,
+    edges: FlowEdge[]
+  ): Record<string, unknown> {
     const currentNodeId = node.id;
 
     // Use spread pattern to preserve unknown properties from custom integrations
@@ -751,14 +774,7 @@ export class StateMachineStrategy extends BaseStrategy {
           value_template: `{{ current_node == "${currentNodeId}" }}`,
         },
       ],
-      sequence: [
-        waitAction,
-        {
-          variables: {
-            current_node: nextNode,
-          },
-        },
-      ],
+      sequence: [waitAction, ...this.buildContinuation(flow, edges)],
     };
   }
 
@@ -766,11 +782,10 @@ export class StateMachineStrategy extends BaseStrategy {
    * Generate block for set_variables node
    */
   private generateSetVariablesBlock(
+    flow: FlowGraph,
     node: SetVariablesNode,
     edges: FlowEdge[]
   ): Record<string, unknown> {
-    const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : nextNodeId;
     const currentNodeId = node.id;
 
     // Use spread pattern to preserve unknown properties from custom integrations
@@ -795,23 +810,18 @@ export class StateMachineStrategy extends BaseStrategy {
           value_template: `{{ current_node == "${currentNodeId}" }}`,
         },
       ],
-      sequence: [
-        setVarsAction,
-        {
-          variables: {
-            current_node: nextNode,
-          },
-        },
-      ],
+      sequence: [setVarsAction, ...this.buildContinuation(flow, edges)],
     };
   }
 
   /**
    * Generate passthrough block for unknown node types
    */
-  private generatePassthroughBlock(node: FlowNode, edges: FlowEdge[]): Record<string, unknown> {
-    const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : nextNodeId;
+  private generatePassthroughBlock(
+    flow: FlowGraph,
+    node: FlowNode,
+    edges: FlowEdge[]
+  ): Record<string, unknown> {
     const currentNodeId = node.id;
 
     return {
@@ -821,13 +831,7 @@ export class StateMachineStrategy extends BaseStrategy {
           value_template: `{{ current_node == "${currentNodeId}" }}`,
         },
       ],
-      sequence: [
-        {
-          variables: {
-            current_node: nextNode,
-          },
-        },
-      ],
+      sequence: this.buildContinuation(flow, edges),
     };
   }
 
