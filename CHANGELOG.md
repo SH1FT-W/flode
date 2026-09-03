@@ -4,32 +4,18 @@ All notable changes to FLODE are documented here.
 
 ---
 
-## [1.5.2-beta.4] — 2026-09-03 — Dropdown Hover Contrast in Dark Mode
+## [1.5.2] — 2026-09-03 — Dark Mode & Custom Theme Fixes
+
+### Fixed
+- **Dropdown/list text could become unreadable in dark mode with some custom Home Assistant themes** — FLODE copied a theme's raw color value for `ha-select`'s dropdown items, but custom themes can alias one variable to another via `var(--other-var)` instead of a literal color. Copied verbatim into FLODE's own isolated shadow tree, that reference had nothing to resolve against and rendered as unreadable dark-on-dark text (only the selected item, which gets its color set explicitly, stayed legible). FLODE now reads the browser's already-resolved value for the corresponding HA variable instead of the raw theme entry, which is never an unresolved reference regardless of how deep a custom theme's alias chain goes.
+- **Dropdown option text was unreadable (near-black on a dark background) whenever FLODE's own light/dark override (the header toggle) was set explicitly to "Dark" or "Light", instead of "Auto"** — several internal color tokens intentionally share the same underlying Home Assistant variable name (e.g. the generic text color and the always-dark text color used on colored warning/trigger badges both target `primary-text-color`), and only the first one is meant to win. The bookkeeping map that mirrors this value for `ha-select`'s dropdown text was being overwritten by each later entry instead of keeping the first, so whichever entry happened to be declared last silently decided the dropdown's text color. In "Auto" mode this was masked because every entry ends up reading the same real page value regardless; forcing the override exposed the mismatch. Root-caused and reproduced live against a real Home Assistant instance before fixing.
+- **Some native picker fields (e.g. "Platform", "Entity") and duration inputs could render with a washed-out light background and barely-visible text** — FLODE previously guessed this field's background as a hardcoded light/dark literal without ever checking what the real page actually renders it as. It now prefers the browser-computed value from the real page first, falling back to the previous literal only when nothing is computed.
+- **Backspace/Delete inside any text field deleted the selected node instead of editing the text** — the global shortcut handler read `event.target` to check whether the user was typing in an input, but FLODE's entire app runs inside a Shadow DOM, and `event.target` is retargeted to the shadow host for a `window`-level listener outside that tree — so the check never actually matched a real `<input>`/`<textarea>`, for any field. Now reads `event.composedPath()[0]`, the true focused element, unaffected by shadow-DOM retargeting.
 
 ### Changed
 - **Hovering an option in a native dropdown (e.g. the trigger "Platform" list) was barely visible in dark mode** — the hover highlight reads `--wa-color-neutral-fill-normal`, which real Home Assistant itself maps to a dark-mode value only ~4 shades lighter than the panel it sits on (technically correct, but a subtle enough step that it's hard to see). FLODE didn't mirror this variable at all before, so it fell through to an unthemed default. Now explicitly set to a more visible shade in dark mode (matching the contrast step already used for input-field hover elsewhere in FLODE) so hovering an option is clearly noticeable; light mode is unchanged.
 
----
-
-## [1.5.2-beta.3] — 2026-09-03 — Dropdown Text Unreadable With Manual Light/Dark Override
-
-### Fixed
-- **Dropdown option text was unreadable (near-black on a dark background) whenever FLODE's own light/dark override (the header toggle) was set explicitly to "Dark" or "Light", instead of "Auto"** — several internal color tokens intentionally share the same underlying Home Assistant variable name (e.g. the generic text color and the always-dark text color used on colored warning/trigger badges both target `primary-text-color`), and only the first one is meant to win. The bookkeeping map that mirrors this value for `ha-select`'s dropdown text was being overwritten by each later entry instead of keeping the first, so whichever entry happened to be declared last silently decided the dropdown's text color. In "Auto" mode this was masked because every entry ends up reading the same real page value regardless; forcing the override exposed the mismatch. Root-caused and reproduced live against a real Home Assistant instance before fixing.
-
----
-
-## [1.5.2-beta.2] — 2026-09-03 — Form Field Background Follow-Up
-
-### Fixed
-- **Some native picker fields (e.g. "Platform", "Entity") and duration inputs could render with a washed-out light background and barely-visible text even on Home Assistant's own default theme** — FLODE previously guessed this field's background as a hardcoded light/dark literal without ever checking what the real page actually renders it as. It now prefers the browser-computed value from the real page first, same technique as the beta.1 dropdown-contrast fix, falling back to the previous literal only when nothing is computed. Reported as still occurring on a default (non-custom) theme, so this is a best-effort strengthening of the existing mapping rather than a confirmed root-cause fix — please confirm whether this actually resolves it.
-
----
-
-## [1.5.2-beta.1] — 2026-09-03 — Custom Theme & Delete-Key Fixes
-
-### Fixed
-- **Dropdown/list text could become unreadable in dark mode with some custom Home Assistant themes** — FLODE copied a theme's raw color value for `ha-select`'s dropdown items, but custom themes can alias one variable to another via `var(--other-var)` instead of a literal color. Copied verbatim into FLODE's own isolated shadow tree, that reference had nothing to resolve against and rendered as unreadable dark-on-dark text (only the selected item, which gets its color set explicitly, stayed legible). FLODE now reads the browser's already-resolved value for the corresponding HA variable instead of the raw theme entry, which is never an unresolved reference regardless of how deep a custom theme's alias chain goes.
-- **Backspace/Delete inside any text field deleted the selected node instead of editing the text** — the global shortcut handler read `event.target` to check whether the user was typing in an input, but FLODE's entire app runs inside a Shadow DOM, and `event.target` is retargeted to the shadow host for a `window`-level listener outside that tree — so the check never actually matched a real `<input>`/`<textarea>`, for any field. Now reads `event.composedPath()[0]`, the true focused element, unaffected by shadow-DOM retargeting.
+Dark mode continues to get attention — further contrast/legibility passes are planned for upcoming releases.
 
 ---
 
