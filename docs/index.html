@@ -1,389 +1,380 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FLODE – Visual Flow Editor for Home Assistant</title>
-  <meta name="description" content="Draw your automations as diagrams. FLODE transpiles them into 100% native Home Assistant YAML." />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FLODE – Visual Flow Editor for Home Assistant</title>
+<meta name="description" content="Draw your automations as diagrams. FLODE transpiles them into 100% native Home Assistant YAML." />
 
-  <!-- Open Graph / Discord / Slack -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://sh1ft-w.github.io/flode/" />
-  <meta property="og:title" content="FLODE – Visual Flow Editor for Home Assistant" />
-  <meta property="og:description" content="Draw your automations as diagrams — FLODE transpiles them into 100% native Home Assistant YAML. No external server. No vendor lock-in." />
-  <meta property="og:image" content="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-dark.png" />
-  <meta property="og:image:width" content="1280" />
-  <meta property="og:image:height" content="640" />
-  <meta property="og:site_name" content="FLODE" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://sh1ft-w.github.io/flode/" />
+<meta property="og:title" content="FLODE – Visual Flow Editor for Home Assistant" />
+<meta property="og:description" content="Draw your automations as diagrams — FLODE transpiles them into 100% native Home Assistant YAML. No external server. No vendor lock-in." />
+<meta property="og:image" content="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-dark.png" />
+<meta property="og:image:width" content="1280" />
+<meta property="og:image:height" content="640" />
+<meta property="og:site_name" content="FLODE" />
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="FLODE – Visual Flow Editor for Home Assistant" />
-  <meta name="twitter:description" content="Draw your automations as diagrams — FLODE transpiles them into 100% native Home Assistant YAML." />
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-dark.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="FLODE – Visual Flow Editor for Home Assistant" />
+<meta name="twitter:description" content="Draw your automations as diagrams — FLODE transpiles them into 100% native Home Assistant YAML." />
+<meta name="twitter:image" content="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-dark.png" />
 
-    :root {
-      --bg:        #0D1117;
-      --bg2:       #161B22;
-      --bg3:       #1C2333;
-      --border:    rgba(255,255,255,0.08);
-      --blue:      #2F81F7;
-      --blue-dim:  #1A5CA8;
-      --blue-glow: rgba(47,129,247,0.18);
-      --text:      #E6EDF3;
-      --muted:     #8B949E;
-      --trigger:   #F0B429;
-      --cond:      #58A6FF;
-      --action:    #3FB950;
-      --logic:     #BC8CFF;
-    }
+<style>
+  :root {
+    --ink: #0B0C0E;
+    --ink-panel: #17181B;
+    --ink-line: #2A2B2E;
+    --ink-text: #F5F5F7;
+    --ink-text-muted: #98989D;
 
-    html { scroll-behavior: smooth; }
-    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.6; overflow-x: hidden; }
+    --paper: #FBFBFA;
+    --paper-panel: #F2F2F0;
+    --paper-line: #E2E2E0;
+    --paper-text: #1D1D1F;
+    --paper-text-muted: #6E6E73;
 
-    /* NAV */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 2rem; height: 60px;
-      background: rgba(13,17,23,0.85); backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
-    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-    .nav-logo-icon { display: none; }
-    .nav-logo-icon svg { width: 16px; height: 16px; }
-    .nav-wordmark { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 16px; color: var(--text); letter-spacing: 2px; }
-    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
-    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; transition: color .2s; }
-    .nav-links a:hover { color: var(--text); }
-    .nav-cta { background: var(--blue); color: #fff !important; padding: 7px 16px; border-radius: 6px; font-weight: 500; font-size: 13px !important; }
-    .nav-cta:hover { background: #58A6FF !important; color: #fff !important; }
+    --accent: #2F6FED;
+    --accent-soft: rgba(47, 111, 237, 0.12);
 
-    /* HERO */
-    .hero {
-      min-height: 100vh; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 7rem 2rem 4rem; text-align: center; position: relative; overflow: hidden;
-    }
-    .hero-bg {
-      position: absolute; inset: 0; pointer-events: none;
-      background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(47,129,247,0.10) 0%, transparent 70%);
-    }
-    .hero-grid {
-      position: absolute; inset: 0; pointer-events: none; opacity: 0.04;
-      background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 40px 40px;
-    }
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--bg2); border: 1px solid var(--border);
-      color: var(--muted); font-size: 12px; padding: 5px 12px;
-      border-radius: 100px; margin-bottom: 2rem;
-    }
-    .hero-badge .dot { width: 6px; height: 6px; background: var(--action); border-radius: 50%; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-    .hero h1 {
-      font-family: 'JetBrains Mono', monospace; font-size: clamp(3rem, 8vw, 6rem);
-      font-weight: 700; letter-spacing: -1px; line-height: 1.05; margin-bottom: 1.5rem;
-      position: relative; z-index: 1;
-    }
-    .hero h1 .accent { color: var(--blue); }
-    .hero-sub {
-      font-size: clamp(1rem, 2.5vw, 1.2rem); color: var(--muted); max-width: 520px;
-      margin: 0 auto 2.5rem; line-height: 1.7; position: relative; z-index: 1;
-    }
-    .hero-sub strong { color: var(--text); font-weight: 500; }
-    .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 3.5rem; position: relative; z-index: 1; }
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: 8px; font-size: 14px; font-weight: 500; text-decoration: none; transition: all .2s; cursor: pointer; border: none; font-family: inherit; }
-    .btn-primary { background: var(--blue); color: #fff; }
-    .btn-primary:hover { background: #58A6FF; transform: translateY(-1px); }
-    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: var(--bg2); border-color: rgba(255,255,255,0.2); }
-    .badge-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
-    .pill { font-size: 11px; padding: 3px 10px; border-radius: 100px; font-family: 'JetBrains Mono', monospace; border: 1px solid; }
-    .pill-blue { background: rgba(47,129,247,.12); color: var(--blue); border-color: rgba(47,129,247,.3); }
-    .pill-green { background: rgba(63,185,80,.1); color: var(--action); border-color: rgba(63,185,80,.3); }
-    .pill-amber { background: rgba(240,180,41,.1); color: var(--trigger); border-color: rgba(240,180,41,.3); }
-    .pill-gray { background: rgba(255,255,255,.05); color: var(--muted); border-color: var(--border); }
-    .pill-purple { background: rgba(188,140,255,.1); color: var(--logic); border-color: rgba(188,140,255,.3); }
-    .pill-teal { background: rgba(58,212,180,.1); color: #3AD4B4; border-color: rgba(58,212,180,.3); }
+    --trigger: #C9821A;
+    --cond: #2F6FED;
+    --action: #1F8B4C;
+    --logic: #8A5FD6;
 
-    /* ANIMATED FLOW DEMO */
-    .flow-section {
-      padding: 2rem 2rem 5rem; display: flex; justify-content: center;
-    }
-    .flow-wrap {
-      width: 100%; max-width: 820px; background: var(--bg2);
-      border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
-    }
-    .flow-titlebar {
-      display: flex; align-items: center; gap: 8px; padding: 12px 16px;
-      border-bottom: 1px solid var(--border); background: var(--bg3);
-    }
-    .dot-red { width: 12px; height: 12px; border-radius: 50%; background: #FF5F57; }
-    .dot-yellow { width: 12px; height: 12px; border-radius: 50%; background: #FFBD2E; }
-    .dot-green { width: 12px; height: 12px; border-radius: 50%; background: #28C840; }
-    .flow-filename { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); margin-left: 8px; }
-    .flow-canvas {
-      position: relative; height: 280px; cursor: default;
-      background: var(--bg2);
-      background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
-      background-size: 24px 24px;
-    }
-    .fnode {
-      position: absolute; border-radius: 10px; padding: 10px 16px;
-      font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif;
-      display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-      min-width: 140px; user-select: none;
-      transition: transform .15s, box-shadow .15s;
-    }
-    .fnode:hover { transform: translateY(-2px); }
-    .fnode .node-type { font-size: 10px; font-family: 'JetBrains Mono', monospace; opacity: .7; text-transform: uppercase; letter-spacing: 1px; }
-    .fnode-trigger { background: rgba(240,180,41,.12); border: 1.5px solid rgba(240,180,41,.5); color: #F0B429; top: 100px; left: 40px; }
-    .fnode-trigger:hover { box-shadow: 0 0 20px rgba(240,180,41,.2); }
-    .fnode-cond { background: rgba(88,166,255,.1); border: 1.5px solid rgba(88,166,255,.4); color: var(--cond); top: 100px; left: 240px; }
-    .fnode-cond:hover { box-shadow: 0 0 20px rgba(88,166,255,.15); }
-    .fnode-action1 { background: rgba(63,185,80,.1); border: 1.5px solid rgba(63,185,80,.4); color: var(--action); top: 50px; left: 450px; }
-    .fnode-action1:hover { box-shadow: 0 0 20px rgba(63,185,80,.15); }
-    .fnode-action2 { background: rgba(63,185,80,.1); border: 1.5px solid rgba(63,185,80,.4); color: var(--action); top: 160px; left: 450px; }
-    .fnode-action2:hover { box-shadow: 0 0 20px rgba(63,185,80,.15); }
-    .fnode-logic { background: rgba(188,140,255,.1); border: 1.5px solid rgba(188,140,255,.4); color: var(--logic); top: 105px; left: 645px; min-width: 100px; }
-    .fnode-logic:hover { box-shadow: 0 0 20px rgba(188,140,255,.15); }
-    .flow-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-    .flow-footer {
-      padding: 10px 16px; border-top: 1px solid var(--border); background: var(--bg3);
-      font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--action);
-      display: flex; align-items: center; gap: 8px;
-    }
-    .flow-footer::before { content: '✓'; }
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
 
-    /* YAML preview */
-    .yaml-section { padding: 0 2rem 5rem; display: flex; justify-content: center; }
-    .yaml-wrap { width: 100%; max-width: 820px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-    .yaml-panel { background: var(--bg2); padding: 1.5rem; }
-    .yaml-label { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; }
-    .yaml-label .tag { padding: 2px 8px; border-radius: 4px; font-size: 10px; }
-    .tag-blue { background: var(--blue-glow); color: var(--blue); border: 1px solid rgba(47,129,247,.3); }
-    .tag-green { background: rgba(63,185,80,.1); color: var(--action); border: 1px solid rgba(63,185,80,.3); }
-    pre { font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.8; overflow-x: auto; }
-    .kw { color: var(--cond); } .str { color: var(--action); } .val { color: #FFA657; }
-    .cm { color: var(--muted); font-style: italic; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    background: var(--paper);
+    color: var(--paper-text);
+    overflow-x: hidden;
+  }
 
-    /* FEATURES */
-    .features-section { padding: 2rem 2rem 5rem; max-width: 1100px; margin: 0 auto; }
-    .section-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--blue); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; }
-    .section-title { font-family: 'JetBrains Mono', monospace; font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 700; margin-bottom: 0.5rem; }
-    .section-sub { color: var(--muted); max-width: 500px; font-size: 15px; margin-bottom: 3rem; }
-    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-    .feature { background: var(--bg2); padding: 2rem; transition: background .2s; }
-    .feature:hover { background: var(--bg3); }
-    .feat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.2rem; font-size: 20px; }
-    .fi-blue { background: var(--blue-glow); }
-    .fi-green { background: rgba(63,185,80,.12); }
-    .fi-amber { background: rgba(240,180,41,.1); }
-    .fi-purple { background: rgba(188,140,255,.1); }
-    .fi-teal { background: rgba(58,212,207,.1); }
-    .fi-red { background: rgba(248,81,73,.1); }
-    .feature h3 { font-size: 15px; font-weight: 600; margin-bottom: 0.5rem; }
-    .feature p { font-size: 13px; color: var(--muted); line-height: 1.65; }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; }
 
-    /* NODE TYPES */
-    .nodes-section { padding: 0 2rem 5rem; max-width: 1100px; margin: 0 auto; }
-    .nodes-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-    .ncard { border-radius: 12px; padding: 1.5rem; border: 1px solid; }
-    .nc-trigger { background: rgba(240,180,41,.07); border-color: rgba(240,180,41,.25); }
-    .nc-cond { background: rgba(88,166,255,.07); border-color: rgba(88,166,255,.2); }
-    .nc-action { background: rgba(63,185,80,.07); border-color: rgba(63,185,80,.2); }
-    .nc-logic { background: rgba(188,140,255,.08); border-color: rgba(188,140,255,.25); }
-    .ncard-label { font-size: 10px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; opacity: .8; }
-    .ncard-title { font-size: 17px; font-weight: 600; margin-bottom: 0.5rem; }
-    .ncard-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
-    .nc-trigger .ncard-label, .nc-trigger .ncard-title { color: var(--trigger); }
-    .nc-cond .ncard-label, .nc-cond .ncard-title { color: var(--cond); }
-    .nc-action .ncard-label, .nc-action .ncard-title { color: var(--action); }
-    .nc-logic .ncard-label, .nc-logic .ncard-title { color: var(--logic); }
+  .band { padding: 128px 24px; }
+  .band-dark { background: var(--ink); color: var(--ink-text); }
+  .band-light { background: var(--paper); color: var(--paper-text); }
 
-    /* INSTALL */
-    .install-section { padding: 0 2rem 5rem; max-width: 820px; margin: 0 auto; }
-    .install-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-    .install-card-header { background: var(--bg3); padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); }
-    .install-card-header h2 { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 700; }
-    .install-steps { padding: 1.5rem 2rem; list-style: none; }
-    .install-steps li { display: flex; gap: 1.2rem; align-items: flex-start; padding: 1rem 0; border-bottom: 1px solid var(--border); }
-    .install-steps li:last-child { border-bottom: none; }
-    .step-num { min-width: 28px; height: 28px; border-radius: 50%; background: var(--blue-glow); border: 1px solid rgba(47,129,247,.3); color: var(--blue); font-size: 12px; font-family: 'JetBrains Mono', monospace; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
-    .step-body { font-size: 14px; color: var(--muted); line-height: 1.6; }
-    .step-body strong { color: var(--text); font-weight: 500; }
-    .step-body code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--blue); background: var(--blue-glow); padding: 2px 6px; border-radius: 4px; }
-    .install-hacs-btn { display: block; margin: 0 2rem 2rem; }
-    .install-hacs-btn a { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--blue); color: #fff; padding: 13px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; transition: background .2s, transform .2s; }
-    .install-hacs-btn a:hover { background: #58A6FF; transform: translateY(-1px); }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .wrap-narrow { max-width: 780px; margin: 0 auto; }
 
-    /* FOOTER */
-    footer { border-top: 1px solid var(--border); padding: 3rem 2rem; text-align: center; }
-    .footer-logo { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; letter-spacing: 3px; margin-bottom: 0.5rem; color: var(--text); }
-    .footer-sub { font-size: 13px; color: var(--muted); margin-bottom: 1.5rem; }
-    .footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
-    .footer-links a { color: var(--muted); text-decoration: none; font-size: 13px; transition: color .2s; }
-    .footer-links a:hover { color: var(--text); }
-    .footer-copy { font-size: 12px; color: rgba(139,148,158,.5); }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .band-dark .kicker { color: var(--ink-text-muted); }
+  .band-light .kicker { color: var(--paper-text-muted); }
 
-    /* DIVIDER */
-    .section-divider { max-width: 1100px; margin: 0 auto 4rem; padding: 0 2rem; border: none; border-top: 1px solid var(--border); }
+  h2 {
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin-bottom: 20px;
+  }
 
-    @media (max-width: 700px) {
-      .nav-links { display: none; }
-      .nodes-grid { grid-template-columns: 1fr 1fr; }
-      .yaml-wrap { grid-template-columns: 1fr; }
-      .flow-canvas { height: 340px; }
-      .fnode-cond { top: 185px; left: 40px; }
-      .fnode-action1 { top: 50px; left: 240px; }
-      .fnode-action2 { top: 160px; left: 240px; }
-      .fnode-logic { display: none; }
-    }
-  </style>
+  .lede {
+    font-size: 18px;
+    line-height: 1.6;
+    max-width: 640px;
+  }
+  .band-dark .lede { color: var(--ink-text-muted); }
+  .band-light .lede { color: var(--paper-text-muted); }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; height: 56px;
+    background: rgba(11,12,14,0.72);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-bottom: 1px solid var(--ink-line);
+  }
+  .nav-inner { width: 100%; max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+  .nav-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+  .nav-logo img { width: 22px; height: 22px; border-radius: 5px; }
+  .nav-wordmark { font-size: 14px; font-weight: 600; color: var(--ink-text); letter-spacing: -0.01em; }
+  .nav-links { display: flex; align-items: center; gap: 28px; }
+  .nav-links a { color: var(--ink-text-muted); text-decoration: none; font-size: 13px; font-weight: 400; transition: color .15s; }
+  .nav-links a:hover { color: var(--ink-text); }
+  .nav-links a.nav-cta { color: var(--ink-text); }
+
+  /* HERO */
+  .hero {
+    background: var(--ink); color: var(--ink-text);
+    padding: 168px 24px 96px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-glow {
+    position: absolute; top: -20%; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 500px; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(47,111,237,0.16) 0%, transparent 68%);
+  }
+  .hero-inner { max-width: 1120px; margin: 0 auto; text-align: center; position: relative; }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--ink-panel); border: 1px solid var(--ink-line);
+    color: var(--ink-text-muted); font-size: 12px; padding: 6px 14px;
+    border-radius: 100px; margin-bottom: 28px;
+  }
+  .hero-badge .dot { width: 6px; height: 6px; background: var(--action); border-radius: 50%; }
+
+  .hero h1 {
+    font-size: clamp(48px, 8vw, 84px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.03;
+    text-wrap: balance;
+    margin-bottom: 24px;
+  }
+
+  .hero-sub {
+    font-size: clamp(17px, 2vw, 20px);
+    color: var(--ink-text-muted);
+    max-width: 560px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+    text-wrap: balance;
+  }
+  .hero-sub strong { color: var(--ink-text); font-weight: 600; }
+
+  .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 88px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 24px; border-radius: 980px;
+    font-size: 14px; font-weight: 600; text-decoration: none;
+    transition: transform .15s, background .15s, opacity .15s;
+    border: 1px solid transparent; font-family: var(--font); cursor: pointer;
+  }
+  .btn-primary { background: var(--ink-text); color: var(--ink); }
+  .btn-primary:hover { transform: translateY(-1px); opacity: .9; }
+  .btn-ghost { background: transparent; color: var(--ink-text); border-color: var(--ink-line); }
+  .btn-ghost:hover { border-color: #4A4B4E; }
+
+  .stage {
+    position: relative;
+    max-width: 980px;
+    margin: 0 auto;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--ink-line);
+    box-shadow: 0 40px 90px -30px rgba(0,0,0,0.65);
+  }
+  .stage-bar { display: flex; align-items: center; gap: 6px; padding: 12px 14px; background: var(--ink-panel); border-bottom: 1px solid var(--ink-line); }
+  .stage-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .stage-dot.r { background: #4A4B4E; }
+  .stage-dot.y { background: #4A4B4E; }
+  .stage-dot.g { background: #4A4B4E; }
+  .stage img { width: 100%; height: auto; display: block; }
+
+  /* SCREENSHOT BANDS */
+  .shot-figure {
+    margin-top: 56px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--paper-line);
+    box-shadow: 0 30px 70px -35px rgba(20,20,25,0.25);
+  }
+  .band-dark .shot-figure { border-color: var(--ink-line); box-shadow: 0 30px 70px -35px rgba(0,0,0,0.6); }
+
+  /* CODE PANEL */
+  .code-panel {
+    margin-top: 48px;
+    background: var(--ink-panel);
+    border: 1px solid var(--ink-line);
+    border-radius: 16px;
+    padding: 32px;
+    overflow-x: auto;
+  }
+  .code-panel .file {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-text-muted);
+    margin-bottom: 18px; letter-spacing: 0.02em;
+  }
+  .code-panel pre { font-family: var(--mono); font-size: 13.5px; line-height: 1.85; }
+  .code-panel .kw { color: #8FB6FF; }
+  .code-panel .str { color: #7FD99A; }
+  .code-panel .val { color: #E8B876; }
+  .code-panel .cm { color: #6E6E73; font-style: italic; }
+
+  /* FEATURE ROWS */
+  .feature-row {
+    padding: 28px 0;
+    border-top: 1px solid var(--paper-line);
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 32px;
+  }
+  .feature-row:first-of-type { border-top: none; }
+  .feature-row h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+  .feature-row p { font-size: 16px; color: var(--paper-text-muted); line-height: 1.6; }
+
+  /* NODE TYPES */
+  .nodes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--ink-line);
+    border: 1px solid var(--ink-line);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 48px;
+  }
+  .ncard { background: var(--ink); padding: 32px 28px; }
+  .ncard-label {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;
+  }
+  .nc-trigger .ncard-label { color: var(--trigger); }
+  .nc-cond .ncard-label { color: var(--cond); }
+  .nc-action .ncard-label { color: var(--action); }
+  .nc-logic .ncard-label { color: var(--logic); }
+  .ncard-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.01em; }
+  .ncard-desc { font-size: 14px; color: var(--ink-text-muted); line-height: 1.6; }
+
+  /* INSTALL */
+  .install-card {
+    margin-top: 48px;
+    background: var(--paper-panel);
+    border: 1px solid var(--paper-line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .install-steps { list-style: none; padding: 8px 32px; }
+  .install-steps li {
+    display: flex; gap: 20px; align-items: baseline;
+    padding: 20px 0; border-bottom: 1px solid var(--paper-line);
+  }
+  .install-steps li:last-child { border-bottom: none; }
+  .step-num {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    color: var(--accent); min-width: 20px;
+  }
+  .step-body { font-size: 15px; color: var(--paper-text-muted); line-height: 1.6; }
+  .step-body strong { color: var(--paper-text); font-weight: 600; }
+  .step-body code {
+    font-family: var(--mono); font-size: 13px; color: var(--paper-text);
+    background: var(--paper); border: 1px solid var(--paper-line);
+    padding: 1px 6px; border-radius: 5px;
+  }
+  .install-hacs-btn { padding: 0 32px 32px; }
+  .install-hacs-btn a {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--accent); color: #fff; padding: 14px; border-radius: 12px;
+    text-decoration: none; font-weight: 600; font-size: 14px;
+    transition: opacity .15s;
+  }
+  .install-hacs-btn a:hover { opacity: .88; }
+  .install-manual { margin-top: 20px; font-size: 14px; color: var(--paper-text-muted); }
+  .install-manual a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .install-manual a:hover { text-decoration: underline; }
+
+  /* FOOTER */
+  footer.band-dark { padding: 72px 24px 48px; text-align: center; }
+  .footer-wordmark { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
+  .footer-sub { font-size: 13px; color: var(--ink-text-muted); margin-bottom: 28px; }
+  .footer-links { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+  .footer-links a { color: var(--ink-text-muted); text-decoration: none; font-size: 13px; transition: color .15s; }
+  .footer-links a:hover { color: var(--ink-text); }
+  .footer-copy { font-size: 12px; color: #4A4B4E; }
+
+  @media (max-width: 720px) {
+    .nav-links a:not(.nav-cta) { display: none; }
+    .band { padding: 88px 20px; }
+    .hero { padding: 128px 20px 72px; }
+    .btn-group { margin-bottom: 56px; }
+    .feature-row { grid-template-columns: 1fr; gap: 8px; }
+    .nodes-grid { grid-template-columns: 1fr 1fr; }
+    .install-steps { padding: 8px 20px; }
+    .install-hacs-btn { padding: 0 20px 24px; }
+  }
+</style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
-  <a href="#" class="nav-logo">
-    <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/custom_components/flode/brand/icon.png" alt="FLODE Logo" width="32" height="32" style="border-radius:8px;display:block;"/>
-    <span class="nav-wordmark">FLODE</span>
-  </a>
-  <div class="nav-links">
-    <a href="#features">Features</a>
-    <a href="#nodes">Nodes</a>
-    <a href="#installation">Installation</a>
-    <a href="https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md">Changelog</a>
-    <a href="https://github.com/SH1FT-W/flode" class="nav-cta">GitHub →</a>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <img src="../custom_components/flode/brand/icon.png" alt="" />
+      <span class="nav-wordmark">FLODE</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#nodes">Nodes</a>
+      <a href="#installation">Installation</a>
+      <a href="https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/SH1FT-W/flode" class="nav-cta">GitHub</a>
+    </div>
   </div>
 </nav>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-grid"></div>
+<header class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      <span class="version-tag">FLODE</span> — actively developed
+    </div>
 
-  <div style="margin-bottom:1.5rem;position:relative;z-index:1;">
-    <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/custom_components/flode/brand/icon.png" alt="FLODE Logo" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto;"/>
+    <h1>Flows.<br/>Not YAML fights.</h1>
+
+    <p class="hero-sub">
+      FLODE is a visual editor for <strong>Home Assistant automations</strong>.
+      Connect triggers, conditions, and actions on a canvas —
+      get clean, native YAML in return. No server. No lock-in.
+    </p>
+
+    <div class="btn-group">
+      <a href="https://github.com/SH1FT-W/flode" class="btn btn-primary">View on GitHub</a>
+      <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration" class="btn btn-ghost">Install via HACS</a>
+    </div>
+
+    <div class="stage">
+      <div class="stage-bar">
+        <span class="stage-dot r"></span>
+        <span class="stage-dot y"></span>
+        <span class="stage-dot g"></span>
+      </div>
+      <img src="images/flode-dark.png" alt="FLODE visual flow editor, dark mode" />
+    </div>
   </div>
+</header>
 
-  <div class="hero-badge">
-    <span class="dot"></span>
-    <span class="version-tag">…</span> — actively developed
-  </div>
-
-  <h1>
-    Flows instead of<br/>
-    <span class="accent">YAML battles.</span>
-  </h1>
-
-  <p class="hero-sub">
-    FLODE is a visual node editor for <strong>Home Assistant automations</strong> —
-    inspired by Node-RED, but without an external server. Draw. Save. Done.
-  </p>
-
-  <div class="btn-group">
-    <a href="https://github.com/SH1FT-W/flode" class="btn btn-primary">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      GitHub
-    </a>
-    <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration" class="btn btn-ghost">
-      Open in HACS ↗
-    </a>
-  </div>
-
-  <div class="badge-row">
-    <span class="pill pill-blue version-tag">…</span>
-    <span class="pill pill-green ha-version">HA …</span>
-    <span class="pill pill-purple">Apache 2.0</span>
-    <span class="pill pill-teal">HACS</span>
-    <span class="pill pill-green test-count">… Tests</span>
+<section class="band band-light">
+  <div class="wrap">
+    <p class="kicker">The canvas</p>
+    <h2>Every trigger, condition, and action — one flow.</h2>
+    <p class="lede">Drag nodes onto the canvas and connect them. FLODE lays complex branches out automatically, and follows your Home Assistant theme — light or dark — without any setup.</p>
+    <div class="shot-figure">
+      <img src="images/flode-light.png" alt="FLODE visual flow editor, light mode" />
+    </div>
   </div>
 </section>
 
-<!-- FLOW DEMO -->
-<div class="flow-section">
-  <div class="flow-wrap">
-    <div class="flow-titlebar">
-      <div class="dot-red"></div>
-      <div class="dot-yellow"></div>
-      <div class="dot-green"></div>
-      <span class="flow-filename">my_automation.yaml — FLODE Editor</span>
-    </div>
-    <div class="flow-canvas" id="flowCanvas">
-      <!-- SVG is drawn by JS, paths are based on real DOM positions -->
-      <svg class="flow-svg" id="flowSvg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;">
-        <defs>
-          <marker id="ah-trigger" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M2 1L8 5L2 9" fill="none" stroke="#F0B429" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </marker>
-          <marker id="ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M2 1L8 5L2 9" fill="none" stroke="#3FB950" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </marker>
-          <marker id="ah-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M2 1L8 5L2 9" fill="none" stroke="#4B5563" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </marker>
-          <marker id="ah-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M2 1L8 5L2 9" fill="none" stroke="#BC8CFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </marker>
-        </defs>
-      </svg>
+<section class="band band-dark">
+  <div class="wrap">
+    <p class="kicker">Under the hood</p>
+    <h2>Native, always.</h2>
+    <p class="lede">What you draw becomes standard Home Assistant automation YAML — stored directly in HA core. Nothing proprietary, nothing hidden, nothing to migrate away from later.</p>
 
-      <div class="fnode fnode-trigger" id="n-trigger">
-        <span class="node-type">Trigger</span>
-        Sunset
-      </div>
-      <div class="fnode fnode-cond" id="n-cond">
-        <span class="node-type">Condition</span>
-        Nobody home?
-      </div>
-      <div class="fnode fnode-action1" id="n-action1">
-        <span class="node-type">Action</span>
-        Turn off lights
-      </div>
-      <div class="fnode fnode-action2" id="n-action2">
-        <span class="node-type">Action</span>
-        Dim light to 30%
-      </div>
-      <div class="fnode fnode-logic" id="n-logic">
-        <span class="node-type">End</span>
-        Done ✓
-      </div>
-    </div>
-    <div class="flow-footer">
-      Saved as native Home Assistant YAML — directly in the HA core
-    </div>
-  </div>
-</div>
-
-<!-- YAML SPLIT -->
-<div class="yaml-section">
-  <div class="yaml-wrap">
-    <div class="yaml-panel">
-      <div class="yaml-label">
-        <span class="tag tag-blue">FLODE</span>
-        Visual flow
-      </div>
-      <p style="font-size:13px; color:var(--muted); line-height:1.7">
-        You connect nodes with the mouse —<br/>
-        trigger → condition → actions.<br/><br/>
-        No YAML typing. No syntax guessing.<br/>
-        Just draw and save.
-      </p>
-    </div>
-    <div class="yaml-panel">
-      <div class="yaml-label">
-        <span class="tag tag-green">Output</span>
-        automation.yaml
-      </div>
-      <pre><span class="cm"># generated by FLODE</span>
+    <div class="code-panel">
+      <div class="file">automation.yaml — generated by FLODE</div>
+      <pre><span class="cm"># Evening Light</span>
 <span class="kw">alias</span>: <span class="str">Evening Light</span>
 <span class="kw">trigger</span>:
   - <span class="kw">platform</span>: <span class="val">sun</span>
@@ -398,117 +389,107 @@
       <span class="kw">entity_id</span>: <span class="str">all</span></pre>
     </div>
   </div>
-</div>
+</section>
 
-<!-- FEATURES -->
-<hr class="section-divider" />
-<section class="features-section" id="features">
-  <p class="section-eyebrow">Features</p>
-  <h2 class="section-title">Everything you need.<br/>Nothing you don't.</h2>
-  <p class="section-sub">FLODE is a fork of C.A.F.E. with dozens of bug fixes and new features.</p>
+<section class="band band-light" id="features">
+  <div class="wrap">
+    <p class="kicker">Features</p>
+    <h2>Everything you need. Nothing you don't.</h2>
 
-  <div class="features-grid">
-    <div class="feature">
-      <div class="feat-icon fi-blue">🎯</div>
-      <h3>Visual flow editor</h3>
-      <p>Arrange and connect triggers, conditions, and actions via drag-and-drop on a canvas.</p>
+    <div class="feature-row">
+      <h3>Visual, not code-first</h3>
+      <p>Drag trigger, condition, and action nodes onto a canvas and connect them. Undo/redo, quick-add on connection drop, and a live YAML preview throughout.</p>
     </div>
-    <div class="feature">
-      <div class="feat-icon fi-green">📄</div>
-      <h3>100% native YAML</h3>
-      <p>No proprietary format. The output is standard HA automation YAML — no vendor lock-in.</p>
-    </div>
-    <div class="feature">
-      <div class="feat-icon fi-amber">🔄</div>
+    <div class="feature-row">
       <h3>Bidirectional</h3>
-      <p>Import existing Home Assistant automations, edit them visually, and save them straight back.</p>
+      <p>Import an existing Home Assistant automation, edit it visually, and save it straight back — nothing is lost in the round trip.</p>
     </div>
-    <div class="feature">
-      <div class="feat-icon fi-purple">🐛</div>
-      <h3>Trace integration</h3>
-      <p>Debug flows with the official HA trace view. See exactly which path was executed.</p>
+    <div class="feature-row">
+      <h3>Built for real logic</h3>
+      <p>State machines handle loops and branching automatically. Choose, If/Else, Repeat, and Parallel are draggable blocks — with full metadata and targeting by area, device, label, or floor.</p>
     </div>
-    <div class="feature">
-      <div class="feat-icon fi-teal">🔀</div>
-      <h3>State machines</h3>
-      <p>Complex loops and branches via an automatic state machine pattern — no detours.</p>
+    <div class="feature-row">
+      <h3>Trace overlay</h3>
+      <p>See an actual automation run highlighted directly on the canvas — executed, skipped, and errored nodes, right in the diagram.</p>
     </div>
-    <div class="feature">
-      <div class="feat-icon fi-red">🌍</div>
-      <h3>DE &amp; EN, dark &amp; light</h3>
-      <p>Full i18n support. Dark and light mode automatically follow your configured HA theme.</p>
+    <div class="feature-row">
+      <h3>Feels like Home Assistant</h3>
+      <p>Native pickers and components throughout, with automatic light/dark theming and deep links that open a specific automation from any dashboard button.</p>
     </div>
-  </div>
-</section>
-
-<!-- NODE TYPES -->
-<hr class="section-divider" />
-<section class="nodes-section" id="nodes">
-  <p class="section-eyebrow">Node types</p>
-  <h2 class="section-title">Four building blocks.<br/>Unlimited possibilities.</h2>
-  <p class="section-sub" style="margin-bottom:2rem">Each node represents an HA concept directly in the visual flow.</p>
-
-  <div class="nodes-grid">
-    <div class="ncard nc-trigger">
-      <div class="ncard-label">Trigger</div>
-      <div class="ncard-title">What starts it?</div>
-      <div class="ncard-desc">State, time, event, webhook — every HA trigger platform.</div>
-    </div>
-    <div class="ncard nc-cond">
-      <div class="ncard-label">Condition</div>
-      <div class="ncard-title">When does it run?</div>
-      <div class="ncard-desc">Filter — the automation only continues if the condition is met.</div>
-    </div>
-    <div class="ncard nc-action">
-      <div class="ncard-label">Action</div>
-      <div class="ncard-title">What happens?</div>
-      <div class="ncard-desc">Call a service, fire an event, delay, run a script, …</div>
-    </div>
-    <div class="ncard nc-logic">
-      <div class="ncard-label">Logic</div>
-      <div class="ncard-title">OR / AND / NOT</div>
-      <div class="ncard-desc">Group multiple conditions and triggers and combine them logically.</div>
+    <div class="feature-row">
+      <h3>Speaks your language</h3>
+      <p>Full German and English support, with a per-installation override.</p>
     </div>
   </div>
 </section>
 
-<!-- INSTALLATION -->
-<hr class="section-divider" />
-<section class="install-section" id="installation">
-  <p class="section-eyebrow">Installation</p>
-  <h2 class="section-title" style="margin-bottom:2rem">Up and running in 5 minutes.</h2>
+<section class="band band-dark" id="nodes">
+  <div class="wrap">
+    <p class="kicker">Node types</p>
+    <h2>Four building blocks. Unlimited possibilities.</h2>
+    <p class="lede">Each node maps directly to a Home Assistant concept — nothing invented, nothing to relearn.</p>
 
-  <div class="install-card">
-    <div class="install-card-header">
-      <h2>Via HACS (recommended)</h2>
-    </div>
-    <ol class="install-steps">
-      <li>
-        <span class="step-num">1</span>
-        <span class="step-body">HACS → Integrations → Search for <strong>FLODE</strong> → Install</span>
-      </li>
-      <li>
-        <span class="step-num">2</span>
-        <span class="step-body"><strong>Restart</strong> Home Assistant</span>
-      </li>
-      <li>
-        <span class="step-num">3</span>
-        <span class="step-body">Settings → Integrations → Add Integration → select <strong>FLODE</strong></span>
-      </li>
-    </ol>
-    <div class="install-hacs-btn">
-      <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        Open in HACS — one click, straight into Home Assistant
-      </a>
+    <div class="nodes-grid">
+      <div class="ncard nc-trigger">
+        <div class="ncard-label">Trigger</div>
+        <div class="ncard-title">What starts it?</div>
+        <div class="ncard-desc">State, time, event, webhook — every HA trigger platform.</div>
+      </div>
+      <div class="ncard nc-cond">
+        <div class="ncard-label">Condition</div>
+        <div class="ncard-title">When does it run?</div>
+        <div class="ncard-desc">A filter — the flow only continues if the condition holds.</div>
+      </div>
+      <div class="ncard nc-action">
+        <div class="ncard-label">Action</div>
+        <div class="ncard-title">What happens?</div>
+        <div class="ncard-desc">Call a service, fire an event, delay, run a script.</div>
+      </div>
+      <div class="ncard nc-logic">
+        <div class="ncard-label">Logic</div>
+        <div class="ncard-title">AND / OR / NOT</div>
+        <div class="ncard-desc">Group conditions and triggers, and combine them.</div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-logo">FLODE</div>
-  <p class="footer-sub">Visual flow editor for Home Assistant</p>
+<section class="band band-light" id="installation">
+  <div class="wrap-narrow">
+    <p class="kicker">Installation</p>
+    <h2>Up and running in five minutes.</h2>
+
+    <div class="install-card">
+      <ol class="install-steps">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-body">HACS → Integrations → search for <strong>FLODE</strong> → Install</span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-body"><strong>Restart</strong> Home Assistant</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-body">Settings → Integrations → Add Integration → <strong>FLODE</strong></span>
+        </li>
+      </ol>
+      <div class="install-hacs-btn">
+        <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration">Open in HACS</a>
+      </div>
+    </div>
+
+    <p class="install-manual">
+      Prefer to install by hand? Download <code>flode.zip</code> from the
+      <a href="https://github.com/SH1FT-W/flode/releases">releases page</a> and copy it to
+      <code>config/custom_components/flode/</code>.
+    </p>
+  </div>
+</section>
+
+<footer class="band-dark">
+  <div class="footer-wordmark">FLODE</div>
+  <p class="footer-sub">A visual flow editor for Home Assistant.</p>
   <div class="footer-links">
     <a href="https://github.com/SH1FT-W/flode">GitHub</a>
     <a href="https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md">Changelog</a>
@@ -516,149 +497,24 @@
     <a href="https://github.com/SH1FT-W/flode/issues">Report issues</a>
     <a href="https://github.com/FezVrasta/cafe-hass">C.A.F.E. (original)</a>
   </div>
-  <p class="footer-copy">Fork of C.A.F.E. · Apache 2.0 · Actively developed with Claude (Anthropic)</p>
+  <p class="footer-copy">Fork of C.A.F.E. · Apache 2.0 · Built with Claude (Anthropic)</p>
 </footer>
 
 <script>
-  // Version live from GitHub Releases
   fetch('https://api.github.com/repos/SH1FT-W/flode/releases/latest')
     .then(r => r.json())
     .then(data => {
       const v = data.tag_name || '';
-      document.querySelectorAll('.version-tag').forEach(el => el.textContent = v);
-    })
-    .catch(() => {
-      document.querySelectorAll('.version-tag').forEach(el => el.textContent = 'latest');
-    });
-
-  // Test count live from README (parses "Vitest (NNN tests)")
-  fetch('https://api.github.com/repos/SH1FT-W/flode/contents/README.md')
-    .then(r => r.json())
-    .then(data => {
-      const text = atob(data.content.replace(/\n/g, ''));
-      const match = text.match(/Vitest\s*\((\d+)\s*Tests?\)/i);
-      if (match) {
-        document.querySelectorAll('.test-count').forEach(el => el.textContent = match[1] + ' Tests');
-      }
+      if (v) document.querySelectorAll('.version-tag').forEach(el => el.textContent = v);
     })
     .catch(() => {});
 
-  // Minimum HA version live from hacs.json
-  fetch('https://api.github.com/repos/SH1FT-W/flode/contents/hacs.json')
-    .then(r => r.json())
-    .then(data => {
-      const parsed = JSON.parse(atob(data.content.replace(/\n/g, '')));
-      if (parsed.homeassistant) {
-        document.querySelectorAll('.ha-version').forEach(el => el.textContent = 'HA ' + parsed.homeassistant + '+');
-      }
-    })
-    .catch(() => {});
-
-  // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
       const target = document.querySelector(a.getAttribute('href'));
       if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
     });
   });
-
-  // Dynamic edges: real DOM positions → SVG paths
-  function getCenter(el, canvas) {
-    const r = el.getBoundingClientRect();
-    const c = canvas.getBoundingClientRect();
-    return {
-      x: r.left - c.left + r.width / 2,
-      y: r.top  - c.top  + r.height / 2,
-      left:   r.left  - c.left,
-      right:  r.right - c.left,
-      top:    r.top   - c.top,
-      bottom: r.bottom - c.top,
-      midY:   r.top   - c.top + r.height / 2,
-    };
-  }
-
-  function cubicPath(x1, y1, x2, y2) {
-    const dx = Math.abs(x2 - x1) * 0.5;
-    return `M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`;
-  }
-
-  function drawEdge(svg, d, stroke, marker, opacity, label, labelColor) {
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', d);
-    path.setAttribute('stroke', stroke);
-    path.setAttribute('stroke-width', '1.5');
-    path.setAttribute('stroke-opacity', opacity || '0.7');
-    path.setAttribute('fill', 'none');
-    path.setAttribute('marker-end', `url(#${marker})`);
-    path.classList.add('edge');
-    const len = 300;
-    path.style.strokeDasharray = len;
-    path.style.strokeDashoffset = len;
-    svg.appendChild(path);
-
-    if (label) {
-      const midX = (parseFloat(d.match(/M([\d.]+)/)[1]) + parseFloat(d.match(/(\d+\.?\d*),(\d+\.?\d*)$/)[1])) / 2;
-      const midY = (parseFloat(d.match(/M[\d.]+,([\d.]+)/)[1]) + parseFloat(d.match(/(\d+\.?\d*),(\d+\.?\d*)$/)[2])) / 2;
-      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      txt.setAttribute('x', midX);
-      txt.setAttribute('y', midY - 6);
-      txt.setAttribute('text-anchor', 'middle');
-      txt.setAttribute('font-family', 'JetBrains Mono, monospace');
-      txt.setAttribute('font-size', '10');
-      txt.setAttribute('fill', labelColor || '#8B949E');
-      txt.setAttribute('opacity', '0.9');
-      txt.classList.add('edge-label');
-      txt.textContent = label;
-      svg.appendChild(txt);
-    }
-    return path;
-  }
-
-  function buildEdges() {
-    const canvas = document.getElementById('flowCanvas');
-    const svg    = document.getElementById('flowSvg');
-    if (!canvas || !svg) return;
-
-    // Remove old paths + labels (but keep the defs)
-    svg.querySelectorAll('path.edge, text.edge-label').forEach(el => el.remove());
-
-    const t  = getCenter(document.getElementById('n-trigger'), canvas);
-    const c  = getCenter(document.getElementById('n-cond'),    canvas);
-    const a1 = getCenter(document.getElementById('n-action1'), canvas);
-    const a2 = getCenter(document.getElementById('n-action2'), canvas);
-    const l  = getCenter(document.getElementById('n-logic'),   canvas);
-
-    const edges = [
-      // trigger → condition (right edge → left edge)
-      { d: cubicPath(t.right, t.midY, c.left, c.midY),   stroke:'#F0B429', marker:'ah-trigger', label:null },
-      // condition → action1 yes (right edge → left edge, top)
-      { d: cubicPath(c.right, c.midY, a1.left, a1.midY), stroke:'#3FB950', marker:'ah-green',   label:'yes', lc:'#3FB950' },
-      // condition → action2 no (right edge → left edge, bottom)
-      { d: cubicPath(c.right, c.midY, a2.left, a2.midY), stroke:'#4B5563', marker:'ah-gray',    label:'no',  lc:'#6B7280' },
-      // action1 → logic
-      { d: cubicPath(a1.right, a1.midY, l.left, l.midY), stroke:'#BC8CFF', marker:'ah-purple',  label:null },
-      // action2 → logic
-      { d: cubicPath(a2.right, a2.midY, l.left, l.midY), stroke:'#BC8CFF', marker:'ah-purple',  label:null },
-    ];
-
-    const paths = edges.map((e, i) => drawEdge(svg, e.d, e.stroke, e.marker, '0.7', e.label, e.lc));
-
-    // Animate the drawing
-    setTimeout(() => {
-      paths.forEach((p, i) => {
-        p.style.transition = `stroke-dashoffset 0.55s ease ${0.15 + i * 0.12}s`;
-        p.style.strokeDashoffset = '0';
-      });
-    }, 200);
-  }
-
-  // Draw edges once the full layout (fonts) is ready
-  if (document.readyState === 'complete') {
-    buildEdges();
-  } else {
-    window.addEventListener('load', buildEdges);
-  }
-  window.addEventListener('resize', buildEdges);
 </script>
 </body>
 </html>

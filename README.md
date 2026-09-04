@@ -40,44 +40,9 @@ Draw an automation as a diagram — triggers, conditions, actions, connected on 
 
 ## Installation
 
-### HACS (recommended)
-
-FLODE is in the default HACS store.
+FLODE is in the default HACS store — HACS → Integrations → search **FLODE** → Install → restart Home Assistant → Settings → Integrations → Add Integration → **FLODE**.
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
-
-HACS → Integrations → search **FLODE** → Install → restart Home Assistant → Settings → Integrations → Add Integration → **FLODE**.
-
-### Manual
-
-Download `flode.zip` from [Releases](https://github.com/SH1FT-W/flode/releases), copy the `flode/` folder to `config/custom_components/flode/`, restart Home Assistant, then add the integration as above.
-
-## Usage
-
-FLODE appears in the HA sidebar after setup. Start a new automation from a trigger node, or import an existing one via the folder icon — either way, saving writes it straight back to Home Assistant as a native automation. The YAML is always one click away if you want to check or copy it.
-
-## Deep links
-
-Open FLODE straight into a specific automation from anywhere:
-
-```yaml
-type: button-card
-name: Edit in FLODE
-icon: mdi:pencil
-tap_action:
-  action: navigate
-  navigation_path: /flode?automation=automation.motion_light_entrance
-```
-
-`/flode?new=1` opens a blank editor instead. FLODE also fires a `flode_automation_saved` event with the automation's `entity_id` after every save, so other automations can react to an edit.
-
-## Native to Home Assistant
-
-FLODE renders directly inside HA's own document — no iframe — and uses HA's native pickers, dropdowns, and components wherever it can, so they carry your live entity data and your active theme automatically. Where a component isn't available, FLODE falls back to its own equivalent and keeps working. Details in [`docs/ha-native-migration.md`](docs/ha-native-migration.md).
-
-## Technology
-
-React, Vite, Tailwind, and React Flow on the frontend; a TypeScript transpiler with Zod-validated schemas; Vitest for testing; a thin Python integration for the HA panel.
 
 ## License
 
