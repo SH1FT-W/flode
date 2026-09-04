@@ -40,8 +40,6 @@ Draw an automation as a diagram — triggers, conditions, actions, connected on 
 
 ## Installation
 
-FLODE is in the default HACS store — HACS → Integrations → search **FLODE** → Install → restart Home Assistant → Settings → Integrations → Add Integration → **FLODE**.
-
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
 
 ## License
