@@ -148,6 +148,19 @@ function isEventAction(action: unknown): action is Record<string, unknown> {
   );
 }
 /**
+ * Information about a node parsed from a state-machine choose block or an
+ * inline parallel branch nested inside one.
+ */
+interface StateMachineNodeInfo {
+  nodeId: string;
+  nodeType: 'action' | 'condition' | 'delay' | 'wait' | 'set_variables';
+  data: Record<string, unknown>;
+  trueTarget: string | null;
+  falseTarget: string | null;
+  parallelItems?: unknown[];
+}
+
+/**
  * Result of parsing YAML
  */
 export interface ParseResult {
@@ -546,16 +559,7 @@ export class YamlParser {
     }
 
     let entryNodeId: string | null = null;
-    const nodeInfoMap = new Map<
-      string,
-      {
-        nodeId: string;
-        nodeType: 'action' | 'condition' | 'delay' | 'wait';
-        data: Record<string, unknown>;
-        trueTarget: string | null;
-        falseTarget: string | null;
-      }
-    >();
+    const nodeInfoMap = new Map<string, StateMachineNodeInfo>();
 
     for (const action of actions) {
       const actionObj = action as Record<string, unknown>;
@@ -591,6 +595,31 @@ export class YamlParser {
         }
       }
     }
+
+    // Resolve synthetic __parallel_* entries. The transpiler generates these for
+    // a trigger with multiple targets (__parallel_trigger_N) and for a condition
+    // handle leading to several nodes (__parallel_cond_<id>__<handle>). They never
+    // exist as canvas nodes, so expand them back into their real branch node IDs
+    // (reconstructing the inlined subgraph) instead of leaving phantom nodes behind.
+    // Matched strictly: a user node whose ID merely starts with __parallel_ must
+    // not be deleted, or every edge pointing at it dangles and the automation
+    // stops importing altogether.
+    const SYNTHETIC_ENTRY_ID = /^__parallel_(trigger_\d+|cond_.+__(?:true|false))$/;
+    const parallelTriggerTargets = new Map<string, string[]>();
+    for (const [nodeId, info] of nodeInfoMap) {
+      if (!SYNTHETIC_ENTRY_ID.test(nodeId)) continue;
+
+      const targetIds = this.parseInlineParallelBranches(info.parallelItems ?? [], nodeInfoMap);
+      if (targetIds.length > 0) {
+        parallelTriggerTargets.set(nodeId, targetIds);
+      }
+      nodeInfoMap.delete(nodeId);
+    }
+
+    // A regular node's own fan-out (`parallel:` in its transition tail) inlines
+    // its branches the same way — reconstruct those subgraphs too so a mid-flow
+    // fan-out survives reimport instead of the branches vanishing entirely.
+    const parallelFanOutTargets = this.resolveParallelFanOuts(nodeInfoMap);
 
     // In state-machine strategy, action/condition/delay/wait node IDs are extracted
     // directly from the Jinja2 templates in the YAML choose blocks. Only trigger
@@ -659,6 +688,14 @@ export class YamlParser {
             data: info.data as WaitNode['data'],
           });
           break;
+        case 'set_variables':
+          nodes.push({
+            id: nodeId,
+            type: 'set_variables',
+            position: { x: 0, y: 0 },
+            data: info.data as SetVariablesNode['data'],
+          });
+          break;
       }
     }
 
@@ -673,38 +710,312 @@ export class YamlParser {
         for (let i = 0; i < triggerNodes.length; i++) {
           const targetNodeId = triggerRouting.get(i);
           if (targetNodeId) {
-            edges.push(this.createEdge(triggerNodes[i].id, targetNodeId));
+            // Expand a synthetic parallel trigger entry into direct edges
+            const expandedTargets = parallelTriggerTargets.get(targetNodeId);
+            if (expandedTargets) {
+              for (const actualTarget of expandedTargets) {
+                edges.push(this.createEdge(triggerNodes[i].id, actualTarget));
+              }
+            } else {
+              edges.push(this.createEdge(triggerNodes[i].id, targetNodeId));
+            }
           }
         }
       } else {
-        // All triggers route to same node (simple case)
+        // All triggers route to same node (simple case). That node may still be
+        // a synthetic __parallel_trigger_* entry — a single trigger fanning out
+        // produces a bare id rather than a routing template — so expand it here
+        // too, otherwise the edge points at a node that no longer exists.
+        const expandedTargets = parallelTriggerTargets.get(entryNodeId);
         for (const trigger of triggerNodes) {
-          edges.push(this.createEdge(trigger.id, entryNodeId));
+          if (expandedTargets) {
+            for (const actualTarget of expandedTargets) {
+              edges.push(this.createEdge(trigger.id, actualTarget));
+            }
+          } else {
+            edges.push(this.createEdge(trigger.id, entryNodeId));
+          }
         }
       }
     }
 
     // Create edges between nodes based on transitions
     for (const [nodeId, info] of nodeInfoMap) {
-      if (info.trueTarget && info.trueTarget !== 'END') {
-        edges.push({
-          id: `edge-${nodeId}-${info.trueTarget}`,
-          source: nodeId,
-          target: info.trueTarget,
-          sourceHandle: info.falseTarget ? 'true' : undefined,
-        });
-      }
-      if (info.falseTarget && info.falseTarget !== 'END') {
-        edges.push({
-          id: `edge-${nodeId}-${info.falseTarget}`,
-          source: nodeId,
-          target: info.falseTarget,
-          sourceHandle: 'false',
-        });
-      }
+      edges.push(
+        ...this.buildTransitionEdges(nodeId, info, parallelTriggerTargets, parallelFanOutTargets)
+      );
     }
 
     return { nodes, edges };
+  }
+
+  /**
+   * Build the outgoing edges for one parsed state-machine node.
+   *
+   * A transition target may be a synthetic __parallel_* entry, which stands for
+   * several branches; those expand into one edge per branch, all keeping the
+   * handle of the transition they came from.
+   */
+  private buildTransitionEdges(
+    nodeId: string,
+    info: StateMachineNodeInfo,
+    syntheticParallelTargets: Map<string, string[]>,
+    fanOutTargets: Map<string, string[]>
+  ): FlowEdge[] {
+    const edges: FlowEdge[] = [];
+
+    const pushTransition = (target: string, sourceHandle: 'true' | 'false' | undefined): void => {
+      for (const actual of syntheticParallelTargets.get(target) ?? [target]) {
+        edges.push({
+          id: `edge-${nodeId}-${actual}`,
+          source: nodeId,
+          target: actual,
+          sourceHandle,
+        });
+      }
+    };
+
+    if (info.trueTarget && info.trueTarget !== 'END') {
+      const isBranch = info.nodeType === 'condition' || !!info.falseTarget;
+      pushTransition(info.trueTarget, isBranch ? 'true' : undefined);
+    }
+
+    if (info.falseTarget && info.falseTarget !== 'END') {
+      pushTransition(info.falseTarget, 'false');
+    }
+
+    // Fan-out: one edge per branch that was inlined into this node's own
+    // `parallel:` transition tail.
+    for (const target of fanOutTargets.get(nodeId) ?? []) {
+      edges.push(this.createEdge(nodeId, target));
+    }
+
+    return edges;
+  }
+
+  /**
+   * Resolve parallel fan-out on regular nodes. When a node has more than one
+   * outgoing edge, the state-machine strategy emits its downstream branches
+   * inlined inside a `parallel:` block rather than as standalone dispatcher
+   * entries — reconstruct those branches as real nodes and report the fan-out
+   * targets so the caller can wire direct node→target edges.
+   *
+   * Repeats to a fixpoint because a branch may itself contain a nested fan-out,
+   * which only becomes visible once that branch has been parsed.
+   */
+  private resolveParallelFanOuts(
+    nodeInfoMap: Map<string, StateMachineNodeInfo>
+  ): Map<string, string[]> {
+    const fanOutTargets = new Map<string, string[]>();
+    const resolved = new Set<string>();
+
+    let foundMore = true;
+    while (foundMore) {
+      foundMore = false;
+      // Snapshot: parseInlineParallelBranches inserts nodes into nodeInfoMap as it goes
+      for (const [nodeId, info] of [...nodeInfoMap]) {
+        if (!info.parallelItems || info.parallelItems.length === 0) continue;
+        if (resolved.has(nodeId)) continue;
+
+        resolved.add(nodeId);
+        foundMore = true;
+
+        const targetIds = this.parseInlineParallelBranches(info.parallelItems, nodeInfoMap);
+        if (targetIds.length > 0) {
+          fanOutTargets.set(nodeId, targetIds);
+        }
+      }
+    }
+
+    return fanOutTargets;
+  }
+
+  /**
+   * Parse inline parallel branch items into nodes and edges. Reconstructs the
+   * subgraph that the state-machine strategy's `generateInlineBranch` inlined
+   * into a `parallel:` block (each branch tagged `alias: parallel_branch:<nodeId>`
+   * at its root). Returns the root node ID of each branch, for wiring the
+   * fan-out edges back to.
+   */
+  private parseInlineParallelBranches(
+    parallelItems: unknown[],
+    nodeInfoMap: Map<string, StateMachineNodeInfo>
+  ): string[] {
+    const targetIds: string[] = [];
+    let idCounter = 0;
+    const generateId = (type: string): string => `inline_${type}_${idCounter++}`;
+
+    for (const item of parallelItems) {
+      const pItem = item as Record<string, unknown>;
+      const alias = pItem.alias as string | undefined;
+      const branchMatch = alias?.match(/^parallel_branch:(.+)$/);
+      if (!branchMatch) continue;
+
+      const rootNodeId = branchMatch[1];
+
+      if (Array.isArray(pItem.sequence)) {
+        this.parseInlineActionList(
+          pItem.sequence as Record<string, unknown>[],
+          rootNodeId,
+          nodeInfoMap,
+          generateId
+        );
+      } else {
+        this.parseInlineActionItem(pItem, rootNodeId, nodeInfoMap, generateId);
+      }
+
+      // An empty branch (`{ stop: 'Empty branch' }`) produces no node — skip it
+      // rather than wiring an edge to a node that was never created.
+      if (nodeInfoMap.has(rootNodeId)) {
+        targetIds.push(rootNodeId);
+      }
+    }
+
+    return targetIds;
+  }
+
+  /**
+   * Parse a list of inline HA actions, chaining them sequentially. The first
+   * action keeps `firstNodeId` (the branch root); subsequent actions get freshly
+   * generated IDs, since FLODE's generator doesn't tag interior branch nodes.
+   */
+  private parseInlineActionList(
+    actions: Record<string, unknown>[],
+    firstNodeId: string,
+    nodeInfoMap: Map<string, StateMachineNodeInfo>,
+    generateId: (type: string) => string
+  ): void {
+    let prevNodeId: string | null = null;
+
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
+
+      // A bare parallel block is the previous node's own fan-out (emitted by
+      // continueInlineBranch), not a node of its own — attach it so the
+      // fan-out pass can rebuild those nested branches too.
+      if (Array.isArray(action.parallel) && action.alias === undefined) {
+        const prevInfo = prevNodeId ? nodeInfoMap.get(prevNodeId) : undefined;
+        if (prevInfo) {
+          prevInfo.parallelItems = action.parallel as unknown[];
+        }
+        continue;
+      }
+
+      const nodeId = i === 0 ? firstNodeId : generateId(this.inferInlineNodeType(action));
+
+      // Chain the previous non-condition node to this one
+      if (prevNodeId) {
+        const prevInfo = nodeInfoMap.get(prevNodeId);
+        if (prevInfo && prevInfo.nodeType !== 'condition') {
+          prevInfo.trueTarget = nodeId;
+        }
+      }
+
+      this.parseInlineActionItem(action, nodeId, nodeInfoMap, generateId);
+      prevNodeId = nodeId;
+    }
+  }
+
+  /**
+   * Parse a single inline HA action item into a StateMachineNodeInfo entry.
+   * Handles actions, conditions (if/then/else), delays, waits, and set_variables.
+   */
+  private parseInlineActionItem(
+    item: Record<string, unknown>,
+    nodeId: string,
+    nodeInfoMap: Map<string, StateMachineNodeInfo>,
+    generateId: (type: string) => string
+  ): void {
+    const rawAlias = item.alias as string | undefined;
+    const alias = rawAlias?.startsWith('parallel_branch:') ? undefined : rawAlias;
+
+    if (item.if && Array.isArray(item.if)) {
+      // Condition node (native if/then/else, used for complex templates)
+      const conditions = item.if as Record<string, unknown>[];
+      const condition = conditions[0] ?? {};
+      const data: Record<string, unknown> = { ...condition };
+      if (alias) data.alias = alias;
+
+      let trueTarget: string | null = null;
+      let falseTarget: string | null = null;
+
+      const thenActions = item.then as Record<string, unknown>[] | undefined;
+      if (thenActions && thenActions.length > 0) {
+        const thenNodeId = generateId(this.inferInlineNodeType(thenActions[0]));
+        trueTarget = thenNodeId;
+        this.parseInlineActionList(thenActions, thenNodeId, nodeInfoMap, generateId);
+      }
+
+      const elseActions = item.else as Record<string, unknown>[] | undefined;
+      if (elseActions && elseActions.length > 0) {
+        const elseNodeId = generateId(this.inferInlineNodeType(elseActions[0]));
+        falseTarget = elseNodeId;
+        this.parseInlineActionList(elseActions, elseNodeId, nodeInfoMap, generateId);
+      }
+
+      nodeInfoMap.set(nodeId, { nodeId, nodeType: 'condition', data, trueTarget, falseTarget });
+    } else if (item.delay !== undefined) {
+      const data: Record<string, unknown> = { delay: item.delay };
+      if (alias) data.alias = alias;
+      nodeInfoMap.set(nodeId, {
+        nodeId,
+        nodeType: 'delay',
+        data,
+        trueTarget: null,
+        falseTarget: null,
+      });
+    } else if (item.wait_template !== undefined || item.wait_for_trigger !== undefined) {
+      const data: Record<string, unknown> = {};
+      if (item.wait_template) data.wait_template = item.wait_template;
+      if (item.wait_for_trigger) data.wait_for_trigger = item.wait_for_trigger;
+      if (item.timeout) data.timeout = item.timeout;
+      if (item.continue_on_timeout !== undefined)
+        data.continue_on_timeout = item.continue_on_timeout;
+      if (alias) data.alias = alias;
+      nodeInfoMap.set(nodeId, {
+        nodeId,
+        nodeType: 'wait',
+        data,
+        trueTarget: null,
+        falseTarget: null,
+      });
+    } else if (item.variables !== undefined) {
+      const data: Record<string, unknown> = { variables: item.variables };
+      if (alias) data.alias = alias;
+      if (item.id) data.id = item.id;
+      nodeInfoMap.set(nodeId, {
+        nodeId,
+        nodeType: 'set_variables',
+        data,
+        trueTarget: null,
+        falseTarget: null,
+      });
+    } else if (item.service || item.action) {
+      const data: Record<string, unknown> = {};
+      data.service = item.service ?? item.action;
+      if (item.target) data.target = item.target;
+      if (item.data) data.data = item.data;
+      if (alias) data.alias = alias;
+      nodeInfoMap.set(nodeId, {
+        nodeId,
+        nodeType: 'action',
+        data,
+        trueTarget: null,
+        falseTarget: null,
+      });
+    }
+  }
+
+  /**
+   * Infer the node type from an inline HA action item, to pick an ID prefix
+   * for freshly generated interior branch nodes.
+   */
+  private inferInlineNodeType(item: Record<string, unknown>): string {
+    if (item.if) return 'condition';
+    if (item.delay !== undefined) return 'delay';
+    if (item.wait_template !== undefined || item.wait_for_trigger !== undefined) return 'wait';
+    if (item.variables !== undefined) return 'set_variables';
+    return 'action';
   }
 
   /**
@@ -749,13 +1060,9 @@ export class YamlParser {
   /**
    * Parse a single choose block from state-machine format
    */
-  private parseStateMachineChooseBlock(chooseBlock: Record<string, unknown>): {
-    nodeId: string;
-    nodeType: 'action' | 'condition' | 'delay' | 'wait';
-    data: Record<string, unknown>;
-    trueTarget: string | null;
-    falseTarget: string | null;
-  } | null {
+  private parseStateMachineChooseBlock(
+    chooseBlock: Record<string, unknown>
+  ): StateMachineNodeInfo | null {
     const conditions = chooseBlock.conditions;
     if (!Array.isArray(conditions) || conditions.length === 0) {
       return null;
@@ -776,17 +1083,35 @@ export class YamlParser {
     }
 
     // Parse sequence to determine node type and data
-    let nodeType: 'action' | 'condition' | 'delay' | 'wait' = 'action';
+    let nodeType: StateMachineNodeInfo['nodeType'] = 'action';
     const data: Record<string, unknown> = {};
     let trueTarget: string | null = null;
     let falseTarget: string | null = null;
+    let parallelItems: unknown[] | undefined;
 
     for (const item of sequence) {
       const seqItem = item as Record<string, unknown>;
 
-      // Check for variables action (sets next node / edge)
+      // Check for variables action. Two distinct shapes share this key: the
+      // state-machine transition, which carries only `current_node` (and
+      // sometimes `flow_context`), and a user set_variables node, which carries
+      // arbitrary user variables. Requiring the transition to hold nothing else
+      // means a user variable merely named `current_node` alongside others is
+      // still read back as a set_variables node instead of a transition.
       if (seqItem.variables) {
         const vars = seqItem.variables as Record<string, unknown>;
+        const isTransition =
+          'current_node' in vars &&
+          Object.keys(vars).every((key) => key === 'current_node' || key === 'flow_context');
+
+        if (!isTransition) {
+          nodeType = 'set_variables';
+          data.variables = vars;
+          if (seqItem.alias) data.alias = seqItem.alias;
+          if (seqItem.id) data.id = seqItem.id;
+          continue;
+        }
+
         const currentNodeValue = vars.current_node;
 
         if (typeof currentNodeValue === 'string') {
@@ -829,6 +1154,11 @@ export class YamlParser {
         }
         if (seqItem.alias) data.alias = seqItem.alias;
       }
+      // Check for a fan-out into several branches (buildTransitionTail emits
+      // this instead of a plain `variables: END` transition)
+      else if (Array.isArray(seqItem.parallel)) {
+        parallelItems = seqItem.parallel;
+      }
       // Check for service call action
       else if (seqItem.service || seqItem.action) {
         nodeType = 'action';
@@ -839,15 +1169,49 @@ export class YamlParser {
       }
     }
 
-    return { nodeId, nodeType, data, trueTarget, falseTarget };
+    return { nodeId, nodeType, data, trueTarget, falseTarget, parallelItems };
   }
 
   /**
    * Parse Jinja condition expression to extract condition data
    */
   private parseJinjaCondition(expr: string): Record<string, unknown> {
+    const trimmed = this.stripOuterParens(expr.trim());
+
+    // `or` has the lowest precedence, so split on it first: each side may still
+    // contain `and`-joined sub-expressions, which the recursive call handles.
+    // Splitting (rather than matching a leaf pattern anywhere in the string)
+    // keeps a compound AND/OR condition from collapsing into just the first
+    // leaf that happens to match somewhere inside it.
+    const orParts = this.splitTopLevelJinja(trimmed, ' or ');
+    if (orParts.length > 1) {
+      return {
+        condition: 'or',
+        conditions: orParts.map((part) => this.parseJinjaCondition(part)),
+      };
+    }
+
+    const andParts = this.splitTopLevelJinja(trimmed, ' and ');
+    if (andParts.length > 1) {
+      return {
+        condition: 'and',
+        conditions: andParts.map((part) => this.parseJinjaCondition(part)),
+      };
+    }
+
+    const notMatch = trimmed.match(/^not\s*\((.*)\)$/s);
+    if (notMatch) {
+      const innerParts = this.splitTopLevelJinja(notMatch[1].trim(), ' and ');
+      return {
+        condition: 'not',
+        conditions: innerParts.map((part) => this.parseJinjaCondition(part)),
+      };
+    }
+
     // is_state('entity', 'state')
-    const isStateMatch = expr.match(/is_state\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/);
+    const isStateMatch = trimmed.match(
+      /^is_state\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)$/
+    );
     if (isStateMatch) {
       const entityId = isStateMatch[1];
       const state = isStateMatch[2];
@@ -864,9 +1228,22 @@ export class YamlParser {
       return { condition: 'state', entity_id: entityId, state };
     }
 
+    // state_attr('entity', 'attribute') == 'value'
+    const stateAttrMatch = trimmed.match(
+      /^state_attr\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)\s*==\s*['"]([^'"]*)['"]$/
+    );
+    if (stateAttrMatch) {
+      return {
+        condition: 'state',
+        entity_id: stateAttrMatch[1],
+        attribute: stateAttrMatch[2],
+        state: stateAttrMatch[3],
+      };
+    }
+
     // states('entity') | float > number
-    const numericMatch = expr.match(
-      /states\s*\(\s*['"]([^'"]+)['"]\s*\)\s*\|\s*float\s*([<>=]+)\s*(\d+(?:\.\d+)?)/
+    const numericMatch = trimmed.match(
+      /^states\s*\(\s*['"]([^'"]+)['"]\s*\)\s*\|\s*float\s*([<>=]+)\s*(\d+(?:\.\d+)?)$/
     );
     if (numericMatch) {
       const entityId = numericMatch[1];
@@ -883,7 +1260,82 @@ export class YamlParser {
     }
 
     // Fallback to template condition
-    return { condition: 'template', value_template: `{{ ${expr} }}` };
+    return { condition: 'template', value_template: `{{ ${trimmed} }}` };
+  }
+
+  /**
+   * Remove a single redundant pair of wrapping parentheses, e.g. `(a or b)` -> `a or b`.
+   * Only strips when the opening paren's matching close is the expression's final
+   * character - `(a) or (b)` is left untouched.
+   */
+  private stripOuterParens(expr: string): string {
+    let result = expr.trim();
+    while (result.startsWith('(') && result.endsWith(')')) {
+      let depth = 0;
+      let matchesToEnd = true;
+      for (let i = 0; i < result.length; i++) {
+        if (result[i] === '(') depth++;
+        else if (result[i] === ')') {
+          depth--;
+          if (depth === 0 && i !== result.length - 1) {
+            matchesToEnd = false;
+            break;
+          }
+        }
+      }
+      if (!matchesToEnd) break;
+      result = result.slice(1, -1).trim();
+    }
+    return result;
+  }
+
+  /**
+   * Split a Jinja expression on a logical operator (` and `/` or `), ignoring
+   * occurrences inside parentheses or quoted string literals.
+   */
+  private splitTopLevelJinja(expr: string, separator: string): string[] {
+    const parts: string[] = [];
+    let depth = 0;
+    let quote: string | null = null;
+    let current = '';
+    let i = 0;
+    while (i < expr.length) {
+      const ch = expr[i];
+      if (quote) {
+        current += ch;
+        if (ch === quote && expr[i - 1] !== '\\') quote = null;
+        i++;
+        continue;
+      }
+      if (ch === "'" || ch === '"') {
+        quote = ch;
+        current += ch;
+        i++;
+        continue;
+      }
+      if (ch === '(') {
+        depth++;
+        current += ch;
+        i++;
+        continue;
+      }
+      if (ch === ')') {
+        depth--;
+        current += ch;
+        i++;
+        continue;
+      }
+      if (depth === 0 && expr.slice(i, i + separator.length) === separator) {
+        parts.push(current.trim());
+        current = '';
+        i += separator.length;
+        continue;
+      }
+      current += ch;
+      i++;
+    }
+    parts.push(current.trim());
+    return parts;
   }
 
   /**
