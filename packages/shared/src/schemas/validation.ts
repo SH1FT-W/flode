@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isTemplateString } from './ha-schemas';
 
 /**
  * Validation schemas for node data.
@@ -31,7 +32,7 @@ export const WaitNodeValidationSchema = z
 
 /**
  * Action node validation - requires either:
- *   - service in domain.service format (service call action), or
+ *   - service in domain.service format or a Jinja2 template (service call action), or
  *   - event string (fire event action)
  */
 export const ActionNodeValidationSchema = z
@@ -56,7 +57,8 @@ export const ActionNodeValidationSchema = z
       return;
     }
 
-    if (hasService && !data.service!.includes('.')) {
+    // Templated action names (e.g. "{{ svc }}") are resolved by HA at runtime
+    if (hasService && !isTemplateString(data.service) && !data.service!.includes('.')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'errors:validation.action.serviceFormat',

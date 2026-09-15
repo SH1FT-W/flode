@@ -75,6 +75,7 @@ export {
   isFlodeMetadata,
   isHACondition,
   isHATrigger,
+  isTemplateString,
   VALID_WEEKDAYS,
   type Weekday,
 } from './ha-schemas';

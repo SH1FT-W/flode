@@ -1,4 +1,9 @@
-import { type FlowGraph, FlowGraphSchema, validateGraphStructure } from '@flode/shared';
+import {
+  type FlowGraph,
+  FlowGraphSchema,
+  isTemplateString,
+  validateGraphStructure,
+} from '@flode/shared';
 import { ZodError } from 'zod';
 
 /**
@@ -115,6 +120,7 @@ function validateSemantics(graph: FlowGraph): ValidationError[] {
       if (
         typeof service === 'string' &&
         !service.includes('.') &&
+        !isTemplateString(service) &&
         !specialActionTypes.includes(service)
       ) {
         errors.push({

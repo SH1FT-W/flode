@@ -258,6 +258,14 @@ export function isDeviceAction(obj: unknown): obj is Record<string, unknown> {
 }
 
 /**
+ * Type guard for Jinja2 template strings.
+ * Returns true if the value is a string containing `{{` or `{%`.
+ */
+export function isTemplateString(value: unknown): value is string {
+  return typeof value === 'string' && (value.includes('{{') || value.includes('{%'));
+}
+
+/**
  * FLODE metadata stored in automation YAML to preserve flow layout.
  */
 export const FlodeMetadataSchema = z.object({

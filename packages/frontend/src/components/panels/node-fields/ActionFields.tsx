@@ -1,11 +1,13 @@
-import type { FlowNode, Target } from '@flode/shared';
+import { type FlowNode, isTemplateString, type Target } from '@flode/shared';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldError } from '@/components/forms/FieldError';
 import { FormField } from '@/components/forms/FormField';
 import { Combobox } from '@/components/ui/Combobox';
+import { DynamicFieldRenderer } from '@/components/ui/DynamicFieldRenderer';
 import { IdList } from '@/components/ui/IdList';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { MultiEntitySelector } from '@/components/ui/MultiEntitySelector';
 import {
   Select,
@@ -15,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import type { FieldConfig } from '@/config/triggerFields';
 import { useHass } from '@/contexts/HassContext';
 import { HaSelect, HaSelector, HaServicePicker, HaSwitch } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
@@ -70,6 +73,10 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
   const currentData = getNodeDataObject(node, 'data', {});
   const responseVariable = getNodeDataString(node, 'response_variable');
   const [showResponseVariable, setShowResponseVariable] = useState(!!responseVariable);
+  // Template mode is on when the stored action name is a Jinja2 template, or when the
+  // user switched it on for this node (stays on while the text isn't a template yet)
+  const [templateModeNodeId, setTemplateModeNodeId] = useState<string | null>(null);
+  const templateMode = isTemplateString(serviceName) || templateModeNodeId === node.id;
 
   // Detect opaque repeat node (repeat.count stored in data.repeat)
   const repeatData =
@@ -87,6 +94,7 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
   }, [responseVariable]);
 
   const handleActionTypeChange = (type: string) => {
+    setTemplateModeNodeId(null);
     if (type === 'stop') {
       onChange('service', undefined);
       onChange('target', undefined);
@@ -113,6 +121,42 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
     onChange('service', value);
     // Clear data when service changes
     onChange('data', undefined);
+  };
+
+  const handleTemplateToggle = (checked: boolean) => {
+    setTemplateModeNodeId(checked ? node.id : null);
+    if (!checked) onChange('service', undefined);
+  };
+
+  // Editing the template text keeps data — it isn't tied to a known service definition
+  const handleTemplateChange = (value: unknown) => {
+    setTemplateModeNodeId(node.id);
+    onChange('service', typeof value === 'string' && value !== '' ? value : undefined);
+  };
+
+  const handleGenericDataChange = (value: unknown) => {
+    const isEmpty =
+      value === undefined ||
+      value === null ||
+      value === '' ||
+      (typeof value === 'object' && Object.keys(value).length === 0);
+    onChange('data', isEmpty ? undefined : value);
+  };
+
+  const templateField: FieldConfig = {
+    name: 'service_template',
+    label: t('nodes:actions.templateLabel'),
+    type: 'template',
+    required: true,
+    placeholder: 'alarm_control_panel.alarm_{{ mode }}',
+    description: t('nodes:actions.templateDescription'),
+  };
+
+  const genericDataField: FieldConfig = {
+    name: 'service_data',
+    label: t('nodes:serviceDataFields.heading'),
+    type: 'object',
+    required: false,
   };
 
   const handleEntityTargetChange = (value: string[]) => {
@@ -184,6 +228,8 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
   const hasAreaTargets = targetAreaIdArray.length > 0;
   const hasLabelTargets = targetLabelIdArray.length > 0;
   const hasFloorTargets = targetFloorIdArray.length > 0;
+  // A templated service has no definition to derive targets from, so always offer them
+  const showTargetFields = templateMode || Boolean(serviceDefinition?.target);
 
   if (isRepeatNode) {
     const seqLength = Array.isArray(repeatData!.sequence) ? repeatData!.sequence.length : 0;
@@ -289,57 +335,85 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
       ) : (
         <>
           {/* Call service fields */}
-          <FormField label={t('nodes:actions.actionLabel')} required>
-            <HaServicePicker
-              value={serviceName}
-              onChange={handleServiceChange}
+          <div className="flex items-center justify-end gap-2">
+            <Label
+              htmlFor={`${node.id}-service-template`}
+              className="font-medium text-muted-foreground text-xs"
+            >
+              {t('nodes:actions.templateToggle')}
+            </Label>
+            <HaSwitch
+              checked={templateMode}
+              onChange={handleTemplateToggle}
               fallback={
-                <Combobox
-                  options={getAllServices().map(({ domain, service, definition }) => {
-                    const translatedDomain = t(`nodes:serviceDomains.${domain}`, {
-                      defaultValue: prettify(domain),
-                    });
-                    const translatedAction = t(`nodes:serviceActions.${service}`, {
-                      defaultValue: prettify(service),
-                    });
-                    return {
-                      value: `${domain}.${service}`,
-                      label: definition?.name || `${translatedDomain}: ${translatedAction}`,
-                    };
-                  })}
-                  value={serviceName}
-                  onChange={handleServiceChange}
-                  placeholder={t('nodes:actions.selectAction')}
-                  renderOption={(option) => (
-                    <div className="flex flex-col gap-0.5">
-                      <span>{option.label}</span>
-                      {option.label !== option.value && (
-                        <span className="font-mono text-muted-foreground text-xs">
-                          {option.value as string}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  renderValue={(option) =>
-                    option ? (
-                      <div className="flex flex-col items-start leading-tight">
-                        <span>{option.label}</span>
-                        {option.label !== option.value && (
-                          <span className="font-mono text-muted-foreground text-xs">
-                            {option.value}
-                          </span>
-                        )}
-                      </div>
-                    ) : null
-                  }
+                <Switch
+                  id={`${node.id}-service-template`}
+                  checked={templateMode}
+                  onCheckedChange={handleTemplateToggle}
                 />
               }
             />
-            <FieldError message={getFieldError('service')} />
-          </FormField>
+          </div>
+          {templateMode ? (
+            <DynamicFieldRenderer
+              field={templateField}
+              value={serviceName}
+              onChange={handleTemplateChange}
+              error={getFieldError('service')}
+            />
+          ) : (
+            <FormField label={t('nodes:actions.actionLabel')} required>
+              <HaServicePicker
+                value={serviceName}
+                onChange={handleServiceChange}
+                fallback={
+                  <Combobox
+                    options={getAllServices().map(({ domain, service, definition }) => {
+                      const translatedDomain = t(`nodes:serviceDomains.${domain}`, {
+                        defaultValue: prettify(domain),
+                      });
+                      const translatedAction = t(`nodes:serviceActions.${service}`, {
+                        defaultValue: prettify(service),
+                      });
+                      return {
+                        value: `${domain}.${service}`,
+                        label: definition?.name || `${translatedDomain}: ${translatedAction}`,
+                      };
+                    })}
+                    value={serviceName}
+                    onChange={handleServiceChange}
+                    placeholder={t('nodes:actions.selectAction')}
+                    renderOption={(option) => (
+                      <div className="flex flex-col gap-0.5">
+                        <span>{option.label}</span>
+                        {option.label !== option.value && (
+                          <span className="font-mono text-muted-foreground text-xs">
+                            {option.value as string}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    renderValue={(option) =>
+                      option ? (
+                        <div className="flex flex-col items-start leading-tight">
+                          <span>{option.label}</span>
+                          {option.label !== option.value && (
+                            <span className="font-mono text-muted-foreground text-xs">
+                              {option.value}
+                            </span>
+                          )}
+                        </div>
+                      ) : null
+                    }
+                  />
+                }
+              />
+              <FieldError message={getFieldError('service')} />
+            </FormField>
+          )}
 
           {/* Target Entities */}
-          {(serviceDefinition?.target || targetEntityIdArray.length > 0) && (
+          {(showTargetFields || targetEntityIdArray.length > 0) && (
             <FormField label={t('nodes:actions.targetEntities')}>
               <HaSelector
                 selector={{ entity: { multiple: true } }}
@@ -349,7 +423,7 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
                   <MultiEntitySelector
                     value={targetEntityIdArray}
                     onChange={handleEntityTargetChange}
-                    entities={getTargetEntities(serviceName, entities)}
+                    entities={getTargetEntities(templateMode ? '' : serviceName, entities)}
                     placeholder={t('nodes:actions.selectTargetEntities')}
                   />
                 }
@@ -358,7 +432,7 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
           )}
 
           {/* Target Devices - show if we have device targets or service supports targets */}
-          {(hasDeviceTargets || serviceDefinition?.target) && (
+          {(hasDeviceTargets || showTargetFields) && (
             <FormField
               label={t('nodes:actions.targetDevices')}
               description={t('nodes:actions.targetDevicesDescription')}
@@ -379,7 +453,7 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
           )}
 
           {/* Target Areas - show if we have area targets or service supports targets */}
-          {(hasAreaTargets || serviceDefinition?.target) && (
+          {(hasAreaTargets || showTargetFields) && (
             <FormField
               label={t('nodes:actions.targetAreas')}
               description={t('nodes:actions.targetAreasDescription')}
@@ -400,7 +474,7 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
           )}
 
           {/* Target Labels - show if we have label targets or service supports targets */}
-          {(hasLabelTargets || serviceDefinition?.target) && (
+          {(hasLabelTargets || showTargetFields) && (
             <FormField
               label={t('nodes:actions.targetLabels')}
               description={t('nodes:actions.targetLabelsDescription')}
@@ -421,7 +495,7 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
           )}
 
           {/* Target Floors - show if we have floor targets or service supports targets */}
-          {(hasFloorTargets || serviceDefinition?.target) && (
+          {(hasFloorTargets || showTargetFields) && (
             <FormField
               label={t('nodes:actions.targetFloors')}
               description={t('nodes:actions.targetFloorsDescription')}
@@ -447,6 +521,15 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
             currentData={currentData}
             onChange={handleDataFieldChange}
           />
+
+          {/* Generic data editor when no service definition is available (e.g. templated service) */}
+          {!serviceDefinition && serviceName !== '' && (
+            <DynamicFieldRenderer
+              field={genericDataField}
+              value={nodeData.data}
+              onChange={handleGenericDataChange}
+            />
+          )}
 
           {/* Response Variable (show if response exists, toggle if optional, always input if not) */}
           {serviceDefinition?.response && (

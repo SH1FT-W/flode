@@ -1,5 +1,15 @@
+import { isTemplateString } from '@flode/shared';
 import { Handle, type NodeProps, Position } from '@xyflow/react';
-import { AlertCircle, Ban, Columns2, Hash, OctagonX, Play, RotateCcw } from 'lucide-react';
+import {
+  AlertCircle,
+  Ban,
+  Braces,
+  Columns2,
+  Hash,
+  OctagonX,
+  Play,
+  RotateCcw,
+} from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMoreInfo } from '@/hooks/useMoreInfo';
@@ -35,10 +45,18 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
   const stopMessage = isStopAction ? (data.stop as string) : undefined;
   const isStopError = isStopAction && data.error === true;
 
+  // Templated action names are resolved by HA at runtime — never split them
+  const isTemplateService = !isStopAction && isTemplateString(data.service);
+
   // Parse service into domain and service name, handle undefined
   let domain: string | undefined;
   let serviceName: string | undefined;
-  if (!isStopAction && typeof data.service === 'string' && data.service.includes('.')) {
+  if (
+    !isStopAction &&
+    !isTemplateService &&
+    typeof data.service === 'string' &&
+    data.service.includes('.')
+  ) {
     [domain, serviceName] = data.service.split('.');
   }
 
@@ -286,6 +304,14 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
         <div className="font-medium">
           {isEventAction ? (
             <span className="opacity-60">{t('nodes:actions.fireEvent')}</span>
+          ) : isTemplateService ? (
+            <span className="flex min-w-0 items-center gap-1" title={data.service}>
+              <Braces
+                className="h-3 w-3 shrink-0 opacity-60"
+                aria-label={t('nodes:actions.templateToggle')}
+              />
+              <code className="max-w-[200px] truncate font-mono">{data.service}</code>
+            </span>
           ) : (
             <>
               <span className="opacity-60">
