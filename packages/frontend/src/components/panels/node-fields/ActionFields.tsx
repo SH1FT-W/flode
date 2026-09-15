@@ -336,18 +336,21 @@ export function ActionFields({ node, onChange, entities }: ActionFieldsProps) {
         <>
           {/* Call service fields */}
           <div className="flex items-center justify-end gap-2">
+            {/* Toggles on click itself: a `<label for>` can't reach the native ha-switch */}
             <Label
-              htmlFor={`${node.id}-service-template`}
-              className="font-medium text-muted-foreground text-xs"
+              id={`${node.id}-service-template-label`}
+              onClick={() => handleTemplateToggle(!templateMode)}
+              className="cursor-pointer font-medium text-muted-foreground text-xs"
             >
               {t('nodes:actions.templateToggle')}
             </Label>
             <HaSwitch
               checked={templateMode}
               onChange={handleTemplateToggle}
+              ariaLabel={t('nodes:actions.templateToggle')}
               fallback={
                 <Switch
-                  id={`${node.id}-service-template`}
+                  aria-labelledby={`${node.id}-service-template-label`}
                   checked={templateMode}
                   onCheckedChange={handleTemplateToggle}
                 />

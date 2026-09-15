@@ -1,4 +1,11 @@
-import { createElement, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  createElement,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useHass } from '@/contexts/HassContext';
 import { notifyHaComponentIssue } from './haAvailabilityNotice';
 
@@ -53,7 +60,11 @@ export function HaElement({ tag, properties, events, className, fallback }: HaEl
   // unrelated re-render.
   const lastValues = useRef<Record<string, unknown>>({});
 
-  useEffect(() => {
+  // Layout effect, not a passive one: a Lit element schedules its first render
+  // as a microtask once connected. Passive effects can run after that (e.g. for
+  // updates triggered by a native `change` listener), so the element would
+  // render without `selector`/`hass` and throw (ha-selector: Object.keys(undefined)).
+  useLayoutEffect(() => {
     if (hasError) return;
     const el = ref.current;
     if (!el) return;

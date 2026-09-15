@@ -8,6 +8,8 @@ export interface HaSwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  /** Accessible name — `ha-switch` can't be targeted by a `<label for>`, so name it directly. */
+  ariaLabel?: string;
   /** Rendered instead of `ha-switch` when it isn't available (standalone dev, incompatible HA version). */
   fallback?: ReactNode;
 }
@@ -18,14 +20,20 @@ export interface HaSwitchProps {
  * state as a `checked` property on the element itself, matching a native
  * `<input type="checkbox">`.
  */
-export function HaSwitch({ checked, onChange, disabled, fallback = null }: HaSwitchProps) {
+export function HaSwitch({
+  checked,
+  onChange,
+  disabled,
+  ariaLabel,
+  fallback = null,
+}: HaSwitchProps) {
   const available = useHaComponentsAvailable(REQUIRED);
   if (!available) return <>{fallback}</>;
 
   return (
     <HaElement
       tag="ha-switch"
-      properties={{ checked, disabled }}
+      properties={{ checked, disabled, ariaLabel }}
       events={{
         change: (ev) => onChange((ev.currentTarget as unknown as { checked: boolean }).checked),
       }}
