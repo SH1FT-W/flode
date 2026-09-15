@@ -107,6 +107,27 @@
     "yes": "Yes",
     "no": "No"
   },
+  "targeted": {
+    "targetLabel": "Target",
+    "noDescription": "Home Assistant provides no description for this type here, so no fields can be shown. Target and options are kept unchanged.",
+    "targetKeys": {
+      "entity_id": "Entities",
+      "device_id": "Devices",
+      "area_id": "Areas",
+      "floor_id": "Floors",
+      "label_id": "Labels"
+    },
+    "summary": {
+      "area_id_one": "{{count}} area",
+      "area_id_other": "{{count}} areas",
+      "device_id_one": "{{count}} device",
+      "device_id_other": "{{count}} devices",
+      "floor_id_one": "{{count}} floor",
+      "floor_id_other": "{{count}} floors",
+      "label_id_one": "{{count}} label",
+      "label_id_other": "{{count}} labels"
+    }
+  },
   "actions": {
     "serviceLabel": "Service",
     "actionTypeLabel": "Action Type",

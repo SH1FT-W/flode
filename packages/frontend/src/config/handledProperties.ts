@@ -45,6 +45,9 @@ export const HANDLED_PROPERTIES = {
     'domain',
     'type',
     'subtype',
+    // Target-based triggers (handled by TargetedPlatformFields)
+    'target',
+    'options',
   ],
 
   // Condition properties handled by ConditionFields component
@@ -68,6 +71,9 @@ export const HANDLED_PROPERTIES = {
     'condition',
     'for', // Duration field
     'conditions', // Nested conditions for and/or/not and multi-condition blocks
+    // Target-based conditions (handled by TargetedPlatformFields)
+    'target',
+    'options',
   ],
 
   // Action properties handled by ActionFields component

@@ -1,26 +1,25 @@
 import type { FlowNode, TriggerPlatform } from '@flode/shared';
+import { isTargetedPlatform } from '@flode/shared';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormField } from '@/components/forms/FormField';
 import { DynamicFieldRenderer } from '@/components/ui/DynamicFieldRenderer';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   getTriggerDefaults,
   getTriggerFields,
   TRIGGER_PLATFORM_FIELDS,
 } from '@/config/triggerFields';
-import { HaSelect } from '@/ha';
+import {
+  getTargetedPlatformDefaults,
+  TARGETED_PLATFORM_KEYS,
+  useAutomationPlatformDescriptions,
+} from '@/hooks/useAutomationPlatformDescriptions';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
-import type { HassEntity } from '@/types/hass';
+import type { HassEntity, PlatformDescriptions } from '@/types/hass';
 import { getNodeDataString } from '@/utils/nodeData';
 import { DeviceTriggerFields } from './DeviceTriggerFields';
+import { PlatformTypeSelect } from './PlatformTypeSelect';
 import { StateTriggerFields } from './StateTriggerFields';
+import { TargetedPlatformFields } from './TargetedPlatformFields';
 
 const TRIGGER_PLATFORMS: TriggerPlatform[] = [
   'state',
@@ -52,6 +51,7 @@ interface TriggerFieldsProps {
 export function TriggerFields({ node, onChange, entities }: TriggerFieldsProps) {
   const { t } = useTranslation(['nodes']);
   const { getFieldError } = useNodeErrors(node.id);
+  const descriptions = useAutomationPlatformDescriptions('trigger');
   const triggerType = getNodeDataString(node, 'trigger', 'state');
   const deviceId = getNodeDataString(node, 'device_id');
 
@@ -67,16 +67,19 @@ export function TriggerFields({ node, onChange, entities }: TriggerFieldsProps) 
 
   const handleTriggerTypeChange = (newTriggerType: string) => {
     // Clear all fields from every trigger type to avoid stale values leaking across types
-    const allFieldNames = new Set(
-      Object.values(TRIGGER_PLATFORM_FIELDS).flatMap((fields) => fields.map((f) => f.name))
-    );
+    const allFieldNames = new Set<string>([
+      ...Object.values(TRIGGER_PLATFORM_FIELDS).flatMap((fields) => fields.map((f) => f.name)),
+      ...TARGETED_PLATFORM_KEYS,
+    ]);
     for (const fieldName of allFieldNames) {
       onChange(fieldName, undefined);
     }
     onChange('device_id', undefined);
 
     // Apply defaults for the new type
-    const defaults = getTriggerDefaults(newTriggerType as TriggerPlatform);
+    const defaults = isTargetedPlatform(newTriggerType)
+      ? getTargetedPlatformDefaults('trigger', newTriggerType, descriptions[newTriggerType])
+      : getTriggerDefaults(newTriggerType as TriggerPlatform);
     for (const [key, value] of Object.entries(defaults)) {
       onChange(key, value);
     }
@@ -84,30 +87,14 @@ export function TriggerFields({ node, onChange, entities }: TriggerFieldsProps) 
 
   return (
     <>
-      <FormField label={t('nodes:triggers.platformLabel')} required>
-        <HaSelect
-          value={effectiveTriggerType}
-          onChange={(v) => handleTriggerTypeChange(String(v))}
-          options={TRIGGER_PLATFORMS.map((platform) => ({
-            value: platform,
-            label: t(`nodes:triggers.platforms.${platform}`),
-          }))}
-          fallback={
-            <Select value={effectiveTriggerType} onValueChange={handleTriggerTypeChange}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TRIGGER_PLATFORMS.map((platform) => (
-                  <SelectItem key={platform} value={platform}>
-                    {t(`nodes:triggers.platforms.${platform}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          }
-        />
-      </FormField>
+      <PlatformTypeSelect
+        kind="trigger"
+        label={t('nodes:triggers.platformLabel')}
+        value={effectiveTriggerType}
+        staticTypes={TRIGGER_PLATFORMS}
+        describedTypes={Object.keys(descriptions)}
+        onChange={handleTriggerTypeChange}
+      />
 
       {/* Dynamic fields based on trigger type */}
       <TriggerDynamicFields
@@ -117,6 +104,7 @@ export function TriggerFields({ node, onChange, entities }: TriggerFieldsProps) 
         onChange={onChange}
         entities={entities}
         getFieldError={getFieldError}
+        descriptions={descriptions}
       />
     </>
   );
@@ -129,6 +117,7 @@ function TriggerDynamicFields({
   onChange,
   entities,
   getFieldError,
+  descriptions,
 }: {
   effectiveTriggerType: string;
   deviceId: string;
@@ -136,10 +125,24 @@ function TriggerDynamicFields({
   onChange: (key: string, value: unknown) => void;
   entities: HassEntity[];
   getFieldError: (fieldPath: string) => string | undefined;
+  descriptions: PlatformDescriptions;
 }) {
   // Device triggers use API-driven fields
   if (effectiveTriggerType === 'device' || deviceId) {
     return <DeviceTriggerFields node={node} onChange={onChange} entities={entities} />;
+  }
+
+  // Target-based triggers (`<domain>.<name>`) use HA's description
+  if (isTargetedPlatform(effectiveTriggerType)) {
+    return (
+      <TargetedPlatformFields
+        kind="trigger"
+        node={node}
+        description={descriptions[effectiveTriggerType]}
+        onChange={onChange}
+        entities={entities}
+      />
+    );
   }
 
   // State trigger uses a dedicated component for entity-aware state suggestions

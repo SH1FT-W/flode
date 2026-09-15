@@ -1,9 +1,11 @@
+import { isTargetedPlatform } from '@flode/shared';
 import { Handle, type NodeProps, Position, useEdges } from '@xyflow/react';
 import { AlertCircle, Ban, GitBranch, GitFork, Repeat, Shuffle } from 'lucide-react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMoreInfo } from '@/hooks/useMoreInfo';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
+import { usePlatformLabels } from '@/hooks/usePlatformLabels';
 import { useTraceNodeState } from '@/hooks/useTraceNodeState';
 import { getTraceStateClass, NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
 import { cn } from '@/lib/utils';
@@ -93,20 +95,8 @@ export const ConditionNode = memo(function ConditionNode({
     data._blockKey === 'repeat_while';
   const [expanded, setExpanded] = useState(false);
 
-  const conditionTypeLabels: Record<string, string> = {
-    state: t('nodes:conditions.types.state'),
-    numeric_state: t('nodes:conditions.types.numeric_state'),
-    time: t('nodes:conditions.types.time'),
-    sun: t('nodes:conditions.types.sun'),
-    zone: t('nodes:conditions.types.zone'),
-    template: t('nodes:conditions.types.template'),
-    device: t('nodes:conditions.types.device'),
-    trigger: t('nodes:conditions.types.trigger'),
-    and: t('nodes:conditions.types.and'),
-    or: t('nodes:conditions.types.or'),
-    not: t('nodes:conditions.types.not'),
-  };
-  const getConditionLabel = (type: string) => conditionTypeLabels[type] ?? type;
+  const { getLabel: getConditionLabel, getTargetSummary } = usePlatformLabels('condition');
+  const targetSummary = isTargetedPlatform(data.condition) ? getTargetSummary(data.target) : '';
 
   const nodeData = data as ConditionNodeData & { _chooseCase?: number; _chooseCaseTotal?: number };
   const chooseCase = nodeData._chooseCase;
@@ -196,6 +186,7 @@ export const ConditionNode = memo(function ConditionNode({
       {!hasNested && (
         <div className={cn('space-y-0.5 text-xs', COLORS.text)}>
           <div className="font-medium">{getConditionLabel(data.condition)}</div>
+          {targetSummary && <div className="truncate opacity-75">{targetSummary}</div>}
           {data.entity_id &&
             (Array.isArray(data.entity_id) ? (
               <div className="truncate opacity-75">{data.entity_id.join(', ')}</div>

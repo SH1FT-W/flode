@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { type TargetIds, TargetIdsSchema } from './ha-entities';
 
 /**
  * List of valid Home Assistant weekday strings.
@@ -31,6 +32,9 @@ export const HAConditionSchema: z.ZodType<
     below?: string | number;
     attribute?: string;
     id?: string | string[];
+    // Target-based conditions (`condition: <domain>.<name>`)
+    target?: TargetIds;
+    options?: Record<string, unknown>;
   },
   Record<string, unknown>
 > = z.looseObject({
@@ -52,6 +56,8 @@ export const HAConditionSchema: z.ZodType<
   attribute: z.string().optional(),
   // Support both string and array for trigger conditions
   id: z.union([z.string(), z.array(z.string())]).optional(),
+  target: TargetIdsSchema.optional(),
+  options: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type HACondition = z.infer<typeof HAConditionSchema>;
@@ -86,7 +92,8 @@ export const HATriggerSchema = z
     alias: z.string().optional(),
     platform: z.string().optional(),
     trigger: z.string().optional(),
-    target: z.looseObject({ entity_id: z.union([z.string(), z.array(z.string())]) }).optional(),
+    // Target-based triggers may target only areas, devices, floors or labels
+    target: TargetIdsSchema.optional(),
     options: z.looseObject({}).optional(),
     entity_id: z.union([z.string(), z.array(z.string())]).optional(),
     // Home Assistant supports both string, array, and null for from/to fields
@@ -140,7 +147,7 @@ export interface HATriggerInput {
   alias?: string;
   platform?: string;
   trigger?: string;
-  target?: { entity_id?: string | string[] };
+  target?: TargetIds;
   options?: Record<string, unknown>;
   entity_id?: string | string[];
   from?: string | string[] | null;

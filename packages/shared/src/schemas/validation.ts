@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isTargetedPlatform } from './ha-entities';
 
 /**
  * Validation schemas for node data.
@@ -118,6 +119,9 @@ export const TriggerNodeValidationSchema = z
       });
       return;
     }
+
+    // Target-based triggers are described by HA at runtime, not by the classic rules below
+    if (isTargetedPlatform(triggerType)) return;
 
     switch (triggerType) {
       case 'state':
@@ -273,6 +277,9 @@ export const ConditionNodeValidationSchema = z
   })
   .passthrough()
   .superRefine((data, ctx) => {
+    // Target-based conditions are described by HA at runtime, not by the classic rules below
+    if (isTargetedPlatform(data.condition)) return;
+
     switch (data.condition) {
       case 'state':
         if (!hasEntityId(data.entity_id)) {

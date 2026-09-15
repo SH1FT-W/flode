@@ -107,6 +107,27 @@
     "yes": "Ja",
     "no": "Nein"
   },
+  "targeted": {
+    "targetLabel": "Ziel",
+    "noDescription": "Home Assistant liefert hier keine Beschreibung für diesen Typ, daher können keine Felder angezeigt werden. Ziel und Optionen bleiben unverändert erhalten.",
+    "targetKeys": {
+      "entity_id": "Entitäten",
+      "device_id": "Geräte",
+      "area_id": "Bereiche",
+      "floor_id": "Etagen",
+      "label_id": "Labels"
+    },
+    "summary": {
+      "area_id_one": "{{count}} Bereich",
+      "area_id_other": "{{count}} Bereiche",
+      "device_id_one": "{{count}} Gerät",
+      "device_id_other": "{{count}} Geräte",
+      "floor_id_one": "{{count}} Etage",
+      "floor_id_other": "{{count}} Etagen",
+      "label_id_one": "{{count}} Label",
+      "label_id_other": "{{count}} Labels"
+    }
+  },
   "actions": {
     "serviceLabel": "Dienst",
     "actionTypeLabel": "Aktionstyp",

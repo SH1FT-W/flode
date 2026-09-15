@@ -1,9 +1,11 @@
+import { isTargetedPlatform } from '@flode/shared';
 import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { AlertCircle, Ban, Zap } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMoreInfo } from '@/hooks/useMoreInfo';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
+import { usePlatformLabels } from '@/hooks/usePlatformLabels';
 import { useTraceNodeState } from '@/hooks/useTraceNodeState';
 import { getTraceStateClass, NODE_COLORS, NODE_STATE_CLASSES } from '@/lib/node-colors';
 import { cn } from '@/lib/utils';
@@ -27,26 +29,7 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
 
-  const triggerPlatformLabels: Record<string, string> = {
-    state: t('nodes:triggers.platforms.state'),
-    numeric_state: t('nodes:triggers.platforms.numeric_state'),
-    time: t('nodes:triggers.platforms.time'),
-    time_pattern: t('nodes:triggers.platforms.time_pattern'),
-    sun: t('nodes:triggers.platforms.sun'),
-    event: t('nodes:triggers.platforms.event'),
-    mqtt: t('nodes:triggers.platforms.mqtt'),
-    webhook: t('nodes:triggers.platforms.webhook'),
-    zone: t('nodes:triggers.platforms.zone'),
-    template: t('nodes:triggers.platforms.template'),
-    homeassistant: t('nodes:triggers.platforms.homeassistant'),
-    device: t('nodes:triggers.platforms.device'),
-    calendar: t('nodes:triggers.platforms.calendar'),
-    geo_location: t('nodes:triggers.platforms.geo_location'),
-    tag: t('nodes:triggers.platforms.tag'),
-    conversation: t('nodes:triggers.platforms.conversation'),
-    persistent_notification: t('nodes:triggers.platforms.persistent_notification'),
-  };
-  const getTriggerLabel = (type: string) => triggerPlatformLabels[type] ?? type;
+  const { getLabel: getTriggerLabel, getTargetSummary } = usePlatformLabels('trigger');
 
   const getDisplayInfo = (): {
     title: string;
@@ -56,6 +39,14 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
     detail: unknown;
   } => {
     const triggerType = data.trigger;
+
+    if (isTargetedPlatform(triggerType)) {
+      return {
+        title: data.alias || getTriggerLabel(triggerType),
+        subtitle: getTargetSummary(data.target) || triggerType,
+        detail: null,
+      };
+    }
 
     switch (triggerType) {
       case 'device':

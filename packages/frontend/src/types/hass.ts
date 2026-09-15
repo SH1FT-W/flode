@@ -1,5 +1,6 @@
 import type { HomeAssistant as CustomCardHomeAssistant } from 'custom-card-helpers';
 import type { HassServices } from 'home-assistant-js-websocket';
+import type { SelectorType } from '@/hooks/useDeviceAutomation';
 
 export type { Connection, HassConfig, HassEntity, HassService } from 'home-assistant-js-websocket';
 
@@ -14,6 +15,29 @@ export interface HassDevice {
   model: string | null;
   area_id: string | null;
 }
+
+/**
+ * One option field of a target-based trigger/condition description,
+ * as delivered by `trigger_platforms/subscribe` / `condition_platforms/subscribe`.
+ */
+export interface PlatformFieldDescription {
+  selector?: Partial<Record<SelectorType, Record<string, unknown>>>;
+  required?: boolean;
+  default?: unknown;
+  example?: unknown;
+}
+
+/**
+ * Description of a target-based trigger/condition type (`<domain>.<name>`).
+ * `target` is the config of HA's `target` selector; absent when the type has no target.
+ */
+export interface PlatformDescription {
+  target?: Record<string, unknown>;
+  fields?: Record<string, PlatformFieldDescription>;
+}
+
+/** Map of `<domain>.<name>` → description. */
+export type PlatformDescriptions = Record<string, PlatformDescription>;
 
 /**
  * Flat map of HA theme CSS custom property names (without the leading `--`)

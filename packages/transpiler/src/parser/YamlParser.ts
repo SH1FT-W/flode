@@ -23,6 +23,7 @@ import {
   HATriggerSchema,
   isDeviceAction,
   isHACondition,
+  isTargetedPlatform,
   validateGraphStructure,
 } from '@flode/shared';
 import { load as yamlLoad } from 'js-yaml';
@@ -191,6 +192,41 @@ const VALID_CONDITIONS = [
 type ValidConditionType = (typeof VALID_CONDITIONS)[number];
 
 /**
+ * Keep known condition types and HA's target-based `<domain>.<name>` conditions;
+ * anything else falls back to a template condition.
+ */
+function resolveConditionType(conditionType: string): string {
+  const isKnown = VALID_CONDITIONS.includes(conditionType as ValidConditionType);
+  return isKnown || isTargetedPlatform(conditionType) ? conditionType : 'template';
+}
+
+/**
+ * Data for a condition that failed HAConditionSchema validation.
+ * Target-based conditions (`condition: <domain>.<name>`) are opaque to FLODE, so they
+ * are kept instead of being replaced by the template fallback. A `target`/`options`
+ * that is not an object (e.g. an empty `options:` key, parsed as null) is dropped so the
+ * kept data still satisfies HAConditionSchema, which the graph validation relies on.
+ */
+function createConditionFallbackData(raw: unknown, templateFallback: HACondition): HACondition {
+  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+    const record: Record<string, unknown> = { ...raw };
+    if (typeof record.condition === 'string' && isTargetedPlatform(record.condition)) {
+      for (const key of ['target', 'options']) {
+        const value = record[key];
+        if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+          delete record[key];
+        }
+      }
+      const result = HAConditionSchema.safeParse(record);
+      if (result.success) {
+        return result.data;
+      }
+    }
+  }
+  return templateFallback;
+}
+
+/**
  * Options for parsing actions and nested blocks
  */
 interface ParseOptions {
@@ -238,9 +274,7 @@ function transformToNestedCondition(condition: HACondition): NestedCondition {
   // Use spread pattern to preserve unknown properties from custom integrations
   const { condition: conditionField, conditions, ...rest } = condition;
   const conditionType = conditionField || 'template';
-  const validatedType = VALID_CONDITIONS.includes(conditionType as ValidConditionType)
-    ? (conditionType as ValidConditionType)
-    : 'template';
+  const validatedType = resolveConditionType(conditionType);
 
   // Recursively transform nested conditions if present
   const nestedConditions = Array.isArray(conditions) ? transformConditions(conditions) : undefined;
@@ -1562,11 +1596,11 @@ export class YamlParser {
             id: nodeId,
             type: 'condition',
             position: { x: 0, y: 0 },
-            data: {
+            data: createConditionFallbackData(condition, {
               condition: 'template',
               alias: 'Unknown Condition',
               value_template: JSON.stringify(condition),
-            },
+            }),
           });
           return;
         }
@@ -1586,11 +1620,11 @@ export class YamlParser {
           id: nodeId,
           type: 'condition',
           position: { x: 0, y: 0 },
-          data: {
+          data: createConditionFallbackData(condition, {
             condition: 'template',
             alias: 'Unknown Condition',
             value_template: JSON.stringify(condition),
-          },
+          }),
         });
       }
     });
@@ -1671,9 +1705,7 @@ export class YamlParser {
         const nodeId = getNextNodeId('condition');
         const act = action as Record<string, unknown>;
         const conditionType = (act.condition as string) || 'template';
-        const validatedType = VALID_CONDITIONS.includes(conditionType as ValidConditionType)
-          ? (conditionType as ValidConditionType)
-          : 'template';
+        const validatedType = resolveConditionType(conditionType);
 
         // Use Zod schema for parsing and type safety
         let parsedData: ConditionNode['data'];
@@ -1683,11 +1715,11 @@ export class YamlParser {
           warnings.push(
             `Inline condition at index ${index} failed schema validation: ${e instanceof Error ? e.message : JSON.stringify(e)}`
           );
-          parsedData = {
+          parsedData = createConditionFallbackData(act, {
             condition: validatedType,
             alias: typeof act.alias === 'string' ? act.alias : undefined,
             value_template: JSON.stringify(act),
-          };
+          });
         }
         // Apply inherited enabled state
         parsedData.enabled = getNodeEnabled(parsedData.enabled);
@@ -2560,9 +2592,7 @@ export class YamlParser {
         if (condition && Array.isArray(condition.conditions)) {
           // Condition with nested conditions (or/and/not) - preserve structure
           const rawConditionType = (condition.condition as string) || 'and';
-          const conditionType = VALID_CONDITIONS.includes(rawConditionType as ValidConditionType)
-            ? (rawConditionType as ValidConditionType)
-            : 'template';
+          const conditionType = resolveConditionType(rawConditionType);
 
           conditionNode = {
             id: conditionId,
@@ -2585,9 +2615,7 @@ export class YamlParser {
         } else {
           // Simple condition - use Zod schema for parsing and type safety
           const rawConditionType = (condition?.condition as string) || 'template';
-          const conditionType = VALID_CONDITIONS.includes(rawConditionType as ValidConditionType)
-            ? (rawConditionType as ValidConditionType)
-            : 'template';
+          const conditionType = resolveConditionType(rawConditionType);
 
           // Build object with alias override for first condition
           const looseObj = {
@@ -2602,13 +2630,13 @@ export class YamlParser {
           try {
             data = HAConditionSchema.parse(looseObj);
           } catch {
-            // Fallback: minimal valid template
-            data = {
+            // Fallback: minimal valid template (target-based conditions are kept as-is)
+            data = createConditionFallbackData(looseObj, {
               alias: i === 0 ? choice.alias : undefined,
               condition: 'template',
               value_template: JSON.stringify(condition),
               enabled: getNodeEnabled(),
-            };
+            });
           }
 
           // Normalize id: single-element array → string (HA API returns arrays)
@@ -2856,9 +2884,7 @@ export class YamlParser {
       if (condition && Array.isArray(condition.conditions)) {
         // Condition with nested conditions (or/and/not) - preserve structure
         const rawConditionType = (condition.condition as string) || 'and';
-        const conditionType = VALID_CONDITIONS.includes(rawConditionType as ValidConditionType)
-          ? (rawConditionType as ValidConditionType)
-          : 'template';
+        const conditionType = resolveConditionType(rawConditionType);
 
         conditionNode = {
           id: conditionId,
@@ -2875,9 +2901,7 @@ export class YamlParser {
       } else {
         // Simple condition - use its properties directly
         const rawConditionType = (condition?.condition as string) || 'numeric_state';
-        const conditionType = VALID_CONDITIONS.includes(rawConditionType as ValidConditionType)
-          ? (rawConditionType as ValidConditionType)
-          : 'template';
+        const conditionType = resolveConditionType(rawConditionType);
 
         // Use Zod looseObject for normalization and type safety
         const looseObj = {
@@ -2893,13 +2917,13 @@ export class YamlParser {
         try {
           data = HAConditionSchema.parse(looseObj);
         } catch {
-          // Fallback: minimal valid template
-          data = {
+          // Fallback: minimal valid template (target-based conditions are kept as-is)
+          data = createConditionFallbackData(looseObj, {
             alias: i === 0 ? ifAction.alias : undefined,
             condition: 'template',
             value_template: JSON.stringify(condition),
             enabled: getNodeEnabled(),
-          };
+          });
         }
 
         // Normalize id: single-element array → string (HA API returns arrays)
