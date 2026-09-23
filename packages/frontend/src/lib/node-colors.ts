@@ -1,107 +1,105 @@
 export type NodeColorToken = 'trigger' | 'condition' | 'action' | 'delay' | 'wait' | 'variables';
 
 interface NodeColorClasses {
-  /** Card border */
-  border: string;
-  /** Card background tint */
-  bg: string;
-  /** Selection ring */
-  ring: string;
-  /** Icon/title/body accent text */
+  /** Accent text (eyebrow, icons) */
   text: string;
-  /** Icon chip background */
+  /** Tinted icon chip — background + icon color */
   chip: string;
-  /** React Flow connector handle */
+  /** React Flow connector handle ring */
   handle: string;
-  /** Step-number / count badge */
-  badge: string;
-  /** NodePalette drag button */
-  palette: string;
+  /** Solid fill (step badges, minimap) */
+  fill: string;
 }
 
 /**
  * Single source of truth for per-node-type styling, shared by the canvas
- * node components (components/nodes/*.tsx) and NodePalette.tsx. Colors
- * themselves live as CSS custom properties (index.css / lib/ha-theme.ts) so
- * they follow HA's active theme — this only maps a node type to Tailwind
- * class names built on top of those tokens.
+ * node cards (components/nodes/NodeCard.tsx), the block library, the quick-add
+ * menu and the command palette. Colors themselves live as CSS custom
+ * properties (index.css / lib/ha-theme.ts) so they follow HA's active theme —
+ * this only maps a color token to Tailwind class names built on those tokens.
+ *
+ * FLODE 2.0 cards are neutral surfaces; the node type is carried by a tinted
+ * icon chip and accent text instead of a fully tinted card with a colored border.
  *
  * Class names are spelled out in full (not template-built) so Tailwind's
- * static content scanner can find and generate them — dynamically
- * constructed strings like `border-${token}` are invisible to Tailwind's JIT.
+ * static content scanner can find and generate them.
  */
 export const NODE_COLORS: Record<NodeColorToken, NodeColorClasses> = {
   trigger: {
-    border: 'border-trigger',
-    bg: 'bg-trigger/10',
-    ring: 'ring-trigger',
     text: 'text-trigger',
-    chip: 'bg-trigger/20',
-    handle: 'bg-trigger! border-trigger!',
-    badge: 'bg-trigger text-trigger-foreground',
-    palette: 'bg-trigger/10 border-trigger text-trigger hover:bg-trigger/20',
+    chip: 'bg-trigger/15 text-trigger',
+    handle: 'border-trigger!',
+    fill: 'bg-trigger text-trigger-foreground',
   },
   condition: {
-    border: 'border-condition',
-    bg: 'bg-condition/10',
-    ring: 'ring-condition',
     text: 'text-condition',
-    chip: 'bg-condition/20',
-    handle: 'bg-condition! border-condition!',
-    badge: 'bg-condition text-condition-foreground',
-    palette: 'bg-condition/10 border-condition text-condition hover:bg-condition/20',
+    chip: 'bg-condition/15 text-condition',
+    handle: 'border-condition!',
+    fill: 'bg-condition text-condition-foreground',
   },
   action: {
-    border: 'border-action',
-    bg: 'bg-action/10',
-    ring: 'ring-action',
     text: 'text-action',
-    chip: 'bg-action/20',
-    handle: 'bg-action! border-action!',
-    badge: 'bg-action text-action-foreground',
-    palette: 'bg-action/10 border-action text-action hover:bg-action/20',
+    chip: 'bg-action/15 text-action',
+    handle: 'border-action!',
+    fill: 'bg-action text-action-foreground',
   },
   delay: {
-    border: 'border-delay',
-    bg: 'bg-delay/10',
-    ring: 'ring-delay',
     text: 'text-delay',
-    chip: 'bg-delay/20',
-    handle: 'bg-delay! border-delay!',
-    badge: 'bg-delay text-delay-foreground',
-    palette: 'bg-delay/10 border-delay text-delay hover:bg-delay/20',
+    chip: 'bg-delay/15 text-delay',
+    handle: 'border-delay!',
+    fill: 'bg-delay text-delay-foreground',
   },
   wait: {
-    border: 'border-wait',
-    bg: 'bg-wait/10',
-    ring: 'ring-wait',
     text: 'text-wait',
-    chip: 'bg-wait/20',
-    handle: 'bg-wait! border-wait!',
-    badge: 'bg-wait text-wait-foreground',
-    palette: 'bg-wait/10 border-wait text-wait hover:bg-wait/20',
+    chip: 'bg-wait/15 text-wait',
+    handle: 'border-wait!',
+    fill: 'bg-wait text-wait-foreground',
   },
   variables: {
-    border: 'border-variables',
-    bg: 'bg-variables/10',
-    ring: 'ring-variables',
     text: 'text-variables',
-    chip: 'bg-variables/20',
-    handle: 'bg-variables! border-variables!',
-    badge: 'bg-variables text-variables-foreground',
-    palette: 'bg-variables/10 border-variables text-variables hover:bg-variables/20',
+    chip: 'bg-variables/15 text-variables',
+    handle: 'border-variables!',
+    fill: 'bg-variables text-variables-foreground',
   },
 };
 
+/** Minimap fill per color token (SVG `fill-*`, spelled out for Tailwind). */
+export const NODE_MINIMAP_CLASSES: Record<NodeColorToken, string> = {
+  trigger: 'fill-trigger',
+  condition: 'fill-condition',
+  action: 'fill-action',
+  delay: 'fill-delay',
+  wait: 'fill-wait',
+  variables: 'fill-variables',
+};
+
+/** React Flow node `type` → color token. */
+export function getNodeColorToken(nodeType: string | undefined): NodeColorToken {
+  switch (nodeType) {
+    case 'trigger':
+    case 'condition':
+    case 'action':
+    case 'delay':
+    case 'wait':
+      return nodeType;
+    case 'set_variables':
+      return 'variables';
+    default:
+      return 'action';
+  }
+}
+
 /** Shared node-state styling, independent of node type. */
 export const NODE_STATE_CLASSES = {
-  error: 'border-destructive ring-2 ring-destructive/40',
+  selected: 'ring-2 ring-primary shadow-float',
+  error: 'ring-2 ring-destructive/60',
   errorBadge: 'bg-destructive text-destructive-foreground',
+  disabled: 'border-dashed opacity-55 grayscale',
   disabledBadge: 'bg-muted-foreground text-background',
   active: 'node-active ring-4 ring-success',
-  /** Trace overlay (Phase E) — real HA run, distinct from validation `error`/live `active`. */
-  traceExecuted: 'ring-2 ring-emerald-500/60',
-  traceError: 'border-destructive ring-2 ring-destructive/70',
+  /** Trace overlay — real HA run, distinct from validation `error`/live `active`. */
+  traceExecuted: 'ring-2 ring-success/60',
+  traceError: 'ring-2 ring-destructive/70',
   traceSkipped: 'opacity-40 grayscale',
 } as const;
 

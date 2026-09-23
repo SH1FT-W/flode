@@ -48,6 +48,12 @@ describe('useAutomationCatalog helpers', () => {
     });
   });
 
+  it('marks orphaned automations (state unavailable) as unavailable', () => {
+    const item = mapAutomationEntityToCatalogItem(createAutomationEntity({ state: 'unavailable' }));
+    expect(item?.unavailable).toBe(true);
+    expect(item?.enabled).toBe(false);
+  });
+
   it('groups automations by area labels with area fallback handling', () => {
     const items = [
       mapAutomationEntityToCatalogItem(createAutomationEntity(), 'living_room'),

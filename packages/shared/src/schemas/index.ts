@@ -31,12 +31,15 @@ export {
 export {
   type ConditionType,
   ConditionTypeSchema,
+  isTargetedPlatform,
   OptionalTargetSchema,
   type ServiceData,
   ServiceDataSchema,
   type ServiceDataTemplate,
   ServiceDataTemplateSchema,
   type Target,
+  type TargetIds,
+  TargetIdsSchema,
   TargetSchema,
   type TriggerPlatform,
   TriggerPlatformSchema,
@@ -75,6 +78,7 @@ export {
   isFlodeMetadata,
   isHACondition,
   isHATrigger,
+  isTemplateString,
   VALID_WEEKDAYS,
   type Weekday,
 } from './ha-schemas';
@@ -101,6 +105,8 @@ export {
   type WaitNode,
   WaitNodeSchema,
 } from './nodes';
+// Pass-through (raw) action steps
+export { buildRawStepAction, createRawStepData, getRawStep, RAW_STEP_KEY } from './raw-step';
 // Validation schemas for UI
 export {
   ActionNodeValidationSchema,

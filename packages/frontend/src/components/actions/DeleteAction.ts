@@ -8,7 +8,7 @@ export function getDeleteAction(t: TFunction): NodeAction {
     name: 'delete',
     icon: Trash2,
     tooltip: t('toolbar.deleteNode'),
-    shortcut: ['delete', 'backspace'],
+    shortcut: ['backspace', 'delete'],
     variant: 'destructive',
     group: 'delete',
     isEnabled: (context: NodeActionContext) => context.selectedNodes.length > 0,

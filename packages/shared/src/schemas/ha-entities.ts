@@ -59,18 +59,33 @@ export const TargetSchema = z
   );
 export type Target = z.infer<typeof TargetSchema>;
 
+const targetIdsShape = {
+  entity_id: z.union([z.string(), z.array(z.string())]).optional(),
+  area_id: z.union([z.string(), z.array(z.string())]).optional(),
+  device_id: z.union([z.string(), z.array(z.string())]).optional(),
+  label_id: z.union([z.string(), z.array(z.string())]).optional(),
+  floor_id: z.union([z.string(), z.array(z.string())]).optional(),
+};
+
 /**
  * Optional target (for service calls that don't require a target)
  */
-export const OptionalTargetSchema = z
-  .object({
-    entity_id: z.union([z.string(), z.array(z.string())]).optional(),
-    area_id: z.union([z.string(), z.array(z.string())]).optional(),
-    device_id: z.union([z.string(), z.array(z.string())]).optional(),
-    label_id: z.union([z.string(), z.array(z.string())]).optional(),
-    floor_id: z.union([z.string(), z.array(z.string())]).optional(),
-  })
-  .optional();
+export const OptionalTargetSchema = z.object(targetIdsShape).optional();
+
+/**
+ * Target of a target-based trigger/condition (`trigger: <domain>.<name>`).
+ * Same key set as OptionalTargetSchema, every key optional, unknown keys kept.
+ */
+export const TargetIdsSchema = z.looseObject(targetIdsShape);
+export type TargetIds = z.infer<typeof TargetIdsSchema>;
+
+/**
+ * True for HA's target-based trigger/condition types of the form `<domain>.<name>`
+ * (e.g. `moon.phase_changed`), as opposed to classic types like `state`.
+ */
+export function isTargetedPlatform(type: string): boolean {
+  return type.includes('.');
+}
 
 /**
  * Service call data - arbitrary key-value pairs

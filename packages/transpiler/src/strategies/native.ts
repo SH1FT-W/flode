@@ -8,7 +8,7 @@ import type {
   TriggerNode,
   WaitNode,
 } from '@flode/shared';
-import { isDeviceAction } from '@flode/shared';
+import { buildRawStepAction, isDeviceAction } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { findBackEdges } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
@@ -1467,6 +1467,10 @@ export class NativeStrategy extends BaseStrategy {
    * Build service call action or device action
    */
   private buildActionCall(node: ActionNode): Record<string, unknown> {
+    // Pass-through step (kept verbatim at import) — write it back unchanged
+    const rawStep = buildRawStepAction(node.data);
+    if (rawStep) return rawStep;
+
     // Check if this is a device action (needs special format)
     if (isDeviceAction(node.data.data)) {
       const deviceData = node.data.data;

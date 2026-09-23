@@ -21,4 +21,6 @@ export interface NodeActionContext {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  /** Animates the viewport to show every node. */
+  fitView: () => void;
 }

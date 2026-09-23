@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { HaSelect } from '@/ha';
+import { useNodeLabel } from '@/hooks/useNodeLabel';
 import { cn } from '@/lib/utils';
 import { useFlowStore } from '@/store/flow-store';
 
@@ -71,6 +72,7 @@ export function TraceSimulator() {
   } = useFlowStore();
 
   const [conditionResults, setConditionResults] = useState<Record<string, boolean>>({});
+  const nodeLabel = useNodeLabel();
 
   const simulate = useCallback(async () => {
     if (nodes.length === 0) return;
@@ -166,11 +168,13 @@ export function TraceSimulator() {
               size="sm"
               onClick={simulate}
               disabled={nodes.length === 0}
+              title={t('simulator:trace.start')}
+              aria-label={t('simulator:trace.start')}
               className={cn(
                 'h-8 w-8 p-0',
                 nodes.length === 0
                   ? 'text-muted-foreground'
-                  : 'border-green-200 text-green-600 hover:bg-green-50'
+                  : 'border-success/40 text-success hover:bg-success/10'
               )}
             >
               <Play className="h-4 w-4" />
@@ -180,12 +184,21 @@ export function TraceSimulator() {
               variant="outline"
               size="sm"
               onClick={handleStop}
-              className="h-8 w-8 border-red-200 p-0 text-red-600 hover:bg-red-50"
+              title={t('simulator:trace.stop')}
+              aria-label={t('simulator:trace.stop')}
+              className="h-8 w-8 border-destructive/40 p-0 text-destructive hover:bg-destructive/10"
             >
               <Square className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={handleReset} className="h-8 w-8 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReset}
+            title={t('simulator:trace.reset')}
+            aria-label={t('simulator:trace.reset')}
+            className="h-8 w-8 p-0"
+          >
             <RotateCcw className="h-4 w-4" />
           </Button>
         </div>
@@ -201,7 +214,7 @@ export function TraceSimulator() {
             {conditionNodes.map((node) => (
               <div key={node.id} className="flex items-center justify-between text-xs">
                 <span className="mr-2 flex-1 truncate text-muted-foreground">
-                  {(node.data as { alias?: string }).alias || node.id}
+                  {nodeLabel(node, node.id)}
                 </span>
                 <ConditionOverrideSelect
                   value={conditionResults[node.id]}
@@ -231,18 +244,17 @@ export function TraceSimulator() {
           <ol className="list-inside list-decimal space-y-1 text-xs">
             {executionPath.map((nodeId, i) => {
               const node = nodes.find((n) => n.id === nodeId);
-              const alias = (node?.data as { alias?: string })?.alias;
               return (
                 <li
                   key={nodeId}
                   className={cn(
                     'py-0.5',
                     i === executionPath.length - 1 && isSimulating
-                      ? 'font-medium text-green-600'
+                      ? 'font-medium text-success'
                       : 'text-muted-foreground'
                   )}
                 >
-                  {alias || nodeId}
+                  {nodeLabel(node, nodeId)}
                 </li>
               );
             })}

@@ -4,6 +4,36 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [2.0.0] — 2026-09-23 — FLODE 2.0: Redesign
+
+A ground-up redesign of the editor UI. Automations built with 1.x open and save as before — the engine changes below only close gaps where steps used to be lost or rejected.
+
+### Added
+- **Start screen** — all automations grouped by area, with search, filters (on / off / triggered today), sorting (A–Z / recently triggered), an on/off switch per card and a plain-language preview of each automation's trigger. Automations Home Assistant has no config for (deleted, orphaned entities) are shown as "unavailable" instead of "off".
+- **Readable node cards** — every node states what it does ("Bed light changes to On", "Between 06:00 and 22:00", "Wait 5 seconds") using Home Assistant's own names and translations, shows the live state of its entity, and has a `+` button to append the next step.
+- **⌘K command palette** — insert blocks, run commands and canvas actions, open automations. Right-click menus on nodes and the canvas, a keyboard-shortcut overview (`?`), and new shortcuts (⌘S save, ⌘⇧S save with details, ⌘⇧F tidy up, ⌘B block library, ⇧F show everything).
+- **Last run on the canvas** — a chip shows the automation's most recent real run (when, result); one click overlays its path with step numbers, skipped steps and errors on the failing card. Follows new runs live; opening an automation from its "last triggered" time on the start screen shows that run right away.
+- **Tidy up** — lays out the whole flow automatically (undoable).
+- **Problem list** — everything that blocks saving, as a clickable list in the inspector and the save dialog (each entry jumps to its step), plus a problem count in the header.
+- **Quick save** — ⌘S / Save stores an existing automation directly; the dialog is only needed for new automations or "save with details".
+- **YAML steps** — action steps FLODE has no block for (e.g. the `scene:` shorthand, or steps from newer HA versions) are kept verbatim and written back unchanged, editable as YAML, instead of being turned into `unknown.unknown`.
+- **Target-based triggers and conditions** (Home Assistant 2026.x: e.g. *Light turned on*, *Vibration detected*) with Home Assistant's own target and option editors — including targets that are only areas, devices, floors or labels (previously failed to save). Based on PR #22.
+- **Jinja2-templated action names** (`action: "{{ svc }}"`) — previously rejected on save. Based on PR #21.
+- **Overview map** can be switched on from the dock or ⌘K (off by default).
+
+### Changed
+- New look throughout: calmer cards, floating inspector and glass dock, redesigned block library with search, dimmed backdrop behind dialogs.
+- Much faster canvas on large Home Assistant installations: cards no longer re-render on unrelated state changes (measured 104 → 0 re-renders for 20 unrelated changes).
+- Phones: readable zoom, the inspector opens as a bottom sheet and the selected step stays visible above it.
+- Home Assistant's single-key shortcuts (`e`, `c`, `a` …) and its own ⌘K search no longer fire while you work in FLODE.
+
+### Fixed
+- **Trace overlay mapped steps to the wrong cards** — Home Assistant numbers delay, wait and action steps together; FLODE only counted action nodes, so e.g. a delay's trace landed on the following light action. The overlay now follows the flow the way the YAML is laid out, including if/else branches.
+- Dark mode: Home Assistant's entity picker list and the labels picker showed a white background.
+- Native Home Assistant pickers briefly rendered without a connection and threw errors (`reading 'locale'`).
+
+---
+
 ## [1.5.3-beta.1] — 2026-09-03 — Mid-Flow Parallel Fan-Out Dropped Branches
 
 ### Fixed

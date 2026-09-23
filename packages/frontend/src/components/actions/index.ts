@@ -14,5 +14,6 @@ export { getPasteAction } from './PasteAction';
 export { getRedoAction } from './RedoAction';
 export { getRunAction } from './RunAction';
 export { getSelectAllAction } from './SelectAllAction';
+export { getTidyAction } from './TidyAction';
 export { getToggleEnabledAction } from './ToggleEnabledAction';
 export { getUndoAction } from './UndoAction';

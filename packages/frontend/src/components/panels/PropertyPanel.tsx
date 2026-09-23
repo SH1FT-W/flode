@@ -1,30 +1,116 @@
 import type { FlowNode } from '@flode/shared';
-import { Trash2 } from 'lucide-react';
+import { getRawStep } from '@flode/shared';
+import { Braces, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldError } from '@/components/forms/FieldError';
 import { FormField } from '@/components/forms/FormField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { getHandledProperties } from '@/config/handledProperties';
 import { useHass } from '@/contexts/HassContext';
-import { HaSwitch } from '@/ha';
+import { useFlowIssues } from '@/hooks/useFlowIssues';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
+import { useSummaryContext } from '@/hooks/useSummaryContext';
+import { nodeTypes } from '@/lib/node-catalog';
+import { getNodeColorToken, NODE_COLORS } from '@/lib/node-colors';
+import { summarizeNode } from '@/lib/node-summary';
+import { cn } from '@/lib/utils';
 import { useFlowStore } from '@/store/flow-store';
 import type { HassEntity } from '@/types/hass';
 import { Separator } from '../ui/separator';
 import { AutomationSettingsPanel } from './AutomationSettingsPanel';
+import { IssuesList } from './IssuesList';
 import { NodeFields } from './NodeFields';
 import { PropertyEditor } from './PropertyEditor';
 
-/**
- * Refactored PropertyPanel component.
- * Reduced from 1,248 lines to ~80 lines by extracting components and logic.
- */
+interface NodeInspectorHeaderProps {
+  nodeType: string | undefined;
+  data: Record<string, unknown>;
+  enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
+  onDelete: () => void;
+}
+
+/** Icon chip + node type + on/off switch + delete, at the top of the properties tab. */
+function NodeInspectorHeader({
+  nodeType,
+  data,
+  enabled,
+  onEnabledChange,
+  onDelete,
+}: NodeInspectorHeaderProps) {
+  const { t } = useTranslation(['nodes', 'ui']);
+  const config = nodeTypes.find((c) => c.type === nodeType);
+  const colors = NODE_COLORS[getNodeColorToken(nodeType)];
+  const isRawStep = getRawStep(data) !== null;
+  const typeLabel = isRawStep
+    ? t('ui:rawStep.type')
+    : config
+      ? t(config.labelKey)
+      : t('nodes:types.node');
+  const Icon = isRawStep ? Braces : config?.icon;
+  const summary = summarizeNode(nodeType, data, useSummaryContext());
+  const alias = typeof data.alias === 'string' && data.alias ? data.alias : undefined;
+  const title = alias ?? summary?.title ?? typeLabel;
+
+  return (
+    <div className="flex items-center gap-3">
+      {Icon && (
+        <span
+          className={cn(
+            'flex size-9 shrink-0 items-center justify-center rounded-[10px]',
+            colors.chip
+          )}
+        >
+          <Icon className="size-4.5" />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className={cn('font-semibold text-[11px] tracking-wide', colors.text)}>
+          {typeLabel}
+        </div>
+        <div className="truncate font-semibold text-[15px] text-foreground">{title}</div>
+      </div>
+      <ToggleSwitch
+        id="node-enabled"
+        checked={enabled}
+        onChange={onEnabledChange}
+        label={t('ui:inspector.stepEnabled')}
+      />
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onDelete}
+        title={t('ui:inspector.deleteStep')}
+        aria-label={t('ui:inspector.deleteStep')}
+        className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+      >
+        <Trash2 className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+/** Nothing selected: open problems first, then the automation's own settings. */
+function AutomationOverview() {
+  const issues = useFlowIssues();
+  return (
+    <div className="flex h-full flex-col overflow-y-auto">
+      {issues.length > 0 && (
+        <div className="px-4 pt-4">
+          <IssuesList issues={issues} />
+        </div>
+      )}
+      <AutomationSettingsPanel />
+    </div>
+  );
+}
+
+/** Properties of the selected node — or the automation's own settings when nothing is selected. */
 export function PropertyPanel() {
-  const { t } = useTranslation(['common', 'nodes']);
+  const { t } = useTranslation(['common', 'nodes', 'ui']);
   const selectedNodeId = useFlowStore((s) => s.selectedNodeId);
   const nodes = useFlowStore((s) => s.nodes);
   const updateNodeData = useFlowStore((s) => s.updateNodeData);
@@ -81,7 +167,7 @@ export function PropertyPanel() {
   const { getFieldError } = useNodeErrors(selectedNode?.id ?? '');
 
   if (!selectedNode) {
-    return <AutomationSettingsPanel />;
+    return <AutomationOverview />;
   }
 
   const handleChange = (key: string, value: unknown) => {
@@ -94,24 +180,13 @@ export function PropertyPanel() {
 
   return (
     <div className="h-full flex-1 space-y-4 overflow-y-auto p-4">
-      {/* Header with delete button */}
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-foreground text-sm">
-          {selectedNode.type
-            ? // @ts-expect-error -- TS cannot infer that type exists here
-              t(`nodes:types.${selectedNode.type}`)
-            : t('nodes:types.node')}{' '}
-          {t('nodes:panel.properties')}
-        </h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => removeNode(selectedNode.id)}
-          className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
+      <NodeInspectorHeader
+        nodeType={selectedNode.type}
+        data={selectedNode.data}
+        enabled={selectedNode.data.enabled !== false}
+        onEnabledChange={(checked) => handleChange('enabled', checked ? undefined : false)}
+        onDelete={() => removeNode(selectedNode.id)}
+      />
 
       <FormField label={t('labels.alias')}>
         <Input
@@ -140,24 +215,6 @@ export function PropertyPanel() {
           <FieldError message={getFieldError('id')} />
         </FormField>
       )}
-
-      {/* Enabled toggle */}
-      <div className="flex items-center justify-between">
-        <Label htmlFor="node-enabled" className="text-sm">
-          {t('labels.enabled')}
-        </Label>
-        <HaSwitch
-          checked={selectedNode.data.enabled !== false}
-          onChange={(checked) => handleChange('enabled', checked ? undefined : false)}
-          fallback={
-            <Switch
-              id="node-enabled"
-              checked={selectedNode.data.enabled !== false}
-              onCheckedChange={(checked) => handleChange('enabled', checked ? undefined : false)}
-            />
-          }
-        />
-      </div>
 
       <Separator />
 

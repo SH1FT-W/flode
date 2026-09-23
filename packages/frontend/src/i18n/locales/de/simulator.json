@@ -5,6 +5,9 @@
     "random": "Zufällig",
     "true": "Wahr",
     "false": "Falsch",
-    "executionPath": "Ausführungspfad"
+    "executionPath": "Ausführungspfad",
+    "start": "Simulation starten",
+    "stop": "Simulation stoppen",
+    "reset": "Simulation zurücksetzen"
   }
 }

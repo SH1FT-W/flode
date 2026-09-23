@@ -66,6 +66,7 @@ export function mapAutomationEntityToCatalogItem(
     mode: typeof entity.attributes.mode === 'string' ? entity.attributes.mode : undefined,
     area_id: areaId,
     tags: normalizeAutomationTags(entity.attributes.tags),
+    ...(entity.state === 'unavailable' ? { unavailable: true as const } : {}),
   };
 }
 

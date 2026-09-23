@@ -1,3 +1,5 @@
+import { RAW_STEP_KEY } from '@flode/shared';
+
 /**
  * Centralized configuration for handled properties by node type.
  * Eliminates magic strings scattered throughout the codebase.
@@ -14,6 +16,7 @@ export const HANDLED_PROPERTIES = {
     '_chooseCase', // Internal: case index for visual label
     '_chooseCaseTotal', // Internal: total cases for visual label
     '_blockKey', // Internal: compound block origin for icon selection
+    RAW_STEP_KEY, // Internal: verbatim pass-through step, edited by RawStepFields
   ],
 
   // Trigger properties handled by TriggerFields component
@@ -45,6 +48,9 @@ export const HANDLED_PROPERTIES = {
     'domain',
     'type',
     'subtype',
+    // Target-based triggers (handled by TargetedPlatformFields)
+    'target',
+    'options',
   ],
 
   // Condition properties handled by ConditionFields component
@@ -68,6 +74,9 @@ export const HANDLED_PROPERTIES = {
     'condition',
     'for', // Duration field
     'conditions', // Nested conditions for and/or/not and multi-condition blocks
+    // Target-based conditions (handled by TargetedPlatformFields)
+    'target',
+    'options',
   ],
 
   // Action properties handled by ActionFields component

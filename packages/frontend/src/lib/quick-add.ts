@@ -1,5 +1,5 @@
 import type { Connection } from '@xyflow/react';
-import { compoundTypes, nodeTypes } from '@/components/panels/NodePalette';
+import { compoundTypes, nodeTypes } from '@/lib/node-catalog';
 
 /**
  * Which end of the dragged (but unfinished) connection the quick-add node

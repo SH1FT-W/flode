@@ -15,8 +15,10 @@ import {
   useMemo,
   useRef,
   useState,
+  useLayoutEffect,
 } from 'react';
 import type { HassEntity, HassService, HomeAssistant } from '@/types/hass';
+import { useHassStore } from '@/store/hass-store';
 
 /**
  * Area registry entry from Home Assistant
@@ -127,6 +129,7 @@ interface HassContextProps {
   getDeviceNameForEntity: (entityId: string) => string | null;
   getDeviceNameById: (deviceId: string) => string | null;
   getAreaNameForEntity: (entityId: string) => string | null;
+  getAreaNameById: (areaId: string) => string | null;
 }
 
 const HassContext = createContext<HassContextProps | undefined>(undefined);
@@ -456,6 +459,11 @@ export const HassProvider: FC<
     [entityRegistry, deviceRegistry, areaRegistry]
   );
 
+  const getAreaNameById = useCallback(
+    (areaId: string): string | null => areaRegistry.get(areaId)?.name ?? null,
+    [areaRegistry]
+  );
+
   const value: HassContextProps = {
     hass,
     isRemote: shouldUseRemote,
@@ -473,7 +481,14 @@ export const HassProvider: FC<
     getDeviceNameForEntity,
     getDeviceNameById,
     getAreaNameForEntity,
+    getAreaNameById,
   };
+
+  // Mirror for render-sensitive consumers (see store/hass-store.ts). Layout
+  // effect so it's in sync before children paint.
+  useLayoutEffect(() => {
+    useHassStore.setState({ hass, getServiceDefinition, getDeviceNameById, getAreaNameById });
+  }, [hass, getServiceDefinition, getDeviceNameById, getAreaNameById]);
 
   return <HassContext.Provider value={value}>{children}</HassContext.Provider>;
 };

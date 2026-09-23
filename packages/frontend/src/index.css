@@ -71,6 +71,16 @@
   --radius-xl: var(--ha-radius-xl);
   --radius-dialog: var(--ha-radius-dialog);
   --radius-pill: var(--ha-radius-pill);
+  /* FLODE 2.0 control radius — buttons, inputs, segmented controls. */
+  --radius-control: 10px;
+
+  /* FLODE 2.0 elevation scale (see --flode-shadow-* below). */
+  --shadow-card: var(--flode-shadow-card);
+  --shadow-raised: var(--flode-shadow-raised);
+  --shadow-float: var(--flode-shadow-float);
+
+  /* Canvas ground — a hair darker than cards so white node cards lift off it. */
+  --color-canvas: hsl(var(--canvas));
 }
 
 /*
@@ -133,6 +143,12 @@
     --ha-radius-dialog: 24px;
     --ha-radius-pill: 9999px;
 
+    /* FLODE 2.0 elevation — soft, layered shadows (Apple-style), not theme-derived. */
+    --flode-shadow-card: 0 1px 2px rgb(16 20 28 / 0.06), 0 1px 1px rgb(16 20 28 / 0.04);
+    --flode-shadow-raised: 0 4px 14px rgb(16 20 28 / 0.08), 0 1px 3px rgb(16 20 28 / 0.06);
+    --flode-shadow-float: 0 24px 60px rgb(16 20 28 / 0.18), 0 6px 18px rgb(16 20 28 / 0.08);
+    --canvas: 220 14% 96%;
+
     /* Status colors — mirrored from HA's warning/success/info-color at runtime, see lib/ha-theme.ts */
     --warning: 39 100% 50%;
     --warning-foreground: 20 14% 10%;
@@ -157,7 +173,14 @@
     --variables-foreground: 0 0% 100%;
   }
 
-  .dark {
+  /* Not on React Flow's own `.dark` wrapper (set via its colorMode prop):
+     re-declaring the fallbacks there would shadow the HA-synced values that
+     lib/ha-theme.ts writes onto the app root, turning canvas cards navy. */
+  .dark:not(.react-flow) {
+    --flode-shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    --flode-shadow-raised: 0 6px 18px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
+    --flode-shadow-float: 0 28px 70px rgb(0 0 0 / 0.6), 0 6px 18px rgb(0 0 0 / 0.4);
+    --canvas: 225 6% 8%;
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -228,12 +251,43 @@
   @apply font-sans;
 }
 
+/* Handles are small ringed dots on the card edge (FLODE 2.0) — the visible
+   dot stays 10px, but the ::before hit area keeps them easy to grab. */
 .react-flow__handle {
-  @apply size-4!;
+  width: 10px !important;
+  height: 10px !important;
+  border-width: 2px !important;
+  background: hsl(var(--card)) !important;
+}
+.react-flow__handle::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
 }
 
 .react-flow__edge-path {
   stroke-width: 2;
+}
+
+/* Glass surfaces — floating dock, context menus, minimap. */
+.flode-glass {
+  background: hsl(var(--card) / 0.72);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+}
+
+/* React Flow minimap restyled to match the glass dock. Colors via CSS, not
+   the bgColor/maskColor props — those become SVG attributes, where var()
+   doesn't resolve. */
+.react-flow__minimap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--flode-shadow-raised);
+  background: hsl(var(--card) / 0.85) !important;
+}
+.react-flow__minimap-mask {
+  fill: hsl(var(--muted-foreground) / 0.14) !important;
 }
 
 .react-flow__edge.animated path {
@@ -261,24 +315,4 @@
   50% {
     opacity: 0.8;
   }
-}
-
-/* Save button animation for unsaved changes */
-@keyframes save-pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 hsl(var(--warning) / 70%);
-  }
-  50% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 10px hsl(var(--warning) / 0%);
-  }
-}
-
-.save-button-unsaved {
-  animation: save-pulse 2s infinite;
-}
-
-.save-button-unsaved-dark {
-  animation: save-pulse 2s infinite;
 }

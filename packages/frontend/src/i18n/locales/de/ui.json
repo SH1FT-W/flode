@@ -1,0 +1,157 @@
+{
+  "home": {
+    "title": "Automationen",
+    "summary": "{{total}} Automationen · {{on}} an · {{off}} aus",
+    "newAutomation": "Neue Automation",
+    "searchPlaceholder": "Name, Bereich oder Label",
+    "filters": {
+      "all": "Alle",
+      "on": "An",
+      "off": "Aus",
+      "today": "Heute ausgelöst"
+    },
+    "empty": "Keine Automation passt zu „{{query}}“.",
+    "emptyAll": "Noch keine Automationen – leg die erste an.",
+    "loading": "Automationen werden geladen …",
+    "toggleLabel": "{{name}} an/aus",
+    "on": "An",
+    "off": "Aus",
+    "openTogether": "Mehrere öffnen",
+    "mergeHint": "Öffnet mehrere Automationen gemeinsam auf einer Canvas",
+    "sortName": "A–Z",
+    "sortRecent": "Zuletzt ausgelöst",
+    "unavailable": "Nicht verfügbar",
+    "unavailableHint": "Home Assistant hat keine Konfiguration zu dieser Automation (gelöscht?) – sie lässt sich nicht öffnen.",
+    "summaryUnavailable": "{{count}} nicht verfügbar"
+  },
+  "editor": {
+    "back": "Automationen",
+    "saved": "Gespeichert",
+    "unsaved": "Ungespeichert",
+    "saving": "Speichert …",
+    "draft": "Entwurf",
+    "save": "Speichern",
+    "more": "Mehr",
+    "search": "Suchen oder Befehl",
+    "nameLabel": "Name der Automation"
+  },
+  "library": {
+    "title": "Bausteine",
+    "search": "Baustein suchen",
+    "collapse": "Bibliothek einklappen",
+    "expand": "Bibliothek ausklappen",
+    "empty": "Nichts gefunden",
+    "blocks": "Bausteine"
+  },
+  "dock": {
+    "label": "Canvas-Werkzeuge",
+    "tidy": "Aufräumen",
+    "tidied": "Aufgeräumt – {{shortcut}} macht es rückgängig",
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "fit": "Alles zeigen",
+    "palette": "Befehlspalette",
+    "minimap": "Übersichtskarte"
+  },
+  "palette": {
+    "title": "Befehlspalette",
+    "placeholder": "Baustein einfügen, Befehl ausführen oder Automation öffnen",
+    "groups": {
+      "commands": "Befehle",
+      "edit": "Bearbeiten",
+      "insert": "Einfügen",
+      "automations": "Automation öffnen"
+    },
+    "footer": {
+      "navigate": "Auswählen",
+      "run": "Ausführen",
+      "shortcuts": "Alle Tastenkürzel",
+      "close": "Schließen"
+    },
+    "empty": "Nichts gefunden für „{{query}}“",
+    "inserted": "„{{name}}“ eingefügt"
+  },
+  "commands": {
+    "save": "Speichern",
+    "saveHint": "In Home Assistant",
+    "home": "Zur Übersicht",
+    "new": "Neue Automation",
+    "openAutomation": "Automation öffnen …",
+    "importYaml": "YAML importieren",
+    "importJson": "JSON importieren",
+    "exportJson": "JSON exportieren",
+    "toggleTheme": "Design wechseln",
+    "toggleThemeHint": "Hell / Dunkel",
+    "shortcuts": "Tastenkürzel anzeigen",
+    "clear": "Alles leeren",
+    "tidy": "Aufräumen",
+    "tidyHint": "Flow automatisch anordnen",
+    "fitView": "Alles zeigen",
+    "library": "Bausteine ein-/ausblenden",
+    "minimap": "Übersichtskarte ein-/ausblenden"
+  },
+  "shortcuts": {
+    "title": "Tastenkürzel",
+    "description": "Schneller arbeiten ohne Maus."
+  },
+  "canvas": {
+    "emptyTitle": "Womit soll die Automation starten?",
+    "emptyText": "Füge einen Auslöser hinzu – oder öffne mit {{shortcut}} alle Bausteine.",
+    "addTrigger": "Auslöser hinzufügen",
+    "browseBlocks": "Alle Bausteine",
+    "addNext": "Nächsten Schritt hinzufügen"
+  },
+  "inspector": {
+    "automation": "Automation",
+    "deleteStep": "Schritt löschen",
+    "advanced": "Erweitert",
+    "stepEnabled": "Schritt aktiviert"
+  },
+  "rawStep": {
+    "type": "YAML-Schritt",
+    "hint": "Für diesen Schritt hat FLODE keinen eigenen Baustein. Er wird beim Speichern unverändert übernommen – hier kannst du sein YAML bearbeiten.",
+    "invalid": "Ungültiges YAML – Änderung nicht übernommen.",
+    "mustBeObject": "Ein Schritt muss ein YAML-Objekt sein (Schlüssel: Wert)."
+  },
+  "issues": {
+    "title_one": "{{count}} Problem",
+    "title_other": "{{count}} Probleme",
+    "none": "Keine Probleme – bereit zum Speichern.",
+    "hint": "Klick auf ein Problem springt zum Schritt.",
+    "cannotSave_one": "Speichern noch nicht möglich: {{count}} Problem",
+    "cannotSave_other": "Speichern noch nicht möglich: {{count}} Probleme",
+    "orphaned": "Mit keinem Auslöser verbunden",
+    "conditionNoEdges": "Hat keine ausgehende Verbindung",
+    "invalidService": "Ungültige Aktion „{{service}}“ – erwartet wird bereich.dienst",
+    "noTrigger": "Die Automation hat noch keinen Auslöser",
+    "noAction": "Die Automation hat noch keine Aktion",
+    "automation": "Automation"
+  },
+  "save": {
+    "saved": "In Home Assistant gespeichert",
+    "saveAs": "Speichern mit Details …",
+    "saveAsHint": "Name, Bereich, Labels, als Kopie"
+  },
+  "lastRun": {
+    "label": "Letzter Lauf",
+    "none": "Noch nicht gelaufen",
+    "show": "Anzeigen",
+    "hide": "Ausblenden",
+    "loading": "Wird geladen …",
+    "steps_one": "{{count}} Schritt",
+    "steps_other": "{{count}} Schritte",
+    "unmapped_one": "{{count}} Schritt lässt sich nicht auf der Canvas zeigen",
+    "unmapped_other": "{{count}} Schritte lassen sich nicht auf der Canvas zeigen",
+    "openLastRun": "Mit letztem Lauf öffnen",
+    "status": {
+      "finished": "Erfolgreich",
+      "failed_conditions": "Bedingung nicht erfüllt",
+      "error": "Fehler",
+      "cancelled": "Abgebrochen",
+      "aborted": "Abgebrochen",
+      "running": "Läuft gerade",
+      "failed_single": "Übersprungen – lief schon",
+      "failed_max_runs": "Übersprungen – max. Läufe erreicht"
+    }
+  }
+}

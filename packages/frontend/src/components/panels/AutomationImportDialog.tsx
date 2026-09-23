@@ -23,19 +23,23 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { HaSwitch } from '@/ha';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { useStartNewAutomation } from '@/hooks/useAppCommands';
 import {
   type AutomationCatalogSortColumn,
   type AutomationCatalogSortDirection,
   useAutomationCatalog,
 } from '@/hooks/useAutomationCatalog';
 import { useLoadAutomation } from '@/hooks/useLoadAutomation';
+import { useRelativeTime } from '@/hooks/useRelativeTime';
+import { useToggleAutomation } from '@/hooks/useToggleAutomation';
 import { mergeAutomationGraphs } from '@/lib/automation-merge';
 import type { AutomationCatalogItem } from '@/lib/ha-api';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
 import { showErrorToast, showSuccessToast } from '@/lib/haToast';
+import { fitViewOptions } from '@/lib/viewport';
 import { useFlowStore } from '@/store/flow-store';
+import { useUiStore } from '@/store/ui-store';
 import { useHass } from '../../contexts/HassContext';
 
 interface AutomationImportDialogProps {
@@ -49,10 +53,12 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
   const [sortColumn, setSortColumn] = useState<AutomationCatalogSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<AutomationCatalogSortDirection>('asc');
   const [selectedEntityIds, setSelectedEntityIds] = useState<Set<string>>(new Set());
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const { hass, config: hassConfig, entities } = useHass();
-  const { setFlowName, setAutomationId, reset, fromFlowGraph, hasRealChanges } = useFlowStore();
+  const { setFlowName, setAutomationId, fromFlowGraph } = useFlowStore();
+  const toggleAutomation = useToggleAutomation();
+  const formatRelativeTime = useRelativeTime();
+  const startNew = useStartNewAutomation();
+  const setView = useUiStore((s) => s.setView);
   const { fitView } = useReactFlow();
   const loadAutomation = useLoadAutomation();
 
@@ -88,27 +94,8 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
 
   const hasVisibleResults = sortedCatalogItems.length > 0;
 
-  const confirmAction = (action: () => void) => {
-    if (hasRealChanges()) {
-      setPendingAction(() => action);
-      setShowConfirmDialog(true);
-      return;
-    }
-    action();
-  };
-
-  const handleConfirm = () => {
-    if (pendingAction) {
-      pendingAction();
-    }
-    setShowConfirmDialog(false);
-    setPendingAction(null);
-  };
-
-  const handleCancelConfirm = () => {
-    setShowConfirmDialog(false);
-    setPendingAction(null);
-  };
+  /** Asks to discard unsaved changes first (shared app-wide guard, see ui-store). */
+  const confirmAction = (action: () => void) => useUiStore.getState().runGuarded(action);
 
   const handleSort = (column: AutomationCatalogSortColumn) => {
     if (sortColumn === column) {
@@ -142,21 +129,6 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
     });
   };
 
-  const handleToggleAutomationEnabled = async (
-    automation: AutomationCatalogItem,
-    checked: boolean
-  ) => {
-    try {
-      const api = getHomeAssistantAPI(hass, hassConfig);
-      await api.setAutomationState(automation.entity_id, checked);
-      showSuccessToast(
-        checked ? t('dialogs:import.automationEnabled') : t('dialogs:import.automationDisabled')
-      );
-    } catch {
-      showErrorToast(t('dialogs:import.updateStateFailed'));
-    }
-  };
-
   const toggleSelectAllVisible = () => {
     setSelectedEntityIds((current) => {
       const next = new Set(current);
@@ -174,6 +146,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
   };
 
   const handleImportAutomation = async (automation: AutomationCatalogItem) => {
+    setView('editor');
     const success = await loadAutomation(automation);
     if (success) {
       onClose();
@@ -254,13 +227,14 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
       }
 
       const mergedGraph = mergeAutomationGraphs(mergeSources);
+      setView('editor');
       fromFlowGraph(mergedGraph);
       setFlowName(buildMergedFlowName(selectedAutomations));
       setAutomationId(null);
       setSelectedEntityIds(new Set());
 
       setTimeout(() => {
-        fitView({ padding: 0.2, duration: 300, maxZoom: 0.75 });
+        void fitView(fitViewOptions());
       }, 150);
 
       showSuccessToast(
@@ -273,22 +247,6 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
       console.error('FLODE: Failed to merge automations:', error);
       showErrorToast(t('dialogs:import.mergeFailed', { message: (error as Error).message }));
     }
-  };
-
-  const formatLastTriggered = (timestamp?: string) => {
-    if (!timestamp) return t('dialogs:import.never');
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return t('dialogs:import.justNow');
-    if (diffMins < 60) return t('dialogs:import.minutesAgo', { count: diffMins });
-    if (diffHours < 24) return t('dialogs:import.hoursAgo', { count: diffHours });
-    if (diffDays < 7) return t('dialogs:import.daysAgo', { count: diffDays });
-    return date.toLocaleDateString();
   };
 
   if (!isOpen) return null;
@@ -323,13 +281,9 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
               </Button>
               <Button
                 onClick={() => {
-                  confirmAction(() => {
-                    reset();
-                    setFlowName(t('defaults.newAutomation'));
-                    onClose();
-                  });
+                  onClose();
+                  startNew();
                 }}
-                className="bg-green-600 hover:bg-green-700"
               >
                 <DiamondPlus className="mr-2 h-4 w-4" />
                 {t('dialogs:import.createNew')}
@@ -463,7 +417,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
                         <div className="w-[120px] max-w-[120px] px-3 py-2 align-top">
                           {automation.last_triggered ? (
                             <span className="whitespace-nowrap text-xs">
-                              {formatLastTriggered(automation.last_triggered)}
+                              {formatRelativeTime(automation.last_triggered)}
                             </span>
                           ) : (
                             <span className="text-muted-foreground text-xs">
@@ -472,24 +426,10 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
                           )}
                         </div>
                         <div className="w-[80px] px-3 py-2 text-center align-top">
-                          <HaSwitch
+                          <ToggleSwitch
                             checked={automation.enabled}
-                            onChange={(checked) =>
-                              handleToggleAutomationEnabled(automation, checked)
-                            }
-                            fallback={
-                              <Switch
-                                checked={automation.enabled}
-                                onCheckedChange={(checked) =>
-                                  handleToggleAutomationEnabled(automation, checked)
-                                }
-                                aria-label={
-                                  automation.enabled
-                                    ? t('dialogs:import.columns.enabled')
-                                    : t('dialogs:import.disabled')
-                                }
-                              />
-                            }
+                            onChange={(checked) => void toggleAutomation(automation, checked)}
+                            label={t('dialogs:import.columns.enabled')}
                           />
                         </div>
                         <div className="w-[60px] px-3 py-2 text-center align-top">
@@ -537,23 +477,6 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
           </div>
         </div>
       </DialogContent>
-
-      <Dialog open={showConfirmDialog} onOpenChange={handleCancelConfirm}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('dialogs:import.discardTitle')}</DialogTitle>
-            <DialogDescription>{t('dialogs:import.discardDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={handleCancelConfirm}>
-              {t('buttons.cancel')}
-            </Button>
-            <Button variant="destructive" onClick={handleConfirm}>
-              {t('dialogs:import.confirmDiscard')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </Dialog>
   );
 }

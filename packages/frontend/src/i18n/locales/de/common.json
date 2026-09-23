@@ -159,7 +159,10 @@
     "alignBottom": "Unten ausrichten",
     "deleteNode": "Knoten löschen",
     "duplicateNode": "Knoten duplizieren",
-    "selectAll": "Alles auswählen"
+    "selectAll": "Alles auswählen",
+    "tidy": "Aufräumen",
+    "tidied": "Aufgeräumt – {{shortcut}} macht es rückgängig",
+    "align": "Ausrichten"
   },
   "shortcuts": {
     "cmd": "Cmd",

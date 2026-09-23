@@ -15,7 +15,7 @@ i18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
   defaultNS,
-  ns: ['common', 'dialogs', 'nodes', 'errors', 'debug', 'panels', 'simulator'],
+  ns: ['common', 'dialogs', 'nodes', 'errors', 'debug', 'panels', 'simulator', 'ui'],
 
   interpolation: {
     escapeValue: false, // React already escapes values

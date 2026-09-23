@@ -17,6 +17,9 @@ import { useHass } from '@/contexts/HassContext';
 import { HaAreaPicker, HaCategoryPicker, HaIconPicker, HaLabelsPicker } from '@/ha';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
 import { useFlowStore } from '@/store/flow-store';
+import { fireAutomationSaved } from '@/lib/automation-events';
+import { useFlowIssues } from '@/hooks/useFlowIssues';
+import { IssuesList } from './IssuesList';
 
 interface RegistryMetadata {
   icon: string;
@@ -126,6 +129,8 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
   const touchedFields = useRef<Set<keyof RegistryMetadata>>(new Set());
 
   const isUpdate = !!automationId;
+  const issues = useFlowIssues();
+  const hasIssues = issues.length > 0;
 
   const setMetadataField = <K extends keyof RegistryMetadata>(
     field: K,
@@ -215,17 +220,8 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
     }
   };
 
-  // Lets other automations/scripts react to FLODE saves. Best-effort, same
-  // as the registry metadata above — never blocks or fails the save itself.
   const notifyAutomationSaved = async (entityId: string | undefined) => {
-    if (!hass || !entityId) return;
-    try {
-      await getHomeAssistantAPI(hass).fireBusEvent('flode_automation_saved', {
-        entity_id: entityId,
-      });
-    } catch (err) {
-      console.warn('Failed to fire flode_automation_saved event:', err);
-    }
+    if (hass) await fireAutomationSaved(hass, entityId);
   };
 
   const handleSave = async () => {
@@ -399,44 +395,42 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
             disabled={isSaving}
           />
 
-          {error && (
+          <IssuesList issues={issues} onNavigate={handleClose} />
+
+          {error && issues.length === 0 && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="outline" onClick={handleClose} disabled={isSaving}>
-              {t('buttons.cancel')}
-            </Button>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             {isUpdate && (
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={handleSaveAsCopy}
-                disabled={isSaving || !flowName.trim()}
+                disabled={isSaving || !flowName.trim() || hasIssues}
+                className="mr-auto"
               >
-                {isSaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Copy className="mr-2 h-4 w-4" />
-                )}
+                {isSaving ? <Loader2 className="animate-spin" /> : <Copy />}
                 {t('buttons.saveAsCopy')}
               </Button>
             )}
-            <Button onClick={handleSave} disabled={isSaving || !flowName.trim()}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isUpdate ? t('status.updating') : t('status.saving')}
-                </>
-              ) : (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  {isUpdate ? t('buttons.update') : t('buttons.save')}
-                </>
-              )}
-            </Button>
+            <div className="ml-auto flex gap-2">
+              <Button variant="outline" onClick={handleClose} disabled={isSaving}>
+                {t('buttons.cancel')}
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving || !flowName.trim() || hasIssues}>
+                {isSaving ? <Loader2 className="animate-spin" /> : <Check />}
+                {isSaving
+                  ? isUpdate
+                    ? t('status.updating')
+                    : t('status.saving')
+                  : isUpdate
+                    ? t('buttons.update')
+                    : t('buttons.save')}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

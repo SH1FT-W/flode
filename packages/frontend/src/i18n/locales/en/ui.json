@@ -1,0 +1,157 @@
+{
+  "home": {
+    "title": "Automations",
+    "summary": "{{total}} automations · {{on}} on · {{off}} off",
+    "newAutomation": "New automation",
+    "searchPlaceholder": "Name, area or label",
+    "filters": {
+      "all": "All",
+      "on": "On",
+      "off": "Off",
+      "today": "Triggered today"
+    },
+    "empty": "No automation matches “{{query}}”.",
+    "emptyAll": "No automations yet — create your first one.",
+    "loading": "Loading automations …",
+    "toggleLabel": "{{name}} on/off",
+    "on": "On",
+    "off": "Off",
+    "openTogether": "Open several",
+    "mergeHint": "Opens several automations together in one canvas",
+    "sortName": "A–Z",
+    "sortRecent": "Recently triggered",
+    "unavailable": "Unavailable",
+    "unavailableHint": "Home Assistant has no configuration for this automation (deleted?) — it can't be opened.",
+    "summaryUnavailable": "{{count}} unavailable"
+  },
+  "editor": {
+    "back": "Automations",
+    "saved": "Saved",
+    "unsaved": "Unsaved",
+    "saving": "Saving …",
+    "draft": "Draft",
+    "save": "Save",
+    "more": "More",
+    "search": "Search or run a command",
+    "nameLabel": "Automation name"
+  },
+  "library": {
+    "title": "Blocks",
+    "search": "Search blocks",
+    "collapse": "Collapse library",
+    "expand": "Expand library",
+    "empty": "Nothing found",
+    "blocks": "Blocks"
+  },
+  "dock": {
+    "label": "Canvas tools",
+    "tidy": "Tidy up",
+    "tidied": "Tidied up — {{shortcut}} undoes it",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Show everything",
+    "palette": "Command palette",
+    "minimap": "Overview map"
+  },
+  "palette": {
+    "title": "Command palette",
+    "placeholder": "Insert a block, run a command or open an automation",
+    "groups": {
+      "commands": "Commands",
+      "edit": "Edit",
+      "insert": "Insert",
+      "automations": "Open automation"
+    },
+    "footer": {
+      "navigate": "Select",
+      "run": "Run",
+      "shortcuts": "All shortcuts",
+      "close": "Close"
+    },
+    "empty": "Nothing found for “{{query}}”",
+    "inserted": "“{{name}}” inserted"
+  },
+  "commands": {
+    "save": "Save",
+    "saveHint": "To Home Assistant",
+    "home": "Go to overview",
+    "new": "New automation",
+    "openAutomation": "Open automation …",
+    "importYaml": "Import YAML",
+    "importJson": "Import JSON",
+    "exportJson": "Export JSON",
+    "toggleTheme": "Switch appearance",
+    "toggleThemeHint": "Light / dark",
+    "shortcuts": "Show keyboard shortcuts",
+    "clear": "Clear everything",
+    "tidy": "Tidy up",
+    "tidyHint": "Arrange the flow automatically",
+    "fitView": "Show everything",
+    "library": "Show/hide block library",
+    "minimap": "Show/hide overview map"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "description": "Work faster without the mouse."
+  },
+  "canvas": {
+    "emptyTitle": "How should this automation start?",
+    "emptyText": "Add a trigger — or press {{shortcut}} to see every block.",
+    "addTrigger": "Add trigger",
+    "browseBlocks": "All blocks",
+    "addNext": "Add next step"
+  },
+  "inspector": {
+    "automation": "Automation",
+    "deleteStep": "Delete step",
+    "advanced": "Advanced",
+    "stepEnabled": "Step enabled"
+  },
+  "rawStep": {
+    "type": "YAML step",
+    "hint": "FLODE has no dedicated block for this step. It is saved back exactly as it is — edit its YAML here.",
+    "invalid": "Invalid YAML — the change was not applied.",
+    "mustBeObject": "A step must be a YAML mapping (key: value)."
+  },
+  "issues": {
+    "title_one": "{{count}} problem",
+    "title_other": "{{count}} problems",
+    "none": "No problems — ready to save.",
+    "hint": "Click a problem to jump to the step.",
+    "cannotSave_one": "Can't save yet: {{count}} problem",
+    "cannotSave_other": "Can't save yet: {{count}} problems",
+    "orphaned": "Not connected to any trigger",
+    "conditionNoEdges": "Has no outgoing connection",
+    "invalidService": "Invalid action “{{service}}” — expected domain.service",
+    "noTrigger": "The automation has no trigger yet",
+    "noAction": "The automation has no action yet",
+    "automation": "Automation"
+  },
+  "save": {
+    "saved": "Saved to Home Assistant",
+    "saveAs": "Save with details …",
+    "saveAsHint": "Name, area, labels, save as copy"
+  },
+  "lastRun": {
+    "label": "Last run",
+    "none": "Not run yet",
+    "show": "Show",
+    "hide": "Hide",
+    "loading": "Loading …",
+    "steps_one": "{{count}} step",
+    "steps_other": "{{count}} steps",
+    "unmapped_one": "{{count}} step can't be shown on the canvas",
+    "unmapped_other": "{{count}} steps can't be shown on the canvas",
+    "openLastRun": "Open with last run",
+    "status": {
+      "finished": "Successful",
+      "failed_conditions": "Condition not met",
+      "error": "Error",
+      "cancelled": "Cancelled",
+      "aborted": "Aborted",
+      "running": "Running",
+      "failed_single": "Skipped — already running",
+      "failed_max_runs": "Skipped — max. runs reached"
+    }
+  }
+}

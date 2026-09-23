@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { isTargetedPlatform } from './ha-entities';
+import { isTemplateString } from './ha-schemas';
+import { getRawStep } from './raw-step';
 
 /**
  * Validation schemas for node data.
@@ -31,7 +34,7 @@ export const WaitNodeValidationSchema = z
 
 /**
  * Action node validation - requires either:
- *   - service in domain.service format (service call action), or
+ *   - service in domain.service format or a Jinja2 template (service call action), or
  *   - event string (fire event action)
  */
 export const ActionNodeValidationSchema = z
@@ -43,6 +46,8 @@ export const ActionNodeValidationSchema = z
   .superRefine((data, ctx) => {
     // Opaque repeat nodes (repeat.count / repeat.while / repeat.until) are valid without service/event
     if (data.repeat !== null && typeof data.repeat === 'object') return;
+    // Pass-through steps carry their verbatim HA config instead of service/event
+    if (getRawStep(data)) return;
 
     const hasEvent = typeof data.event === 'string' && data.event.trim() !== '';
     const hasService = typeof data.service === 'string' && data.service.trim() !== '';
@@ -56,7 +61,8 @@ export const ActionNodeValidationSchema = z
       return;
     }
 
-    if (hasService && !data.service!.includes('.')) {
+    // Templated action names (e.g. "{{ svc }}") are resolved by HA at runtime
+    if (hasService && !isTemplateString(data.service) && !data.service!.includes('.')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'errors:validation.action.serviceFormat',
@@ -118,6 +124,9 @@ export const TriggerNodeValidationSchema = z
       });
       return;
     }
+
+    // Target-based triggers are described by HA at runtime, not by the classic rules below
+    if (isTargetedPlatform(triggerType)) return;
 
     switch (triggerType) {
       case 'state':
@@ -273,6 +282,9 @@ export const ConditionNodeValidationSchema = z
   })
   .passthrough()
   .superRefine((data, ctx) => {
+    // Target-based conditions are described by HA at runtime, not by the classic rules below
+    if (isTargetedPlatform(data.condition)) return;
+
     switch (data.condition) {
       case 'state':
         if (!hasEntityId(data.entity_id)) {

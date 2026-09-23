@@ -186,7 +186,10 @@
     "alignBottom": "Align Bottom",
     "deleteNode": "Delete Node",
     "duplicateNode": "Duplicate Node",
-    "selectAll": "Select All"
+    "selectAll": "Select All",
+    "tidy": "Tidy up",
+    "tidied": "Tidied up — {{shortcut}} undoes it",
+    "align": "Align"
   },
   "shortcuts": {
     "cmd": "Cmd",

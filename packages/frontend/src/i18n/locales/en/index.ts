@@ -5,6 +5,7 @@ import errors from './errors.json';
 import nodes from './nodes.json';
 import panels from './panels.json';
 import simulator from './simulator.json';
+import ui from './ui.json';
 
 export default {
   common,
@@ -14,4 +15,5 @@ export default {
   nodes,
   panels,
   simulator,
+  ui,
 };

@@ -1,4 +1,4 @@
-import { createElement, type ReactNode, useEffect, useRef, useState } from 'react';
+import { createElement, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useHass } from '@/contexts/HassContext';
 import { notifyHaComponentIssue } from './haAvailabilityNotice';
 
@@ -53,7 +53,11 @@ export function HaElement({ tag, properties, events, className, fallback }: HaEl
   // unrelated re-render.
   const lastValues = useRef<Record<string, unknown>>({});
 
-  useEffect(() => {
+  // Layout effect, not a plain effect: it runs synchronously right after
+  // React inserts the element, before Lit's own (microtask) first render —
+  // so HA components never render once without `hass` (which threw
+  // "Cannot read properties of undefined (reading 'locale')" in HA 2026.x).
+  useLayoutEffect(() => {
     if (hasError) return;
     const el = ref.current;
     if (!el) return;
@@ -63,7 +67,13 @@ export function HaElement({ tag, properties, events, className, fallback }: HaEl
       const target = el as unknown as Record<string, unknown>;
       const allProps = { ...properties, hass };
       for (const [key, value] of Object.entries(allProps)) {
-        if (isEqualValue(lastValues.current[key], value)) continue;
+        // `hass` is replaced wholesale on every state change and is far too
+        // big to serialize for a deep compare — reference equality only.
+        const unchanged =
+          key === 'hass'
+            ? lastValues.current[key] === value
+            : isEqualValue(lastValues.current[key], value);
+        if (unchanged) continue;
         target[key] = value;
         lastValues.current[key] = value;
       }

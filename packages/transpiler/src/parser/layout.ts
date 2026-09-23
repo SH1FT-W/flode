@@ -9,16 +9,24 @@ const elk = new ELK();
  */
 export async function applyHeuristicLayout(
   nodes: FlowNode[],
-  edges: FlowEdge[]
+  edges: FlowEdge[],
+  /**
+   * Real rendered node sizes by node id (e.g. React Flow's `measured`), used
+   * instead of the per-type estimates when present — lets the editor's
+   * "tidy up" command lay out the cards as they actually render. Import
+   * (YamlParser) never passes it, so its layout is unchanged.
+   */
+  measuredSizes?: Record<string, { width: number; height: number }>
 ): Promise<FlowNode[]> {
   try {
     // Convert to ELK graph format
     const elkNodes = nodes.map((node) => {
+      const measured = measuredSizes?.[node.id];
       // biome-ignore lint/suspicious/noExplicitAny: ELK types are loose
       const elkNode: any = {
         id: node.id,
-        width: getNodeWidth(node.type),
-        height: getNodeHeight(node.type),
+        width: measured?.width ?? getNodeWidth(node.type),
+        height: measured?.height ?? getNodeHeight(node.type),
       };
       // Give condition nodes fixed-order ports so ELK knows true=top, false=bottom
       // and can route edges without crossing them.
@@ -266,41 +274,24 @@ function applyFallbackLayout(nodes: FlowNode[]): FlowNode[] {
 }
 
 /**
- * Get standard width for node type
+ * Estimated rendered size per node type — matches the FLODE 2.0 node cards
+ * (components/nodes/NodeCard.tsx: 260px wide; height depends on the detail
+ * line and live-state chip). Used when no real measurements are passed in.
  */
+const NODE_SIZE_ESTIMATES: Record<string, { width: number; height: number }> = {
+  trigger: { width: 260, height: 100 },
+  condition: { width: 260, height: 110 },
+  action: { width: 260, height: 100 },
+  delay: { width: 260, height: 72 },
+  wait: { width: 260, height: 90 },
+  set_variables: { width: 260, height: 90 },
+};
+const DEFAULT_NODE_SIZE = { width: 260, height: 100 };
+
 function getNodeWidth(type: string): number {
-  switch (type) {
-    case 'trigger':
-      return 200;
-    case 'condition':
-      return 220;
-    case 'action':
-      return 200;
-    case 'delay':
-      return 180;
-    case 'wait':
-      return 180;
-    default:
-      return 200;
-  }
+  return (NODE_SIZE_ESTIMATES[type] ?? DEFAULT_NODE_SIZE).width;
 }
 
-/**
- * Get standard height for node type
- */
 function getNodeHeight(type: string): number {
-  switch (type) {
-    case 'trigger':
-      return 80;
-    case 'condition':
-      return 100;
-    case 'action':
-      return 80;
-    case 'delay':
-      return 70;
-    case 'wait':
-      return 70;
-    default:
-      return 80;
-  }
+  return (NODE_SIZE_ESTIMATES[type] ?? DEFAULT_NODE_SIZE).height;
 }

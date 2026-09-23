@@ -1,62 +1,15 @@
 import { ReactFlowProvider } from '@xyflow/react';
-import {
-  AlertCircle,
-  ArrowLeft,
-  BrushCleaning,
-  ChevronDown,
-  DiamondPlus,
-  FileCode,
-  FileDown,
-  FileUp,
-  FolderOpenDotIcon,
-  Loader2,
-  Menu,
-  Save,
-  Settings,
-  Wifi,
-} from 'lucide-react';
-
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
 import './index.css';
 import { FlowCanvas } from '@/components/canvas/FlowCanvas';
+import { AppDialogs } from '@/components/dialogs/AppDialogs';
+import { AutomationHome } from '@/components/home/AutomationHome';
+import { EditorHeader, HomeHeader } from '@/components/layout/AppHeader';
+import { Inspector } from '@/components/layout/Inspector';
 import { NodePalette } from '@/components/panels/NodePalette';
-import { PropertyPanel } from '@/components/panels/PropertyPanel';
-import { SpeedControl } from '@/components/simulator/SpeedControl';
-import { Badge } from '@/components/ui/badge';
-
-// Code-split: lazily loaded panels & dialogs (not on the initial critical path).
-// Each only loads when its tab is opened or its dialog is triggered.
-const YamlPreview = lazy(() =>
-  import('@/components/panels/YamlPreview').then((m) => ({ default: m.YamlPreview }))
-);
-const TraceSimulator = lazy(() =>
-  import('@/components/simulator/TraceSimulator').then((m) => ({ default: m.TraceSimulator }))
-);
-const AutomationTraceViewer = lazy(() =>
-  import('@/components/simulator/AutomationTraceViewer').then((m) => ({
-    default: m.AutomationTraceViewer,
-  }))
-);
-const HassSettings = lazy(() =>
-  import('@/components/panels/HassSettings').then((m) => ({ default: m.HassSettings }))
-);
-const ImportYamlDialog = lazy(() =>
-  import('@/components/panels/ImportYamlDialog').then((m) => ({ default: m.ImportYamlDialog }))
-);
-const AutomationImportDialog = lazy(() =>
-  import('@/components/panels/AutomationImportDialog').then((m) => ({
-    default: m.AutomationImportDialog,
-  }))
-);
-const AutomationSaveDialog = lazy(() =>
-  import('@/components/panels/AutomationSaveDialog').then((m) => ({
-    default: m.AutomationSaveDialog,
-  }))
-);
-
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -65,49 +18,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ResizablePanel } from '@/components/ui/resizable-panel';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { logger } from '@/lib/logger';
-import { cn } from '@/lib/utils';
-import { version } from '../../../custom_components/flode/manifest.json';
 import { useAppRoot } from './contexts/AppRootContext';
 import { useHass } from './contexts/HassContext';
+import { useStartNewAutomation } from './hooks/useAppCommands';
+import { useBackendTranslations } from './hooks/useBackendTranslations';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useHaThemeSync } from './hooks/useHaThemeSync';
+import { useIsolateTyping } from './hooks/useIsolateTyping';
 import { useLanguage } from './hooks/useLanguage';
 import { useLoadAutomation } from './hooks/useLoadAutomation';
-import { useFlowStore } from './store/flow-store';
-
-/** Lightweight fallback shown while a lazily-loaded panel chunk is fetched. */
-function PanelLoading() {
-  return (
-    <div className="flex h-full items-center justify-center p-6 text-muted-foreground">
-      <Loader2 className="h-5 w-5 animate-spin" />
-    </div>
-  );
-}
+import { useShortcuts } from './hooks/useShortcuts';
+import { useUiStore } from './store/ui-store';
 
 /**
  * Deep-link entry points — `/flode?automation=automation.xyz` opens that
- * automation, `/flode?new=1` starts blank. Query params only (not HA's
- * `route` property, which carries just prefix/path, no search string).
- * Rendered inside `<ReactFlowProvider>` (see `App`'s return) because loading
- * an automation needs `useReactFlow`'s `fitView` — this hook can't be called
- * from `App` itself, since `App` is the one *creating* that provider, not a
- * descendant of it. Waits for a real `hass` (needed to resolve
- * entity_id -> automation_id) and only ever runs once per mount.
+ * automation, `/flode?new=1` starts blank; both skip the start screen. Query
+ * params only (not HA's `route` property, which carries just prefix/path, no
+ * search string). Rendered inside `<ReactFlowProvider>` because loading an
+ * automation needs `useReactFlow`'s `fitView`. Waits for a real `hass` (needed
+ * to resolve entity_id -> automation_id) and only ever runs once per mount.
  */
 function DeepLinkHandler() {
   const { hass } = useHass();
-  const { reset } = useFlowStore();
   const loadAutomation = useLoadAutomation();
+  const startNew = useStartNewAutomation();
   const handled = useRef(false);
 
   useEffect(() => {
@@ -127,7 +62,8 @@ function DeepLinkHandler() {
         typeof rawId === 'string' || typeof rawId === 'number'
           ? String(rawId)
           : automationEntityId.replace('automation.', '');
-      loadAutomation({
+      useUiStore.getState().setView('editor');
+      void loadAutomation({
         automation_id: automationConfigId,
         entity_id: automationEntityId,
         friendly_name:
@@ -136,78 +72,94 @@ function DeepLinkHandler() {
             : undefined,
       });
     } else {
-      reset();
+      startNew();
     }
 
     const url = new URL(window.location.href);
     url.searchParams.delete('automation');
     url.searchParams.delete('new');
     window.history.replaceState(null, '', `${url.pathname}${url.search}`);
-  }, [hass, loadAutomation, reset]);
+  }, [hass, loadAutomation, startNew]);
 
   return null;
 }
 
-type RightPanelTab = 'properties' | 'yaml' | 'simulator';
+/** Registers global keyboard shortcuts (needs the ReactFlowProvider). */
+function ShortcutHandler() {
+  useShortcuts();
+  return null;
+}
+
+function EditorView() {
+  return (
+    <>
+      <EditorHeader />
+      <div className="flex min-h-0 flex-1 overflow-hidden bg-canvas">
+        <NodePalette />
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <FlowCanvas />
+        </main>
+        <Inspector />
+      </div>
+    </>
+  );
+}
+
+function HomeView() {
+  return (
+    <>
+      <HomeHeader />
+      <main className="min-h-0 flex-1">
+        <AutomationHome />
+      </main>
+    </>
+  );
+}
+
+function ErrorFallback({ error }: { error: unknown }) {
+  const { t } = useTranslation(['common', 'dialogs']);
+  const err = error instanceof Error ? error : new Error(String(error));
+  const reloadApp = () => window.location.reload();
+  return (
+    <Dialog open={true} onOpenChange={reloadApp}>
+      <DialogContent className="flex w-[90vw] max-w-full flex-col">
+        <DialogHeader>
+          <DialogTitle>{t('dialogs:error.title')}</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>{t('dialogs:error.description')}</DialogDescription>
+        <div className="space-y-4">
+          <pre className="max-h-60 overflow-auto rounded-xl bg-destructive/10 p-4 text-destructive text-sm">
+            {err.message}
+            <br />
+            {err.stack}
+          </pre>
+          <div>{t('dialogs:error.refreshPrompt')}</div>
+          <Button onClick={reloadApp}>{t('buttons.refresh')}</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function App() {
-  const { t } = useTranslation(['common', 'errors', 'dialogs']);
   const appRoot = useAppRoot();
-
-  // Sidebar toggle button handler — `composed: true` lets the event cross the
-  // Shadow DOM boundary so HA's own `hass-toggle-menu` listener catches it.
-  const handleSidebarToggle = () => {
-    appRoot?.dispatchEvent(new CustomEvent('hass-toggle-menu', { bubbles: true, composed: true }));
-  };
-
-  // Navigate back to Home Assistant
-  const handleBackToHA = () => {
-    window.history.back();
-  };
-
-  const {
-    hass,
-    isRemote: actualIsRemote,
-    isLoading: actualIsLoading,
-    connectionError: actualConnectionError,
-    config,
-    setConfig,
-    narrow,
-  } = useHass();
-
-  const {
-    flowName,
-    fromFlowGraph,
-    reset,
-    automationId,
-    hasUnsavedChanges,
-    isSaving,
-    simulationSpeed,
-    setSimulationSpeed,
-    hasRealChanges,
-  } = useFlowStore();
-  const [rightTab, setRightTab] = useState<RightPanelTab>('properties');
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [importYamlOpen, setImportYamlOpen] = useState(false);
-  const [automationImportOpen, setAutomationImportOpen] = useState(false);
-  const [importDropdownOpen, setImportDropdownOpen] = useState(false);
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
-  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
-  const [parentWidth, setParentWidth] = useState(() => window.innerWidth);
-  const forceSettingsOpen = actualIsRemote && (config.url === '' || config.token === '');
+  const { hass } = useHass();
+  const view = useUiStore((s) => s.view);
   const isDark = useDarkMode();
 
   // Sync language with Home Assistant
   useLanguage();
   // Sync HA theme colors (custom theme + light/dark fallbacks, or FLODE's own override) onto our CSS vars
   useHaThemeSync();
+  // HA's translated service names for plain-language node summaries
+  useBackendTranslations();
+  // Plain keys in FLODE (typing or on the canvas) must not trigger HA's single-key hotkeys
+  useIsolateTyping();
 
-  // Version guard: log which HA version we're running against, once —
-  // the src/ha/ wrapper layer targets undocumented internal API that can
-  // change between releases, so this is the first thing to check when a
-  // native component mysteriously stops working. `hass` gets a new object
-  // on every entity update, so this only fires once via the ref guard.
+  // Version guard: log which HA version we're running against, once — the
+  // src/ha/ wrapper layer targets undocumented internal API that can change
+  // between releases, so this is the first thing to check when a native
+  // component mysteriously stops working.
   const loggedVersion = useRef(false);
   useEffect(() => {
     if (!loggedVersion.current && hass?.config?.version) {
@@ -220,457 +172,15 @@ function App() {
     appRoot?.classList.toggle('dark', isDark);
   }, [isDark, appRoot]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setParentWidth(window.innerWidth);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const graph = JSON.parse(text);
-        fromFlowGraph(graph);
-      } catch (error) {
-        console.error('Failed to import:', error);
-        alert(t('errors:import.fileReadFailed'));
-      }
-    };
-    input.click();
-  };
-
-  const handleExport = () => {
-    const graph = useFlowStore.getState().toFlowGraph();
-    const blob = new Blob([JSON.stringify(graph, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${flowName || 'automation'}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Determine connection status display
-  const getConnectionStatus = () => {
-    if (actualIsLoading) {
-      return {
-        label: t('status.connecting'),
-        className: 'bg-muted text-muted-foreground',
-        icon: <Loader2 className="h-3 w-3 animate-spin" />,
-      };
-    }
-    if (actualConnectionError) {
-      return {
-        label: t('status.connectionError'),
-        className: 'bg-red-100 text-red-700',
-        icon: <AlertCircle className="h-3 w-3" />,
-      };
-    }
-    if (actualIsRemote && hass?.connected) {
-      return {
-        label: t('status.connected'),
-        className: 'bg-green-100 text-green-700',
-        icon: <Wifi className="h-3 w-3" />,
-      };
-    }
-    if (!actualIsRemote) {
-      return null;
-    }
-    return null;
-  };
-
-  const status = getConnectionStatus();
-
-  const reloadApp = () => {
-    window.location.reload();
-  };
-
   return (
-    <ErrorBoundary
-      FallbackComponent={({ error }) => {
-        const err = error instanceof Error ? error : new Error(String(error));
-        return (
-          <Dialog open={true} onOpenChange={reloadApp}>
-            <DialogContent className="flex w-[90vw] max-w-full flex-col">
-              <DialogHeader>
-                <DialogTitle>{t('dialogs:error.title')}</DialogTitle>
-              </DialogHeader>
-
-              <DialogDescription>{t('dialogs:error.description')}</DialogDescription>
-
-              <div className="space-y-4">
-                <pre className="max-h-60 overflow-auto rounded bg-red-100 p-4 text-red-800 text-sm">
-                  {err.message}
-                  <br />
-                  {err.stack}
-                </pre>
-                <div>{t('dialogs:error.refreshPrompt')}</div>
-                <Button onClick={reloadApp}>{t('buttons.refresh')}</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        );
-      }}
-    >
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
       <ReactFlowProvider>
         <DeepLinkHandler />
+        <ShortcutHandler />
         <div className="flex h-screen flex-col bg-background">
-          {/* Header */}
-          <header className="flex h-14 items-center justify-between gap-4 border-border border-b bg-card px-4 shadow-sm">
-            <div className="flex flex-1 items-center gap-4">
-              {/* Sidebar toggle button — HA's own `narrow` in panel mode, viewport width as a standalone-dev fallback (no real `narrow` there) */}
-              {narrow || parentWidth <= 870 ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  onClick={handleSidebarToggle}
-                  aria-label="Toggle sidebar"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              ) : (
-                <h1
-                  className="whitespace-nowrap font-bold text-foreground text-lg"
-                  title={t('titles.appFullName')}
-                >
-                  {t('titles.appName')}
-                </h1>
-              )}
-              <span className="mx-1 h-5 w-px bg-border" />
-              <span className="min-w-32 max-w-96 flex-1 truncate font-semibold text-foreground">
-                {flowName || (
-                  <span className="font-normal text-muted-foreground">
-                    {t('placeholders.automationName')}
-                  </span>
-                )}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-
-              {status && (
-                <Badge
-                  onClick={() => setSettingsOpen(true)}
-                  className={cn(
-                    'flex cursor-pointer items-center gap-1.5 transition-opacity hover:opacity-80',
-                    status.className
-                  )}
-                  title={t('titles.clickToConfigure')}
-                  variant="outline"
-                >
-                  {status.icon}
-                  {status.label}
-                </Badge>
-              )}
-
-              {actualIsRemote && (
-                <Button
-                  onClick={() => setSettingsOpen(true)}
-                  variant="ghost"
-                  size="icon"
-                  title={t('titles.settings')}
-                >
-                  <Settings className="h-5 w-5" />
-                </Button>
-              )}
-
-              {/* Open Automation Button with Import Dropdown */}
-              <div className="flex">
-                {/* Main Open Button */}
-                <Button
-                  onClick={() => {
-                    setAutomationImportOpen(true);
-                  }}
-                  className="rounded-r-none"
-                >
-                  <FolderOpenDotIcon className="mr-2 h-4 w-4" />
-                  {t('buttons.openAutomation')}
-                </Button>
-
-                {/* Dropdown Toggle */}
-                <DropdownMenu open={importDropdownOpen} onOpenChange={setImportDropdownOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="default" className="rounded-l-none border-l px-2">
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={reset}>
-                      <DiamondPlus className="mr-2 size-4" />
-                      {t('buttons.newAutomation')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setImportYamlOpen(true)}>
-                      <FileCode className="mr-2 h-4 w-4" />
-                      {t('buttons.importYaml')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <Button
-                onClick={() => setClearConfirmOpen(true)}
-                variant="ghost"
-                size="icon"
-                title={t('titles.clearAutomation')}
-              >
-                <BrushCleaning className="h-5 w-5" />
-              </Button>
-
-              <Button
-                onClick={() => setSaveDialogOpen(true)}
-                variant={hasUnsavedChanges ? 'default' : 'ghost'}
-                size="icon"
-                title={automationId ? t('titles.updateAutomation') : t('titles.saveAutomation')}
-                disabled={isSaving}
-                className={cn(
-                  hasUnsavedChanges && hasRealChanges() && !isSaving && 'save-button-unsaved'
-                )}
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-5 w-5" />
-                )}
-              </Button>
-            </div>
-          </header>
-
-          {/* Main content */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left sidebar - Node palette */}
-            <aside className="flex h-full min-h-0 w-72 flex-col border-border border-r bg-card">
-              {!actualIsRemote && (
-                <div className="border-border border-b p-4 pb-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setExitConfirmOpen(true)}
-                    className="h-auto w-full justify-start gap-3 border-transparent bg-muted py-3 text-muted-foreground hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="font-medium text-sm">{t('titles.exit')}</span>
-                  </Button>
-                </div>
-              )}
-              <div className="min-h-0 flex-1 overflow-auto">
-                <NodePalette />
-                <div className="border-t p-4">
-                  <h4 className="mb-2 font-medium text-muted-foreground text-xs">
-                    {t('labels.quickHelp')}
-                  </h4>
-                  <ul className="space-y-1 text-muted-foreground text-xs">
-                    <li>{t('help.clickNodesToAdd')}</li>
-                    <li>{t('help.dragToConnect')}</li>
-                    <li>{t('help.deleteToRemove')}</li>
-                    <li>{t('help.backspaceDeleteKey')}</li>
-                  </ul>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2 border-t p-4">
-                <div className="flex items-center gap-4">
-                  {actualIsRemote && config.url && (
-                    <span className="text-green-600 text-xs">
-                      {t('status.connectedTo', { hostname: new URL(config.url).hostname })}
-                    </span>
-                  )}
-                  {actualConnectionError && (
-                    <span className="text-red-600 text-xs">{actualConnectionError}</span>
-                  )}
-                </div>
-                <div className="text-muted-foreground text-xs">
-                  <span>
-                    {t('titles.appName')} {`v${version}`}
-                  </span>
-                </div>
-              </div>
-            </aside>
-
-            {/* Canvas */}
-            <main className="flex min-h-0 flex-1 flex-col">
-              <FlowCanvas />
-            </main>
-
-            {/* Right sidebar - Properties/YAML/Simulator */}
-            <ResizablePanel
-              defaultWidth={320}
-              minWidth={280}
-              maxWidth={600}
-              side="right"
-              className="border-border border-l bg-card"
-            >
-              <Tabs
-                value={rightTab}
-                onValueChange={(value) => setRightTab(value as RightPanelTab)}
-                className="flex min-h-0 flex-1 flex-col"
-              >
-                <TabsList className="grid w-full grid-cols-3 rounded-none border-b">
-                  <TabsTrigger value="properties">{t('labels.properties')}</TabsTrigger>
-                  <TabsTrigger value="yaml">{t('labels.yaml')}</TabsTrigger>
-                  <TabsTrigger value="simulator">{t('labels.debug')}</TabsTrigger>
-                </TabsList>
-
-                <div className="flex flex-1 flex-col overflow-hidden">
-                  <TabsContent value="properties" className="mt-0 flex-1 overflow-hidden">
-                    <PropertyPanel />
-                  </TabsContent>
-                  <TabsContent value="yaml" className="mt-0 flex-1 overflow-hidden">
-                    <Suspense fallback={<PanelLoading />}>
-                      <YamlPreview />
-                    </Suspense>
-                  </TabsContent>
-                  <TabsContent value="simulator" className="mt-0 flex-1 overflow-hidden">
-                    <div className="flex h-full flex-col">
-                      {/* Shared Speed Control */}
-                      <div className="border-b p-4">
-                        <div className="mb-2 flex items-center justify-between">
-                          <h4 className="font-medium text-muted-foreground text-xs">
-                            {t('labels.debugControls')}
-                          </h4>
-                          <div className="flex gap-1">
-                            <Button
-                              onClick={handleImport}
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              title={t('buttons.importJson')}
-                            >
-                              <FileUp className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              onClick={handleExport}
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              title={t('titles.exportJson')}
-                            >
-                              <FileDown className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                        <SpeedControl speed={simulationSpeed} onSpeedChange={setSimulationSpeed} />
-                      </div>
-
-                      <Suspense fallback={<PanelLoading />}>
-                        {/* Simulation Section */}
-                        <div className="flex-1 border-b">
-                          <TraceSimulator />
-                        </div>
-
-                        {/* Trace Section */}
-                        <div className="flex-1">
-                          <AutomationTraceViewer />
-                        </div>
-                      </Suspense>
-                    </div>
-                  </TabsContent>
-                </div>
-              </Tabs>
-            </ResizablePanel>
-          </div>
+          {view === 'home' ? <HomeView /> : <EditorView />}
         </div>
-
-        {/* Settings modal - Only show when not in panel mode */}
-        {actualIsRemote && (settingsOpen || forceSettingsOpen) && (
-          <Suspense fallback={null}>
-            <HassSettings
-              isOpen={settingsOpen || forceSettingsOpen}
-              onClose={() => setSettingsOpen(false)}
-              config={config}
-              onSave={setConfig}
-            />
-          </Suspense>
-        )}
-
-        {/* Import YAML dialog */}
-        {importYamlOpen && (
-          <Suspense fallback={null}>
-            <ImportYamlDialog isOpen={importYamlOpen} onClose={() => setImportYamlOpen(false)} />
-          </Suspense>
-        )}
-
-        {automationImportOpen && (
-          <Suspense fallback={null}>
-            <AutomationImportDialog
-              isOpen={automationImportOpen}
-              onClose={() => {
-                setAutomationImportOpen(false);
-              }}
-            />
-          </Suspense>
-        )}
-
-        {/* Save Automation dialog */}
-        {saveDialogOpen && (
-          <Suspense fallback={null}>
-            <AutomationSaveDialog
-              isOpen={saveDialogOpen}
-              onClose={() => setSaveDialogOpen(false)}
-              onSaved={() => {
-                /* dialog closes via onClose */
-              }}
-            />
-          </Suspense>
-        )}
-
-        {/* Clear confirm dialog */}
-        <Dialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{t('dialogs:import.discardTitle')}</DialogTitle>
-              <DialogDescription>{t('dialogs:import.discardDescription')}</DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setClearConfirmOpen(false)}>
-                {t('buttons.cancel')}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  reset();
-                  setClearConfirmOpen(false);
-                }}
-              >
-                {t('dialogs:import.confirmDiscard')}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Exit confirm dialog */}
-        <Dialog open={exitConfirmOpen} onOpenChange={setExitConfirmOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{t('dialogs:exit.confirmTitle')}</DialogTitle>
-              <DialogDescription>{t('dialogs:exit.confirmDescription')}</DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setExitConfirmOpen(false)}>
-                {t('buttons.cancel')}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setExitConfirmOpen(false);
-                  handleBackToHA();
-                }}
-              >
-                {t('dialogs:exit.confirmButton')}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
+        <AppDialogs />
         <Toaster />
       </ReactFlowProvider>
     </ErrorBoundary>

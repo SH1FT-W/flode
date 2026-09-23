@@ -57,6 +57,8 @@ export interface AutomationCatalogItem {
   mode?: string;
   area_id?: string;
   tags: string[];
+  /** Entity exists but HA has no config for it (deleted/orphaned automation) — can't be opened. */
+  unavailable?: true;
 }
 
 export interface TraceStep {
@@ -109,6 +111,8 @@ export interface TraceListItem {
   trigger: string;
   domain: string;
   item_id: string;
+  /** Error message when the run failed (HA trace summary). */
+  error?: string;
 }
 
 /**

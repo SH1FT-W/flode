@@ -1,8 +1,7 @@
-import type { OnBeforeDelete, OnConnectEnd } from '@xyflow/react';
+import type { NodeMouseHandler, OnBeforeDelete, OnConnectEnd } from '@xyflow/react';
 import {
   Background,
   BackgroundVariant,
-  Controls,
   type EdgeTypes,
   MarkerType,
   MiniMap,
@@ -12,8 +11,21 @@ import {
   ReactFlow,
   useReactFlow,
 } from '@xyflow/react';
-import { type DragEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Command, Zap } from 'lucide-react';
+import {
+  type DragEvent,
+  type MouseEvent as ReactMouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
+import { CanvasContextMenu, type ContextMenuState } from '@/components/canvas/CanvasContextMenu';
+import { CanvasDock } from '@/components/canvas/CanvasDock';
+import { LastRunChip } from '@/components/canvas/LastRunChip';
+import { QuickAddProvider, type QuickAddRequest } from '@/components/canvas/QuickAddContext';
 import { QuickAddMenu, type QuickAddPosition } from '@/components/canvas/QuickAddMenu';
 import {
   ChooseChainEdge,
@@ -30,14 +42,30 @@ import {
   TriggerNode,
   WaitNode,
 } from '@/components/nodes';
-import type { NodeTypeConfig } from '@/components/panels/NodePalette';
-import { NodeToolbar } from '@/components/toolbar/NodeToolbar';
+import { Button } from '@/components/ui/button';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { type CompoundBlockKey, createCompoundBlock } from '@/lib/block-factories';
-import { buildQuickAddConnections, type QuickAddDirection } from '@/lib/quick-add';
-import { generateNodeId } from '@/lib/utils';
+import { type InsertItem, NODE_SIZE_ESTIMATE, useInsertNode } from '@/hooks/useInsertNode';
+import type { CompoundBlockKey } from '@/lib/block-factories';
+import {
+  nodeTypes as catalogNodeTypes,
+  DND_COMPOUND_MIME,
+  DND_NODE_MIME,
+} from '@/lib/node-catalog';
+import { getNodeColorToken, NODE_MINIMAP_CLASSES } from '@/lib/node-colors';
+import type { QuickAddDirection } from '@/lib/quick-add';
+import { formatShortcut } from '@/lib/shortcuts';
+import { fitViewOptions, isNarrowViewport } from '@/lib/viewport';
 import { useFlowStore } from '@/store/flow-store';
+import { useUiStore } from '@/store/ui-store';
 import { isMacOS } from '@/utils/useAgentPlatform';
+
+/** Edge colors follow the theme tokens (see index.css / lib/ha-theme.ts). */
+const EDGE_COLOR = 'hsl(var(--muted-foreground) / 0.45)';
+const EDGE_COLOR_SELECTED = 'hsl(var(--primary))';
+const EDGE_COLOR_SIMULATION = 'hsl(var(--success))';
+const EDGE_COLOR_TRACE = 'hsl(var(--warning))';
+
+const TRIGGER_CONFIG = catalogNodeTypes[0];
 
 interface QuickAddState {
   screenPosition: QuickAddPosition;
@@ -75,8 +103,6 @@ export function FlowCanvas() {
     onEdgesChange,
     onConnect,
     selectNode,
-    addNode,
-    addCompound,
     selectedNodeId,
     isSimulating,
     executionPath,
@@ -86,13 +112,32 @@ export function FlowCanvas() {
   } = useFlowStore();
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition, setViewport } = useReactFlow();
+  const { screenToFlowPosition, getNode, getZoom, setCenter } = useReactFlow();
+  const { insertAt, insertNext } = useInsertNode();
+  const openDialog = useUiStore((s) => s.openDialog);
+  const minimapVisible = useUiStore((s) => s.minimapVisible);
   const [quickAdd, setQuickAdd] = useState<QuickAddState | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const initialFitViewOptions = useMemo(fitViewOptions, []);
 
-  // Set initial zoom level
+  // Phones: the inspector opens as a bottom sheet over the lower ~55 % of
+  // the canvas — move the selected node into the visible top part instead
+  // of leaving it hidden underneath.
   useEffect(() => {
-    setViewport({ x: 0, y: 0, zoom: 0.75 });
-  }, [setViewport]);
+    if (!selectedNodeId || !isNarrowViewport()) return;
+    const node = getNode(selectedNodeId);
+    const canvasHeight = reactFlowWrapper.current?.clientHeight ?? 0;
+    if (!node || canvasHeight === 0) return;
+    const zoom = Math.max(getZoom(), 0.8);
+    const width = node.measured?.width ?? NODE_SIZE_ESTIMATE.width;
+    const height = node.measured?.height ?? NODE_SIZE_ESTIMATE.height;
+    // Node should sit at ~22 % from the top: shift the viewport centre down accordingly.
+    const offsetY = (canvasHeight * (0.5 - 0.22)) / zoom;
+    void setCenter(node.position.x + width / 2, node.position.y + height / 2 + offsetY, {
+      zoom,
+      duration: 300,
+    });
+  }, [selectedNodeId, getNode, getZoom, setCenter]);
 
   // Dropping a dragged connection on empty canvas offers a quick-add menu
   // instead of just discarding it — see QuickAddMenu.tsx.
@@ -125,51 +170,57 @@ export function FlowCanvas() {
 
   const closeQuickAdd = useCallback(() => setQuickAdd(null), []);
 
-  const handleQuickAddSimple = useCallback(
-    (config: NodeTypeConfig) => {
-      if (!quickAdd) return;
-      const nodeWidth = 180;
-      const nodeHeight = 80;
-      const newNode = {
-        id: generateNodeId(config.type),
-        type: config.type,
-        position: {
-          x: quickAdd.flowPosition.x - nodeWidth / 2,
-          y: quickAdd.flowPosition.y - nodeHeight / 2,
-        },
-        data: { ...config.defaultData },
-      };
-      addNode(newNode);
-      for (const connection of buildQuickAddConnections(
-        quickAdd.direction,
-        quickAdd.fromNodeId,
-        quickAdd.fromHandleId,
-        [newNode.id]
-      )) {
-        onConnect(connection);
-      }
-      setQuickAdd(null);
+  // A node's "+" button: place the new node to the right of the clicked button.
+  const openQuickAddFromNode = useCallback(
+    (request: QuickAddRequest) => {
+      setQuickAdd({
+        screenPosition: { screenX: request.screenX, screenY: request.screenY },
+        flowPosition: screenToFlowPosition({
+          x: request.screenX + 40 + NODE_SIZE_ESTIMATE.width / 2,
+          y: request.screenY,
+        }),
+        fromNodeId: request.fromNodeId,
+        fromHandleId: request.fromHandleId,
+        direction: 'forward',
+      });
     },
-    [quickAdd, addNode, onConnect]
+    [screenToFlowPosition]
   );
 
-  const handleQuickAddCompound = useCallback(
-    (key: CompoundBlockKey) => {
+  const handleQuickAddSelect = useCallback(
+    (item: InsertItem) => {
       if (!quickAdd) return;
-      const block = createCompoundBlock(key, quickAdd.flowPosition.x, quickAdd.flowPosition.y);
-      addCompound(block.nodes, block.edges);
-      for (const connection of buildQuickAddConnections(
-        quickAdd.direction,
-        quickAdd.fromNodeId,
-        quickAdd.fromHandleId,
-        block.entryNodeIds
-      )) {
-        onConnect(connection);
-      }
+      insertAt(item, quickAdd.flowPosition, {
+        fromNodeId: quickAdd.fromNodeId,
+        fromHandleId: quickAdd.fromHandleId,
+        direction: quickAdd.direction,
+      });
       setQuickAdd(null);
     },
-    [quickAdd, addCompound, onConnect]
+    [quickAdd, insertAt]
   );
+
+  // Right-click on a node selects it (unless it's part of the current
+  // selection) and opens the node menu; on empty canvas, the pane menu.
+  const onNodeContextMenu = useCallback<NodeMouseHandler>(
+    (event, node) => {
+      event.preventDefault();
+      if (!node.selected) {
+        onNodesChange(
+          useFlowStore
+            .getState()
+            .nodes.map((n) => ({ type: 'select' as const, id: n.id, selected: n.id === node.id }))
+        );
+      }
+      setContextMenu({ x: event.clientX, y: event.clientY, target: 'node' });
+    },
+    [onNodesChange]
+  );
+
+  const onPaneContextMenu = useCallback((event: ReactMouseEvent | MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY, target: 'pane' });
+  }, []);
 
   const onSelectionChange = useCallback(
     ({ nodes: selectedNodes }: OnSelectionChangeParams) => {
@@ -199,54 +250,25 @@ export function FlowCanvas() {
   const onDrop = useCallback(
     (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault();
-
-      const dropPosition = screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
-
-      // Handle compound blocks (choose, if_else, repeat_while, etc.)
-      const compoundData = event.dataTransfer.getData('application/reactflow-compound');
-      if (compoundData) {
-        try {
-          const { key } = JSON.parse(compoundData) as { key: CompoundBlockKey };
-          const block = createCompoundBlock(key, dropPosition.x, dropPosition.y);
-          addCompound(block.nodes, block.edges);
-        } catch (err) {
-          console.error('Failed to parse dropped compound block data:', err);
-        }
-        return;
-      }
-
-      // Handle simple nodes
-      const data = event.dataTransfer.getData('application/reactflow');
-      if (!data) return;
+      const center = screenToFlowPosition({ x: event.clientX, y: event.clientY });
 
       try {
-        const { type, defaultData } = JSON.parse(data);
-
-        // Center the node at the cursor position by offsetting by half node dimensions
-        const nodeWidth = 180; // Approximate node width
-        const nodeHeight = 80; // Approximate node height
-
-        const position = {
-          x: dropPosition.x - nodeWidth / 2,
-          y: dropPosition.y - nodeHeight / 2,
-        };
-
-        const newNode = {
-          id: generateNodeId(type),
-          type,
-          position,
-          data: { ...defaultData },
-        };
-
-        addNode(newNode);
+        const compoundData = event.dataTransfer.getData(DND_COMPOUND_MIME);
+        if (compoundData) {
+          const { key } = JSON.parse(compoundData) as { key: CompoundBlockKey };
+          insertAt({ kind: 'compound', key }, center);
+          return;
+        }
+        const nodeData = event.dataTransfer.getData(DND_NODE_MIME);
+        if (!nodeData) return;
+        const { type } = JSON.parse(nodeData) as { type: string };
+        const config = catalogNodeTypes.find((c) => c.type === type);
+        if (config) insertAt({ kind: 'simple', config }, center);
       } catch (err) {
-        console.error('Failed to parse dropped node data:', err);
+        console.error('Failed to parse dropped block data:', err);
       }
     },
-    [screenToFlowPosition, addNode, addCompound]
+    [screenToFlowPosition, insertAt]
   );
 
   // Style edges based on simulation state, trace state, and selected node
@@ -310,8 +332,8 @@ export function FlowCanvas() {
       if (edge.type === 'hint') {
         return {
           ...edge,
-          style: { strokeWidth: 2, stroke: isDarkMode ? '#94a3b8' : '#64748b' },
-          markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#94a3b8' : '#64748b' },
+          style: { strokeWidth: 2, stroke: EDGE_COLOR },
+          markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_COLOR },
         };
       }
 
@@ -321,21 +343,21 @@ export function FlowCanvas() {
       }
 
       // Determine edge styling based on state (priority: simulation > trace > selection)
-      let edgeStyle = { strokeWidth: 2, stroke: isDarkMode ? '#94a3b8' : '#64748b' };
-      let markerEnd = { type: MarkerType.ArrowClosed, color: isDarkMode ? '#94a3b8' : '#64748b' };
+      let edgeStyle = { strokeWidth: 2, stroke: EDGE_COLOR };
+      let markerEnd = { type: MarkerType.ArrowClosed, color: EDGE_COLOR };
 
       if (isActiveInSimulation) {
         // Simulation takes precedence - green for active path
-        edgeStyle = { stroke: '#22c55e', strokeWidth: 3 };
-        markerEnd = { type: MarkerType.ArrowClosed, color: '#22c55e' };
+        edgeStyle = { stroke: EDGE_COLOR_SIMULATION, strokeWidth: 3 };
+        markerEnd = { type: MarkerType.ArrowClosed, color: EDGE_COLOR_SIMULATION };
       } else if (isActiveInTrace) {
         // Trace visualization - orange for trace path
-        edgeStyle = { stroke: '#f59e0b', strokeWidth: 3 };
-        markerEnd = { type: MarkerType.ArrowClosed, color: '#f59e0b' };
+        edgeStyle = { stroke: EDGE_COLOR_TRACE, strokeWidth: 3 };
+        markerEnd = { type: MarkerType.ArrowClosed, color: EDGE_COLOR_TRACE };
       } else if (isConnectedToSelected) {
         // Blue highlighting for connected edges
-        edgeStyle = { stroke: '#3b82f6', strokeWidth: 3 };
-        markerEnd = { type: MarkerType.ArrowClosed, color: '#3b82f6' };
+        edgeStyle = { stroke: EDGE_COLOR_SELECTED, strokeWidth: 2.5 };
+        markerEnd = { type: MarkerType.ArrowClosed, color: EDGE_COLOR_SELECTED };
       }
 
       return {
@@ -346,117 +368,129 @@ export function FlowCanvas() {
         markerEnd,
       };
     });
-  }, [
-    edges,
-    isSimulating,
-    executionPath,
-    isShowingTrace,
-    traceExecutionPath,
-    selectedNodeId,
-    isDarkMode,
-  ]);
+  }, [edges, isSimulating, executionPath, isShowingTrace, traceExecutionPath, selectedNodeId]);
+
+  const isEmpty = nodes.length === 0;
 
   return (
-    <div className="h-full w-full" ref={reactFlowWrapper}>
-      <ReactFlow
-        colorMode={isDarkMode ? 'dark' : 'light'}
-        nodes={nodes}
-        edges={styledEdges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onConnectEnd={onConnectEnd}
-        onBeforeDelete={onBeforeDelete}
-        onSelectionChange={onSelectionChange}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-        panOnScroll={isMacOS()}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        defaultEdgeOptions={{
-          type: 'deletable',
-          style: { strokeWidth: 2, stroke: isDarkMode ? '#94a3b8' : '#64748b' },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: isDarkMode ? '#94a3b8' : '#64748b',
-          },
-        }}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
-        maxZoom={2}
-        minZoom={0.3}
-        fitView
-        fitViewOptions={{ maxZoom: 0.75 }}
-        snapToGrid
-        snapGrid={[15, 15]}
-        deleteKeyCode={null}
-        className={isDarkMode ? 'dark bg-background' : 'bg-muted/30'}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1}
-          color={isDarkMode ? '#475569' : '#cbd5e1'}
-        />
-        <Controls />
-        <MiniMap
-          nodeStrokeWidth={3}
-          zoomable
-          pannable
-          nodeClassName={(node) => {
-            switch (node.type) {
-              case 'trigger':
-                return 'fill-amber-50 stroke-amber-400';
-              case 'condition':
-                return 'fill-blue-50 stroke-blue-400';
-              case 'action':
-                return 'fill-green-50 stroke-green-400';
-              case 'delay':
-                return 'fill-purple-50 stroke-purple-400';
-              case 'wait':
-                return 'fill-orange-50 stroke-orange-400';
-              case 'set_variables':
-                return 'fill-cyan-50 stroke-cyan-400';
-              default:
-                return 'fill-slate-100 stroke-slate-400';
-            }
+    <QuickAddProvider value={openQuickAddFromNode}>
+      <div className="relative h-full w-full" ref={reactFlowWrapper}>
+        <ReactFlow
+          colorMode={isDarkMode ? 'dark' : 'light'}
+          nodes={nodes}
+          edges={styledEdges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onConnectEnd={onConnectEnd}
+          onBeforeDelete={onBeforeDelete}
+          onSelectionChange={onSelectionChange}
+          onNodeContextMenu={onNodeContextMenu}
+          onPaneContextMenu={onPaneContextMenu}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          panOnScroll={isMacOS()}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          defaultEdgeOptions={{
+            type: 'deletable',
+            style: { strokeWidth: 2, stroke: EDGE_COLOR },
+            markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_COLOR },
           }}
-        />
+          defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
+          maxZoom={2}
+          minZoom={0.25}
+          fitView
+          fitViewOptions={initialFitViewOptions}
+          snapToGrid
+          snapGrid={[15, 15]}
+          deleteKeyCode={null}
+          className="bg-canvas!"
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={22}
+            size={1.4}
+            color="hsl(var(--muted-foreground) / 0.28)"
+          />
+          {minimapVisible && (
+            <MiniMap
+              className="hidden opacity-80 transition-opacity hover:opacity-100 md:block"
+              style={{ width: 144, height: 92 }}
+              nodeStrokeWidth={0}
+              nodeBorderRadius={6}
+              zoomable
+              pannable
+              nodeClassName={(node) => NODE_MINIMAP_CLASSES[getNodeColorToken(node.type)]}
+            />
+          )}
 
-        <NodeToolbar />
+          <CanvasDock />
 
-        {isSimulating && (
-          <Panel
-            position="top-left"
-            className="rounded-lg border border-green-300 bg-green-100 px-4 py-2 dark:border-green-700 dark:bg-green-950"
-          >
-            <div className="flex items-center gap-2 font-medium text-green-800 text-sm dark:text-green-200">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+          {isSimulating && (
+            <Panel
+              position="top-center"
+              className="flode-glass flex items-center gap-2 rounded-full border border-success/40 px-4 py-1.5 font-medium text-sm text-success shadow-raised"
+            >
+              <span className="size-2 animate-pulse rounded-full bg-success" />
               {t('debug:simulation.simulatingExecution')}
-            </div>
-          </Panel>
+            </Panel>
+          )}
+
+          {!isSimulating && <LastRunChip />}
+        </ReactFlow>
+
+        {isEmpty && (
+          <EmptyCanvas
+            onAddTrigger={() => insertNext({ kind: 'simple', config: TRIGGER_CONFIG })}
+            onBrowse={() => openDialog('palette')}
+          />
         )}
 
-        {isShowingTrace && !isSimulating && (
-          <Panel
-            position="top-left"
-            className="rounded-lg border border-orange-300 bg-orange-100 px-4 py-2 dark:border-orange-700 dark:bg-orange-950"
-          >
-            <div className="flex items-center gap-2 font-medium text-orange-800 text-sm dark:text-orange-200">
-              <div className="h-2 w-2 rounded-full bg-orange-500" />
-              {t('debug:simulation.showingTraceExecution', { steps: traceExecutionPath.length })}
-            </div>
-          </Panel>
-        )}
-      </ReactFlow>
+        <QuickAddMenu
+          position={quickAdd?.screenPosition ?? null}
+          direction={quickAdd?.direction ?? 'forward'}
+          onSelect={handleQuickAddSelect}
+          onClose={closeQuickAdd}
+        />
+        <CanvasContextMenu state={contextMenu} onClose={() => setContextMenu(null)} />
+      </div>
+    </QuickAddProvider>
+  );
+}
 
-      <QuickAddMenu
-        position={quickAdd?.screenPosition ?? null}
-        direction={quickAdd?.direction ?? 'forward'}
-        onSelectSimple={handleQuickAddSimple}
-        onSelectCompound={handleQuickAddCompound}
-        onClose={closeQuickAdd}
-      />
+interface EmptyCanvasProps {
+  onAddTrigger: () => void;
+  onBrowse: () => void;
+}
+
+/** First-run hint on an empty canvas. */
+function EmptyCanvas({ onAddTrigger, onBrowse }: EmptyCanvasProps) {
+  const { t } = useTranslation(['ui']);
+  return (
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
+      <div className="pointer-events-auto flex max-w-sm flex-col items-center gap-3 rounded-2xl border border-border bg-card px-8 py-7 text-center shadow-raised">
+        <span className="flex size-11 items-center justify-center rounded-xl bg-trigger/15 text-trigger">
+          <Zap className="size-5" />
+        </span>
+        <h2 className="text-balance font-semibold text-base text-foreground">
+          {t('ui:canvas.emptyTitle')}
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          {t('ui:canvas.emptyText', { shortcut: formatShortcut('ctrl+k') })}
+        </p>
+        <div className="mt-1 flex flex-wrap justify-center gap-2">
+          <Button onClick={onAddTrigger}>
+            <Zap />
+            {t('ui:canvas.addTrigger')}
+          </Button>
+          <Button variant="outline" onClick={onBrowse}>
+            <Command />
+            {t('ui:canvas.browseBlocks')}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

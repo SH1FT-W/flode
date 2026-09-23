@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useHass } from '@/contexts/HassContext';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
 import { showErrorToast, showSuccessToast, showWarningToast } from '@/lib/haToast';
+import { fitViewOptions } from '@/lib/viewport';
 import { useFlowStore } from '@/store/flow-store';
 
 export interface LoadableAutomation {
@@ -56,7 +57,7 @@ export function useLoadAutomation() {
 
         fromFlowGraph(result.graph);
         setTimeout(() => {
-          fitView({ padding: 0.2, duration: 300, maxZoom: 0.75 });
+          void fitView(fitViewOptions());
         }, 150);
 
         setFlowName(displayName);

@@ -76,6 +76,20 @@ const HA_FORM_TOKENS: Record<string, { light: string; dark: string }> = {
   'ha-color-form-background': { light: '#f3f3f3', dark: '#363636' },
   'ha-color-form-background-hover': { light: '#e6e6e6', dark: '#4a4a4a' },
   'ha-color-form-background-disabled': { light: '#cccccc', dark: '#363636' },
+  // Surfaces of HA's own popovers — e.g. the entity picker's search list
+  // (`ha-generic-picker`, HA 2026.x) paints its list background from these.
+  // Left unmirrored, FLODE's dark override showed that list as white with
+  // the (already dark-mode) light text on top — nearly unreadable.
+  'ha-color-surface-default': { light: '#ffffff', dark: '#1c1c1c' },
+  'wa-color-surface-default': { light: '#ffffff', dark: '#1c1c1c' },
+  'wa-color-surface-raised': { light: '#ffffff', dark: '#1c1c1c' },
+  'mdc-theme-surface': { light: '#ffffff', dark: '#1c1c1c' },
+  'primary-background-color': { light: '#fafafa', dark: '#111111' },
+  'ha-color-fill-neutral-quiet-resting': { light: '#f3f3f3', dark: '#282828' },
+  // Filled fields of older (MDC-based) HA pickers, e.g. the labels picker's
+  // chip area — stayed #f5f5f5/#e6e6e6 (white box) under FLODE's dark override.
+  'mdc-text-field-fill-color': { light: '#f5f5f5', dark: '#363636' },
+  'ha-color-fill-neutral-normal-resting': { light: '#e6e6e6', dark: '#2a2a2a' },
 };
 
 /**

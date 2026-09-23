@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import logger from '@/lib/logger';
+import { fitViewOptions } from '@/lib/viewport';
 import { useFlowStore } from '@/store/flow-store';
 
 interface ImportYamlDialogProps {
@@ -60,7 +61,7 @@ export function ImportYamlDialog({ isOpen, onClose, onImportSuccess }: ImportYam
 
         // Center the viewport on the imported nodes
         setTimeout(() => {
-          fitView({ padding: 0.2, duration: 300, maxZoom: 0.75 });
+          void fitView(fitViewOptions());
         }, 150);
 
         // Show success message briefly before closing

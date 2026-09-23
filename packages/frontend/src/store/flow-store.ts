@@ -5,7 +5,7 @@ import type {
   FlowNode,
   NodeValidationError,
 } from '@flode/shared';
-import { validateNodeData } from '@flode/shared';
+import { validateNodeData, getRawStep } from '@flode/shared';
 import {
   addEdge,
   applyEdgeChanges,
@@ -27,6 +27,7 @@ import { logger } from '@/lib/logger';
 import { generateUUID } from '@/lib/utils';
 import type { HomeAssistant } from '@/types/hass';
 import { flodeIndexedDBStorage } from '@/utils/indexeddb-storage';
+import { createTracePathResolver } from '@/lib/trace-mapping';
 
 /**
  * Node data types for React Flow
@@ -767,33 +768,9 @@ export const useFlowStore = create<FlowState>()(
 
           if (traceData?.trace) {
             const state = get();
-            const graph = state.toFlowGraph();
-
-            // Read-only structural analysis, not the YAML transpile pipeline —
-            // gives execution order that respects the actual graph edges
-            // instead of guessing from node Y-position (broke as soon as a
-            // node was manually repositioned, or the layout wasn't top-down).
-            const { analyzeTopology } = await import('@flode/transpiler');
-            const { topologicalOrder } = analyzeTopology(graph);
-            const orderedIds = topologicalOrder ?? state.nodes.map((n) => n.id);
-
-            // Group node IDs by top-level type, preserving topological order
-            // within each group — this is what HA's flat `action/N`/`trigger/N`
-            // trace path indices are counted against.
-            const nodesById = new Map(state.nodes.map((n) => [n.id, n]));
-            const idsByType: Record<string, string[]> = {
-              trigger: [],
-              condition: [],
-              action: [],
-              wait: [],
-              delay: [],
-            };
-            for (const id of orderedIds) {
-              const nodeType = nodesById.get(id)?.type;
-              if (nodeType && idsByType[nodeType]) {
-                idsByType[nodeType].push(id);
-              }
-            }
+            // Follows the graph like the native transpiler lays out the YAML
+            // (HA counts delay/wait/action/inline-if together as `action/N`).
+            const resolveNodeId = createTracePathResolver(state.nodes, state.edges);
 
             const sortedSteps = Object.entries(traceData.trace)
               .flatMap(([path, steps]) =>
@@ -802,21 +779,7 @@ export const useFlowStore = create<FlowState>()(
               .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
             for (const step of sortedSteps) {
-              const pathParts = step.path.split('/');
-
-              // Nested paths (choose/repeat branches, e.g. `action/0/choose/1/sequence/0`)
-              // aren't mapped — reconstructing that nesting without touching the
-              // transpiler would just duplicate its topology logic. Counted, never crashes.
-              if (pathParts.length !== 2) {
-                traceUnmappedStepCount++;
-                logger.debug(`[trace] Skipping unmappable step path: ${step.path}`);
-                continue;
-              }
-
-              const [nodeType, indexStr] = pathParts;
-              const nodeIndex = Number.parseInt(indexStr, 10);
-              const nodeId = idsByType[nodeType]?.[nodeIndex];
-
+              const nodeId = resolveNodeId(step.path);
               if (!nodeId) {
                 traceUnmappedStepCount++;
                 logger.debug(`[trace] No matching node for step path: ${step.path}`);
@@ -933,7 +896,8 @@ export const useFlowStore = create<FlowState>()(
                 !nodeData.service &&
                 !nodeData.repeat &&
                 !nodeData.event &&
-                !('stop' in nodeData)
+                !('stop' in nodeData) &&
+                !getRawStep(nodeData)
               ) {
                 console.warn(
                   `FLODE: Action node ${n.id} missing service, adding default 'light.turn_on'`
