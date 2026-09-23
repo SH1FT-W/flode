@@ -15,6 +15,7 @@ FLODE can now use the AI you set up in Home Assistant. Nothing changes if you do
 - Runs on Home Assistant's own `ai_task.generate_data` with the provider and account you chose there — FLODE needs no API key and talks to no AI service itself. Your description plus names and ids of matching entities (and, for *Explain*, the run's trace) are sent to that provider.
 
 ### Changed
+- **"Auto" design follows light/dark only** — in *Auto*, FLODE now picks its own light or dark palette depending on whether Home Assistant is dark, instead of taking over the colors of a custom HA theme. FLODE looks the same under every theme.
 - **Resizable block library** — drag the library's right edge to make it wider or narrower (200–480 px); the width is remembered per browser.
 - **Keyboard shortcuts on Windows/Linux** are shown with the key names printed on your keyboard, e.g. "Strg+Umschalt+S" on a German layout instead of "Ctrl+Shift+S".
 - Error messages from Home Assistant (e.g. a provider's "credit balance too low") are shown readably instead of "[object Object]".

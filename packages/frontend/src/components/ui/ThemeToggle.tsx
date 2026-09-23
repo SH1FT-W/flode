@@ -19,9 +19,9 @@ const THEME_ICONS: Record<ThemeOverride, ComponentType<{ className?: string }>> 
 };
 
 /**
- * Header control to force FLODE's own light/dark palette independently of
- * Home Assistant's per-user profile theme — "auto" stops overriding and
- * falls back to whatever the user has set in HA (see lib/ha-theme.ts).
+ * Header control for FLODE's own light/dark palette — "auto" follows whether
+ * Home Assistant is currently dark, but still uses FLODE's palette rather
+ * than a custom HA theme's colors (see lib/ha-theme.ts).
  */
 export function ThemeToggle() {
   const { t } = useTranslation('common');

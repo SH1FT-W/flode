@@ -1,4 +1,4 @@
-import type { HassTheme, HassThemeVars, HomeAssistant } from '@/types/hass';
+import type { HomeAssistant } from '@/types/hass';
 import { toHslTriplet } from './color';
 
 /**
@@ -129,87 +129,34 @@ const HA_WEBAWESOME_FILL_TOKENS: Record<string, { light: string; dark: string }>
 };
 
 /**
- * FLODE's own light/dark override — independent from Home Assistant's
- * per-user profile theme. `auto` means "don't override, mirror whatever the
- * user has set in HA" (the pre-existing behavior); `light`/`dark` force HA's
- * base palette (see `HA_THEME_TOKENS`' fallback colors), ignoring any custom
- * theme the user has selected.
+ * FLODE's own light/dark setting. FLODE always uses its own palette (HA's
+ * base colors, see `HA_THEME_TOKENS`' fallback values) and never a custom HA
+ * theme's colors: `light`/`dark` pick the mode directly, `auto` follows
+ * whether Home Assistant is currently in dark mode.
  */
 export type ThemeOverride = 'auto' | 'light' | 'dark';
 
-function getActiveThemeVars(themes: HomeAssistant['themes']): HassThemeVars {
-  const name = themes.theme;
-  if (!name || name === 'default') return {};
-  const theme: HassTheme | undefined = themes.themes[name];
-  if (!theme) return {};
-
-  const mode = themes.darkMode ? theme.modes?.dark : theme.modes?.light;
-
-  // Base (un-nested) vars apply to both modes unless a mode-specific override exists.
-  const flatVars: HassThemeVars = {};
-  for (const [key, value] of Object.entries(theme)) {
-    if (key !== 'modes' && typeof value === 'string') {
-      flatVars[key] = value;
-    }
-  }
-  return { ...flatVars, ...mode };
-}
-
-function resolveThemeState(
-  themes: HomeAssistant['themes'],
-  override: ThemeOverride
-): { isDark: boolean; themeVars: HassThemeVars } {
-  const isAuto = override === 'auto';
-  return {
-    themeVars: isAuto ? getActiveThemeVars(themes) : {},
-    isDark: isAuto ? (themes.darkMode ?? false) : override === 'dark',
-  };
+/** Dark or light: `auto` follows Home Assistant's current dark mode. */
+function resolveIsDark(themes: HomeAssistant['themes'], override: ThemeOverride): boolean {
+  return override === 'auto' ? (themes.darkMode ?? false) : override === 'dark';
 }
 
 /**
- * Reads the browser-computed (fully resolved) value of an HA CSS variable
- * off the real page's `<html>`, where HA itself applies the active theme.
+ * Writes FLODE's light or dark palette into our local CSS custom properties
+ * on `target`. Safe to call on every `hass` update — it only touches inline
+ * style properties, so standalone/dev mode (no `hass`) simply keeps the
+ * static defaults from index.css.
  *
- * Custom themes are free to alias one variable to another via
- * `var(--other-var)` instead of a literal color (a documented HA theming
- * feature) — `hass.themes` exposes that alias as a raw, unresolved string.
- * Copying it verbatim into FLODE's own isolated shadow tree leaves a
- * dangling reference (the aliased variable was never copied along with it),
- * which resolves to nothing/black. `getComputedStyle` instead returns the
- * value the browser already resolved for the real page, so it's never a raw
- * `var(...)` reference — safe to copy as-is regardless of how deep the
- * custom theme's alias chain goes.
- */
-function resolveComputedHaVar(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  const value = getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
-  return value || undefined;
-}
-
-/**
- * Resolves HA's current theme (or fallback defaults) into our local CSS
- * custom properties and writes them onto `target` (normally
- * `document.documentElement`). Safe to call on every `hass` update — it only
- * touches inline style properties, so standalone/dev mode (no `hass`) simply
- * keeps whatever static defaults are defined in index.css.
- *
- * `override` lets FLODE force HA's base light/dark palette regardless of the
- * user's real HA theme/dark-mode setting — passing `'auto'` (the default)
- * preserves the original behavior of mirroring `hass.themes` exactly.
+ * The active HA theme's own colors are deliberately not used, not even in
+ * `auto` mode — that only decides between light and dark — so FLODE looks
+ * the same under every custom theme.
  *
  * This also always writes the underlying HA variable itself (e.g.
  * `--primary-text-color`, `--card-background-color`), not just our aliased
  * token — native HA web components FLODE embeds (entity/area/label pickers,
  * `ha-selector`, the `@home-assistant/webawesome`-based dropdown behind
- * `ha-select`, ...) read those directly. In `'auto'` mode this used to just
- * `removeProperty` and rely on normal CSS custom-property inheritance from
- * the host document to fill it back in — that inheritance turned out to be
- * unreliable for at least some of these components even though they're
- * normal (non-portaled) descendants of FLODE's shadow tree, showing up as a
- * hardcoded light fallback (e.g. `var(--card-background-color, ..., #fff)`)
- * even in dark mode. So auto mode now explicitly sets the same
- * already-resolved value used for the local alias, instead of clearing and
- * hoping inheritance resumes.
+ * `ha-select`, ...) read those directly, and plain inheritance from the host
+ * page proved unreliable for them.
  */
 export function applyHaTheme(
   target: HTMLElement,
@@ -218,22 +165,13 @@ export function applyHaTheme(
 ): void {
   if (!hass?.themes) return;
 
-  const isAuto = override === 'auto';
-  const { isDark, themeVars } = resolveThemeState(hass.themes, override);
+  const isDark = resolveIsDark(hass.themes, override);
 
   const haVarsSeen = new Set<string>();
   const haVarValues: Record<string, string> = {};
 
   for (const [localVar, token] of Object.entries(HA_THEME_TOKENS)) {
-    // Prefer the browser-computed value from the real page over the raw
-    // theme dict entry — custom themes may alias it via `var(--other-var)`,
-    // which only resolves correctly on the real page, not once copied
-    // verbatim into FLODE's own isolated shadow tree (see
-    // resolveComputedHaVar's doc comment).
-    const rawValue =
-      (isAuto ? resolveComputedHaVar(token.haVar) : undefined) ??
-      themeVars[token.haVar] ??
-      (isDark ? token.dark : token.light);
+    const rawValue = isDark ? token.dark : token.light;
     const triplet = toHslTriplet(rawValue);
     if (triplet) {
       target.style.setProperty(`--${localVar}`, triplet);
@@ -241,7 +179,7 @@ export function applyHaTheme(
 
     // Several local tokens intentionally share the same underlying HA
     // variable (e.g. `foreground` and `warning-foreground` both write
-    // `primary-text-color`) but disagree on its value outside 'auto' mode —
+    // `primary-text-color`) but disagree on its value —
     // `warning-foreground`/`trigger-foreground` pin a mode-invariant dark
     // literal so text stays legible against their own colored badge
     // background. Only the first entry per haVar actually gets exported
@@ -255,14 +193,7 @@ export function applyHaTheme(
   }
 
   for (const [varName, token] of Object.entries(HA_FORM_TOKENS)) {
-    // Same reasoning as the HA_THEME_TOKENS loop above: prefer whatever the
-    // real page actually resolved this to over our own guessed literal — the
-    // literal was reverse-engineered against one HA/theme combination and
-    // has no way to track a component the real page itself renders
-    // differently (a later HA release, a different rendering path, ...).
-    const rawValue =
-      (isAuto ? resolveComputedHaVar(varName) : undefined) ?? (isDark ? token.dark : token.light);
-    target.style.setProperty(`--${varName}`, rawValue);
+    target.style.setProperty(`--${varName}`, isDark ? token.dark : token.light);
   }
 
   for (const [varName, sourceHaVar] of Object.entries(HA_WEBAWESOME_TEXT_TOKENS)) {
