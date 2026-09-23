@@ -1,30 +1,30 @@
 <div align="center">
-  <img src="custom_components/flode/brand/icon.png" width="88" alt="FLODE Logo" />
+  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/custom_components/flode/brand/icon.png" width="88" alt="FLODE Logo" />
 
   <h1>FLODE</h1>
 
   <p><strong>A visual flow editor for Home Assistant automations.</strong></p>
 
   [![Release](https://img.shields.io/badge/version-2.1.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
-  [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](LICENSE)
+  [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](https://github.com/SH1FT-W/flode/blob/main/LICENSE)
   [![HACS](https://img.shields.io/badge/HACS-default-41BDF5?style=flat-square)](https://hacs.xyz)
 
   <br/>
 
-  **[Website](https://sh1ft-w.github.io/flode)** &nbsp;·&nbsp; [Installation](#installation) &nbsp;·&nbsp; [Changelog](CHANGELOG.md) &nbsp;·&nbsp; [Issues](https://github.com/SH1FT-W/flode/issues)
+  **[Website](https://sh1ft-w.github.io/flode)** &nbsp;·&nbsp; [Installation](#installation) &nbsp;·&nbsp; [Changelog](https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md) &nbsp;·&nbsp; [Issues](https://github.com/SH1FT-W/flode/issues)
 
   <br/>
 
   | Light | Dark |
   |:---:|:---:|
-  | ![FLODE Light Mode](docs/images/flode-light.png) | ![FLODE Dark Mode](docs/images/flode-dark.png) |
+  | ![FLODE Light Mode](https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-light.png) | ![FLODE Dark Mode](https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-dark.png) |
 </div>
 
 <br/>
 
 Draw an automation as a diagram — triggers, conditions, actions, connected on a canvas — and FLODE transpiles it into **100% native Home Assistant YAML**, stored directly in HA core. No external server, no proprietary format, no lock-in. What you build stays fully editable in HA's own automation editor, too.
 
-> FLODE is a fork of [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) by [@FezVrasta](https://github.com/FezVrasta), rebuilt with a long list of fixes and features — see the [changelog](CHANGELOG.md). It never overwrites existing data, but back up your automations before editing anyway.
+> FLODE is a fork of [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) by [@FezVrasta](https://github.com/FezVrasta), rebuilt with a long list of fixes and features — see the [changelog](https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md). It never overwrites existing data, but back up your automations before editing anyway.
 
 ## New in 2.1: AI assist
 
@@ -41,7 +41,7 @@ FLODE 2.0 is a ground-up redesign of the editor — calmer, faster to use, and m
 
 | Start screen | Command palette |
 |:---:|:---:|
-| ![FLODE start screen](docs/images/flode-home.png) | ![FLODE command palette](docs/images/flode-palette.png) |
+| ![FLODE start screen](https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-home.png) | ![FLODE command palette](https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-palette.png) |
 
 - **Start screen** — every automation at a glance, grouped by area, with search, filters, an on/off switch per card and a plain-language preview of what triggers it.
 - **Cards you can read** — nodes say what they do ("Bed light changes to On", "Between 06:00 and 22:00") and show the live state of their entity.
@@ -71,7 +71,7 @@ FLODE 2.0 is a ground-up redesign of the editor — calmer, faster to use, and m
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE)
+Apache 2.0 — see [LICENSE](https://github.com/SH1FT-W/flode/blob/main/LICENSE)
 
 <br/>
 
