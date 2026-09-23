@@ -13,6 +13,7 @@ export type { NodeActionContext } from './NodeActionContext';
 export { getPasteAction } from './PasteAction';
 export { getRedoAction } from './RedoAction';
 export { getRunAction } from './RunAction';
+export { getRunFromAction } from './RunFromAction';
 export { getSelectAllAction } from './SelectAllAction';
 export { getTidyAction } from './TidyAction';
 export { getToggleEnabledAction } from './ToggleEnabledAction';

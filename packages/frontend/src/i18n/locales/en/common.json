@@ -51,7 +51,8 @@
     "areas": "Areas",
     "zones": "Zones",
     "unassigned": "Unassigned",
-    "workspaceSources": "Merged Sources"
+    "workspaceSources": "Merged Sources",
+    "automationNameScript": "Script name"
   },
   "status": {
     "connecting": "Connecting...",
@@ -82,7 +83,9 @@
     "jsonExample": "{ \"key\": \"value\" }",
     "none": "None",
     "addValue": "Add value...",
-    "select": "Select..."
+    "select": "Select...",
+    "enterAutomationNameScript": "Enter script name",
+    "describeAutomationScript": "Describe what this script does…"
   },
   "help": {
     "clickNodesToAdd": "Click nodes to add",
@@ -109,7 +112,8 @@
     "stateMachine": "State Machine"
   },
   "defaults": {
-    "newAutomation": "New Automation"
+    "newAutomation": "New Automation",
+    "newScript": "New script"
   },
   "boolean": {
     "true": "True",
@@ -165,7 +169,8 @@
       "silent": "Silent",
       "warning": "Warning",
       "critical": "Critical"
-    }
+    },
+    "titleScript": "Script settings"
   },
   "toolbar": {
     "runAction": "Run Action",
@@ -189,7 +194,8 @@
     "selectAll": "Select All",
     "tidy": "Tidy up",
     "tidied": "Tidied up — {{shortcut}} undoes it",
-    "align": "Align"
+    "align": "Align",
+    "runFrom": "Run from here"
   },
   "shortcuts": {
     "cmd": "Cmd",

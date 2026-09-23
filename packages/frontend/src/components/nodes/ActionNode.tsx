@@ -1,10 +1,10 @@
+import { getRawStep, isPlainObject } from '@flode/shared';
 import type { NodeProps } from '@xyflow/react';
-import { getRawStep } from '@flode/shared';
 import { Braces, Columns2, Hash, OctagonX, Play, RotateCcw } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSummaryContext } from '@/hooks/useSummaryContext';
-import { isRecord, summarizeAction } from '@/lib/node-summary';
+import { summarizeAction } from '@/lib/node-summary';
 import type { ActionNodeData } from '@/store/flow-store';
 import { NodeCard } from './NodeCard';
 
@@ -50,7 +50,7 @@ export const ActionNode = memo(function ActionNode({ id, data, selected }: Actio
   }
 
   // repeat (count) — the loop body lives inside the node's own data.
-  if (isRecord(data.repeat) && data.repeat.count !== undefined) {
+  if (isPlainObject(data.repeat) && data.repeat.count !== undefined) {
     return (
       <NodeCard
         {...common}

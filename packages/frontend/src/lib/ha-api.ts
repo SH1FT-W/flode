@@ -1,3 +1,4 @@
+import { isPlainObject } from '@flode/shared';
 import type { AutomationConfig, HassEntity, HomeAssistant } from '@/types/hass';
 
 export interface CafeMetadata {
@@ -579,6 +580,55 @@ export class HomeAssistantAPI {
     }
   }
 
+  /** A script's config (`scripts.yaml` entry), `null` when HA has none for `scriptId`. */
+  async getScriptConfig(scriptId: string): Promise<Record<string, unknown> | null> {
+    try {
+      const config = await this.fetchRestAPI(`config/script/config/${scriptId}`);
+      return isPlainObject(config) ? config : null;
+    } catch (error) {
+      console.error('FLODE: Failed to get script config:', error);
+      return null;
+    }
+  }
+
+  /**
+   * A free script id for `alias`: HA script ids are the entity's object id,
+   * so lower-case letters, digits and underscores only.
+   */
+  private uniqueScriptId(alias: string): string {
+    const base =
+      alias
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/ß/g, 'ss')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'script';
+    const taken = (id: string) => this.hass?.states?.[`script.${id}`] !== undefined;
+    let id = base;
+    for (let n = 2; taken(id); n++) id = `${base}_${n}`;
+    return id;
+  }
+
+  /** Creates a script; returns its id. HA reloads scripts on save. */
+  async createScript(config: Record<string, unknown>): Promise<string> {
+    const alias = typeof config.alias === 'string' ? config.alias : 'FLODE Script';
+    const scriptId = this.uniqueScriptId(alias);
+    await this.updateScript(scriptId, config);
+    return scriptId;
+  }
+
+  /** Writes a script's config (create or replace). */
+  async updateScript(scriptId: string, config: Record<string, unknown>): Promise<void> {
+    try {
+      await this.fetchRestAPI(`config/script/config/${scriptId}`, 'POST', config);
+    } catch (error) {
+      throw new Error(
+        `Failed to save script: ${error instanceof Error ? error.message : JSON.stringify(error)}`
+      );
+    }
+  }
+
   /**
    * Delete an automation from Home Assistant
    */
@@ -764,16 +814,28 @@ export class HomeAssistantAPI {
    * resulting entity's state may not have propagated to `hass.states` yet.
    */
   async waitForAutomationEntity(automationId: string, timeoutMs = 5000): Promise<string | null> {
-    const immediate = this.findAutomationEntityId(automationId);
-    if (immediate) return immediate;
+    return this.waitForConfigEntity('automation', automationId, timeoutMs);
+  }
 
+  /** Entity of an automation (by config id) or a script (by object id), if it exists yet. */
+  findConfigEntityId(kind: 'automation' | 'script', configId: string): string | null {
+    if (kind === 'automation') return this.findAutomationEntityId(configId);
+    const entityId = `script.${configId}`;
+    return this.getState(entityId) ? entityId : null;
+  }
+
+  /** Waits for a just-saved automation/script entity to appear (HA reloads asynchronously). */
+  async waitForConfigEntity(
+    kind: 'automation' | 'script',
+    configId: string,
+    timeoutMs = 5000
+  ): Promise<string | null> {
     const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
+    for (;;) {
+      const found = this.findConfigEntityId(kind, configId);
+      if (found || Date.now() - start >= timeoutMs) return found;
       await new Promise((resolve) => setTimeout(resolve, 300));
-      const found = this.findAutomationEntityId(automationId);
-      if (found) return found;
     }
-    return null;
   }
 
   /**

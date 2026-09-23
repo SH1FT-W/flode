@@ -15,10 +15,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useHass } from '@/contexts/HassContext';
 import { HaAreaPicker, HaCategoryPicker, HaIconPicker, HaLabelsPicker } from '@/ha';
+import { useFlowIssues } from '@/hooks/useFlowIssues';
+import { fireAutomationSaved } from '@/lib/automation-events';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
 import { useFlowStore } from '@/store/flow-store';
-import { fireAutomationSaved } from '@/lib/automation-events';
-import { useFlowIssues } from '@/hooks/useFlowIssues';
 import { IssuesList } from './IssuesList';
 
 interface RegistryMetadata {
@@ -32,6 +32,8 @@ const EMPTY_METADATA: RegistryMetadata = { icon: '', category: '', labels: [], a
 
 interface CategoryFallbackProps {
   label: string;
+  /** Category registry scope — `automation` or `script`. */
+  scope: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
@@ -47,7 +49,7 @@ interface CategoryFallbackProps {
  * text field (label inside a shaded box) so it doesn't stick out next to the
  * real native pickers around it.
  */
-function CategoryFallback({ label, value, onChange, disabled }: CategoryFallbackProps) {
+function CategoryFallback({ label, scope, value, onChange, disabled }: CategoryFallbackProps) {
   const { t } = useTranslation(['dialogs']);
   const { hass } = useHass();
   const [categories, setCategories] = useState<{ category_id: string; name: string }[]>([]);
@@ -55,8 +57,8 @@ function CategoryFallback({ label, value, onChange, disabled }: CategoryFallback
 
   useEffect(() => {
     if (!hass) return;
-    getHomeAssistantAPI(hass).getCategories('automation').then(setCategories);
-  }, [hass]);
+    getHomeAssistantAPI(hass).getCategories(scope).then(setCategories);
+  }, [hass, scope]);
 
   useEffect(() => {
     setText(categories.find((c) => c.category_id === value)?.name ?? '');
@@ -74,7 +76,7 @@ function CategoryFallback({ label, value, onChange, disabled }: CategoryFallback
       return;
     }
     if (!hass) return;
-    const created = await getHomeAssistantAPI(hass).createCategory('automation', trimmed);
+    const created = await getHomeAssistantAPI(hass).createCategory(scope, trimmed);
     setCategories((prev) => [...prev, created]);
     onChange(created.category_id);
   };
@@ -119,6 +121,9 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
     saveAutomation,
     updateAutomation,
   } = useFlowStore();
+  const kind = useFlowStore((s) => s.flowMetadata.kind ?? 'automation');
+  /** Script-specific wording lives under `…Script` keys. */
+  const kindSuffix = kind === 'script' ? 'Script' : '';
 
   const { hass } = useHass();
 
@@ -150,7 +155,7 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
 
       if (isUpdate && automationId && hass) {
         const api = getHomeAssistantAPI(hass);
-        const entityId = api.findAutomationEntityId(automationId);
+        const entityId = api.findConfigEntityId(kind, automationId);
         if (entityId) {
           api.getEntityRegistryEntry(entityId).then((entry) => {
             if (!entry) return;
@@ -158,7 +163,7 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
               icon: touchedFields.current.has('icon') ? prev.icon : entry.icon || '',
               category: touchedFields.current.has('category')
                 ? prev.category
-                : entry.categories?.automation || '',
+                : entry.categories?.[kind] || '',
               labels: touchedFields.current.has('labels') ? prev.labels : entry.labels || [],
               area: touchedFields.current.has('area') ? prev.area : entry.area_id || '',
             }));
@@ -168,11 +173,12 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
         setMetadata(EMPTY_METADATA);
       }
     }
-  }, [isOpen, automationId, hass, flowDescription, isUpdate]);
+  }, [isOpen, automationId, hass, flowDescription, isUpdate, kind]);
 
   // Check for name conflicts when name changes
   const checkNameConflict = async (name: string) => {
-    if (!name.trim()) {
+    // Scripts get a unique id from their name anyway; same-named ones are fine.
+    if (!name.trim() || kind === 'script') {
       setSuggestedName(null);
       return;
     }
@@ -203,15 +209,15 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
     const api = getHomeAssistantAPI(hass);
     try {
       const entityId = isNewAutomation
-        ? await api.waitForAutomationEntity(resultId)
-        : api.findAutomationEntityId(resultId);
+        ? await api.waitForConfigEntity(kind, resultId)
+        : api.findConfigEntityId(kind, resultId);
       if (!entityId) return undefined;
 
       await api.updateEntityRegistryEntry(entityId, {
         icon: metadata.icon || null,
         area_id: metadata.area || null,
         labels: metadata.labels,
-        categories: { automation: metadata.category || null },
+        categories: { [kind]: metadata.category || null },
       });
       return entityId;
     } catch (err) {
@@ -315,16 +321,20 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Save className="h-5 w-5" />
-            {isUpdate ? t('dialogs:save.titleUpdate') : t('dialogs:save.title')}
+            {isUpdate
+              ? t(`dialogs:save.titleUpdate${kindSuffix}`)
+              : t(`dialogs:save.title${kindSuffix}`)}
           </DialogTitle>
           <DialogDescription>
-            {isUpdate ? t('dialogs:save.descriptionUpdate') : t('dialogs:save.description')}
+            {isUpdate
+              ? t(`dialogs:save.descriptionUpdate${kindSuffix}`)
+              : t(`dialogs:save.description${kindSuffix}`)}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="automation-name">{t('dialogs:save.nameLabel')}</Label>
+            <Label htmlFor="automation-name">{t(`dialogs:save.nameLabel${kindSuffix}`)}</Label>
             <Input
               id="automation-name"
               value={flowName}
@@ -367,13 +377,14 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
 
           <HaCategoryPicker
             label={t('dialogs:save.categoryLabel')}
-            scope="automation"
+            scope={kind}
             value={metadata.category}
             onChange={(value) => setMetadataField('category', value)}
             disabled={isSaving}
             fallback={
               <CategoryFallback
                 label={t('dialogs:save.categoryLabel')}
+                scope={kind}
                 value={metadata.category}
                 onChange={(value) => setMetadataField('category', value)}
                 disabled={isSaving}

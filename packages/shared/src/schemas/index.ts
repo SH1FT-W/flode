@@ -1,3 +1,5 @@
+// Type guards
+
 // Base schemas
 export {
   type AutomationMode,
@@ -27,6 +29,7 @@ export {
   FlowWorkspaceSourceSchema,
   validateGraphStructure,
 } from './graph';
+export { isPlainObject } from './guards';
 // Home Assistant entity schemas
 export {
   type ConditionType,
@@ -107,6 +110,15 @@ export {
 } from './nodes';
 // Pass-through (raw) action steps
 export { buildRawStepAction, createRawStepData, getRawStep, RAW_STEP_KEY } from './raw-step';
+// Scripts
+export {
+  automationToScriptConfig,
+  getScriptFields,
+  isScriptStart,
+  SCRIPT_START_TRIGGER,
+  type ScriptFields,
+  scriptToAutomationConfig,
+} from './script';
 // Validation schemas for UI
 export {
   ActionNodeValidationSchema,

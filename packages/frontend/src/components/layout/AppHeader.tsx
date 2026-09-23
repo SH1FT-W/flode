@@ -6,6 +6,7 @@ import {
   LogOut,
   Menu,
   MoreHorizontal,
+  Play,
   Save,
   Search,
   Settings,
@@ -29,6 +30,7 @@ import { useHass } from '@/contexts/HassContext';
 import { useAppCommands } from '@/hooks/useAppCommands';
 import { useFlowIssues } from '@/hooks/useFlowIssues';
 import { useQuickSave } from '@/hooks/useQuickSave';
+import { useRunScript } from '@/hooks/useRunScript';
 import { formatShortcut } from '@/lib/shortcuts';
 import { cn } from '@/lib/utils';
 import { useFlowStore } from '@/store/flow-store';
@@ -264,6 +266,34 @@ function IssuesBadge() {
   );
 }
 
+/** For scripts: a "Script" tag and, once saved, a button that runs the saved script. */
+function ScriptControls() {
+  const { t } = useTranslation(['ui']);
+  const isScript = useFlowStore((s) => s.flowMetadata.kind === 'script');
+  const scriptId = useFlowStore((s) => s.automationId);
+  const flowName = useFlowStore((s) => s.flowName);
+  const runScript = useRunScript();
+  if (!isScript) return null;
+  return (
+    <>
+      <span className="shrink-0 rounded-md border border-border border-solid bg-muted/50 px-1.5 py-0.5 font-medium text-[11px] text-muted-foreground uppercase tracking-wide">
+        {t('ui:scripts.tag')}
+      </span>
+      {scriptId && (
+        <Button
+          variant="outline"
+          className="h-8 shrink-0 border-solid"
+          onClick={() => void runScript(scriptId, flowName)}
+          title={t('ui:scripts.runSaved')}
+        >
+          <Play />
+          <span className="hidden md:inline">{t('ui:scripts.run')}</span>
+        </Button>
+      )}
+    </>
+  );
+}
+
 export function EditorHeader() {
   const { t } = useTranslation(['ui']);
   const quickSave = useQuickSave();
@@ -293,6 +323,7 @@ export function EditorHeader() {
           placeholder={t('ui:editor.nameLabel')}
           className="min-w-0 max-w-md flex-1 truncate rounded-lg border border-transparent bg-transparent px-2 py-1 font-semibold text-[15px] text-foreground outline-none transition-colors placeholder:font-normal placeholder:text-muted-foreground hover:border-border focus:border-primary focus:bg-muted/40"
         />
+        <ScriptControls />
       </div>
       <IssuesBadge />
       <SaveStatusPill />

@@ -1,11 +1,14 @@
-import type { FlowGraph } from '@flode/shared';
-import { transpiler, validateFlowGraph } from '@flode/transpiler';
+import { type FlowGraph, isPlainObject } from '@flode/shared';
+import { type ParseResult, parseScript, transpiler, validateFlowGraph } from '@flode/transpiler';
 import { useReactFlow } from '@xyflow/react';
+import { load as yamlLoad } from 'js-yaml';
 import { useCallback } from 'react';
 import { useHass } from '@/contexts/HassContext';
 import { useAiTask } from '@/hooks/useAiTask';
+import { useEditorTabs } from '@/hooks/useEditorTabs';
 import {
   type AiEntityCandidate,
+  type AiFlowKind,
   buildFlowInstructions,
   buildRepairInstructions,
   extractYaml,
@@ -30,9 +33,39 @@ interface Evaluation {
   problems: string[];
 }
 
+/** The reply as a parsed flow — a script reply goes through the script parser. */
+async function parseReply(reply: string, kind: AiFlowKind): Promise<ParseResult> {
+  const yaml = extractYaml(reply);
+  if (kind === 'automation') return transpiler.fromYaml(yaml);
+  let config: unknown;
+  try {
+    config = yamlLoad(yaml);
+  } catch (error) {
+    return {
+      success: false,
+      errors: [error instanceof Error ? error.message : String(error)],
+      warnings: [],
+      hadMetadata: false,
+    };
+  }
+  if (!isPlainObject(config)) {
+    return {
+      success: false,
+      errors: ['The reply is not a script config (a YAML mapping)'],
+      warnings: [],
+      hadMetadata: false,
+    };
+  }
+  return parseScript(transpiler, config);
+}
+
 /** Parses a reply and checks it the way FLODE would before saving. */
-async function evaluateReply(reply: string, knownIds: ReadonlySet<string>): Promise<Evaluation> {
-  const result = await transpiler.fromYaml(extractYaml(reply));
+async function evaluateReply(
+  reply: string,
+  knownIds: ReadonlySet<string>,
+  kind: AiFlowKind
+): Promise<Evaluation> {
+  const result = await parseReply(reply, kind);
   if (!result.success || !result.graph) {
     return { unknownEntityIds: [], problems: result.errors ?? ['The YAML could not be parsed'] };
   }
@@ -58,9 +91,10 @@ export function useAiFlowDraft() {
   const { generate } = useAiTask();
   const { getAreaNameForEntity } = useHass();
   const { fitView } = useReactFlow();
+  const tabs = useEditorTabs();
 
   return useCallback(
-    async (description: string): Promise<AiFlowDraftResult> => {
+    async (description: string, kind: AiFlowKind = 'automation'): Promise<AiFlowDraftResult> => {
       const hass = getLatestHass();
       const states = hass?.states ?? {};
       const knownIds = new Set(Object.keys(states));
@@ -76,14 +110,15 @@ export function useAiFlowDraft() {
         description,
         entities: selectPromptEntities(description, candidates),
         language: hass?.language ?? 'en',
+        kind,
       });
 
-      const reply = await generate('FLODE: build automation', instructions);
-      let evaluation = await evaluateReply(reply, knownIds);
+      const reply = await generate(`FLODE: build ${kind}`, instructions);
+      let evaluation = await evaluateReply(reply, knownIds, kind);
       if (evaluation.problems.length > 0) {
         const repaired = await evaluateReply(
           await generate(
-            'FLODE: fix automation',
+            `FLODE: fix ${kind}`,
             buildRepairInstructions({
               instructions,
               reply,
@@ -91,7 +126,8 @@ export function useAiFlowDraft() {
               suggestions: suggestReplacements(evaluation.unknownEntityIds, candidates),
             })
           ),
-          knownIds
+          knownIds,
+          kind
         );
         // Keep the correction only if it parses and isn't worse.
         if (
@@ -104,16 +140,16 @@ export function useAiFlowDraft() {
       const { graph } = evaluation;
       if (!graph) throw new Error(evaluation.problems.join('\n'));
 
-      const flow = useFlowStore.getState();
-      flow.reset();
-      flow.fromFlowGraph(graph);
-      // A draft is unsaved work — without a snapshot `hasRealChanges()` counts its nodes.
-      useFlowStore.setState({ originalSnapshot: null });
       useUiStore.getState().setView('editor');
+      await tabs.openNew(() => {
+        useFlowStore.getState().fromFlowGraph(graph);
+        // A draft is unsaved work — without a snapshot `hasRealChanges()` counts its nodes.
+        useFlowStore.setState({ originalSnapshot: null });
+      });
       setTimeout(() => void fitView(fitViewOptions()), 150);
 
       return { unknownEntityIds: evaluation.unknownEntityIds };
     },
-    [generate, getAreaNameForEntity, fitView]
+    [generate, getAreaNameForEntity, fitView, tabs]
   );
 }

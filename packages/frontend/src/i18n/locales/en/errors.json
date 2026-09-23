@@ -89,7 +89,8 @@
   },
   "import": {
     "fileReadFailed": "Failed to import flow. Please check the file format.",
-    "parseFailed": "Failed to parse automation configuration"
+    "parseFailed": "Failed to parse automation configuration",
+    "scriptNotFound": "Home Assistant has no config for this script (defined in YAML outside scripts.yaml?)."
   },
   "yaml": {
     "staleWarning": "Showing last valid YAML - fix errors to update"

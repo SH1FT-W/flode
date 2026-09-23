@@ -1,3 +1,4 @@
+import { SCRIPT_START_TRIGGER } from '@flode/shared';
 import {
   Clock,
   Columns2,
@@ -33,6 +34,19 @@ export interface CompoundTypeConfig {
   color: NodeColorToken;
   group: 'branching' | 'loops' | 'parallel';
 }
+
+/**
+ * A script's start node (see `@flode/shared`'s script.ts) — offered in the
+ * library only for scripts that have lost theirs.
+ */
+export const scriptStartType = {
+  type: 'trigger',
+  labelKey: 'nodes:scriptStart.kind',
+  descriptionKey: 'nodes:scriptStart.libraryDescription',
+  icon: Zap,
+  color: 'trigger',
+  defaultData: { trigger: SCRIPT_START_TRIGGER },
+} as const satisfies NodeTypeConfig;
 
 /**
  * Every insertable building block — the single catalog shared by the block

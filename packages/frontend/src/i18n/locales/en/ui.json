@@ -16,13 +16,17 @@
     "toggleLabel": "{{name}} on/off",
     "on": "On",
     "off": "Off",
-    "openTogether": "Open several",
-    "mergeHint": "Opens several automations together in one canvas",
+    "openTogether": "Merge",
+    "mergeHint": "Merges several automations into one flow",
     "sortName": "A–Z",
     "sortRecent": "Recently triggered",
     "unavailable": "Unavailable",
     "unavailableHint": "Home Assistant has no configuration for this automation (deleted?) — it can't be opened.",
-    "summaryUnavailable": "{{count}} unavailable"
+    "summaryUnavailable": "{{count}} unavailable",
+    "sections": {
+      "automations": "Automations",
+      "scripts": "Scripts"
+    }
   },
   "editor": {
     "back": "Automations",
@@ -88,7 +92,8 @@
     "tidyHint": "Arrange the flow automatically",
     "fitView": "Show everything",
     "library": "Show/hide block library",
-    "minimap": "Show/hide overview map"
+    "minimap": "Show/hide overview map",
+    "newScript": "New script"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -99,7 +104,10 @@
     "emptyText": "Add a trigger — or press {{shortcut}} to see every block.",
     "addTrigger": "Add trigger",
     "browseBlocks": "All blocks",
-    "addNext": "Add next step"
+    "addNext": "Add next step",
+    "emptyScriptTitle": "The script needs a script start",
+    "emptyScriptText": "That's where the script begins and defines its input fields – or open all blocks with {{shortcut}}.",
+    "addScriptStart": "Add script start"
   },
   "inspector": {
     "automation": "Automation",
@@ -125,7 +133,10 @@
     "invalidService": "Invalid action “{{service}}” — expected domain.service",
     "noTrigger": "The automation has no trigger yet",
     "noAction": "The automation has no action yet",
-    "automation": "Automation"
+    "automation": "Automation",
+    "scriptTrigger": "Scripts have no triggers – they begin at the script start. Remove this trigger.",
+    "scriptStartCount": "A script needs exactly one script start.",
+    "scriptStartInAutomation": "A script start only belongs in scripts – replace it with a trigger."
   },
   "save": {
     "saved": "Saved to Home Assistant",
@@ -170,7 +181,17 @@
       "failed": "The AI couldn't produce a valid flow",
       "draftNote": "Just a draft – nothing is saved until you save.",
       "done": "Draft created – review it, then save",
-      "unknownEntities": "Draft created, but these entities don't exist: {{ids}} – please replace them"
+      "unknownEntities": "Draft created, but these entities don't exist: {{ids}} – please replace them",
+      "kinds": {
+        "automation": "Automation",
+        "script": "Script"
+      },
+      "script": {
+        "placeholder": "e.g. Good-morning script: bedroom light at a chosen brightness, then open the blinds",
+        "example1": "Good-morning script: light at a chosen brightness, then open the blinds",
+        "example2": "All off: turn off every light and media player, lock the front door",
+        "example3": "Timer script: turn on the coffee maker for a chosen number of minutes"
+      }
     },
     "explain": {
       "button": "Explain",
@@ -195,5 +216,41 @@
       "dismiss": "Hide this hint",
       "defaultStep": "You already have an AI with an \"AI Task\", but none is chosen yet. Pick it under Settings → System → AI → \"AI suggestions\" → \"Data generation tasks\" and save – then \"Create with AI\" appears in FLODE."
     }
+  },
+  "runFrom": {
+    "title": "Run from here",
+    "description": "Runs \"{{name}}\" and everything after it for real in Home Assistant right now – devices really switch. Conditions are checked against the current states.",
+    "preparing": "Preparing …",
+    "invalid": "This part of the flow can't be run like this: {{errors}}",
+    "steps_one": "{{count}} step will run.",
+    "steps_other": "{{count}} steps will run.",
+    "triggerData": "Some steps use trigger data (trigger.…). It doesn't exist when started manually – these steps may fail or use empty values.",
+    "confirm": "Run now",
+    "started": "\"{{name}}\" is running …",
+    "done": "\"{{name}}\" and the following steps finished",
+    "failed": "Run failed: {{error}}"
+  },
+  "tabs": {
+    "label": "Open automations",
+    "new": "New automation in a new tab",
+    "close": "Close \"{{name}}\"",
+    "unsaved": "Unsaved changes",
+    "discardTitle": "Close tab with changes?",
+    "discardDescription": "This automation has unsaved changes. They'll be lost when you close it.",
+    "discardConfirm": "Close & discard"
+  },
+  "scripts": {
+    "started": "\"{{name}}\" started",
+    "runFailed": "Couldn't start the script: {{error}}",
+    "runTitle": "Run \"{{name}}\"",
+    "runDescription": "The script asks for these values. The version saved in Home Assistant runs.",
+    "run": "Run",
+    "tag": "Script",
+    "runSaved": "Runs the version saved in Home Assistant",
+    "title": "Scripts",
+    "summary_one": "{{count}} script",
+    "summary_other": "{{count}} scripts",
+    "emptyAll": "No scripts yet – create the first one with \"New script\".",
+    "running": "Running"
   }
 }

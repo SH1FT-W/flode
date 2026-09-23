@@ -51,6 +51,7 @@ import {
   nodeTypes as catalogNodeTypes,
   DND_COMPOUND_MIME,
   DND_NODE_MIME,
+  scriptStartType,
 } from '@/lib/node-catalog';
 import { getNodeColorToken, NODE_MINIMAP_CLASSES } from '@/lib/node-colors';
 import type { QuickAddDirection } from '@/lib/quick-add';
@@ -373,6 +374,8 @@ export function FlowCanvas() {
 
   const isEmpty = nodes.length === 0;
 
+  const isScript = useFlowStore((s) => s.flowMetadata.kind === 'script');
+
   return (
     <QuickAddProvider value={openQuickAddFromNode}>
       <div className="relative h-full w-full" ref={reactFlowWrapper}>
@@ -444,7 +447,10 @@ export function FlowCanvas() {
 
         {isEmpty && (
           <EmptyCanvas
-            onAddTrigger={() => insertNext({ kind: 'simple', config: TRIGGER_CONFIG })}
+            isScript={isScript}
+            onAddTrigger={() =>
+              insertNext({ kind: 'simple', config: isScript ? scriptStartType : TRIGGER_CONFIG })
+            }
             onBrowse={() => openDialog('palette')}
           />
         )}
@@ -462,12 +468,14 @@ export function FlowCanvas() {
 }
 
 interface EmptyCanvasProps {
+  /** Scripts begin at a script start, not a trigger. */
+  isScript: boolean;
   onAddTrigger: () => void;
   onBrowse: () => void;
 }
 
 /** First-run hint on an empty canvas. */
-function EmptyCanvas({ onAddTrigger, onBrowse }: EmptyCanvasProps) {
+function EmptyCanvas({ isScript, onAddTrigger, onBrowse }: EmptyCanvasProps) {
   const { t } = useTranslation(['ui']);
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
@@ -476,15 +484,17 @@ function EmptyCanvas({ onAddTrigger, onBrowse }: EmptyCanvasProps) {
           <Zap className="size-5" />
         </span>
         <h2 className="text-balance font-semibold text-base text-foreground">
-          {t('ui:canvas.emptyTitle')}
+          {isScript ? t('ui:canvas.emptyScriptTitle') : t('ui:canvas.emptyTitle')}
         </h2>
         <p className="text-muted-foreground text-sm">
-          {t('ui:canvas.emptyText', { shortcut: formatShortcut('ctrl+k') })}
+          {isScript
+            ? t('ui:canvas.emptyScriptText', { shortcut: formatShortcut('ctrl+k') })
+            : t('ui:canvas.emptyText', { shortcut: formatShortcut('ctrl+k') })}
         </p>
         <div className="mt-1 flex flex-wrap justify-center gap-2">
           <Button onClick={onAddTrigger}>
             <Zap />
-            {t('ui:canvas.addTrigger')}
+            {isScript ? t('ui:canvas.addScriptStart') : t('ui:canvas.addTrigger')}
           </Button>
           <Button variant="outline" onClick={onBrowse}>
             <Command />

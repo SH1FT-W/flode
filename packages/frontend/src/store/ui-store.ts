@@ -1,7 +1,12 @@
 import { create } from 'zustand';
+import type { RunScriptTarget } from '@/hooks/useRunScript';
+import type { AiFlowKind } from '@/lib/ai-assist';
 import { useFlowStore } from './flow-store';
 
 export type AppView = 'home' | 'editor';
+export type HomeSection = 'automations' | 'scripts';
+/** `replace`: the flow gets replaced (import, clear …); `closeTab`: its tab closes. */
+export type DiscardReason = 'replace' | 'closeTab';
 export type InspectorTab = 'properties' | 'yaml' | 'simulator';
 
 /** App-level dialogs/overlays — only one is open at a time. */
@@ -16,7 +21,9 @@ export type AppDialog =
   | 'exit'
   | 'discard'
   | 'aiFlow'
-  | 'aiExplain';
+  | 'aiExplain'
+  | 'runFrom'
+  | 'runScript';
 
 const LIBRARY_COLLAPSED_KEY = 'flode.libraryCollapsed';
 const MINIMAP_VISIBLE_KEY = 'flode.minimapVisible';
@@ -44,6 +51,10 @@ interface UiState {
   view: AppView;
   setView: (view: AppView) => void;
 
+  /** Start screen list: automations or scripts. */
+  homeSection: HomeSection;
+  setHomeSection: (section: HomeSection) => void;
+
   dialog: AppDialog | null;
   openDialog: (dialog: AppDialog) => void;
   closeDialog: () => void;
@@ -65,12 +76,32 @@ interface UiState {
   showLastRunOnOpen: boolean;
   setShowLastRunOnOpen: (show: boolean) => void;
 
+  /** Script the run dialog asks input fields for (`runScript`). */
+  runScriptTarget: RunScriptTarget | null;
+  openRunScript: (target: RunScriptTarget) => void;
+
+  /** Node the "run from here" confirmation is about (`runFrom`). */
+  runFromNodeId: string | null;
+  openRunFrom: (nodeId: string) => void;
+
+  /** What "Create with AI" builds (`aiFlow`). */
+  aiFlowKind: AiFlowKind;
+  /**
+   * Opens "Create with AI" — for `kind`, or what fits where the user is: a
+   * script in the scripts section or a script editor, else an automation.
+   */
+  openAiFlow: (kind?: AiFlowKind) => void;
+
   /** Run the AI explain dialog is about (`aiExplain`). */
   explainRunId: string | null;
   openExplain: (runId: string) => void;
 
   /** Action waiting for the user to confirm discarding unsaved changes. */
   pendingDiscard: (() => void) | null;
+  /** What the pending discard is for — picks the confirmation text. */
+  discardReason: DiscardReason;
+  /** Asks "discard unsaved changes?" and runs `action` on confirm. */
+  askDiscard: (action: () => void, reason?: DiscardReason) => void;
   /** Runs `action` right away, or first asks to discard unsaved changes. */
   runGuarded: (action: () => void) => void;
   confirmDiscard: () => void;
@@ -83,6 +114,9 @@ interface UiState {
 export const useUiStore = create<UiState>((set, get) => ({
   view: 'home',
   setView: (view) => set({ view }),
+
+  homeSection: 'automations',
+  setHomeSection: (homeSection) => set({ homeSection }),
 
   dialog: null,
   openDialog: (dialog) => set({ dialog }),
@@ -115,13 +149,34 @@ export const useUiStore = create<UiState>((set, get) => ({
   showLastRunOnOpen: false,
   setShowLastRunOnOpen: (showLastRunOnOpen) => set({ showLastRunOnOpen }),
 
+  runScriptTarget: null,
+  openRunScript: (runScriptTarget) => set({ runScriptTarget, dialog: 'runScript' }),
+
+  runFromNodeId: null,
+  openRunFrom: (runFromNodeId) => set({ runFromNodeId, dialog: 'runFrom' }),
+
+  aiFlowKind: 'automation',
+  openAiFlow: (kind) => {
+    const { view, homeSection } = get();
+    const fitting: AiFlowKind =
+      view === 'home'
+        ? homeSection === 'scripts'
+          ? 'script'
+          : 'automation'
+        : (useFlowStore.getState().flowMetadata.kind ?? 'automation');
+    set({ aiFlowKind: kind ?? fitting, dialog: 'aiFlow' });
+  },
+
   explainRunId: null,
   openExplain: (explainRunId) => set({ explainRunId, dialog: 'aiExplain' }),
 
   pendingDiscard: null,
+  discardReason: 'replace',
+  askDiscard: (action, reason = 'replace') =>
+    set({ pendingDiscard: action, discardReason: reason, dialog: 'discard' }),
   runGuarded: (action) => {
     if (useFlowStore.getState().hasRealChanges()) {
-      set({ pendingDiscard: action, dialog: 'discard' });
+      get().askDiscard(action);
       return;
     }
     action();

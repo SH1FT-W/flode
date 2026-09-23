@@ -89,7 +89,8 @@
   },
   "import": {
     "fileReadFailed": "Flow konnte nicht importiert werden. Bitte überprüfen Sie das Dateiformat.",
-    "parseFailed": "Automatisierungskonfiguration konnte nicht geparst werden"
+    "parseFailed": "Automatisierungskonfiguration konnte nicht geparst werden",
+    "scriptNotFound": "Home Assistant hat keine Konfiguration zu diesem Skript (in YAML außerhalb von scripts.yaml definiert?)."
   },
   "yaml": {
     "staleWarning": "Zeige letztes gültiges YAML - Fehler beheben zum Aktualisieren"

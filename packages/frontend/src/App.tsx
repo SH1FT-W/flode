@@ -8,6 +8,7 @@ import { FlowCanvas } from '@/components/canvas/FlowCanvas';
 import { AppDialogs } from '@/components/dialogs/AppDialogs';
 import { AutomationHome } from '@/components/home/AutomationHome';
 import { EditorHeader, HomeHeader } from '@/components/layout/AppHeader';
+import { EditorTabs } from '@/components/layout/EditorTabs';
 import { Inspector } from '@/components/layout/Inspector';
 import { NodePalette } from '@/components/panels/NodePalette';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,8 @@ import { useDarkMode } from './hooks/useDarkMode';
 import { useHaThemeSync } from './hooks/useHaThemeSync';
 import { useIsolateTyping } from './hooks/useIsolateTyping';
 import { useLanguage } from './hooks/useLanguage';
-import { useLoadAutomation } from './hooks/useLoadAutomation';
+import { useOpenAutomation } from './hooks/useOpenAutomation';
+import { useRestoreLastView } from './hooks/useRestoreLastView';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useUiStore } from './store/ui-store';
 
@@ -41,7 +43,7 @@ import { useUiStore } from './store/ui-store';
  */
 function DeepLinkHandler() {
   const { hass } = useHass();
-  const loadAutomation = useLoadAutomation();
+  const openAutomation = useOpenAutomation();
   const startNew = useStartNewAutomation();
   const handled = useRef(false);
 
@@ -62,8 +64,7 @@ function DeepLinkHandler() {
         typeof rawId === 'string' || typeof rawId === 'number'
           ? String(rawId)
           : automationEntityId.replace('automation.', '');
-      useUiStore.getState().setView('editor');
-      void loadAutomation({
+      openAutomation({
         automation_id: automationConfigId,
         entity_id: automationEntityId,
         friendly_name:
@@ -79,8 +80,14 @@ function DeepLinkHandler() {
     url.searchParams.delete('automation');
     url.searchParams.delete('new');
     window.history.replaceState(null, '', `${url.pathname}${url.search}`);
-  }, [hass, loadAutomation, startNew]);
+  }, [hass, openAutomation, startNew]);
 
+  return null;
+}
+
+/** Returns to the editor after a reload when that's where the user was. */
+function LastViewRestorer() {
+  useRestoreLastView();
   return null;
 }
 
@@ -94,6 +101,7 @@ function EditorView() {
   return (
     <>
       <EditorHeader />
+      <EditorTabs />
       <div className="flex min-h-0 flex-1 overflow-hidden bg-canvas">
         <NodePalette />
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -175,6 +183,7 @@ function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <ReactFlowProvider>
+        <LastViewRestorer />
         <DeepLinkHandler />
         <ShortcutHandler />
         <div className="flex h-screen flex-col bg-background">

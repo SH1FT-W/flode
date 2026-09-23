@@ -51,7 +51,8 @@
     "areas": "Bereiche",
     "zones": "Zonen",
     "unassigned": "Nicht zugeordnet",
-    "workspaceSources": "Zusammengeführte Quellen"
+    "workspaceSources": "Zusammengeführte Quellen",
+    "automationNameScript": "Skriptname"
   },
   "status": {
     "connecting": "Verbinde...",
@@ -82,7 +83,9 @@
     "jsonExample": "{ \"key\": \"value\" }",
     "none": "Keine",
     "addValue": "Wert hinzufügen...",
-    "select": "Auswählen..."
+    "select": "Auswählen...",
+    "enterAutomationNameScript": "Skriptnamen eingeben",
+    "describeAutomationScript": "Beschreiben Sie, was dieses Skript tut…"
   },
   "help": {
     "clickNodesToAdd": "Klicken zum Hinzufügen",
@@ -109,7 +112,8 @@
     "stateMachine": "Zustandsautomat"
   },
   "defaults": {
-    "newAutomation": "Neue Automatisierung"
+    "newAutomation": "Neue Automatisierung",
+    "newScript": "Neues Skript"
   },
   "boolean": {
     "true": "Wahr",
@@ -162,7 +166,8 @@
     "selectAll": "Alles auswählen",
     "tidy": "Aufräumen",
     "tidied": "Aufgeräumt – {{shortcut}} macht es rückgängig",
-    "align": "Ausrichten"
+    "align": "Ausrichten",
+    "runFrom": "Ab hier ausführen"
   },
   "shortcuts": {
     "cmd": "Cmd",
@@ -203,6 +208,7 @@
       "silent": "Stumm",
       "warning": "Warnung",
       "critical": "Kritisch"
-    }
+    },
+    "titleScript": "Skripteinstellungen"
   }
 }

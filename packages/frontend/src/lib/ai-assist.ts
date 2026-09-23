@@ -148,24 +148,42 @@ function entityLines(entities: readonly AiEntityCandidate[]): string {
     .join('\n');
 }
 
+/** What the AI builds — an automation or a script (see `@flode/shared`'s script.ts). */
+export type AiFlowKind = 'automation' | 'script';
+
 export interface FlowPromptInput {
   description: string;
   entities: readonly AiEntityCandidate[];
-  /** UI language, e.g. "de" — used for alias/description of the automation. */
+  /** UI language, e.g. "de" — used for alias/description. */
   language: string;
+  kind?: AiFlowKind;
 }
 
-/** Instructions for turning a plain-language description into automation YAML. */
+/** Shape of the reply, per kind. */
+const KIND_RULES: Record<AiFlowKind, readonly string[]> = {
+  automation: [
+    'You write Home Assistant automations. Reply with ONE automation as YAML and nothing else — no explanations, no Markdown fences.',
+    'Use the current syntax: top-level keys alias, description, mode, triggers, conditions, actions; `trigger:` inside each trigger, `condition:` inside each condition, `action:` for service calls with `target:` and `data:`.',
+  ],
+  script: [
+    'You write Home Assistant scripts. Reply with ONE script config as YAML and nothing else — no explanations, no Markdown fences, no script id wrapper.',
+    'Top-level keys: alias, description, mode, fields (optional), sequence. A script has NO triggers. Put conditions that should stop the script as condition steps into `sequence`.',
+    'If the request needs values chosen at start (brightness, duration, a target …), declare them under `fields:` as `<variable>: {name: …, description: …, required: true|false, default: …, selector: {…}}` using Home Assistant selectors (number, boolean, text, entity, select, duration, time …) and use them in templates, e.g. `{{ brightness }}`.',
+    'Service calls use `action:` with `target:` and `data:`.',
+  ],
+};
+
+/** Instructions for turning a plain-language description into automation or script YAML. */
 export function buildFlowInstructions({
   description,
   entities,
   language,
+  kind = 'automation',
 }: FlowPromptInput): string {
   return [
-    'You write Home Assistant automations. Reply with ONE automation as YAML and nothing else — no explanations, no Markdown fences.',
-    'Use the current syntax: top-level keys alias, description, mode, triggers, conditions, actions; `trigger:` inside each trigger, `condition:` inside each condition, `action:` for service calls with `target:` and `data:`.',
+    ...KIND_RULES[kind],
     'Step syntax: wait a fixed time with `- delay: "00:05:00"` (never `action: delay`); branch with `- if: [...] then: [...] else: [...]`; wait with `wait_for_trigger` / `wait_template`; notify with `action: notify.<service>` and `data: {message: ...}`.',
-    'Only use entity ids from the list below. If the request needs a device that is not listed, pick the closest listed one and mention the assumption in the automation description.',
+    `Only use entity ids from the list below. If the request needs a device that is not listed, pick the closest listed one and mention the assumption in the ${kind} description.`,
     `Write alias and description in this language: ${language}.`,
     '',
     'Available entities (entity_id | name | area):',

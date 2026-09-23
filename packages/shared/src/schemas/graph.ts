@@ -8,6 +8,15 @@ import { NodeSchema } from './nodes';
  */
 export const FlowMetadataSchema = z.object({
   /**
+   * What the flow is saved as — an automation (default) or a script
+   * (see `script.ts`).
+   */
+  kind: z.enum(['automation', 'script']).optional(),
+  /**
+   * Script icon (`icon:`, e.g. `mdi:play`) — scripts only.
+   */
+  icon: z.string().optional(),
+  /**
    * Automation mode - controls behavior when triggered while running
    */
   mode: AutomationModeSchema.default('single'),

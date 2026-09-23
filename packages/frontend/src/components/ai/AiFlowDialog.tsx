@@ -15,20 +15,34 @@ import { Kbd } from '@/components/ui/kbd';
 import { Textarea } from '@/components/ui/textarea';
 import { useAiFlowDraft } from '@/hooks/useAiFlowDraft';
 import { useAiTask } from '@/hooks/useAiTask';
-import { readableAiError } from '@/lib/ai-assist';
+import { type AiFlowKind, readableAiError } from '@/lib/ai-assist';
 import { rawErrorMessage } from '@/lib/error-codes';
 import { showSuccessToast, showWarningToast } from '@/lib/haToast';
 import { formatShortcut } from '@/lib/shortcuts';
+import { cn } from '@/lib/utils';
+import { useUiStore } from '@/store/ui-store';
 
 const EXAMPLE_KEYS = ['example1', 'example2', 'example3'] as const;
+const KINDS: readonly AiFlowKind[] = ['automation', 'script'];
+
+type FlowTextKey = 'placeholder' | (typeof EXAMPLE_KEYS)[number];
+
+/** Translation keys per kind: scripts have their own examples and placeholder. */
+function kindKey<K extends FlowTextKey>(
+  kind: AiFlowKind,
+  key: K
+): `ui:ai.flow.script.${K}` | `ui:ai.flow.${K}` {
+  return kind === 'script' ? (`ui:ai.flow.script.${key}` as const) : (`ui:ai.flow.${key}` as const);
+}
 
 interface AiFlowDialogProps {
   onClose: () => void;
 }
 
-/** "Create with AI": describe an automation, get a draft flow on the canvas. */
+/** "Create with AI": describe an automation or script, get a draft flow on the canvas. */
 export function AiFlowDialog({ onClose }: AiFlowDialogProps) {
   const { t } = useTranslation(['ui', 'common', 'errors']);
+  const [kind, setKind] = useState<AiFlowKind>(() => useUiStore.getState().aiFlowKind);
   const [description, setDescription] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +63,7 @@ export function AiFlowDialog({ onClose }: AiFlowDialogProps) {
     setIsRunning(true);
     setError(null);
     try {
-      const { unknownEntityIds } = await createDraft(description);
+      const { unknownEntityIds } = await createDraft(description, kind);
       onClose();
       if (unknownEntityIds.length > 0) {
         showWarningToast(t('ui:ai.flow.unknownEntities', { ids: unknownEntityIds.join(', ') }));
@@ -74,6 +88,24 @@ export function AiFlowDialog({ onClose }: AiFlowDialogProps) {
           <DialogDescription>{t('ui:ai.flow.description', { name: aiName })}</DialogDescription>
         </DialogHeader>
 
+        <fieldset className="m-0 flex w-fit gap-1 rounded-full border border-border border-solid bg-muted/40 p-1">
+          {KINDS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={kind === option}
+              disabled={isRunning}
+              onClick={() => setKind(option)}
+              className={cn(
+                'h-7 rounded-full px-3.5 font-medium text-muted-foreground text-xs transition-colors hover:text-foreground',
+                kind === option && 'bg-card text-foreground shadow-card'
+              )}
+            >
+              {t(`ui:ai.flow.kinds.${option}`)}
+            </button>
+          ))}
+        </fieldset>
+
         <Textarea
           ref={textareaRef}
           value={description}
@@ -84,7 +116,7 @@ export function AiFlowDialog({ onClose }: AiFlowDialogProps) {
               void run();
             }
           }}
-          placeholder={t('ui:ai.flow.placeholder')}
+          placeholder={t(kindKey(kind, 'placeholder'))}
           className="min-h-28 resize-none border-solid text-sm"
           disabled={isRunning}
         />
@@ -95,10 +127,10 @@ export function AiFlowDialog({ onClose }: AiFlowDialogProps) {
               key={key}
               type="button"
               disabled={isRunning}
-              onClick={() => setDescription(t(`ui:ai.flow.${key}`))}
+              onClick={() => setDescription(t(kindKey(kind, key)))}
               className="rounded-full border border-border border-solid bg-muted/50 px-2.5 py-1 text-muted-foreground text-xs transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
             >
-              {t(`ui:ai.flow.${key}`)}
+              {t(kindKey(kind, key))}
             </button>
           ))}
         </div>

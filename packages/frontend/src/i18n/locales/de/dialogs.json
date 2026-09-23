@@ -11,7 +11,12 @@
     "categoryLabel": "Kategorie (Optional)",
     "categoryPlaceholder": "Bestehenden oder neuen Kategorienamen eingeben...",
     "labelsLabel": "Labels (Optional)",
-    "areaLabel": "Bereich (Optional)"
+    "areaLabel": "Bereich (Optional)",
+    "titleScript": "Skript speichern",
+    "titleUpdateScript": "Skript aktualisieren",
+    "descriptionScript": "Dieses Skript in Home Assistant speichern",
+    "descriptionUpdateScript": "Dieses Skript in Home Assistant aktualisieren",
+    "nameLabelScript": "Skriptname"
   },
   "import": {
     "title": "Automatisierung öffnen",
@@ -50,7 +55,7 @@
     "automationDisabled": "Automatisierung erfolgreich deaktiviert.",
     "updateStateFailed": "Automatisierungsstatus konnte nicht aktualisiert werden",
     "importAutomation": "Automatisierung importieren",
-    "openingWarning": "Das Öffnen ersetzt Ihr aktuelles Automatisierungsdesign",
+    "openingWarning": "Eine Automation öffnet in einem eigenen Tab. Mehrere ausgewählte werden zu einem neuen Flow zusammengeführt – ebenfalls in einem eigenen Tab.",
     "discardTitle": "Aktuellen Flow verwerfen?",
     "discardDescription": "Ihre aktuelle Automatisierung hat ungespeicherte Änderungen. Das Erstellen oder Öffnen einer neuen Automatisierung verwirft diese Änderungen.",
     "confirmDiscard": "Verwerfen & Fortfahren",

@@ -7,11 +7,9 @@
  * data. The transpiler writes it back unchanged, so opening and saving such
  * an automation in FLODE never loses or rewrites that step.
  */
-export const RAW_STEP_KEY = '_raw';
+import { isPlainObject } from './guards';
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
+export const RAW_STEP_KEY = '_raw';
 
 /** The verbatim HA step stored on an action node, or `null` for regular nodes. */
 export function getRawStep(data: unknown): Record<string, unknown> | null {

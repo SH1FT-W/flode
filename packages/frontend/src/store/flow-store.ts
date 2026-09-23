@@ -5,7 +5,7 @@ import type {
   FlowNode,
   NodeValidationError,
 } from '@flode/shared';
-import { validateNodeData, getRawStep } from '@flode/shared';
+import { getRawStep, validateNodeData } from '@flode/shared';
 import {
   addEdge,
   applyEdgeChanges,
@@ -24,10 +24,10 @@ import { shallow } from 'zustand/shallow';
 import type { AutomationTrace } from '@/lib/ha-api';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
 import { logger } from '@/lib/logger';
+import { createTracePathResolver } from '@/lib/trace-mapping';
 import { generateUUID } from '@/lib/utils';
 import type { HomeAssistant } from '@/types/hass';
 import { flodeIndexedDBStorage } from '@/utils/indexeddb-storage';
-import { createTracePathResolver } from '@/lib/trace-mapping';
 
 /**
  * Node data types for React Flow
@@ -347,6 +347,42 @@ export type PersistedFlowState = Pick<
   | 'originalSnapshot'
 >;
 
+type FlowContent = Pick<
+  FlowState,
+  'flowName' | 'flowDescription' | 'flowMetadata' | 'nodes' | 'edges'
+>;
+
+/** The saved-relevant content of a flow as a comparable string (positions included). */
+export function flowContentKey(content: FlowContent): string {
+  return JSON.stringify({
+    flowName: content.flowName,
+    flowDescription: content.flowDescription,
+    flowMetadata: content.flowMetadata,
+    nodes: content.nodes.map((n) => ({
+      id: n.id,
+      type: n.type,
+      position: n.position,
+      data: n.data,
+    })),
+    edges: content.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle,
+      targetHandle: e.targetHandle,
+    })),
+  });
+}
+
+/**
+ * Whether a flow differs from how it was loaded/saved. Without a snapshot
+ * it's a new flow, which counts as changed once it has any node.
+ */
+export function flowHasChanges(flow: FlowContent & Pick<FlowState, 'originalSnapshot'>): boolean {
+  if (!flow.originalSnapshot) return flow.nodes.length > 0;
+  return flowContentKey(flow) !== flow.originalSnapshot;
+}
+
 // Partial state selector for persistence
 const persistSelector = (state: FlowState): PersistedFlowState => ({
   flowId: state.flowId,
@@ -388,6 +424,96 @@ const temporalSelector = (state: FlowState): TemporalFlowState => ({
   userTriggerVariables: state.userTriggerVariables,
 });
 
+/**
+ * React Flow's own bookkeeping — measuring a card's size, (de)selecting it —
+ * isn't an edit. Tracked like one, the re-measure after every undo pushed a
+ * history entry that wiped the redo stack (redo was greyed out right after ⌘Z).
+ */
+const BOOKKEEPING_CHANGE_TYPES = new Set(['dimensions', 'select']);
+
+function isBookkeepingOnly(changes: readonly { type: string }[]): boolean {
+  return changes.length > 0 && changes.every((change) => BOOKKEEPING_CHANGE_TYPES.has(change.type));
+}
+
+/** Applies a store update without recording undo history. */
+function untracked(update: () => void): void {
+  const temporal = useFlowStore.temporal.getState();
+  temporal.pause();
+  try {
+    update();
+  } finally {
+    temporal.resume();
+  }
+}
+
+/**
+ * Validates the open flow and turns it into what Home Assistant stores: an
+ * automation config, or — for a script flow (`flowMetadata.kind`) — a script
+ * config. Throws a readable error when the flow can't be saved.
+ */
+async function buildSaveConfig(
+  state: FlowState
+): Promise<{ kind: 'automation' | 'script'; config: Record<string, unknown> }> {
+  state.validateAllNodes();
+  const errorCount = useFlowStore.getState().nodeErrors.size;
+  if (errorCount > 0) {
+    throw new Error(
+      `Cannot save: ${errorCount} node(s) have validation errors. Fix the highlighted nodes before saving.`
+    );
+  }
+
+  const graph = state.toFlowGraph();
+  if (graph.nodes.length === 0) throw new Error(i18t('errors:validation.emptyAutomation'));
+  if (!graph.nodes.some((n) => n.type === 'trigger')) {
+    throw new Error(i18t('errors:validation.noTrigger'));
+  }
+  if (!graph.nodes.some((n) => n.type === 'action')) {
+    throw new Error(i18t('errors:validation.noAction'));
+  }
+
+  const { FlowTranspiler, transpileScript } = await import('@flode/transpiler');
+  const transpiler = new FlowTranspiler();
+  const validation = transpiler.validate(graph);
+  if (validation.errors.length > 0) {
+    console.error('FLODE: Validation errors:', validation.errors);
+    throw new Error(`Validation failed: ${validation.errors.map((e) => e.message).join(', ')}`);
+  }
+
+  const naming = { alias: state.flowName, description: state.flowDescription || '' };
+
+  if (state.flowMetadata.kind === 'script') {
+    const script = transpileScript(transpiler, graph);
+    if (!script.success || !script.config) {
+      throw new Error(script.errors?.join(', ') || 'Failed to transpile flow to script config');
+    }
+    return { kind: 'script', config: { ...script.config, ...naming } };
+  }
+
+  const result = transpiler.transpile(graph);
+  if (!result.success || !result.output?.automation) {
+    throw new Error('Failed to transpile flow to automation config');
+  }
+  return {
+    kind: 'automation',
+    config: {
+      ...naming,
+      ...result.output.automation,
+      variables: {
+        ...(result.output.automation.variables || {}),
+        _flode_metadata: {
+          version: 1,
+          strategy: 'native' as const,
+          nodes: Object.fromEntries(
+            graph.nodes.map((node) => [node.id, { x: node.position.x, y: node.position.y }])
+          ),
+          graph_id: graph.id,
+          graph_version: 1,
+        },
+      },
+    },
+  };
+}
+
 let pendingHistoryCommit:
   | { timeoutId: ReturnType<typeof setTimeout>; burstStart: TemporalFlowState }
   | undefined;
@@ -416,17 +542,27 @@ export const useFlowStore = create<FlowState>()(
         setNodes: (nodes) => set({ nodes }),
         setEdges: (edges) => set({ edges }),
 
-        onNodesChange: (changes) =>
+        onNodesChange: (changes) => {
+          if (isBookkeepingOnly(changes)) {
+            untracked(() => set((state) => ({ nodes: applyNodeChanges(changes, state.nodes) })));
+            return;
+          }
           set((state) => ({
             nodes: applyNodeChanges(changes, state.nodes),
             hasUnsavedChanges: true,
-          })),
+          }));
+        },
 
-        onEdgesChange: (changes) =>
+        onEdgesChange: (changes) => {
+          if (isBookkeepingOnly(changes)) {
+            untracked(() => set((state) => ({ edges: applyEdgeChanges(changes, state.edges) })));
+            return;
+          }
           set((state) => ({
             edges: applyEdgeChanges(changes, state.edges),
             hasUnsavedChanges: true,
-          })),
+          }));
+        },
 
         onConnect: (connection) =>
           set((state) => ({
@@ -524,127 +660,23 @@ export const useFlowStore = create<FlowState>()(
         setSaving: (saving) => set({ isSaving: saving }),
         setSaved: () => set({ lastSaved: new Date(), hasUnsavedChanges: false }),
         setUnsavedChanges: (hasChanges) => set({ hasUnsavedChanges: hasChanges }),
-        hasRealChanges: () => {
-          const state = get();
-          if (!state.originalSnapshot) {
-            // No original snapshot means it's a new flow - check if there are any nodes
-            return state.nodes.length > 0;
-          }
-          // Create current snapshot and compare
-          const currentSnapshot = JSON.stringify({
-            flowName: state.flowName,
-            flowDescription: state.flowDescription,
-            flowMetadata: state.flowMetadata,
-            nodes: state.nodes.map((n) => ({
-              id: n.id,
-              type: n.type,
-              position: n.position,
-              data: n.data,
-            })),
-            edges: state.edges.map((e) => ({
-              id: e.id,
-              source: e.source,
-              target: e.target,
-              sourceHandle: e.sourceHandle,
-              targetHandle: e.targetHandle,
-            })),
-          });
-          return currentSnapshot !== state.originalSnapshot;
-        },
+        hasRealChanges: () => flowHasChanges(get()),
 
         saveAutomation: async (hassApi: HomeAssistant) => {
-          const state = get();
-          const api = getHomeAssistantAPI(hassApi);
-
           set({ isSaving: true });
-
           try {
-            // Validate all nodes first
-            get().validateAllNodes();
-
-            // Check for validation errors
-            const currentState = get();
-            if (currentState.nodeErrors.size > 0) {
-              const errorCount = currentState.nodeErrors.size;
-              throw new Error(
-                `Cannot save: ${errorCount} node(s) have validation errors. Fix the highlighted nodes before saving.`
-              );
-            }
-
-            // Convert flow to graph
-            const graph = state.toFlowGraph();
-
-            // Check for empty automation
-            if (graph.nodes.length === 0) {
-              throw new Error(i18t('errors:validation.emptyAutomation'));
-            }
-
-            // Check for minimum required nodes
-            const triggers = graph.nodes.filter((n) => n.type === 'trigger');
-            const actions = graph.nodes.filter((n) => n.type === 'action');
-
-            if (triggers.length === 0) {
-              throw new Error(i18t('errors:validation.noTrigger'));
-            }
-
-            if (actions.length === 0) {
-              throw new Error(i18t('errors:validation.noAction'));
-            }
-
-            const { FlowTranspiler } = await import('@flode/transpiler');
-            const transpiler = new FlowTranspiler();
-
-            // Validate first
-            const validation = transpiler.validate(graph);
-
-            if (validation.errors.length > 0) {
-              console.error('FLODE: Validation errors:', validation.errors);
-              throw new Error(
-                `Validation failed: ${validation.errors.map((e) => e.message).join(', ')}`
-              );
-            }
-
-            // Transpile to automation config
-            const result = transpiler.transpile(graph);
-            if (!result.success || !result.output?.automation) {
-              throw new Error('Failed to transpile flow to automation config');
-            }
-
-            // Create automation in Home Assistant
-            const automationConfig = {
-              alias: state.flowName,
-              description: state.flowDescription || '',
-              ...result.output.automation,
-              variables: {
-                ...(result.output.automation.variables || {}),
-                _flode_metadata: {
-                  version: 1,
-                  strategy: 'native' as const,
-                  nodes: graph.nodes.reduce(
-                    (acc, node) => {
-                      acc[node.id] = {
-                        x: node.position.x,
-                        y: node.position.y,
-                      };
-                      return acc;
-                    },
-                    {} as Record<string, { x: number; y: number }>
-                  ),
-                  graph_id: graph.id,
-                  graph_version: 1,
-                },
-              },
-            };
-
-            const automationId = await api.createAutomation(automationConfig);
-
+            const { kind, config } = await buildSaveConfig(get());
+            const api = getHomeAssistantAPI(hassApi);
+            const automationId =
+              kind === 'script'
+                ? await api.createScript(config)
+                : await api.createAutomation(config);
             set({
               automationId,
               isSaving: false,
               lastSaved: new Date(),
               hasUnsavedChanges: false,
             });
-
             return automationId;
           } catch (error) {
             set({ isSaving: false });
@@ -653,93 +685,16 @@ export const useFlowStore = create<FlowState>()(
         },
 
         updateAutomation: async (hassApi: HomeAssistant) => {
-          const state = get();
-          const api = getHomeAssistantAPI(hassApi);
-
-          if (!state.automationId) {
+          const { automationId } = get();
+          if (!automationId) {
             throw new Error('No automation ID set. Use saveAutomation() for new automations.');
           }
-
           set({ isSaving: true });
-
           try {
-            // Validate all nodes first
-            get().validateAllNodes();
-
-            // Check for validation errors
-            const currentState = get();
-            if (currentState.nodeErrors.size > 0) {
-              const errorCount = currentState.nodeErrors.size;
-              throw new Error(
-                `Cannot save: ${errorCount} node(s) have validation errors. Fix the highlighted nodes before saving.`
-              );
-            }
-
-            // Convert flow to graph
-            const graph = state.toFlowGraph();
-
-            // Check for empty automation
-            if (graph.nodes.length === 0) {
-              throw new Error(i18t('errors:validation.emptyAutomation'));
-            }
-
-            // Check for minimum required nodes
-            const triggers = graph.nodes.filter((n) => n.type === 'trigger');
-            const actions = graph.nodes.filter((n) => n.type === 'action');
-
-            if (triggers.length === 0) {
-              throw new Error(i18t('errors:validation.noTrigger'));
-            }
-
-            if (actions.length === 0) {
-              throw new Error(i18t('errors:validation.noAction'));
-            }
-
-            const { FlowTranspiler } = await import('@flode/transpiler');
-            const transpiler = new FlowTranspiler();
-
-            // Validate first
-            const validation = transpiler.validate(graph);
-            if (validation.errors.length > 0) {
-              throw new Error(
-                `Validation failed: ${validation.errors.map((e) => e.message).join(', ')}`
-              );
-            }
-
-            // Transpile to automation config
-            const result = transpiler.transpile(graph);
-            if (!result.success || !result.output?.automation) {
-              throw new Error('Failed to transpile flow to automation config');
-            }
-
-            // Update automation in Home Assistant
-            const automationConfig = {
-              alias: state.flowName,
-              description: state.flowDescription || '',
-              ...result.output.automation,
-              variables: {
-                ...(result.output.automation.variables || {}),
-                _flode_metadata: {
-                  version: 1,
-                  strategy: 'native' as const,
-                  nodes: graph.nodes.reduce(
-                    (acc, node) => {
-                      acc[node.id] = {
-                        x: node.position.x,
-                        y: node.position.y,
-                      };
-                      return acc;
-                    },
-                    {} as Record<string, { x: number; y: number }>
-                  ),
-                  graph_id: graph.id,
-                  graph_version: 1,
-                },
-              },
-            };
-
-            await api.updateAutomation(state.automationId, automationConfig);
-
+            const { kind, config } = await buildSaveConfig(get());
+            const api = getHomeAssistantAPI(hassApi);
+            if (kind === 'script') await api.updateScript(automationId, config);
+            else await api.updateAutomation(automationId, config);
             set({
               isSaving: false,
               lastSaved: new Date(),
@@ -953,23 +908,12 @@ export const useFlowStore = create<FlowState>()(
             ...graph.metadata,
           };
           // Create snapshot for comparison
-          const originalSnapshot = JSON.stringify({
+          const originalSnapshot = flowContentKey({
             flowName: graph.name,
             flowDescription: graph.description || '',
             flowMetadata: importedMetadata,
-            nodes: nodes.map((n) => ({
-              id: n.id,
-              type: n.type,
-              position: n.position,
-              data: n.data,
-            })),
-            edges: edges.map((e) => ({
-              id: e.id,
-              source: e.source,
-              target: e.target,
-              sourceHandle: e.sourceHandle,
-              targetHandle: e.targetHandle,
-            })),
+            nodes,
+            edges,
           });
           set({
             flowId: graph.id,
@@ -1130,3 +1074,50 @@ export const useFlowStore = create<FlowState>()(
     }
   )
 );
+
+/** Everything needed to put a flow back into the editor later (one editor tab). */
+export type FlowSnapshot = PersistedFlowState &
+  Pick<FlowState, 'userVariables' | 'userTriggerVariables'>;
+
+/** The flow currently in the editor, for parking it in a background tab. */
+export function captureFlowSnapshot(): FlowSnapshot {
+  const state = useFlowStore.getState();
+  return {
+    ...persistSelector(state),
+    userVariables: state.userVariables,
+    userTriggerVariables: state.userTriggerVariables,
+  };
+}
+
+/** Undo/redo stacks, kept per tab for the session. */
+export interface FlowHistory {
+  pastStates: Partial<TemporalFlowState>[];
+  futureStates: Partial<TemporalFlowState>[];
+}
+
+export function captureFlowHistory(): FlowHistory {
+  const { pastStates, futureStates } = useFlowStore.temporal.getState();
+  return { pastStates, futureStates };
+}
+
+/**
+ * Puts a parked flow back into the editor: simulation/trace/selection state is
+ * cleared, validation re-run, and its own undo history (if any) restored.
+ */
+export function restoreFlowSnapshot(snapshot: FlowSnapshot, history?: FlowHistory): void {
+  useFlowStore.setState({
+    ...initialState,
+    ...snapshot,
+    selectedNodeId: null,
+    nodeErrors: new Map(),
+  });
+  useFlowStore.getState().validateAllNodes();
+  // The setState above queued a debounced history entry holding the flow that
+  // was open *before* (see `handleSet`) — drop it, or undo in this tab would
+  // bring back the other tab's content.
+  cancelPendingHistoryCommit();
+  useFlowStore.temporal.setState({
+    pastStates: history?.pastStates ?? [],
+    futureStates: history?.futureStates ?? [],
+  });
+}

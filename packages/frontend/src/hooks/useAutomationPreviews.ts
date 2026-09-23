@@ -1,9 +1,10 @@
+import { isPlainObject } from '@flode/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHass } from '@/contexts/HassContext';
 import { useSummaryContext } from '@/hooks/useSummaryContext';
 import type { AutomationCatalogItem } from '@/lib/ha-api';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
-import { asString, isRecord, summarizeTrigger } from '@/lib/node-summary';
+import { asString, summarizeTrigger } from '@/lib/node-summary';
 import type { TriggerNodeData } from '@/store/flow-store';
 
 interface TriggerPreview {
@@ -14,7 +15,7 @@ interface TriggerPreview {
 /** First trigger of an automation config (`triggers`/legacy `trigger`, `trigger`/legacy `platform`). */
 function extractTriggers(config: Record<string, unknown>): TriggerPreview | null {
   const raw = config.triggers ?? config.trigger;
-  const list = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter(isRecord);
+  const list = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter(isPlainObject);
   const first = list[0];
   if (!first) return null;
   const platform = asString(first.trigger) ?? asString(first.platform) ?? '';

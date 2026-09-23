@@ -607,5 +607,22 @@
     "stateToMany": "{{count}} Entitäten wechseln zu {{state}}",
     "stateChangesMany": "{{count}} Entitäten ändern sich",
     "condStateMany": "{{count}} Entitäten sind {{state}}"
+  },
+  "scriptStart": {
+    "kind": "Skript-Start",
+    "noFields": "Ohne Eingabefelder",
+    "withFields_one": "Fragt {{fields}} ab",
+    "withFields_other": "Fragt {{fields}} ab",
+    "hint": "Eingabefelder werden beim Start des Skripts abgefragt und stehen danach als Variablen zur Verfügung, z. B. {{example}}.",
+    "empty": "Noch keine Eingabefelder – das Skript startet ohne Nachfrage.",
+    "variable": "Variable",
+    "name": "Bezeichnung",
+    "description": "Beschreibung",
+    "required": "Pflichtfeld",
+    "type": "Eingabetyp",
+    "default": "Standardwert",
+    "add": "Eingabefeld hinzufügen",
+    "remove": "Eingabefeld „{{name}}“ entfernen",
+    "libraryDescription": "Hier beginnt das Skript – mit seinen Eingabefeldern"
   }
 }

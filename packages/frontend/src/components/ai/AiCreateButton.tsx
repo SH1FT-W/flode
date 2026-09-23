@@ -18,10 +18,7 @@ export function AiCreateButton({ variant = 'outline' }: AiCreateButtonProps) {
     <Button
       variant={variant}
       title={name ?? undefined}
-      onClick={() => {
-        const ui = useUiStore.getState();
-        ui.runGuarded(() => ui.openDialog('aiFlow'));
-      }}
+      onClick={() => useUiStore.getState().openAiFlow()}
     >
       <Sparkles />
       {t('ui:ai.flow.button')}

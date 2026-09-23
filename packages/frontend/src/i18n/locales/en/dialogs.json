@@ -11,7 +11,12 @@
     "categoryLabel": "Category (Optional)",
     "categoryPlaceholder": "Type an existing or new category name...",
     "labelsLabel": "Labels (Optional)",
-    "areaLabel": "Area (Optional)"
+    "areaLabel": "Area (Optional)",
+    "titleScript": "Save script",
+    "titleUpdateScript": "Update script",
+    "descriptionScript": "Save this script to Home Assistant",
+    "descriptionUpdateScript": "Update this script in Home Assistant",
+    "nameLabelScript": "Script name"
   },
   "import": {
     "title": "Open Automation",
@@ -50,7 +55,7 @@
     "automationDisabled": "Automation disabled successfully.",
     "updateStateFailed": "Failed to update automation state",
     "importAutomation": "Import automation",
-    "openingWarning": "Opening will replace your current automation design",
+    "openingWarning": "One automation opens in its own tab. Several selected ones are merged into one new flow – in its own tab as well.",
     "discardTitle": "Discard current flow?",
     "discardDescription": "Your current automation has unsaved changes. Creating or opening a new automation will discard these changes.",
     "confirmDiscard": "Discard & Continue",

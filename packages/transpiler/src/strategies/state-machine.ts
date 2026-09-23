@@ -9,7 +9,7 @@ import type {
   TriggerNode,
   WaitNode,
 } from '@flode/shared';
-import { buildRawStepAction, isDeviceAction } from '@flode/shared';
+import { buildRawStepAction, isDeviceAction, isPlainObject } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
 
@@ -39,6 +39,46 @@ type FanOutPlan = { ok: true; owned: Set<string>; reachable: Set<string> } | Fan
  * - Converging paths (multiple paths merging)
  * - Complex state machines
  */
+/** Condition fields HA's native condition schema understands (see buildNativeCondition). */
+const NATIVE_CONDITION_KEYS = new Set([
+  'entity_id',
+  'state',
+  'above',
+  'below',
+  'attribute',
+  'value_template',
+  'after',
+  'before',
+  'after_offset',
+  'before_offset',
+  'zone',
+  'weekday',
+  'for',
+  'id',
+]);
+
+/**
+ * A condition node's data as a native HA condition — the relevant fields,
+ * empty values dropped, nested and/or/not conditions converted recursively.
+ * `template` (FLODE's nested-condition alias) is written as `value_template`.
+ */
+function toNativeCondition(source: object): Record<string, unknown> {
+  const condition: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(source)) {
+    const target = key === 'template' ? 'value_template' : key;
+    if (key === 'condition') {
+      condition.condition = value;
+    } else if (key === 'conditions') {
+      if (Array.isArray(value) && value.length > 0) {
+        condition.conditions = value.filter(isPlainObject).map(toNativeCondition);
+      }
+    } else if (NATIVE_CONDITION_KEYS.has(target) && value !== undefined && value !== '') {
+      condition[target] = value;
+    }
+  }
+  return condition;
+}
+
 export class StateMachineStrategy extends BaseStrategy {
   readonly name = 'state-machine';
   readonly description =
@@ -1069,6 +1109,13 @@ export class StateMachineStrategy extends BaseStrategy {
   private needsNativeConditionCheck(node: ConditionNode): boolean {
     const data = node.data;
 
+    // A duration ("on for 10 minutes") has no Jinja equivalent in
+    // buildConditionTemplate — inlining would silently drop it and make the
+    // condition true the moment the state changes (upstream C.A.F.E. #247).
+    if (data.for !== undefined || data.conditions?.some((c) => c.for !== undefined)) {
+      return true;
+    }
+
     // Template conditions with {% %} statements need native check
     if (data.condition === 'template') {
       const template = data.value_template || '';
@@ -1098,51 +1145,7 @@ export class StateMachineStrategy extends BaseStrategy {
    * Build native HA condition object for use in if/then/else
    */
   private buildNativeCondition(node: ConditionNode): Record<string, unknown> {
-    const data = node.data;
-    const condition: Record<string, unknown> = {
-      condition: data.condition,
-    };
-
-    // Copy relevant fields based on condition type
-    if (data.entity_id) condition.entity_id = data.entity_id;
-    if (data.state !== undefined) condition.state = data.state;
-    if (data.above !== undefined) condition.above = data.above;
-    if (data.below !== undefined) condition.below = data.below;
-    if (data.attribute) condition.attribute = data.attribute;
-    if (data.value_template) condition.value_template = data.value_template;
-    if (data.after) condition.after = data.after;
-    if (data.before) condition.before = data.before;
-    if (data.after_offset) condition.after_offset = data.after_offset;
-    if (data.before_offset) condition.before_offset = data.before_offset;
-    if (data.zone) condition.zone = data.zone;
-    if (data.weekday) condition.weekday = data.weekday;
-    if (data.id) condition.id = data.id;
-
-    // Handle nested conditions
-    if (data.conditions && data.conditions.length > 0) {
-      condition.conditions = data.conditions.map((c) => {
-        const nested: Record<string, unknown> = {
-          condition: c.condition,
-        };
-        if (c.entity_id) nested.entity_id = c.entity_id;
-        if (c.state !== undefined) nested.state = c.state;
-        if (c.above !== undefined) nested.above = c.above;
-        if (c.below !== undefined) nested.below = c.below;
-        if (c.attribute) nested.attribute = c.attribute;
-        if (c.value_template) nested.value_template = c.value_template;
-        if (c.template) nested.value_template = c.template;
-        if (c.after) nested.after = c.after;
-        if (c.before) nested.before = c.before;
-        if (c.after_offset) nested.after_offset = c.after_offset;
-        if (c.before_offset) nested.before_offset = c.before_offset;
-        if (c.zone) nested.zone = c.zone;
-        if (c.weekday) nested.weekday = c.weekday;
-        if (c.id) nested.id = c.id;
-        return Object.fromEntries(Object.entries(nested).filter(([, v]) => v !== undefined));
-      });
-    }
-
-    return Object.fromEntries(Object.entries(condition).filter(([, v]) => v !== undefined));
+    return toNativeCondition(node.data);
   }
 
   /**

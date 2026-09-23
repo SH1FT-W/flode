@@ -76,7 +76,9 @@ export function LastRunChip() {
   const statusText = useStatusLabel();
   const { latest, isLoading, isShowing, show, hide } = useLastRun();
   const { entityId: aiEntityId } = useAiTask();
-  if (!automationId) return null;
+  // Script runs trace as `sequence/…`, not the automation paths this maps.
+  const isScript = useFlowStore((s) => s.flowMetadata.kind === 'script');
+  if (!automationId || isScript) return null;
 
   const execution = latest?.script_execution;
   const tone = runTone(execution, Boolean(latest?.error));

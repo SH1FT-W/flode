@@ -30,7 +30,8 @@ import {
   type AutomationCatalogSortDirection,
   useAutomationCatalog,
 } from '@/hooks/useAutomationCatalog';
-import { useLoadAutomation } from '@/hooks/useLoadAutomation';
+import { useEditorTabs } from '@/hooks/useEditorTabs';
+import { useOpenAutomation } from '@/hooks/useOpenAutomation';
 import { useRelativeTime } from '@/hooks/useRelativeTime';
 import { useToggleAutomation } from '@/hooks/useToggleAutomation';
 import { mergeAutomationGraphs } from '@/lib/automation-merge';
@@ -60,7 +61,8 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
   const startNew = useStartNewAutomation();
   const setView = useUiStore((s) => s.setView);
   const { fitView } = useReactFlow();
-  const loadAutomation = useLoadAutomation();
+  const openAutomation = useOpenAutomation();
+  const tabs = useEditorTabs();
 
   const { catalogByArea, sortedCatalogItems } = useAutomationCatalog({
     isOpen,
@@ -95,7 +97,6 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
   const hasVisibleResults = sortedCatalogItems.length > 0;
 
   /** Asks to discard unsaved changes first (shared app-wide guard, see ui-store). */
-  const confirmAction = (action: () => void) => useUiStore.getState().runGuarded(action);
 
   const handleSort = (column: AutomationCatalogSortColumn) => {
     if (sortColumn === column) {
@@ -145,19 +146,15 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
     });
   };
 
-  const handleImportAutomation = async (automation: AutomationCatalogItem) => {
-    setView('editor');
-    const success = await loadAutomation(automation);
-    if (success) {
-      onClose();
-    }
+  // Opens in its own tab (or switches to it) — nothing open gets replaced.
+  const handleImportAutomation = (automation: AutomationCatalogItem) => {
+    openAutomation(automation);
+    onClose();
   };
 
   const handleOpenSingleSelection = () => {
     if (selectedAutomations.length !== 1) return;
-    confirmAction(() => {
-      handleImportAutomation(selectedAutomations[0]);
-    });
+    handleImportAutomation(selectedAutomations[0]);
   };
 
   const buildMergedFlowName = (sources: AutomationCatalogItem[]): string => {
@@ -228,9 +225,12 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
 
       const mergedGraph = mergeAutomationGraphs(mergeSources);
       setView('editor');
-      fromFlowGraph(mergedGraph);
-      setFlowName(buildMergedFlowName(selectedAutomations));
-      setAutomationId(null);
+      // The merged flow is a new, unsaved automation — in its own tab.
+      await tabs.openNew(() => {
+        fromFlowGraph(mergedGraph);
+        setFlowName(buildMergedFlowName(selectedAutomations));
+        setAutomationId(null);
+      });
       setSelectedEntityIds(new Set());
 
       setTimeout(() => {
@@ -266,7 +266,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
                 onClick={
                   selectedAutomations.length === 1
                     ? handleOpenSingleSelection
-                    : () => confirmAction(() => void handleMergeSelection())
+                    : () => void handleMergeSelection()
                 }
                 disabled={selectedAutomations.length === 0}
               >
@@ -310,6 +310,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
                 <div className="flex">
                   <div className="flex w-[44px] items-center justify-center border-b bg-muted px-2 py-2">
                     <Checkbox
+                      className="border-solid"
                       checked={allVisibleSelected}
                       onCheckedChange={toggleSelectAllVisible}
                       title={
@@ -376,6 +377,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
                       >
                         <div className="flex w-[44px] items-center justify-center px-2 py-2">
                           <Checkbox
+                            className="border-solid"
                             checked={isSelected}
                             onCheckedChange={() => toggleSelection(automation.entity_id)}
                             title={
@@ -436,9 +438,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() =>
-                              confirmAction(() => void handleImportAutomation(automation))
-                            }
+                            onClick={() => handleImportAutomation(automation)}
                             title={t('dialogs:import.importAutomation')}
                           >
                             <Download className="h-4 w-4" />

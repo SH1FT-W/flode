@@ -16,13 +16,17 @@
     "toggleLabel": "{{name}} an/aus",
     "on": "An",
     "off": "Aus",
-    "openTogether": "Mehrere öffnen",
-    "mergeHint": "Öffnet mehrere Automationen gemeinsam auf einer Canvas",
+    "openTogether": "Zusammenführen",
+    "mergeHint": "Führt mehrere Automationen zu einem gemeinsamen Flow zusammen",
     "sortName": "A–Z",
     "sortRecent": "Zuletzt ausgelöst",
     "unavailable": "Nicht verfügbar",
     "unavailableHint": "Home Assistant hat keine Konfiguration zu dieser Automation (gelöscht?) – sie lässt sich nicht öffnen.",
-    "summaryUnavailable": "{{count}} nicht verfügbar"
+    "summaryUnavailable": "{{count}} nicht verfügbar",
+    "sections": {
+      "automations": "Automationen",
+      "scripts": "Skripte"
+    }
   },
   "editor": {
     "back": "Automationen",
@@ -88,7 +92,8 @@
     "tidyHint": "Flow automatisch anordnen",
     "fitView": "Alles zeigen",
     "library": "Bausteine ein-/ausblenden",
-    "minimap": "Übersichtskarte ein-/ausblenden"
+    "minimap": "Übersichtskarte ein-/ausblenden",
+    "newScript": "Neues Skript"
   },
   "shortcuts": {
     "title": "Tastenkürzel",
@@ -99,7 +104,10 @@
     "emptyText": "Füge einen Auslöser hinzu – oder öffne mit {{shortcut}} alle Bausteine.",
     "addTrigger": "Auslöser hinzufügen",
     "browseBlocks": "Alle Bausteine",
-    "addNext": "Nächsten Schritt hinzufügen"
+    "addNext": "Nächsten Schritt hinzufügen",
+    "emptyScriptTitle": "Das Skript braucht einen Skript-Start",
+    "emptyScriptText": "Dort beginnt das Skript und legt seine Eingabefelder fest – oder öffne mit {{shortcut}} alle Bausteine.",
+    "addScriptStart": "Skript-Start hinzufügen"
   },
   "inspector": {
     "automation": "Automation",
@@ -125,7 +133,10 @@
     "invalidService": "Ungültige Aktion „{{service}}“ – erwartet wird bereich.dienst",
     "noTrigger": "Die Automation hat noch keinen Auslöser",
     "noAction": "Die Automation hat noch keine Aktion",
-    "automation": "Automation"
+    "automation": "Automation",
+    "scriptTrigger": "Skripte haben keine Auslöser – sie starten über den Skript-Start. Entferne diesen Auslöser.",
+    "scriptStartCount": "Ein Skript braucht genau einen Skript-Start.",
+    "scriptStartInAutomation": "Ein Skript-Start gehört nur in Skripte – ersetze ihn durch einen Auslöser."
   },
   "save": {
     "saved": "In Home Assistant gespeichert",
@@ -170,7 +181,17 @@
       "failed": "Die KI konnte keinen gültigen Flow erzeugen",
       "draftNote": "Nur ein Entwurf – gespeichert wird erst, wenn du speicherst.",
       "done": "Entwurf erstellt – bitte prüfen und dann speichern",
-      "unknownEntities": "Entwurf erstellt, aber diese Entitäten gibt es nicht: {{ids}} – bitte ersetzen"
+      "unknownEntities": "Entwurf erstellt, aber diese Entitäten gibt es nicht: {{ids}} – bitte ersetzen",
+      "kinds": {
+        "automation": "Automation",
+        "script": "Skript"
+      },
+      "script": {
+        "placeholder": "z. B. Guten-Morgen-Skript: Schlafzimmerlicht mit wählbarer Helligkeit an, dann Rollläden hoch",
+        "example1": "Guten-Morgen-Skript: Licht mit wählbarer Helligkeit an, danach Rollläden hoch",
+        "example2": "Alles aus: alle Lichter und Medien ausschalten, Haustür abschließen",
+        "example3": "Timer-Skript: Kaffeemaschine für eine wählbare Anzahl Minuten einschalten"
+      }
     },
     "explain": {
       "button": "Erklären",
@@ -195,5 +216,41 @@
       "dismiss": "Hinweis ausblenden",
       "defaultStep": "Du hast schon eine KI mit „AI Task“ eingerichtet, aber noch keine für FLODE ausgewählt. Wähle sie unter Einstellungen → System → KI → „KI-Vorschläge“ → „Aufgaben zur Datengenerierung“ aus und speichere – danach erscheint in FLODE „Mit KI erstellen“."
     }
+  },
+  "runFrom": {
+    "title": "Ab hier ausführen",
+    "description": "Führt „{{name}}“ und alles danach jetzt echt in Home Assistant aus – Geräte werden wirklich geschaltet. Bedingungen werden mit den aktuellen Zuständen geprüft.",
+    "preparing": "Wird vorbereitet …",
+    "invalid": "Dieser Teil des Flows kann so nicht ausgeführt werden: {{errors}}",
+    "steps_one": "{{count}} Schritt wird ausgeführt.",
+    "steps_other": "{{count}} Schritte werden ausgeführt.",
+    "triggerData": "Einige Schritte verwenden Daten des Auslösers (trigger.…). Die gibt es beim manuellen Start nicht – diese Schritte können fehlschlagen oder leere Werte nutzen.",
+    "confirm": "Jetzt ausführen",
+    "started": "„{{name}}“ läuft …",
+    "done": "„{{name}}“ und die folgenden Schritte sind durchgelaufen",
+    "failed": "Ausführen fehlgeschlagen: {{error}}"
+  },
+  "tabs": {
+    "label": "Geöffnete Automationen",
+    "new": "Neue Automation in neuem Tab",
+    "close": "„{{name}}“ schließen",
+    "unsaved": "Ungespeicherte Änderungen",
+    "discardTitle": "Tab mit Änderungen schließen?",
+    "discardDescription": "Diese Automation hat ungespeicherte Änderungen. Beim Schließen gehen sie verloren.",
+    "discardConfirm": "Schließen & verwerfen"
+  },
+  "scripts": {
+    "started": "„{{name}}“ gestartet",
+    "runFailed": "Skript konnte nicht gestartet werden: {{error}}",
+    "runTitle": "„{{name}}“ ausführen",
+    "runDescription": "Das Skript fragt diese Werte ab. Ausgeführt wird die in Home Assistant gespeicherte Version.",
+    "run": "Ausführen",
+    "tag": "Skript",
+    "runSaved": "Führt die gespeicherte Version in Home Assistant aus",
+    "title": "Skripte",
+    "summary_one": "{{count}} Skript",
+    "summary_other": "{{count}} Skripte",
+    "emptyAll": "Noch keine Skripte – leg mit „Neues Skript“ das erste an.",
+    "running": "Läuft"
   }
 }

@@ -58,6 +58,19 @@ describe('buildFlowInstructions', () => {
     expect(text).toContain('Flurlicht an');
     expect(text).toContain('language: de');
   });
+
+  it('asks for a script config with fields when building a script', () => {
+    const text = buildFlowInstructions({
+      description: 'Flurlicht mit wählbarer Helligkeit',
+      entities: [CANDIDATES[0]],
+      language: 'de',
+      kind: 'script',
+    });
+    expect(text).toContain('Home Assistant scripts');
+    expect(text).toContain('sequence');
+    expect(text).toContain('fields:');
+    expect(text).not.toContain('triggers, conditions, actions');
+  });
 });
 
 describe('buildExplainInstructions', () => {

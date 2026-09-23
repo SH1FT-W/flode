@@ -5,7 +5,7 @@
 
   <p><strong>A visual flow editor for Home Assistant automations.</strong></p>
 
-  [![Release](https://img.shields.io/badge/version-2.1.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
+  [![Release](https://img.shields.io/badge/version-2.2.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
   [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](https://github.com/SH1FT-W/flode/blob/main/LICENSE)
   [![HACS](https://img.shields.io/badge/HACS-default-41BDF5?style=flat-square)](https://hacs.xyz)
 
@@ -25,6 +25,13 @@
 Draw an automation as a diagram — triggers, conditions, actions, connected on a canvas — and FLODE transpiles it into **100% native Home Assistant YAML**, stored directly in HA core. No external server, no proprietary format, no lock-in. What you build stays fully editable in HA's own automation editor, too.
 
 > FLODE is a fork of [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) by [@FezVrasta](https://github.com/FezVrasta), rebuilt with a long list of fixes and features — see the [changelog](https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md). It never overwrites existing data, but back up your automations before editing anyway.
+
+## New in 2.2: scripts, tabs, run from here
+
+- **Scripts** — edit Home Assistant scripts just like automations: a *script start* holds the input fields (with Home Assistant's own input types), *Run* asks for them, and *Create with AI* builds scripts too.
+- **Tabs** — keep several automations and scripts open, each with its own undo history; they're still there after a reload.
+- **Run from here** — right-click any step to run it and everything after it for real, after a confirmation.
+- **Fixes** — conditions with a duration ("on for 10 minutes") and time conditions now work correctly in flows with several triggers; redo works right after undo again.
 
 ## New in 2.1: AI assist
 

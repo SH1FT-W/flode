@@ -24,6 +24,7 @@ import {
   HATriggerSchema,
   isDeviceAction,
   isHACondition,
+  isPlainObject,
   isTargetedPlatform,
   validateGraphStructure,
 } from '@flode/shared';
@@ -1154,15 +1155,20 @@ export class YamlParser {
           if (currentNodeValue.includes('{%') && currentNodeValue.includes('%}')) {
             nodeType = 'condition';
 
-            // Extract true and false targets
-            const trueMatch = currentNodeValue.match(/{%\s*if[^%]*%}\s*"?([^"'{%]+?)"?(?=\s*{%)/);
+            // Extract true and false targets. The `if` expression may itself
+            // contain `%` (e.g. `now().strftime('%H:%M:%S')` from a time
+            // condition), so it runs lazily up to the first `%}` instead of
+            // stopping at any `%`.
+            const trueMatch = currentNodeValue.match(
+              /{%-?\s*if\b[\s\S]*?%}\s*"?([^"'{%]+?)"?(?=\s*{%)/
+            );
             const falseMatch = currentNodeValue.match(/{%\s*else\s*%}\s*"?([^"'{%]+?)"?(?=\s*{%)/);
 
             trueTarget = trueMatch ? trueMatch[1] : null;
             falseTarget = falseMatch ? falseMatch[1] : null;
 
             // Extract condition expression from Jinja template
-            const conditionMatch = currentNodeValue.match(/{%\s*if\s+(.+?)\s*%}/);
+            const conditionMatch = currentNodeValue.match(/{%-?\s*if\s+([\s\S]+?)\s*-?%}/);
             if (conditionMatch) {
               const conditionExpr = conditionMatch[1];
               Object.assign(data, this.parseJinjaCondition(conditionExpr));
@@ -1172,6 +1178,17 @@ export class YamlParser {
             trueTarget = currentNodeValue === 'END' ? null : currentNodeValue;
           }
         }
+      }
+      // Condition written as a native HA `if/then/else` (conditions Jinja
+      // can't express: `for` durations, templates with `{% %}` blocks) — each
+      // branch holds the `current_node` transition.
+      else if (Array.isArray(seqItem.if)) {
+        nodeType = 'condition';
+        const [condition] = seqItem.if;
+        if (isPlainObject(condition)) Object.assign(data, condition);
+        if (seqItem.alias) data.alias = seqItem.alias;
+        trueTarget = this.transitionTarget(seqItem.then);
+        falseTarget = this.transitionTarget(seqItem.else);
       }
       // Check for delay action
       else if (seqItem.delay !== undefined) {
@@ -1207,6 +1224,43 @@ export class YamlParser {
     return { nodeId, nodeType, data, trueTarget, falseTarget, parallelItems };
   }
 
+  /** The `current_node` a state-machine branch moves to (`null` for END). */
+  private transitionTarget(steps: unknown): string | null {
+    if (!Array.isArray(steps)) return null;
+    for (const step of steps) {
+      const target =
+        isPlainObject(step) && isPlainObject(step.variables)
+          ? step.variables.current_node
+          : undefined;
+      if (typeof target === 'string') return target === 'END' ? null : target;
+    }
+    return null;
+  }
+
+  /**
+   * One check of a time condition as written by the state-machine strategy's
+   * `buildTimeCondition`: `now().strftime('%H:%M:%S') >= '21:00'` (after),
+   * `… < '06:00'` (before) or `now().strftime('%a').lower()[:3] in ['mon', …]`.
+   */
+  private parseTimeLeaf(expr: string): Record<string, unknown> | null {
+    const clock = expr.match(
+      /^now\(\)\.strftime\(\s*['"]%H:%M:%S['"]\s*\)\s*(>=|<)\s*['"]([^'"]+)['"]$/
+    );
+    if (clock) {
+      return clock[1] === '>='
+        ? { condition: 'time', after: clock[2] }
+        : { condition: 'time', before: clock[2] };
+    }
+    const weekday = expr.match(
+      /^now\(\)\.strftime\(\s*['"]%a['"]\s*\)\.lower\(\)\[:3\]\s+in\s+\[([^\]]*)\]$/
+    );
+    if (weekday) {
+      const days = [...weekday[1].matchAll(/['"]([a-z]{3})['"]/g)].map((m) => m[1]);
+      return { condition: 'time', weekday: days };
+    }
+    return null;
+  }
+
   /**
    * Parse Jinja condition expression to extract condition data
    */
@@ -1228,10 +1282,14 @@ export class YamlParser {
 
     const andParts = this.splitTopLevelJinja(trimmed, ' and ');
     if (andParts.length > 1) {
-      return {
-        condition: 'and',
-        conditions: andParts.map((part) => this.parseJinjaCondition(part)),
-      };
+      const conditions = andParts.map((part) => this.parseJinjaCondition(part));
+      // `after`/`before`/`weekday` of one time condition are emitted as
+      // separate `and`-joined checks (see state-machine's buildTimeCondition):
+      // fold them back into that single time condition.
+      if (conditions.every((c) => c.condition === 'time')) {
+        return Object.assign({}, ...conditions);
+      }
+      return { condition: 'and', conditions };
     }
 
     const notMatch = trimmed.match(/^not\s*\((.*)\)$/s);
@@ -1242,6 +1300,9 @@ export class YamlParser {
         conditions: innerParts.map((part) => this.parseJinjaCondition(part)),
       };
     }
+
+    const timeLeaf = this.parseTimeLeaf(trimmed);
+    if (timeLeaf) return timeLeaf;
 
     // is_state('entity', 'state')
     const isStateMatch = trimmed.match(

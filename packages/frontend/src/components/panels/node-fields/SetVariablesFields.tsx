@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { HaSelector } from '@/ha';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
+import { omitKey, renameKey, uniqueKey } from '@/lib/record-keys';
 import { getNodeDataObject } from '@/utils/nodeData';
 
 interface SetVariablesFieldsProps {
@@ -26,30 +27,11 @@ export function SetVariablesFields({ node, onChange }: SetVariablesFieldsProps) 
   const variableEntries = Object.entries(variables);
 
   const handleAddVariable = () => {
-    // Generate a unique key for the new variable
-    const existingKeys = Object.keys(variables);
-    let newKey = 'variable';
-    let counter = 1;
-    while (existingKeys.includes(newKey)) {
-      newKey = `variable_${counter}`;
-      counter++;
-    }
-    onChange('variables', { ...variables, [newKey]: '' });
+    onChange('variables', { ...variables, [uniqueKey(Object.keys(variables), 'variable')]: '' });
   };
 
   const handleKeyChange = (oldKey: string, newKey: string) => {
-    if (oldKey === newKey) return;
-
-    // Build new variables object preserving order but with renamed key
-    const newVariables: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(variables)) {
-      if (key === oldKey) {
-        newVariables[newKey] = value;
-      } else {
-        newVariables[key] = value;
-      }
-    }
-    onChange('variables', newVariables);
+    if (oldKey !== newKey) onChange('variables', renameKey(variables, oldKey, newKey));
   };
 
   const handleValueChange = (key: string, value: string) => {
@@ -57,9 +39,7 @@ export function SetVariablesFields({ node, onChange }: SetVariablesFieldsProps) 
   };
 
   const handleDeleteVariable = (keyToDelete: string) => {
-    const newVariables = { ...variables };
-    delete newVariables[keyToDelete];
-    onChange('variables', newVariables);
+    onChange('variables', omitKey(variables, keyToDelete));
   };
 
   return (

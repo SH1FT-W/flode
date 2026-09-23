@@ -14,6 +14,7 @@ import {
   Plus,
   Save,
   SaveAll,
+  ScrollText,
   Search,
   Sparkles,
 } from 'lucide-react';
@@ -22,9 +23,11 @@ import { useTranslation } from 'react-i18next';
 import { useThemeOverride } from '@/contexts/ThemeOverrideContext';
 import { useAiTask } from '@/hooks/useAiTask';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { useEditorTabs } from '@/hooks/useEditorTabs';
 import { useQuickSave } from '@/hooks/useQuickSave';
 import { exportFlowJson, importFlowJson } from '@/lib/flow-file';
 import { showErrorToast } from '@/lib/haToast';
+import { scriptStartType } from '@/lib/node-catalog';
 import type { ShortcutSpec } from '@/lib/shortcuts';
 import { fitViewOptions } from '@/lib/viewport';
 import { useFlowStore } from '@/store/flow-store';
@@ -46,19 +49,38 @@ export interface AppCommand {
 const BOTH: readonly AppView[] = ['home', 'editor'];
 const EDITOR: readonly AppView[] = ['editor'];
 
-/** Starts a fresh automation in the editor (after confirming unsaved changes). */
+/** Starts a fresh automation in a new editor tab. */
 export function useStartNewAutomation() {
   const { t } = useTranslation(['common']);
-  return useCallback(
-    () =>
-      useUiStore.getState().runGuarded(() => {
-        const { reset, setFlowName } = useFlowStore.getState();
-        reset();
-        setFlowName(t('defaults.newAutomation'));
-        useUiStore.getState().setView('editor');
-      }),
-    [t]
-  );
+  const tabs = useEditorTabs();
+  return useCallback(() => {
+    useUiStore.getState().setView('editor');
+    void tabs.openNew(() => useFlowStore.getState().setFlowName(t('defaults.newAutomation')));
+  }, [t, tabs]);
+}
+
+/** Starts a fresh script — a new tab with just the script start node. */
+export function useStartNewScript() {
+  const { t } = useTranslation(['common']);
+  const tabs = useEditorTabs();
+  const { fitView } = useReactFlow();
+  return useCallback(() => {
+    useUiStore.getState().setView('editor');
+    void tabs
+      .openNew(() => {
+        const flow = useFlowStore.getState();
+        flow.setFlowName(t('defaults.newScript'));
+        flow.setFlowMetadata({ kind: 'script' });
+        flow.addNode({
+          id: `trigger_${Date.now()}`,
+          type: scriptStartType.type,
+          position: { x: 80, y: 120 },
+          data: { ...scriptStartType.defaultData },
+        });
+      })
+      // Bring the start node into view once it has rendered.
+      .then(() => setTimeout(() => void fitView(fitViewOptions()), 150));
+  }, [t, tabs, fitView]);
 }
 
 /**
@@ -72,6 +94,7 @@ export function useAppCommands(): AppCommand[] {
   const { setThemeOverride } = useThemeOverride();
   const isDark = useDarkMode();
   const startNew = useStartNewAutomation();
+  const startNewScript = useStartNewScript();
   const quickSave = useQuickSave();
   const { entityId: aiEntityId } = useAiTask();
 
@@ -121,6 +144,13 @@ export function useAppCommands(): AppCommand[] {
         run: startNew,
       },
       {
+        id: 'newScript',
+        label: t('ui:commands.newScript'),
+        icon: ScrollText,
+        views: BOTH,
+        run: startNewScript,
+      },
+      {
         id: 'open',
         label: t('ui:commands.openAutomation'),
         icon: FolderOpen,
@@ -137,7 +167,7 @@ export function useAppCommands(): AppCommand[] {
               icon: Sparkles,
               shortcut: 'ctrl+i',
               views: BOTH,
-              run: () => ui().runGuarded(() => ui().openDialog('aiFlow')),
+              run: () => ui().openAiFlow(),
             },
           ]
         : []),
@@ -216,5 +246,5 @@ export function useAppCommands(): AppCommand[] {
         run: () => ui().openDialog('clear'),
       },
     ];
-  }, [t, fitView, setThemeOverride, isDark, startNew, quickSave, aiEntityId]);
+  }, [t, fitView, setThemeOverride, isDark, startNew, startNewScript, quickSave, aiEntityId]);
 }

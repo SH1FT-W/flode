@@ -20,6 +20,8 @@ const MODES_WITH_MAX = new Set<AutomationMode>(['queued', 'parallel']);
 
 export function AutomationSettingsPanel() {
   const { t } = useTranslation('common');
+  /** Script-specific wording lives under `…Script` keys. */
+  const kindSuffix = useFlowStore((s) => (s.flowMetadata.kind === 'script' ? 'Script' : ''));
   const flowName = useFlowStore((s) => s.flowName);
   const flowDescription = useFlowStore((s) => s.flowDescription);
   const setFlowName = useFlowStore((s) => s.setFlowName);
@@ -63,15 +65,15 @@ export function AutomationSettingsPanel() {
   return (
     <div className="h-full flex-1 space-y-4 overflow-y-auto p-4">
       <h3 className="mt-1.5 font-semibold text-foreground text-sm">
-        {t('automationSettings.title')}
+        {t(`automationSettings.title${kindSuffix}`)}
       </h3>
 
-      <FormField label={t('labels.automationName')}>
+      <FormField label={t(`labels.automationName${kindSuffix}`)}>
         <Input
           type="text"
           value={flowName}
           onChange={(e) => setFlowName(e.target.value)}
-          placeholder={t('placeholders.enterAutomationName')}
+          placeholder={t(`placeholders.enterAutomationName${kindSuffix}`)}
         />
       </FormField>
 
@@ -79,7 +81,7 @@ export function AutomationSettingsPanel() {
         <Textarea
           value={flowDescription}
           onChange={(e) => setFlowDescription(e.target.value)}
-          placeholder={t('placeholders.describeAutomation')}
+          placeholder={t(`placeholders.describeAutomation${kindSuffix}`)}
           rows={3}
         />
       </FormField>

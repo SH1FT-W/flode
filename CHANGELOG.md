@@ -4,6 +4,20 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [2.2.0] — 2026-09-23 — Scripts, tabs, run from here
+
+### Added
+- **Scripts** — open, edit, create and save Home Assistant scripts, not just automations. The start screen has an *Automations | Scripts* switch; script cards show whether a script is running and have a *Run* button. A script starts at a **script start** node that holds its **input fields** (variable, label, description, required, input type via Home Assistant's own selector picker, default value). *Run* asks for the fields with Home Assistant's own inputs, prefilled with the defaults. The YAML tab shows the script config HA stores. Scripts offer no trigger block; a deleted script start can be added back from the block library or the empty canvas. Upstream C.A.F.E. #100.
+- **Tabs** — several automations and scripts open at once. Opening one that's already open switches to its tab; each tab keeps its own undo history and view; unsaved changes show as a dot and are asked about when closing. Open tabs (including unsaved drafts) are restored after a reload, and FLODE comes back where you left it — in the editor with the last tab, or on the start screen. Upstream C.A.F.E. #61. The *Open automation* dialog opens in tabs too; *Merge* (formerly *Open several*) combines several automations into one new flow in its own tab, and its checkboxes are visible again.
+- **Create scripts with AI** — *Create with AI* now builds scripts too: pick *Automation* or *Script* in the dialog (preselected by where you are). For scripts the AI declares input fields for values you'd choose at start (e.g. brightness, minutes) and uses them in the steps; the draft goes through the same checks and correction round as automations.
+- **Run from here** — right-click a card (or ⌘K / Ctrl+K) → *Run from here* runs that step and everything after it for real in Home Assistant, after a confirmation that names the step, counts the steps and warns when they rely on trigger data. Upstream C.A.F.E. #25.
+
+### Fixed
+- **Conditions with a duration ran immediately** — in flows written as a state machine (several triggers leading to different steps), a condition like *"switch on for 10 minutes"* dropped the 10 minutes and passed the moment the switch turned on, so the automation always took the same branch. Home Assistant now checks it natively, duration included. Upstream C.A.F.E. #247.
+- **Time conditions broke on reopening** — in the same state-machine format a time condition (`now().strftime('%H:%M:%S') >= '21:00'`) lost its connection to the next step when the automation was opened again ("has no outgoing edges"), and came back as a template condition. It now stays connected and opens as a time condition again. Upstream C.A.F.E. #256.
+- Native `if/then/else` conditions inside state-machine flows (used for templates with `{% %}` blocks) weren't read back when reopening.
+- **Redo** was greyed out right after undo — re-measuring the cards after an undo counted as a new edit and cleared the redo history.
+
 ## [2.1.0] — 2026-09-23 — AI assist
 
 FLODE can now use the AI you set up in Home Assistant. Nothing changes if you don't have one — the AI entry points only appear when an AI Task entity is chosen as default under Settings → System → AI → AI suggestions → Data generation tasks, exactly like Home Assistant's own AI features.

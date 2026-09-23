@@ -11,6 +11,10 @@ export { applyHeuristicLayout } from './parser/layout';
 export type { ParseResult } from './parser/YamlParser';
 // Parser
 export * from './parser/YamlParser';
+export type { ScriptTranspileResult } from './script';
+export { parseScript, transpileScript } from './script';
+export type { SequenceResult } from './sequence';
+export { buildSequenceFlow, SEQUENCE_ENTRY_ID, transpileSequence } from './sequence';
 export type { HAYamlOutput, TranspilerStrategy } from './strategies/base';
 // Strategies
 export { BaseStrategy } from './strategies/base';

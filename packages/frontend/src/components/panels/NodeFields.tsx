@@ -1,13 +1,14 @@
-import { getRawStep } from '@flode/shared';
 import type { FlowNode, SetVariablesNode } from '@flode/shared';
+import { getRawStep, isScriptStart } from '@flode/shared';
 import type { HassEntity } from '@/types/hass';
 import { ActionFields } from './node-fields/ActionFields';
 import { ConditionFields } from './node-fields/ConditionFields';
 import { DelayFields } from './node-fields/DelayFields';
+import { RawStepFields } from './node-fields/RawStepFields';
+import { ScriptStartFields } from './node-fields/ScriptStartFields';
 import { SetVariablesFields } from './node-fields/SetVariablesFields';
 import { TriggerFields } from './node-fields/TriggerFields';
 import { WaitFields } from './node-fields/WaitFields';
-import { RawStepFields } from './node-fields/RawStepFields';
 
 interface NodeFieldsProps {
   node: FlowNode;
@@ -22,6 +23,7 @@ interface NodeFieldsProps {
 export function NodeFields({ node, onChange, entities }: NodeFieldsProps) {
   switch (node.type) {
     case 'trigger':
+      if (isScriptStart(node.data)) return <ScriptStartFields node={node} onChange={onChange} />;
       return <TriggerFields node={node} onChange={onChange} entities={entities} />;
 
     case 'condition':

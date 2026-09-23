@@ -76,4 +76,42 @@ describe('computeFlowIssues', () => {
       { id: 'field:a1:0', kind: 'field', nodeId: 'a1', message: 'errors:validation.x' },
     ]);
   });
+
+  describe('scripts', () => {
+    const start = {
+      id: 's1',
+      type: 'trigger' as const,
+      position: { x: 0, y: 0 },
+      data: { trigger: 'flode_script_start' },
+    };
+    const script = (nodes: FlowGraph['nodes'], edges: FlowGraph['edges'] = []): FlowGraph => ({
+      ...graph(nodes, edges),
+      metadata: { mode: 'single', kind: 'script' },
+    });
+
+    it('accepts one script start', () => {
+      const issues = computeFlowIssues(
+        script([start, action('a1')], [edge('s1', 'a1')]),
+        new Map()
+      );
+      expect(issues.map((i) => i.kind)).toEqual([]);
+    });
+
+    it('flags real triggers in a script', () => {
+      const issues = computeFlowIssues(
+        script([start, trigger, action('a1')], [edge('s1', 'a1'), edge('t1', 'a1')]),
+        new Map()
+      );
+      expect(issues).toContainEqual(
+        expect.objectContaining({ kind: 'scriptTrigger', nodeId: 't1' })
+      );
+    });
+
+    it('flags a script start in an automation', () => {
+      const issues = computeFlowIssues(graph([start, action('a1')], [edge('s1', 'a1')]), new Map());
+      expect(issues).toContainEqual(
+        expect.objectContaining({ kind: 'scriptStartInAutomation', nodeId: 's1' })
+      );
+    });
+  });
 });

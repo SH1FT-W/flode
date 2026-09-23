@@ -3,10 +3,12 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AiCreateButton } from '@/components/ai/AiCreateButton';
 import { AiSetupHint } from '@/components/ai/AiSetupHint';
+import { HomeCard } from '@/components/home/HomeCard';
+import { ScriptList } from '@/components/home/ScriptList';
 import { Button } from '@/components/ui/button';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useHass } from '@/contexts/HassContext';
-import { useStartNewAutomation } from '@/hooks/useAppCommands';
+import { useStartNewAutomation, useStartNewScript } from '@/hooks/useAppCommands';
 import { useAutomationCatalog } from '@/hooks/useAutomationCatalog';
 import { useAutomationPreviews } from '@/hooks/useAutomationPreviews';
 import { useOpenAutomation } from '@/hooks/useOpenAutomation';
@@ -89,24 +91,7 @@ function AutomationCard({ automation, preview, onOpen }: AutomationCardProps) {
   const formatRelativeTime = useRelativeTime();
 
   return (
-    // A real <button> can't be used: the card contains the on/off switch, and
-    // interactive elements must not be nested inside a button.
-    // biome-ignore lint/a11y/useSemanticElements: see above
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(automation)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onOpen(automation);
-        }
-      }}
-      className={cn(
-        'flex cursor-pointer flex-col gap-3 rounded-2xl border border-border bg-card px-4 pt-3.5 pb-3 text-left shadow-card transition-[box-shadow,transform] duration-200 hover:-translate-y-px hover:shadow-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
-        !automation.enabled && 'opacity-65'
-      )}
-    >
+    <HomeCard onOpen={() => onOpen(automation)} muted={!automation.enabled}>
       <div className="min-w-0">
         <div className="font-semibold text-[15px] text-foreground leading-snug">
           {automation.friendly_name}
@@ -159,7 +144,7 @@ function AutomationCard({ automation, preview, onOpen }: AutomationCardProps) {
           <span className="whitespace-nowrap">{formatRelativeTime(automation.last_triggered)}</span>
         )}
       </div>
-    </div>
+    </HomeCard>
   );
 }
 
@@ -175,7 +160,12 @@ export function AutomationHome() {
   const [sort, setSort] = useState<HomeSort>('name');
   const openAutomation = useOpenAutomation();
   const startNew = useStartNewAutomation();
+  const startNewScript = useStartNewScript();
   const openDialog = useUiStore((s) => s.openDialog);
+  const section = useUiStore((s) => s.homeSection);
+  const setSection = useUiStore((s) => s.setHomeSection);
+  const isScripts = section === 'scripts';
+  const scriptCount = entities.filter((entity) => entity.entity_id.startsWith('script.')).length;
 
   const labels = useMemo(
     () => ({ noArea: t('dialogs:import.noArea'), otherArea: t('dialogs:import.otherArea') }),
@@ -215,26 +205,55 @@ export function AutomationHome() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-bold text-3xl text-foreground tracking-tight">
-              {t('ui:home.title')}
+              {isScripts ? t('ui:scripts.title') : t('ui:home.title')}
             </h1>
-            <p className="mt-1 text-muted-foreground text-sm tabular-nums">{summary}</p>
+            <p className="mt-1 text-muted-foreground text-sm tabular-nums">
+              {isScripts ? t('ui:scripts.summary', { count: scriptCount }) : summary}
+            </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => openDialog('openAutomation')}
-              title={t('ui:home.mergeHint')}
-            >
-              <Layers />
-              {t('ui:home.openTogether')}
-            </Button>
-            <AiCreateButton />
-            <Button onClick={startNew}>
-              <Plus />
-              {t('ui:home.newAutomation')}
-            </Button>
-          </div>
+          {isScripts ? (
+            <div className="flex gap-2">
+              <AiCreateButton />
+              <Button onClick={startNewScript}>
+                <Plus />
+                {t('ui:commands.newScript')}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => openDialog('openAutomation')}
+                title={t('ui:home.mergeHint')}
+              >
+                <Layers />
+                {t('ui:home.openTogether')}
+              </Button>
+              <AiCreateButton />
+              <Button onClick={startNew}>
+                <Plus />
+                {t('ui:home.newAutomation')}
+              </Button>
+            </div>
+          )}
         </div>
+
+        <fieldset className="m-0 flex w-fit gap-1 rounded-full border border-border border-solid bg-card p-1">
+          {(['automations', 'scripts'] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={section === key}
+              onClick={() => setSection(key)}
+              className={cn(
+                'h-8 rounded-full px-4 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground',
+                section === key && 'bg-foreground text-background hover:text-background'
+              )}
+            >
+              {t(`ui:home.sections.${key}`)}
+            </button>
+          ))}
+        </fieldset>
 
         <AiSetupHint />
 
@@ -250,7 +269,9 @@ export function AutomationHome() {
               className="min-w-0 flex-1 bg-transparent text-foreground text-sm outline-none placeholder:text-muted-foreground"
             />
           </label>
-          <fieldset className="m-0 flex flex-wrap gap-1.5 border-0 p-0">
+          <fieldset
+            className={cn('m-0 flex flex-wrap gap-1.5 border-0 p-0', isScripts && 'hidden')}
+          >
             {FILTERS.map((key) => (
               <Chip key={key} active={filter === key} onClick={() => setFilter(key)}>
                 {t(`ui:home.filters.${key}`)}
@@ -267,32 +288,35 @@ export function AutomationHome() {
           </fieldset>
         </div>
 
-        {groups.map(([area, items]) => (
-          <section key={area} className="flex flex-col gap-2.5">
-            <h2 className="flex items-baseline gap-2 font-semibold text-muted-foreground text-sm">
-              {area}
-              <span className="font-medium text-muted-foreground/70 tabular-nums">
-                {items.length}
-              </span>
-            </h2>
-            <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
-              {items.map((automation) =>
-                automation.unavailable ? (
-                  <UnavailableCard key={automation.entity_id} automation={automation} />
-                ) : (
-                  <AutomationCard
-                    key={automation.entity_id}
-                    automation={automation}
-                    preview={previews[automation.automation_id]}
-                    onOpen={openAutomation}
-                  />
-                )
-              )}
-            </div>
-          </section>
-        ))}
+        {isScripts && <ScriptList searchTerm={searchTerm} sort={sort} />}
 
-        {groups.length === 0 && (
+        {!isScripts &&
+          groups.map(([area, items]) => (
+            <section key={area} className="flex flex-col gap-2.5">
+              <h2 className="flex items-baseline gap-2 font-semibold text-muted-foreground text-sm">
+                {area}
+                <span className="font-medium text-muted-foreground/70 tabular-nums">
+                  {items.length}
+                </span>
+              </h2>
+              <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+                {items.map((automation) =>
+                  automation.unavailable ? (
+                    <UnavailableCard key={automation.entity_id} automation={automation} />
+                  ) : (
+                    <AutomationCard
+                      key={automation.entity_id}
+                      automation={automation}
+                      preview={previews[automation.automation_id]}
+                      onOpen={openAutomation}
+                    />
+                  )
+                )}
+              </div>
+            </section>
+          ))}
+
+        {!isScripts && groups.length === 0 && (
           <div className="rounded-2xl border border-border border-dashed px-6 py-14 text-center text-muted-foreground text-sm">
             {isLoading
               ? t('ui:home.loading')

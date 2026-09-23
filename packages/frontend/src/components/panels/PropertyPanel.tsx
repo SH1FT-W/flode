@@ -1,5 +1,5 @@
 import type { FlowNode } from '@flode/shared';
-import { getRawStep } from '@flode/shared';
+import { getRawStep, isScriptStart } from '@flode/shared';
 import { Braces, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -45,11 +45,14 @@ function NodeInspectorHeader({
   const config = nodeTypes.find((c) => c.type === nodeType);
   const colors = NODE_COLORS[getNodeColorToken(nodeType)];
   const isRawStep = getRawStep(data) !== null;
+  const scriptStart = isScriptStart(data);
   const typeLabel = isRawStep
     ? t('ui:rawStep.type')
-    : config
-      ? t(config.labelKey)
-      : t('nodes:types.node');
+    : scriptStart
+      ? t('nodes:scriptStart.kind')
+      : config
+        ? t(config.labelKey)
+        : t('nodes:types.node');
   const Icon = isRawStep ? Braces : config?.icon;
   const summary = summarizeNode(nodeType, data, useSummaryContext());
   const alias = typeof data.alias === 'string' && data.alias ? data.alias : undefined;
@@ -73,12 +76,15 @@ function NodeInspectorHeader({
         </div>
         <div className="truncate font-semibold text-[15px] text-foreground">{title}</div>
       </div>
-      <ToggleSwitch
-        id="node-enabled"
-        checked={enabled}
-        onChange={onEnabledChange}
-        label={t('ui:inspector.stepEnabled')}
-      />
+      {/* A script always starts — its start node can't be switched off. */}
+      {!scriptStart && (
+        <ToggleSwitch
+          id="node-enabled"
+          checked={enabled}
+          onChange={onEnabledChange}
+          label={t('ui:inspector.stepEnabled')}
+        />
+      )}
       <Button
         variant="ghost"
         size="icon"
@@ -188,14 +194,17 @@ export function PropertyPanel() {
         onDelete={() => removeNode(selectedNode.id)}
       />
 
-      <FormField label={t('labels.alias')}>
-        <Input
-          type="text"
-          value={typeof selectedNode.data.alias === 'string' ? selectedNode.data.alias : ''}
-          onChange={(e) => handleChange('alias', e.target.value)}
-          placeholder={t('placeholders.optionalDisplayName')}
-        />
-      </FormField>
+      {/* A script start has no alias/id in HA's script config — they'd be dropped on save. */}
+      {!isScriptStart(selectedNode.data) && (
+        <FormField label={t('labels.alias')}>
+          <Input
+            type="text"
+            value={typeof selectedNode.data.alias === 'string' ? selectedNode.data.alias : ''}
+            onChange={(e) => handleChange('alias', e.target.value)}
+            placeholder={t('placeholders.optionalDisplayName')}
+          />
+        </FormField>
+      )}
 
       {/* ID field — triggers only. Home Assistant's action-step schemas
           (service call, delay, wait, set_variables, ...) don't support a
@@ -203,7 +212,7 @@ export function PropertyPanel() {
           templating and `choose:`/`condition: trigger` routing) — real HA
           rejects it outright ("extra keys not allowed") on any other step
           type, it's not just ignored. */}
-      {selectedNode.type === 'trigger' && (
+      {selectedNode.type === 'trigger' && !isScriptStart(selectedNode.data) && (
         <FormField label={t('labels.id')}>
           <Input
             type="text"

@@ -28,16 +28,23 @@ const AutomationSaveDialog = lazy(() =>
 const AiFlowDialog = lazy(() =>
   import('@/components/ai/AiFlowDialog').then((m) => ({ default: m.AiFlowDialog }))
 );
+const RunScriptDialog = lazy(() =>
+  import('./RunScriptDialog').then((m) => ({ default: m.RunScriptDialog }))
+);
+const RunFromDialog = lazy(() =>
+  import('./RunFromDialog').then((m) => ({ default: m.RunFromDialog }))
+);
 const AiExplainDialog = lazy(() =>
   import('@/components/ai/AiExplainDialog').then((m) => ({ default: m.AiExplainDialog }))
 );
 
 /** Every app-level dialog, driven by `useUiStore().dialog`. */
 export function AppDialogs() {
-  const { t } = useTranslation(['common', 'dialogs']);
+  const { t } = useTranslation(['common', 'dialogs', 'ui']);
   const dialog = useUiStore((s) => s.dialog);
   const closeDialog = useUiStore((s) => s.closeDialog);
   const confirmDiscard = useUiStore((s) => s.confirmDiscard);
+  const closingTab = useUiStore((s) => s.discardReason === 'closeTab');
   const { isRemote, config, setConfig } = useHass();
   const forceSettings = isRemote && (config.url === '' || config.token === '');
 
@@ -55,13 +62,17 @@ export function AppDialogs() {
         {dialog === 'save' && <AutomationSaveDialog isOpen onClose={closeDialog} />}
         {dialog === 'aiFlow' && <AiFlowDialog onClose={closeDialog} />}
         {dialog === 'aiExplain' && <AiExplainDialog onClose={closeDialog} />}
+        {dialog === 'runFrom' && <RunFromDialog onClose={closeDialog} />}
+        {dialog === 'runScript' && <RunScriptDialog onClose={closeDialog} />}
       </Suspense>
 
       <ConfirmDialog
         open={dialog === 'discard'}
-        title={t('dialogs:import.discardTitle')}
-        description={t('dialogs:import.discardDescription')}
-        confirmLabel={t('dialogs:import.confirmDiscard')}
+        title={closingTab ? t('ui:tabs.discardTitle') : t('dialogs:import.discardTitle')}
+        description={
+          closingTab ? t('ui:tabs.discardDescription') : t('dialogs:import.discardDescription')
+        }
+        confirmLabel={closingTab ? t('ui:tabs.discardConfirm') : t('dialogs:import.confirmDiscard')}
         cancelLabel={t('buttons.cancel')}
         onConfirm={confirmDiscard}
         onCancel={closeDialog}

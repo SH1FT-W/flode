@@ -1,4 +1,11 @@
-import { getRawStep, isTargetedPlatform, isTemplateString } from '@flode/shared';
+import {
+  getRawStep,
+  getScriptFields,
+  isPlainObject,
+  isTargetedPlatform,
+  isTemplateString,
+  SCRIPT_START_TRIGGER,
+} from '@flode/shared';
 import type { TFunction } from 'i18next';
 import type {
   ActionNodeData,
@@ -63,10 +70,6 @@ export function asStringList(value: unknown): string[] {
   return single ? [single] : [];
 }
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function snippet(value: string, max = 42): string {
   const flat = value.replace(/\s+/g, ' ').trim();
   return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
@@ -107,7 +110,7 @@ function parseDuration(value: unknown): DurationParts | null {
       milliseconds: Number((match[4] ?? '0').padEnd(3, '0').slice(0, 3)),
     };
   }
-  if (isRecord(value)) {
+  if (isPlainObject(value)) {
     const num = (v: unknown) => (typeof v === 'number' ? v : Number(asString(v) ?? 0) || 0);
     return {
       hours: num(value.hours) + num(value.days) * 24,
@@ -194,9 +197,9 @@ function summarizeTargeted(
 ): NodeSummary {
   const typeLabel = ctx.platformLabel(kind, type);
   const targetText = ctx.targetSummary(target);
-  const entities = isRecord(target) ? asStringList(target.entity_id) : [];
+  const entities = isPlainObject(target) ? asStringList(target.entity_id) : [];
   const onlyEntity =
-    entities.length === 1 && isRecord(target) && Object.keys(target).length === 1
+    entities.length === 1 && isPlainObject(target) && Object.keys(target).length === 1
       ? entities[0]
       : undefined;
   return {
@@ -252,7 +255,7 @@ function triggerKind(platform: string, t: SummaryT): string {
 }
 
 function formatTimeValue(value: unknown, ctx: SummaryContext): string | undefined {
-  if (isRecord(value)) {
+  if (isPlainObject(value)) {
     const entity = asString(value.entity_id);
     const offset = asString(value.offset);
     if (!entity) return undefined;
@@ -265,9 +268,25 @@ function formatTimeValue(value: unknown, ctx: SummaryContext): string | undefine
     .join(', ');
 }
 
+/** A script's start node: which input fields it asks for. */
+function summarizeScriptStart(data: TriggerNodeData, ctx: SummaryContext): NodeSummary {
+  const { t } = ctx;
+  const fields = Object.entries(getScriptFields(data)).map(([key, field]) =>
+    typeof field.name === 'string' && field.name ? field.name : key
+  );
+  return {
+    kind: t('nodes:scriptStart.kind'),
+    title:
+      fields.length > 0
+        ? t('nodes:scriptStart.withFields', { count: fields.length, fields: fields.join(', ') })
+        : t('nodes:scriptStart.noFields'),
+  };
+}
+
 export function summarizeTrigger(data: TriggerNodeData, ctx: SummaryContext): NodeSummary {
   const { t } = ctx;
   const platform = data.trigger;
+  if (platform === SCRIPT_START_TRIGGER) return summarizeScriptStart(data, ctx);
   if (isTargetedPlatform(platform)) return summarizeTargeted('trigger', platform, data.target, ctx);
   const kind = triggerKind(platform, t);
   const ids = asStringList(data.entity_id);
@@ -670,7 +689,7 @@ export function summarizeVariables(
   data: Pick<SetVariablesNodeData, 'variables'> | { variables?: unknown },
   ctx: SummaryContext
 ): NodeSummary {
-  const names = isRecord(data.variables) ? Object.keys(data.variables) : [];
+  const names = isPlainObject(data.variables) ? Object.keys(data.variables) : [];
   return {
     title: ctx.t('nodes:summary.variables', { count: names.length }),
     detail: names.length > 0 ? snippet(names.join(', ')) : undefined,
@@ -701,7 +720,7 @@ export function summarizeAction(data: ActionNodeData, ctx: SummaryContext): Node
       detail: asString(data.stop),
     };
   }
-  const repeat = isRecord(data.repeat) ? data.repeat : null;
+  const repeat = isPlainObject(data.repeat) ? data.repeat : null;
   if (repeat !== null && repeat.count !== undefined) {
     const bodyLength = Array.isArray(repeat.sequence) ? repeat.sequence.length : 0;
     return {

@@ -1,4 +1,4 @@
-import type { FlowGraph, NodeValidationError } from '@flode/shared';
+import { type FlowGraph, isScriptStart, type NodeValidationError } from '@flode/shared';
 import { validateFlowGraph } from '@flode/transpiler';
 
 export type FlowIssueKind =
@@ -8,6 +8,9 @@ export type FlowIssueKind =
   | 'invalidService' // action service not "domain.service"
   | 'noTrigger'
   | 'noAction'
+  | 'scriptTrigger' // a real trigger inside a script
+  | 'scriptStartCount' // a script needs exactly one start node
+  | 'scriptStartInAutomation'
   | 'other'; // anything else the engine reports (message passed through)
 
 export interface FlowIssue {
@@ -24,6 +27,29 @@ export interface FlowIssue {
 
 function nodeIdFromPath(path: string[] | undefined): string | undefined {
   return path && path[0] === 'nodes' ? path[1] : undefined;
+}
+
+/** Script/automation mix-ups: triggers in a script, script starts in an automation. */
+function scriptIssues(graph: FlowGraph): FlowIssue[] {
+  const triggers = graph.nodes.filter((n) => n.type === 'trigger');
+  const starts = triggers.filter((n) => isScriptStart(n.data));
+  if (graph.metadata?.kind !== 'script') {
+    return starts.map((n) => ({
+      id: `scriptStartInAutomation:${n.id}`,
+      kind: 'scriptStartInAutomation',
+      nodeId: n.id,
+    }));
+  }
+  return [
+    ...triggers
+      .filter((n) => !isScriptStart(n.data))
+      .map(
+        (n): FlowIssue => ({ id: `scriptTrigger:${n.id}`, kind: 'scriptTrigger', nodeId: n.id })
+      ),
+    ...(triggers.length > 0 && starts.length !== 1
+      ? [{ id: 'scriptStartCount', kind: 'scriptStartCount' } satisfies FlowIssue]
+      : []),
+  ];
 }
 
 /**
@@ -53,6 +79,7 @@ export function computeFlowIssues(
   if (!graph.nodes.some((n) => n.type === 'trigger')) {
     issues.push({ id: 'noTrigger', kind: 'noTrigger' });
   }
+  issues.push(...scriptIssues(graph));
   if (!graph.nodes.some((n) => n.type === 'action')) {
     issues.push({ id: 'noAction', kind: 'noAction' });
   }

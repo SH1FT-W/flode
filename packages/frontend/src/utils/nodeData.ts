@@ -1,4 +1,4 @@
-import type { FlowNode } from '@flode/shared';
+import { type FlowNode, isPlainObject } from '@flode/shared';
 
 /**
  * Type-safe utility functions for working with node data.
@@ -69,9 +69,7 @@ export function getNodeDataObject<T = Record<string, unknown>>(
   defaultValue = {} as T
 ): T {
   const value = getNodeData(node, key, defaultValue);
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as T)
-    : defaultValue;
+  return isPlainObject(value) ? (value as T) : defaultValue;
 }
 
 /**

@@ -24,6 +24,7 @@ export interface ContextMenuState {
 
 /** Menu sections per target — names refer to `useNodeActions`' actions. */
 const NODE_SECTIONS = [
+  ['run-from'],
   ['duplicate', 'copy', 'cut', 'paste'],
   ['toggle-enabled', 'disconnect'],
 ] as const;

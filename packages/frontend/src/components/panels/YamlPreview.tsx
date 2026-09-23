@@ -1,4 +1,4 @@
-import { FlowTranspiler } from '@flode/transpiler';
+import { FlowTranspiler, transpileScript } from '@flode/transpiler';
 import { Check, Copy } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +26,7 @@ export function YamlPreview() {
   const { t } = useTranslation(['common', 'errors']);
   const nodes = useFlowStore((s) => s.nodes);
   const toFlowGraph = useFlowStore((s) => s.toFlowGraph);
+  const isScript = useFlowStore((s) => s.flowMetadata.kind === 'script');
   const [copied, setCopied] = useState(false);
   const [forceStrategy, setForceStrategy] = useState<'auto' | 'native' | 'state-machine'>('auto');
 
@@ -47,9 +48,17 @@ export function YamlPreview() {
     try {
       const flowGraph = toFlowGraph();
       const transpiler = new FlowTranspiler();
-      const result = transpiler.transpile(flowGraph, {
-        forceStrategy: forceStrategy === 'auto' ? undefined : forceStrategy,
-      });
+      const options = { forceStrategy: forceStrategy === 'auto' ? undefined : forceStrategy };
+      // Scripts preview as the script config HA will store, not as an automation.
+      const scriptResult = isScript ? transpileScript(transpiler, flowGraph, options) : null;
+      const automationResult = scriptResult ? null : transpiler.transpile(flowGraph, options);
+      const result = scriptResult ?? {
+        success: automationResult?.success ?? false,
+        yaml: automationResult?.yaml,
+        errors: automationResult?.errors,
+        warnings: automationResult?.warnings ?? [],
+        strategy: automationResult?.output?.strategy,
+      };
       if (!result.success) {
         // Transpilation failed - use cached YAML if available
         const cached = lastValidYamlRef.current;
@@ -63,7 +72,7 @@ export function YamlPreview() {
       }
       // Success - cache the valid YAML
       const validYaml = result.yaml || '';
-      const validStrategy = result.output?.strategy || null;
+      const validStrategy = result.strategy || null;
       lastValidYamlRef.current = { yaml: validYaml, strategy: validStrategy };
       return {
         yaml: validYaml,
@@ -83,7 +92,7 @@ export function YamlPreview() {
         isStale: !!cached,
       };
     }
-  }, [nodes, toFlowGraph, forceStrategy, t]);
+  }, [nodes, toFlowGraph, forceStrategy, t, isScript]);
 
   const handleCopy = async () => {
     try {
