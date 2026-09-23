@@ -69,6 +69,23 @@ export class TranslatableError extends Error {
 }
 
 /**
+ * The raw message of an `Error` or of a Home Assistant WebSocket error
+ * (a plain `{ code, message }` object); `undefined` for anything else.
+ */
+export function rawErrorMessage(error: unknown): string | undefined {
+  if (error instanceof Error) return error.message;
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+  return undefined;
+}
+
+/**
  * Helper to get a translated error message from an error.
  * Falls back to the raw error message if not a TranslatableError.
  */
@@ -79,8 +96,5 @@ export function getErrorMessage(
   if (error instanceof TranslatableError) {
     return t(`errors:${error.code}`, error.params);
   }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return t('errors:api.unknownError');
+  return rawErrorMessage(error) ?? t('errors:api.unknownError');
 }

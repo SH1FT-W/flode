@@ -1,6 +1,8 @@
 import { CircleSlash, History, Layers, Plus, Search, Zap } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AiCreateButton } from '@/components/ai/AiCreateButton';
+import { AiSetupHint } from '@/components/ai/AiSetupHint';
 import { Button } from '@/components/ui/button';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useHass } from '@/contexts/HassContext';
@@ -226,12 +228,15 @@ export function AutomationHome() {
               <Layers />
               {t('ui:home.openTogether')}
             </Button>
+            <AiCreateButton />
             <Button onClick={startNew}>
               <Plus />
               {t('ui:home.newAutomation')}
             </Button>
           </div>
         </div>
+
+        <AiSetupHint />
 
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex h-10 min-w-60 flex-1 items-center gap-2 rounded-control border border-border bg-card px-3 text-muted-foreground focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/20">

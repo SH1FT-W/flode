@@ -14,10 +14,13 @@ export type AppDialog =
   | 'settings'
   | 'clear'
   | 'exit'
-  | 'discard';
+  | 'discard'
+  | 'aiFlow'
+  | 'aiExplain';
 
 const LIBRARY_COLLAPSED_KEY = 'flode.libraryCollapsed';
 const MINIMAP_VISIBLE_KEY = 'flode.minimapVisible';
+const AI_HINT_DISMISSED_KEY = 'flode.aiHintDismissed';
 
 /** Per-browser UI preference; storage may be unavailable (private mode), then defaults apply. */
 function readFlag(key: string, fallback: boolean): boolean {
@@ -51,12 +54,20 @@ interface UiState {
   minimapVisible: boolean;
   toggleMinimap: () => void;
 
+  /** The start screen's "set up AI" hint was closed for good. */
+  aiHintDismissed: boolean;
+  dismissAiHint: () => void;
+
   inspectorTab: InspectorTab;
   setInspectorTab: (tab: InspectorTab) => void;
 
   /** Show the automation's last real run once it has loaded (set when opening from the start screen). */
   showLastRunOnOpen: boolean;
   setShowLastRunOnOpen: (show: boolean) => void;
+
+  /** Run the AI explain dialog is about (`aiExplain`). */
+  explainRunId: string | null;
+  openExplain: (runId: string) => void;
 
   /** Action waiting for the user to confirm discarding unsaved changes. */
   pendingDiscard: (() => void) | null;
@@ -92,11 +103,20 @@ export const useUiStore = create<UiState>((set, get) => ({
     set({ minimapVisible: next });
   },
 
+  aiHintDismissed: readFlag(AI_HINT_DISMISSED_KEY, false),
+  dismissAiHint: () => {
+    writeFlag(AI_HINT_DISMISSED_KEY, true);
+    set({ aiHintDismissed: true });
+  },
+
   inspectorTab: 'properties',
   setInspectorTab: (inspectorTab) => set({ inspectorTab }),
 
   showLastRunOnOpen: false,
   setShowLastRunOnOpen: (showLastRunOnOpen) => set({ showLastRunOnOpen }),
+
+  explainRunId: null,
+  openExplain: (explainRunId) => set({ explainRunId, dialog: 'aiExplain' }),
 
   pendingDiscard: null,
   runGuarded: (action) => {

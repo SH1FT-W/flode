@@ -1,11 +1,13 @@
 import { Panel } from '@xyflow/react';
-import { Eye, EyeOff, History, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, History, Loader2, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { useAiTask } from '@/hooks/useAiTask';
 import { useLastRun } from '@/hooks/useLastRun';
 import { useRelativeTime } from '@/hooks/useRelativeTime';
 import { cn } from '@/lib/utils';
 import { useFlowStore } from '@/store/flow-store';
+import { useUiStore } from '@/store/ui-store';
 
 type RunTone = 'success' | 'warning' | 'error' | 'running' | 'neutral';
 
@@ -73,6 +75,7 @@ export function LastRunChip() {
   const formatRelativeTime = useRelativeTime();
   const statusText = useStatusLabel();
   const { latest, isLoading, isShowing, show, hide } = useLastRun();
+  const { entityId: aiEntityId } = useAiTask();
   if (!automationId) return null;
 
   const execution = latest?.script_execution;
@@ -116,6 +119,18 @@ export function LastRunChip() {
               {isShowing ? <EyeOff /> : <Eye />}
               {isShowing ? t('ui:lastRun.hide') : t('ui:lastRun.show')}
             </Button>
+            {aiEntityId && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 rounded-full px-3 text-xs"
+                title={t('ui:ai.explain.title')}
+                onClick={() => useUiStore.getState().openExplain(latest.run_id)}
+              >
+                <Sparkles />
+                {t('ui:ai.explain.button')}
+              </Button>
+            )}
           </>
         ) : (
           <>

@@ -2,6 +2,7 @@ import { PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
 import { type DragEvent, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { ResizablePanel } from '@/components/ui/resizable-panel';
 import { useFuzzySearch } from '@/hooks/useFuzzySearch';
 import { useInsertNode } from '@/hooks/useInsertNode';
 import { type LibraryEntry, type LibraryGroup, useLibraryEntries } from '@/hooks/useLibraryEntries';
@@ -84,13 +85,8 @@ export function NodePalette() {
 
   const handleInsert = (entry: LibraryEntry) => insertNext(entry.item);
 
-  return (
-    <aside
-      className={cn(
-        'hidden h-full min-h-0 flex-col border-border border-r bg-card transition-[width] duration-200 md:flex',
-        collapsed ? 'w-14' : 'w-64'
-      )}
-    >
+  const content = (
+    <>
       <div
         className={cn('flex items-center gap-2 px-3 pt-3 pb-2', collapsed && 'justify-center px-0')}
       >
@@ -151,6 +147,28 @@ export function NodePalette() {
           </div>
         )}
       </div>
-    </aside>
+    </>
+  );
+
+  if (collapsed) {
+    return (
+      <aside className="hidden h-full min-h-0 w-14 flex-col border-border border-r bg-card md:flex">
+        {content}
+      </aside>
+    );
+  }
+
+  // Expanded: drag the right edge to resize; the width is remembered per browser.
+  return (
+    <ResizablePanel
+      side="left"
+      defaultWidth={256}
+      minWidth={200}
+      maxWidth={480}
+      storageKey="flode.libraryWidth"
+      className="hidden h-full min-h-0 border-border border-r bg-card md:flex"
+    >
+      {content}
+    </ResizablePanel>
   );
 }

@@ -172,7 +172,8 @@
     "arrowUp": "Pfeil nach oben",
     "arrowDown": "Pfeil nach unten",
     "arrowLeft": "Pfeil nach links",
-    "arrowRight": "Pfeil nach rechts"
+    "arrowRight": "Pfeil nach rechts",
+    "delete": "Entf"
   },
   "stateTrigger": {
     "useValue": "Wert verwenden"

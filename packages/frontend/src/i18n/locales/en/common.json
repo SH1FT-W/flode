@@ -199,7 +199,8 @@
     "arrowUp": "Arrow Up",
     "arrowDown": "Arrow Down",
     "arrowLeft": "Arrow Left",
-    "arrowRight": "Arrow Right"
+    "arrowRight": "Arrow Right",
+    "delete": "Del"
   },
   "stateTrigger": {
     "useValue": "Use value"

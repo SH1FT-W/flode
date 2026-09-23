@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { isMacOS } from '@/utils/useAgentPlatform';
 
 /**
@@ -43,6 +44,9 @@ const MAC_SYMBOLS: Record<string, string> = {
   arrowright: '→',
 };
 
+/** Keys whose name is printed on Windows/Linux keyboards in the user's language (Strg, Umschalt, Entf …). */
+const LOCALIZED_KEYS = new Set(['ctrl', 'shift', 'alt', 'delete']);
+
 const OTHER_LABELS: Record<string, string> = {
   ctrl: 'Ctrl',
   shift: 'Shift',
@@ -57,15 +61,24 @@ const OTHER_LABELS: Record<string, string> = {
   arrowright: '→',
 };
 
-/** Display form of the first variant of a shortcut: "⌘⇧F" on macOS, "Ctrl+Shift+F" elsewhere. */
+function otherLabel(part: string): string {
+  if (LOCALIZED_KEYS.has(part)) {
+    return i18n.t(`common:shortcuts.${part}`, { defaultValue: OTHER_LABELS[part] });
+  }
+  return OTHER_LABELS[part] ?? part.toUpperCase();
+}
+
+/**
+ * Display form of the first variant of a shortcut: "⌘⇧F" on macOS,
+ * "Ctrl+Shift+F" elsewhere — "Strg+Umschalt+F" on a German Windows.
+ */
 export function formatShortcut(spec: ShortcutSpec | undefined): string | undefined {
   const first = shortcutList(spec)[0];
   if (!first) return undefined;
   const mac = isMacOS();
-  const parts = first.split('+').map((part) => {
-    const table = mac ? MAC_SYMBOLS : OTHER_LABELS;
-    return table[part] ?? part.toUpperCase();
-  });
+  const parts = first
+    .split('+')
+    .map((part) => (mac ? (MAC_SYMBOLS[part] ?? part.toUpperCase()) : otherLabel(part)));
   return mac ? parts.join('') : parts.join('+');
 }
 

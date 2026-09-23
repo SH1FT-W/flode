@@ -153,5 +153,47 @@
       "failed_single": "Übersprungen – lief schon",
       "failed_max_runs": "Übersprungen – max. Läufe erreicht"
     }
+  },
+  "ai": {
+    "flow": {
+      "button": "Mit KI erstellen",
+      "command": "Mit KI erstellen …",
+      "commandHint": "Automation beschreiben, KI baut einen Entwurf",
+      "title": "Mit KI erstellen",
+      "description": "Beschreibe, was passieren soll. {{name}} aus deinem Home Assistant baut daraus einen Entwurf.",
+      "placeholder": "z. B. Wenn nach Sonnenuntergang die Haustür aufgeht, Flurlicht auf 30 % für 5 Minuten",
+      "example1": "Wenn nach Sonnenuntergang die Haustür aufgeht, Flurlicht für 5 Minuten an",
+      "example2": "Werktags um 6:30 Wohnzimmerlicht langsam hochdimmen",
+      "example3": "Benachrichtige mich, wenn die Waschmaschine fertig ist",
+      "create": "Entwurf erstellen",
+      "running": "KI baut den Flow …",
+      "failed": "Die KI konnte keinen gültigen Flow erzeugen",
+      "draftNote": "Nur ein Entwurf – gespeichert wird erst, wenn du speicherst.",
+      "done": "Entwurf erstellt – bitte prüfen und dann speichern",
+      "unknownEntities": "Entwurf erstellt, aber diese Entitäten gibt es nicht: {{ids}} – bitte ersetzen"
+    },
+    "explain": {
+      "button": "Erklären",
+      "title": "Lauf erklären",
+      "description": "{{name}} erklärt, was bei diesem Lauf passiert ist.",
+      "running": "KI liest den Lauf …",
+      "failed": "Die Erklärung ist fehlgeschlagen",
+      "noTrace": "Der Lauf konnte nicht geladen werden",
+      "retry": "Neu erklären"
+    },
+    "setup": {
+      "title": "Automationen mit KI bauen",
+      "intro": "FLODE kann Automationen aus einer Beschreibung erstellen und erklären, warum ein Lauf (nicht) geklappt hat. Dafür nutzt es die KI, die du in Home Assistant einrichtest – FLODE selbst braucht keinen Schlüssel.",
+      "step1": "Wähle unten einen Anbieter – Home Assistant öffnet die Einrichtung. Ollama läuft lokal und kostenlos, die anderen brauchen einen API-Schlüssel des Anbieters.",
+      "step2": "Schlüssel bzw. Ollama-Adresse eintragen. Home Assistant legt dabei automatisch einen „AI Task“ an.",
+      "step3": "Unter Einstellungen → System → KI → „KI-Vorschläge“ → „Aufgaben zur Datengenerierung“ die neue KI auswählen und speichern. Danach erscheint in FLODE „Mit KI erstellen“.",
+      "agentStep1": "Du hast schon einen KI-Assistenten ({{agents}}). Öffne dessen Integration unter „Geräte & Dienste“ und füge dort einen „AI Task“-Dienst hinzu.",
+      "agentStep2": "Unter Einstellungen → System → KI → „KI-Vorschläge“ → „Aufgaben zur Datengenerierung“ den neuen AI Task auswählen und speichern. Danach erscheint in FLODE „Mit KI erstellen“.",
+      "openIntegrations": "Geräte & Dienste öffnen",
+      "openDefault": "KI auswählen",
+      "privacy": "Beim Benutzen gehen deine Beschreibung sowie Namen und IDs passender Entitäten an den gewählten Anbieter. Gespeichert wird nur, was du selbst speicherst.",
+      "dismiss": "Hinweis ausblenden",
+      "defaultStep": "Du hast schon eine KI mit „AI Task“ eingerichtet, aber noch keine für FLODE ausgewählt. Wähle sie unter Einstellungen → System → KI → „KI-Vorschläge“ → „Aufgaben zur Datengenerierung“ aus und speichere – danach erscheint in FLODE „Mit KI erstellen“."
+    }
   }
 }

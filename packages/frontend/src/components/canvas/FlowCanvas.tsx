@@ -22,6 +22,7 @@ import {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AiCreateButton } from '@/components/ai/AiCreateButton';
 import { CanvasContextMenu, type ContextMenuState } from '@/components/canvas/CanvasContextMenu';
 import { CanvasDock } from '@/components/canvas/CanvasDock';
 import { LastRunChip } from '@/components/canvas/LastRunChip';
@@ -489,6 +490,7 @@ function EmptyCanvas({ onAddTrigger, onBrowse }: EmptyCanvasProps) {
             <Command />
             {t('ui:canvas.browseBlocks')}
           </Button>
+          <AiCreateButton />
         </div>
       </div>
     </div>

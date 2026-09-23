@@ -4,6 +4,23 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [2.1.0] — 2026-09-23 — AI assist
+
+FLODE can now use the AI you set up in Home Assistant. Nothing changes if you don't have one — the AI entry points only appear when an AI Task entity is chosen as default under Settings → System → AI → AI suggestions → Data generation tasks, exactly like Home Assistant's own AI features.
+
+### Added
+- **Create with AI** — describe an automation in plain words ("When the front door opens after sunset, hallway light for 5 minutes") and get a draft flow on the canvas. FLODE picks the matching entities from your Home Assistant, checks the result like it would before saving (YAML, flow structure, entity ids) and lets the AI correct it once if something is off. Entities that still don't exist are listed in a warning. The draft is never saved until you save it. On the start screen, the empty canvas, the command palette and ⌘I / Ctrl+I.
+- **Explain a run** — the "Last run" chip has an *Explain* button: the AI reads that run's trace and explains in plain words what happened and why — which condition failed with which value, which step raised an error — in your home's local time.
+- **AI setup hint** — admins without a default AI Task see a short guide on the start screen: add Anthropic, OpenAI, Google Gemini or Ollama (local), add an AI Task to an existing AI assistant, or pick an existing one as default. Can be hidden for good. A changed default is picked up when you return to the FLODE window.
+- Runs on Home Assistant's own `ai_task.generate_data` with the provider and account you chose there — FLODE needs no API key and talks to no AI service itself. Your description plus names and ids of matching entities (and, for *Explain*, the run's trace) are sent to that provider.
+
+### Changed
+- **Resizable block library** — drag the library's right edge to make it wider or narrower (200–480 px); the width is remembered per browser.
+- **Keyboard shortcuts on Windows/Linux** are shown with the key names printed on your keyboard, e.g. "Strg+Umschalt+S" on a German layout instead of "Ctrl+Shift+S".
+- Error messages from Home Assistant (e.g. a provider's "credit balance too low") are shown readably instead of "[object Object]".
+
+---
+
 ## [2.0.0] — 2026-09-23 — FLODE 2.0: Redesign
 
 A ground-up redesign of the editor UI. Automations built with 1.x open and save as before — the engine changes below only close gaps where steps used to be lost or rejected.

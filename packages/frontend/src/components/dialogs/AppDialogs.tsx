@@ -25,6 +25,13 @@ const AutomationSaveDialog = lazy(() =>
   }))
 );
 
+const AiFlowDialog = lazy(() =>
+  import('@/components/ai/AiFlowDialog').then((m) => ({ default: m.AiFlowDialog }))
+);
+const AiExplainDialog = lazy(() =>
+  import('@/components/ai/AiExplainDialog').then((m) => ({ default: m.AiExplainDialog }))
+);
+
 /** Every app-level dialog, driven by `useUiStore().dialog`. */
 export function AppDialogs() {
   const { t } = useTranslation(['common', 'dialogs']);
@@ -46,6 +53,8 @@ export function AppDialogs() {
         {dialog === 'importYaml' && <ImportYamlDialog isOpen onClose={closeDialog} />}
         {dialog === 'openAutomation' && <AutomationImportDialog isOpen onClose={closeDialog} />}
         {dialog === 'save' && <AutomationSaveDialog isOpen onClose={closeDialog} />}
+        {dialog === 'aiFlow' && <AiFlowDialog onClose={closeDialog} />}
+        {dialog === 'aiExplain' && <AiExplainDialog onClose={closeDialog} />}
       </Suspense>
 
       <ConfirmDialog

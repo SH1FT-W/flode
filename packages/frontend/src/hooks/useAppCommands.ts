@@ -15,10 +15,12 @@ import {
   Save,
   SaveAll,
   Search,
+  Sparkles,
 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemeOverride } from '@/contexts/ThemeOverrideContext';
+import { useAiTask } from '@/hooks/useAiTask';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useQuickSave } from '@/hooks/useQuickSave';
 import { exportFlowJson, importFlowJson } from '@/lib/flow-file';
@@ -71,6 +73,7 @@ export function useAppCommands(): AppCommand[] {
   const isDark = useDarkMode();
   const startNew = useStartNewAutomation();
   const quickSave = useQuickSave();
+  const { entityId: aiEntityId } = useAiTask();
 
   return useMemo<AppCommand[]>(() => {
     const ui = useUiStore.getState;
@@ -125,6 +128,19 @@ export function useAppCommands(): AppCommand[] {
         views: EDITOR,
         run: () => ui().openDialog('openAutomation'),
       },
+      ...(aiEntityId
+        ? [
+            {
+              id: 'aiFlow',
+              label: t('ui:ai.flow.command'),
+              hint: t('ui:ai.flow.commandHint'),
+              icon: Sparkles,
+              shortcut: 'ctrl+i',
+              views: BOTH,
+              run: () => ui().runGuarded(() => ui().openDialog('aiFlow')),
+            },
+          ]
+        : []),
       {
         id: 'importYaml',
         label: t('ui:commands.importYaml'),
@@ -200,5 +216,5 @@ export function useAppCommands(): AppCommand[] {
         run: () => ui().openDialog('clear'),
       },
     ];
-  }, [t, fitView, setThemeOverride, isDark, startNew, quickSave]);
+  }, [t, fitView, setThemeOverride, isDark, startNew, quickSave, aiEntityId]);
 }

@@ -153,5 +153,47 @@
       "failed_single": "Skipped — already running",
       "failed_max_runs": "Skipped — max. runs reached"
     }
+  },
+  "ai": {
+    "flow": {
+      "button": "Create with AI",
+      "command": "Create with AI …",
+      "commandHint": "Describe an automation, the AI builds a draft",
+      "title": "Create with AI",
+      "description": "Describe what should happen. {{name}} from your Home Assistant turns it into a draft.",
+      "placeholder": "e.g. When the front door opens after sunset, hallway light at 30 % for 5 minutes",
+      "example1": "When the front door opens after sunset, turn on the hallway light for 5 minutes",
+      "example2": "On weekdays at 6:30, slowly brighten the living room light",
+      "example3": "Notify me when the washing machine is done",
+      "create": "Create draft",
+      "running": "AI is building the flow …",
+      "failed": "The AI couldn't produce a valid flow",
+      "draftNote": "Just a draft – nothing is saved until you save.",
+      "done": "Draft created – review it, then save",
+      "unknownEntities": "Draft created, but these entities don't exist: {{ids}} – please replace them"
+    },
+    "explain": {
+      "button": "Explain",
+      "title": "Explain run",
+      "description": "{{name}} explains what happened in this run.",
+      "running": "AI is reading the run …",
+      "failed": "The explanation failed",
+      "noTrace": "The run couldn't be loaded",
+      "retry": "Explain again"
+    },
+    "setup": {
+      "title": "Build automations with AI",
+      "intro": "FLODE can create automations from a description and explain why a run did (not) work. It uses the AI you set up in Home Assistant – FLODE itself needs no key.",
+      "step1": "Pick a provider below – Home Assistant opens its setup. Ollama runs locally for free, the others need an API key from the provider.",
+      "step2": "Enter the key or the Ollama address. Home Assistant creates an \"AI Task\" along the way.",
+      "step3": "Choose the new AI under Settings → System → AI → \"AI suggestions\" → \"Data generation tasks\" and save. Then \"Create with AI\" appears in FLODE.",
+      "agentStep1": "You already have an AI assistant ({{agents}}). Open its integration under \"Devices & services\" and add an \"AI Task\" service there.",
+      "agentStep2": "Choose the new AI Task under Settings → System → AI → \"AI suggestions\" → \"Data generation tasks\" and save. Then \"Create with AI\" appears in FLODE.",
+      "openIntegrations": "Open devices & services",
+      "openDefault": "Choose AI",
+      "privacy": "When used, your description plus names and IDs of matching entities are sent to the chosen provider. Nothing is saved unless you save it.",
+      "dismiss": "Hide this hint",
+      "defaultStep": "You already have an AI with an \"AI Task\", but none is chosen yet. Pick it under Settings → System → AI → \"AI suggestions\" → \"Data generation tasks\" and save – then \"Create with AI\" appears in FLODE."
+    }
   }
 }
