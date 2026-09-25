@@ -9,7 +9,17 @@ All notable changes to FLODE are documented here.
 A maintenance release with no new features — it only updates dependencies with known security issues. Everything from 3.0.0 below still applies.
 
 ### Security
-- **Dependencies updated** — js-yaml 4.3.2 (ships with the editor), plus the build and test tools tar, postcss, brace-expansion, ip-address and vitest.
+All 15 open security alerts are fixed:
+
+| Package | Before → now | Used for |
+|---|---|---|
+| js-yaml | 4.3.0 → 4.3.2 | Editor (reading/writing YAML) |
+| postcss | 8.5.16 → 8.5.28 | Build |
+| tar | 7.5.19 → 7.5.22 | Build |
+| brace-expansion | 5.0.6 → 5.0.12 | Build |
+| ip-address | 10.2.0 → 10.7.2 | Build |
+| vitest, @vitest/mocker | 4.1.9 → 4.1.11 | Tests |
+
 - **Two text patterns hardened** — creating a card name while merging and reading the YAML out of an AI reply could become very slow on specially crafted input. Both are now fast whatever the input.
 
 ---
