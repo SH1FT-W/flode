@@ -2,7 +2,7 @@ import type { FlowGraph } from '@flode/shared';
 import { automationToScriptConfig, isPlainObject, scriptToAutomationConfig } from '@flode/shared';
 import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
 import type { FlowTranspiler, YamlOptions } from './FlowTranspiler';
-import type { ParseResult } from './parser/YamlParser';
+import type { ParseResult, YamlParserOptions } from './parser/YamlParser';
 
 export interface ScriptTranspileResult {
   success: boolean;
@@ -62,10 +62,12 @@ export function transpileScript(
 /** Parses a script config into a flow marked as a script (`metadata.kind`). */
 export async function parseScript(
   transpiler: FlowTranspiler,
-  script: Record<string, unknown>
+  script: Record<string, unknown>,
+  options: YamlParserOptions = {}
 ): Promise<ParseResult> {
   const result = await transpiler.fromYaml(
-    yamlDump(scriptToAutomationConfig(script), YAML_DUMP_OPTIONS)
+    yamlDump(scriptToAutomationConfig(script), YAML_DUMP_OPTIONS),
+    options
   );
   if (!result.success || !result.graph) return result;
   const icon = typeof script.icon === 'string' ? script.icon : undefined;
@@ -81,4 +83,37 @@ export async function parseScript(
       },
     },
   };
+}
+
+/**
+ * YAML of an automation or a script (e.g. an AI reply) → flow. A script is
+ * parsed like a stored script config (`parseScript`).
+ */
+export async function parseFlowYaml(
+  transpiler: FlowTranspiler,
+  yaml: string,
+  kind: 'automation' | 'script',
+  options: YamlParserOptions = {}
+): Promise<ParseResult> {
+  if (kind === 'automation') return transpiler.fromYaml(yaml, options);
+  let config: unknown;
+  try {
+    config = yamlLoad(yaml);
+  } catch (error) {
+    return {
+      success: false,
+      errors: [error instanceof Error ? error.message : String(error)],
+      warnings: [],
+      hadMetadata: false,
+    };
+  }
+  if (!isPlainObject(config)) {
+    return {
+      success: false,
+      errors: ['The reply is not a script config (a YAML mapping)'],
+      warnings: [],
+      hadMetadata: false,
+    };
+  }
+  return parseScript(transpiler, config, options);
 }

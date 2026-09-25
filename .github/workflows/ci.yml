@@ -62,12 +62,8 @@ jobs:
 
       - name: Check integration files exist
         run: |
-          if [ ! -f "custom_components/flode/www/index.html" ]; then
-            echo "❌ Build fehlgeschlagen - index.html fehlt"
-            exit 1
-          fi
-          if [ ! -d "custom_components/flode/www/assets" ]; then
-            echo "❌ Build fehlgeschlagen - assets Verzeichnis fehlt"
+          if [ ! -f "custom_components/flode/www/flode-panel.js" ]; then
+            echo "❌ Build fehlgeschlagen - flode-panel.js fehlt"
             exit 1
           fi
           echo "✅ Build erfolgreich"

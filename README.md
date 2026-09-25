@@ -3,78 +3,82 @@
 
   <h1>FLODE</h1>
 
-  <p><strong>A visual flow editor for Home Assistant automations.</strong></p>
+  <p><strong>See your Home Assistant automations — as a flow, inside Home Assistant.</strong></p>
 
-  [![Release](https://img.shields.io/badge/version-2.2.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
+  [![Release](https://img.shields.io/badge/version-3.0.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
+  [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.3%2B-41BDF5?style=flat-square&logo=homeassistant&logoColor=white)](https://www.home-assistant.io)
   [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](https://github.com/SH1FT-W/flode/blob/main/LICENSE)
   [![HACS](https://img.shields.io/badge/HACS-default-41BDF5?style=flat-square)](https://hacs.xyz)
-
-  <br/>
 
   **[Website](https://sh1ft-w.github.io/flode)** &nbsp;·&nbsp; [Installation](#installation) &nbsp;·&nbsp; [Changelog](https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md) &nbsp;·&nbsp; [Issues](https://github.com/SH1FT-W/flode/issues)
 
   <br/>
 
-  | Light | Dark |
-  |:---:|:---:|
-  | ![FLODE Light Mode](https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-light.png) | ![FLODE Dark Mode](https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-dark.png) |
+  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-dark.png" alt="FLODE inside Home Assistant: a flow with two triggers, a condition and actions; the selected If-then block is edited with Home Assistant's own editor." />
 </div>
 
 <br/>
 
-Draw an automation as a diagram — triggers, conditions, actions, connected on a canvas — and FLODE transpiles it into **100% native Home Assistant YAML**, stored directly in HA core. No external server, no proprietary format, no lock-in. What you build stays fully editable in HA's own automation editor, too.
+FLODE shows your automations and scripts as a flow you can **read, test and understand**. Every step is edited with **Home Assistant's own editors** — the same forms, pickers and dialogs as in Settings — and saved as **plain Home Assistant YAML**. No server, no account, no lock-in: uninstall FLODE and every automation keeps working.
 
-> FLODE is a fork of [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) by [@FezVrasta](https://github.com/FezVrasta), rebuilt with a long list of fixes and features — see the [changelog](https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md). It never overwrites existing data, but back up your automations before editing anyway.
-
-## New in 2.2: scripts, tabs, run from here
-
-- **Scripts** — edit Home Assistant scripts just like automations: a *script start* holds the input fields (with Home Assistant's own input types), *Run* asks for them, and *Create with AI* builds scripts too.
-- **Tabs** — keep several automations and scripts open, each with its own undo history; they're still there after a reload.
-- **Run from here** — right-click any step to run it and everything after it for real, after a confirmation.
-- **Fixes** — conditions with a duration ("on for 10 minutes") and time conditions now work correctly in flows with several triggers; redo works right after undo again.
-
-## New in 2.1: AI assist
-
-If you have an AI set up in Home Assistant (Anthropic, OpenAI, Google Gemini, Ollama …), FLODE can use it — no extra key, no extra service:
-
-- **Create with AI** — describe what should happen, get a draft flow built from your real entities. FLODE checks it before you ever see it and nothing is saved until you save.
-- **Explain a run** — one click on the *Last run* chip and the AI tells you in plain words why an automation did (or didn't) do its job.
-
-FLODE uses the AI Task chosen as default under *Settings → System → AI → AI suggestions → Data generation tasks* — without one these buttons simply don't appear, and admins get a short setup guide on the start screen instead.
-
-## What's new in 2.0
-
-FLODE 2.0 is a ground-up redesign of the editor — calmer, faster to use, and much closer to how you think about an automation.
-
-| Start screen | Command palette |
+| Runs on the canvas | Why did it fail? *(optional AI)* |
 |:---:|:---:|
-| ![FLODE start screen](https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-home.png) | ![FLODE command palette](https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-palette.png) |
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-runs.png" width="420" alt="A real run: Home Assistant's trace timeline and the steps that ran highlighted on the canvas." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-explain.png" width="420" alt="The AI explains a failed run in plain words." /> |
+| **Relations between automations** | **From a sentence to a flow** *(optional AI)* |
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-relations.png" width="420" alt="Conflicts, self-triggering automations, chains and what controls a light." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-draft.png" width="420" alt="A draft automation built by the AI, not yet saved." /> |
 
-- **Start screen** — every automation at a glance, grouped by area, with search, filters, an on/off switch per card and a plain-language preview of what triggers it.
-- **Cards you can read** — nodes say what they do ("Bed light changes to On", "Between 06:00 and 22:00") and show the live state of their entity.
-- **⌘K / Ctrl+K command palette** — insert blocks, run any command, open any automation. Right-click menus and a full set of keyboard shortcuts (press `?`).
-- **Last run on the canvas** — see the path your automation actually took the last time it ran, step by step, with errors right on the card that failed. Updates live.
-- **Tidy up** — one click lays out the whole flow.
-- **Problems, not error dumps** — a clickable list of everything that blocks saving; each entry jumps to its step.
-- **Quick save** — ⌘S / Ctrl+S saves straight to Home Assistant.
-- **Nothing gets lost** — steps FLODE has no block for (e.g. `scene:` shorthand, newer HA features) are kept verbatim as editable YAML steps.
-- **Home Assistant 2026 ready** — the new target-based triggers and conditions (e.g. *Light turned on*, *Vibration detected*) with HA's own editors, and Jinja2-templated action names.
+## What it does
 
-## Features
+- **Home Assistant's own editors** for every trigger, condition and action — adding steps, renaming (area, category, labels), mode and saving included. *If-then*, *Choose*, *Repeat* and *Parallel* stay single blocks.
+- **Automations and scripts**, several open in tabs, each with its own undo.
+- **Runs** — Home Assistant's trace timeline next to the canvas, the path drawn on the cards, and *Run from here* for any step.
+- **Relations** — conflicting automations, self-triggering ones, chains, missing entities, and *where is this used?* for any entity.
+- **Template workshop** (⌘J) — Jinja rendered live by Home Assistant, with the variables of a real run.
+- **Fast to work with** — ⌘K for everything, right-click menus, copy/paste, minimap, tidy up, keyboard shortcuts (`?`), YAML import/export and merging automations.
+- **Careful with your data** — opens and saves your existing automations unchanged, and warns if it can't read part of one.
+- **Follows Home Assistant** — your language, light or dark theme, and works on a phone.
 
-**Visual, not code-first.** Drag trigger, condition, and action blocks onto a canvas and connect them — or press `+` on a card to add the next step. Undo/redo and a live YAML preview throughout.
+### Optional: AI help
 
-**Genuinely native.** Every automation is standard HA YAML — nothing proprietary, nothing hidden. Open an existing automation, edit it visually, save it back.
+If you've set up an AI in Home Assistant (Anthropic, OpenAI, Google Gemini, Ollama …) and chosen it as the default for *AI tasks*, FLODE can use it:
 
-**Built for real logic.** Choose, If/Else, Repeat, and Parallel are draggable blocks. Full metadata — icon, category, labels, area — and targeting by area, device, label, or floor.
+- **Explain a run** — why an automation did or didn't do its job, in plain words.
+- **Assistant** — ask about the open flow, find mistakes, get a better version (shown first, one step to undo).
+- **Create with AI** — describe what should happen, get a draft built from your real entities.
 
-**Feels like Home Assistant.** Native pickers and HA's own translations throughout, with automatic light/dark theming. Deep links open a specific automation from any dashboard button.
+FLODE uses Home Assistant's own `ai_task` — no extra key, no extra service. Without an AI task these buttons simply don't appear; everything else works the same.
 
-**Speaks your language.** Full German and English support, with a per-installation override.
+<details>
+<summary><strong>More screenshots</strong></summary>
+<br/>
+
+| Light theme | Start screen |
+|:---:|:---:|
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-light.png" width="420" alt="The editor in Home Assistant's light theme." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-home.png" width="420" alt="Start screen with automations, scripts and relations." /> |
+| **AI assistant** | **Create with AI** |
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-assistant.png" width="420" alt="The AI assistant lists problems in the open flow." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-create.png" width="420" alt="Describing an automation in plain words." /> |
+| **Template workshop** | **Commands (⌘K)** |
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-templates.png" width="420" alt="Template workshop with a live-rendered result." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-palette.png" width="420" alt="Command palette." /> |
+| **Right-click menu** | **On a phone** |
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-context-menu.png" width="420" alt="Right-click menu on a card." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-phone.png" width="200" alt="FLODE on a phone with the editor as a bottom sheet." /> |
+
+</details>
 
 ## Installation
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
+
+1. HACS → search for **FLODE** → Download.
+2. Restart Home Assistant.
+3. Settings → Devices & services → Add integration → **FLODE**. It appears in the sidebar (admins only).
+
+Requires **Home Assistant 2026.3** or newer. To install by hand, copy `flode.zip` from the [latest release](https://github.com/SH1FT-W/flode/releases/latest) into `config/custom_components/flode/`.
+
+### Coming from FLODE 2.x?
+
+Your automations open and save as before. FLODE 3 replaces the old editor: the simulation is replaced by real runs and *Run from here*, and FLODE now follows Home Assistant's language and theme instead of its own settings. Details in the [changelog](https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md).
+
+> FLODE is a fork of [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) by [@FezVrasta](https://github.com/FezVrasta). It never overwrites anything it wasn't asked to save — but back up your automations before big edits anyway.
 
 ## License
 

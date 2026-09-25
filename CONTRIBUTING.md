@@ -11,12 +11,12 @@ Thank you for considering contributing to FLODE This document explains how to se
   - `cd flode`
 - **Install**: The repository uses Yarn 4 workspaces. From the repository root run:
   - `yarn install`
-- **Start development**: To run the frontend in watch/dev mode for local development:
-  - `yarn dev` (from the repo root)
+- **Start development**: `yarn dev` (from the repo root) rebuilds the panel into `custom_components/flode/www` on every change. Mount or copy `custom_components/flode` into a test Home Assistant (a Docker instance works well) and reload the browser — FLODE runs inside Home Assistant, there is no standalone dev server.
 
 ## Project Structure (short)
 
-- `packages/frontend` — React + Vite frontend UI
+- `packages/frontend` — the Home Assistant panel (Lit + Home Assistant's own components)
+- `packages/ui-core` — framework-free UI logic (card texts, AI, traces, dependency map)
 - `packages/shared` — shared types & Zod schemas
 - `packages/transpiler` — YAML parsing & transpilation
 - `custom_components/flode` — Home Assistant integration (Python)
@@ -26,7 +26,7 @@ See the repository root and the `packages` folder for the full layout.
 ## Common Commands
 
 - Install dependencies: `yarn install`
-- Start frontend dev server: `yarn dev`
+- Rebuild the panel on every change: `yarn dev`
 - Build all packages: `yarn build`
 - Build and copy to Home Assistant component: `yarn build:ha`
 - Run tests: `yarn test` (use `--run` to avoid Vitest watch mode when necessary)
@@ -40,8 +40,9 @@ If you need to run a command inside a package, change into that package director
 - Keep TypeScript strict — the codebase is compiled with `--strict` and must remain type-safe.
 - Avoid `any`, `as` assertions, and `@ts-ignore` except when interacting with unavoidable external APIs; prefer `unknown` + type guards instead.
 - Use `@flode/shared` types and Zod schemas for shared shapes — do not re-declare common types.
-- Extract reusable logic to helpers or custom hooks rather than duplicating code.
-- In React/TypeScript files: do not use IIFEs; prefer named components or helper functions.
+- Extract reusable logic to helpers (or `@flode/ui-core`) rather than duplicating code.
+- Use Home Assistant's own elements and dialogs wherever one exists.
+- Do not use IIFEs; prefer named helper functions or separate elements.
 
 ## Tests
 

@@ -38,9 +38,24 @@ describe('fan-out safety: never delete a dispatcher entry something still jumps 
       name: 'Back edge into fan-out source',
       nodes: [
         ...TRIGGERS,
-        { id: 'A', type: 'action', position: { x: 300, y: 100 }, data: { service: 'light.turn_on' } },
-        { id: 'B', type: 'action', position: { x: 600, y: 0 }, data: { service: 'switch.turn_on' } },
-        { id: 'C', type: 'action', position: { x: 600, y: 200 }, data: { service: 'switch.turn_off' } },
+        {
+          id: 'A',
+          type: 'action',
+          position: { x: 300, y: 100 },
+          data: { service: 'light.turn_on' },
+        },
+        {
+          id: 'B',
+          type: 'action',
+          position: { x: 600, y: 0 },
+          data: { service: 'switch.turn_on' },
+        },
+        {
+          id: 'C',
+          type: 'action',
+          position: { x: 600, y: 200 },
+          data: { service: 'switch.turn_off' },
+        },
       ],
       edges: [
         { id: 'e0', source: 'trigger_0', target: 'A' },
@@ -74,7 +89,12 @@ describe('fan-out safety: never delete a dispatcher entry something still jumps 
         ...TRIGGERS,
         { id: 'A', type: 'action', position: { x: 300, y: 0 }, data: { service: 'scene.create' } },
         { id: 'B', type: 'action', position: { x: 600, y: 0 }, data: { service: 'light.turn_on' } },
-        { id: 'C', type: 'action', position: { x: 600, y: 200 }, data: { service: 'light.turn_off' } },
+        {
+          id: 'C',
+          type: 'action',
+          position: { x: 600, y: 200 },
+          data: { service: 'light.turn_off' },
+        },
       ],
       edges: [
         { id: 'e0', source: 'trigger_0', target: 'A' },
@@ -105,7 +125,12 @@ describe('fan-out safety: never delete a dispatcher entry something still jumps 
         { id: 'A', type: 'action', position: { x: 300, y: 0 }, data: { service: 'scene.create' } },
         { id: 'D', type: 'action', position: { x: 300, y: 300 }, data: { service: 'scene.apply' } },
         { id: 'B', type: 'action', position: { x: 600, y: 0 }, data: { service: 'light.turn_on' } },
-        { id: 'C', type: 'action', position: { x: 600, y: 200 }, data: { service: 'light.turn_off' } },
+        {
+          id: 'C',
+          type: 'action',
+          position: { x: 600, y: 200 },
+          data: { service: 'light.turn_off' },
+        },
       ],
       edges: [
         { id: 'e0', source: 'trigger_0', target: 'A' },
@@ -130,10 +155,30 @@ describe('fan-out safety: never delete a dispatcher entry something still jumps 
       name: 'Scene then parallel lights that re-join',
       nodes: [
         ...TRIGGERS,
-        { id: 'act_scene_create', type: 'action', position: { x: 300, y: 100 }, data: { service: 'scene.create' } },
-        { id: 'act_l1', type: 'action', position: { x: 600, y: 0 }, data: { service: 'light.turn_on' } },
-        { id: 'act_l2', type: 'action', position: { x: 600, y: 150 }, data: { service: 'light.turn_on' } },
-        { id: 'act_join', type: 'action', position: { x: 900, y: 75 }, data: { service: 'notify.notify' } },
+        {
+          id: 'act_scene_create',
+          type: 'action',
+          position: { x: 300, y: 100 },
+          data: { service: 'scene.create' },
+        },
+        {
+          id: 'act_l1',
+          type: 'action',
+          position: { x: 600, y: 0 },
+          data: { service: 'light.turn_on' },
+        },
+        {
+          id: 'act_l2',
+          type: 'action',
+          position: { x: 600, y: 150 },
+          data: { service: 'light.turn_on' },
+        },
+        {
+          id: 'act_join',
+          type: 'action',
+          position: { x: 900, y: 75 },
+          data: { service: 'notify.notify' },
+        },
       ],
       edges: [
         { id: 'e0', source: 'trigger_0', target: 'act_scene_create' },
@@ -157,11 +202,31 @@ describe('fan-out safety: never delete a dispatcher entry something still jumps 
       name: 'Nested fan-out',
       nodes: [
         ...TRIGGERS,
-        { id: 'A', type: 'action', position: { x: 300, y: 100 }, data: { service: 'scene.create' } },
+        {
+          id: 'A',
+          type: 'action',
+          position: { x: 300, y: 100 },
+          data: { service: 'scene.create' },
+        },
         { id: 'B', type: 'action', position: { x: 600, y: 0 }, data: { service: 'light.turn_on' } },
-        { id: 'C', type: 'action', position: { x: 600, y: 300 }, data: { service: 'light.turn_off' } },
-        { id: 'D', type: 'action', position: { x: 900, y: -100 }, data: { service: 'switch.turn_on' } },
-        { id: 'E', type: 'action', position: { x: 900, y: 100 }, data: { service: 'switch.turn_off' } },
+        {
+          id: 'C',
+          type: 'action',
+          position: { x: 600, y: 300 },
+          data: { service: 'light.turn_off' },
+        },
+        {
+          id: 'D',
+          type: 'action',
+          position: { x: 900, y: -100 },
+          data: { service: 'switch.turn_on' },
+        },
+        {
+          id: 'E',
+          type: 'action',
+          position: { x: 900, y: 100 },
+          data: { service: 'switch.turn_off' },
+        },
       ],
       edges: [
         { id: 'e0', source: 'trigger_0', target: 'A' },
@@ -177,7 +242,13 @@ describe('fan-out safety: never delete a dispatcher entry something still jumps 
     if (!yaml) throw new Error('expected generated yaml');
 
     // All five branches survive, nested one level deep.
-    for (const service of ['scene.create', 'light.turn_on', 'light.turn_off', 'switch.turn_on', 'switch.turn_off']) {
+    for (const service of [
+      'scene.create',
+      'light.turn_on',
+      'light.turn_off',
+      'switch.turn_on',
+      'switch.turn_off',
+    ]) {
       expect(yaml).toContain(service);
     }
     // B, C, D, E are fully owned by the fan-out and should not warn.
@@ -191,7 +262,12 @@ describe('fan-out safety: never delete a dispatcher entry something still jumps 
       name: 'Duplicate edges',
       nodes: [
         ...TRIGGERS,
-        { id: 'A', type: 'action', position: { x: 300, y: 100 }, data: { service: 'scene.create' } },
+        {
+          id: 'A',
+          type: 'action',
+          position: { x: 300, y: 100 },
+          data: { service: 'scene.create' },
+        },
         { id: 'B', type: 'action', position: { x: 600, y: 0 }, data: { service: 'light.turn_on' } },
       ],
       edges: [
@@ -223,9 +299,24 @@ describe('fan-out now also covers condition handles and trigger routing', () => 
           position: { x: 300, y: 100 },
           data: { condition: 'state', entity_id: 'binary_sensor.c', state: 'on' },
         },
-        { id: 'act_true_1', type: 'action', position: { x: 600, y: 0 }, data: { service: 'light.turn_on' } },
-        { id: 'act_true_2', type: 'action', position: { x: 600, y: 100 }, data: { service: 'switch.turn_on' } },
-        { id: 'act_false', type: 'action', position: { x: 600, y: 300 }, data: { service: 'light.turn_off' } },
+        {
+          id: 'act_true_1',
+          type: 'action',
+          position: { x: 600, y: 0 },
+          data: { service: 'light.turn_on' },
+        },
+        {
+          id: 'act_true_2',
+          type: 'action',
+          position: { x: 600, y: 100 },
+          data: { service: 'switch.turn_on' },
+        },
+        {
+          id: 'act_false',
+          type: 'action',
+          position: { x: 600, y: 300 },
+          data: { service: 'light.turn_off' },
+        },
       ],
       edges: [
         { id: 'e0', source: 'trigger_0', target: 'cond_1' },
@@ -255,9 +346,19 @@ describe('fan-out now also covers condition handles and trigger routing', () => 
       name: 'Trigger fan-out with back-edge',
       nodes: [
         ...TRIGGERS,
-        { id: 'other', type: 'action', position: { x: 300, y: 400 }, data: { service: 'notify.notify' } },
+        {
+          id: 'other',
+          type: 'action',
+          position: { x: 300, y: 400 },
+          data: { service: 'notify.notify' },
+        },
         { id: 'A', type: 'action', position: { x: 300, y: 0 }, data: { service: 'light.turn_on' } },
-        { id: 'B', type: 'action', position: { x: 600, y: 0 }, data: { service: 'switch.turn_on' } },
+        {
+          id: 'B',
+          type: 'action',
+          position: { x: 600, y: 0 },
+          data: { service: 'switch.turn_on' },
+        },
       ],
       edges: [
         { id: 'e0', source: 'trigger_1', target: 'other' },

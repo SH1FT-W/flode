@@ -11,7 +11,7 @@ export async function applyHeuristicLayout(
   nodes: FlowNode[],
   edges: FlowEdge[],
   /**
-   * Real rendered node sizes by node id (e.g. React Flow's `measured`), used
+   * Real rendered node sizes by node id (the canvas's card size), used
    * instead of the per-type estimates when present — lets the editor's
    * "tidy up" command lay out the cards as they actually render. Import
    * (YamlParser) never passes it, so its layout is unchanged.
@@ -69,6 +69,9 @@ export async function applyHeuristicLayout(
         'elk.algorithm': 'layered',
         'elk.direction': 'RIGHT',
         'elk.spacing.nodeNode': '60',
+        // "Tidy up" (measured sizes): unconnected parts would otherwise pack
+        // with ELK's 20px default. Import keeps its layout unchanged.
+        ...(measuredSizes ? { 'elk.spacing.componentComponent': '60' } : {}),
         'elk.layered.spacing.nodeNodeBetweenLayers': '120',
         'elk.spacing.edgeNode': '30',
         'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',

@@ -1,0 +1,75 @@
+{
+  "title": "Connections",
+  "subtitle": "Who listens to what and who switches what – across all automations and scripts",
+  "searchPlaceholder": "Where is … used? Entity, automation or script",
+  "summary": "{{automations}} · {{scripts}} · {{entities}} linked entities",
+  "automationCount_one": "{{count}} automation",
+  "automationCount_other": "{{count}} automations",
+  "scriptCount_one": "{{count}} script",
+  "scriptCount_other": "{{count}} scripts",
+  "loading": "Reading all automations and scripts …",
+  "loadedAt": "As of {{time}}",
+  "reload": "Reload",
+  "results_one": "{{count}} result",
+  "results_other": "{{count}} results",
+  "noResults": "Nothing found.",
+  "refCount_one": "{{count}} reference",
+  "refCount_other": "{{count}} references",
+  "useCount_one": "in {{count}} automation",
+  "useCount_other": "in {{count}} automations",
+  "open": "Open",
+  "kind": {
+    "automation": "Automation",
+    "script": "Script",
+    "entity": "Entity"
+  },
+  "role": {
+    "trigger": "Trigger",
+    "condition": "Condition",
+    "action": "Action",
+    "template": "Template"
+  },
+  "issues": {
+    "conflicts": {
+      "title": "Possible conflicts",
+      "hint": "Two control the same device in opposite ways",
+      "empty": "No opposite control found."
+    },
+    "selfTriggers": {
+      "title": "Triggers itself",
+      "hint": "Changes an entity it listens to itself",
+      "empty": "No automation triggers itself."
+    },
+    "missing": {
+      "title": "Missing entities",
+      "hint": "References to deleted or renamed entities",
+      "empty": "Every reference points to an existing entity."
+    },
+    "chains": {
+      "title": "Chains",
+      "hint": "One automation sets off another",
+      "empty": "No chains found."
+    }
+  },
+  "focus": {
+    "empty": "Pick an entity, automation or script on the left – or search for one above.",
+    "triggeredBy": "Set off by",
+    "listensTo": "Listens to",
+    "reads": "Checks / reads",
+    "controls": "Controls",
+    "triggers": "Sets off",
+    "conflictWith": "Opposite to",
+    "on": "on",
+    "selfTrigger": "Triggers itself through this entity:",
+    "missing_one": "{{count}} reference points to an entity that doesn't exist.",
+    "missing_other": "{{count}} references point to entities that don't exist.",
+    "entityMissing_one": "Home Assistant doesn't know this entity (anymore) – renamed or deleted? {{count}} automation still refers to it.",
+    "entityMissing_other": "Home Assistant doesn't know this entity (anymore) – renamed or deleted? {{count}} automations still refer to it.",
+    "unused": "No automation or script uses this entity.",
+    "usedAsTrigger": "Triggers",
+    "usedAsCondition": "Checked by",
+    "controlledBy": "Controlled by"
+  },
+  "command": "Connections",
+  "commandHint": "Who listens to what and who switches what – focused on the open automation"
+}

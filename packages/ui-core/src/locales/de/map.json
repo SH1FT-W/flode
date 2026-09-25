@@ -1,0 +1,75 @@
+{
+  "title": "Zusammenhänge",
+  "subtitle": "Wer hört auf was, wer schaltet was – über alle Automationen und Skripte",
+  "searchPlaceholder": "Wo wird … benutzt? Entität, Automation oder Skript",
+  "summary": "{{automations}} · {{scripts}} · {{entities}} Entitäten verknüpft",
+  "automationCount_one": "{{count}} Automation",
+  "automationCount_other": "{{count}} Automationen",
+  "scriptCount_one": "{{count}} Skript",
+  "scriptCount_other": "{{count}} Skripte",
+  "loading": "Alle Automationen und Skripte werden eingelesen …",
+  "loadedAt": "Stand {{time}}",
+  "reload": "Neu einlesen",
+  "results_one": "{{count}} Treffer",
+  "results_other": "{{count}} Treffer",
+  "noResults": "Nichts gefunden.",
+  "refCount_one": "{{count}} Bezug",
+  "refCount_other": "{{count}} Bezüge",
+  "useCount_one": "in {{count}} Automation",
+  "useCount_other": "in {{count}} Automationen",
+  "open": "Öffnen",
+  "kind": {
+    "automation": "Automation",
+    "script": "Skript",
+    "entity": "Entität"
+  },
+  "role": {
+    "trigger": "Auslöser",
+    "condition": "Bedingung",
+    "action": "Aktion",
+    "template": "Template"
+  },
+  "issues": {
+    "conflicts": {
+      "title": "Mögliche Konflikte",
+      "hint": "Zwei steuern dasselbe Gerät gegensätzlich",
+      "empty": "Keine gegensätzliche Steuerung gefunden."
+    },
+    "selfTriggers": {
+      "title": "Löst sich selbst aus",
+      "hint": "Ändert eine Entität, auf die sie selbst hört",
+      "empty": "Keine Automation löst sich selbst aus."
+    },
+    "missing": {
+      "title": "Fehlende Entitäten",
+      "hint": "Verweise auf gelöschte oder umbenannte Entitäten",
+      "empty": "Alle Verweise zeigen auf vorhandene Entitäten."
+    },
+    "chains": {
+      "title": "Ketten",
+      "hint": "Eine Automation setzt eine andere in Gang",
+      "empty": "Keine Ketten gefunden."
+    }
+  },
+  "focus": {
+    "empty": "Wähle links eine Entität, Automation oder ein Skript – oder such oben danach.",
+    "triggeredBy": "Wird in Gang gesetzt von",
+    "listensTo": "Hört auf",
+    "reads": "Prüft / liest",
+    "controls": "Steuert",
+    "triggers": "Setzt in Gang",
+    "conflictWith": "Gegensätzlich zu",
+    "on": "bei",
+    "selfTrigger": "Löst sich über diese Entität selbst aus:",
+    "missing_one": "{{count}} Verweis zeigt auf eine Entität, die es nicht gibt.",
+    "missing_other": "{{count}} Verweise zeigen auf Entitäten, die es nicht gibt.",
+    "entityMissing_one": "Diese Entität gibt es in Home Assistant nicht (mehr) – umbenannt oder gelöscht? {{count}} Automation verweist noch darauf.",
+    "entityMissing_other": "Diese Entität gibt es in Home Assistant nicht (mehr) – umbenannt oder gelöscht? {{count}} Automationen verweisen noch darauf.",
+    "unused": "Keine Automation und kein Skript benutzt diese Entität.",
+    "usedAsTrigger": "Löst aus",
+    "usedAsCondition": "Wird geprüft von",
+    "controlledBy": "Wird gesteuert von"
+  },
+  "command": "Zusammenhänge",
+  "commandHint": "Wer hört auf was, wer schaltet was – offene Automation im Fokus"
+}

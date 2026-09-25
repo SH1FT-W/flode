@@ -2,4 +2,4 @@
 
 DOMAIN = "flode"
 PANEL_TITLE = "FLODE"
-PANEL_ICON = "mdi:graph-outline"
+PANEL_ICON = "mdi:transit-connection-variant"

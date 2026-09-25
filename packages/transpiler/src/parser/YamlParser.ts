@@ -291,7 +291,26 @@ function transformToNestedCondition(condition: HACondition): NestedCondition {
 /**
  * Parser for converting Home Assistant YAML back to FlowGraph
  */
+export interface YamlParserOptions {
+  /**
+   * Keep HA's building blocks (`if`, `choose`, `repeat`, `parallel`,
+   * `sequence`) as one verbatim block each, edited with HA's own nested
+   * editor — instead of FLODE's branch structure of conditions and special
+   * edges. Used by FLODE 3; state-machine automations are unaffected.
+   */
+  keepBlocks?: boolean;
+}
+
+/** Keys that make an action step one of HA's building blocks. */
+const HA_BLOCK_KEYS = ['if', 'choose', 'repeat', 'parallel', 'sequence'] as const;
+
+export function isHaBlockStep(step: unknown): boolean {
+  return typeof step === 'object' && step !== null && HA_BLOCK_KEYS.some((key) => key in step);
+}
+
 export class YamlParser {
+  constructor(private readonly options: YamlParserOptions = {}) {}
+
   /**
    * Parse Home Assistant YAML string into FlowGraph
    */
@@ -357,7 +376,11 @@ export class YamlParser {
 
       // Step 7: Apply positions from metadata or generate heuristic layout
       let nodesWithPositions: FlowNode[];
-      if (hadMetadata && metadata) {
+      // Saved positions only fit if they cover every node — with `keepBlocks`
+      // a flow saved by the React UI has other nodes (its branches became blocks).
+      const metadataCoversNodes =
+        metadata !== null && nodes.every((node) => node.id in metadata.nodes);
+      if (hadMetadata && metadata && (!this.options.keepBlocks || metadataCoversNodes)) {
         const metaNodes = this.applyMetadataPositions(nodes, metadata);
         // Validate layout: if any choose-chain edge goes right-to-left, the saved
         // positions are stale/manually rearranged in a confusing way — recompute.
@@ -1742,6 +1765,13 @@ export class YamlParser {
 
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: large dispatch switch, refactoring deferred
     actions.forEach((action, index) => {
+      if (this.options.keepBlocks && isHaBlockStep(action)) {
+        const nodeId = getNextNodeId('action');
+        nodes.push(this.createRawStepNode(nodeId, action));
+        createEdgesFromCurrent(nodeId);
+        currentNodeIds = [nodeId];
+        return;
+      }
       if (!action || typeof action !== 'object') {
         // Unknown action type - create unknown node
         warnings.push(`Unknown action type (${JSON.stringify(action)}) at index ${index}`);
@@ -1829,14 +1859,17 @@ export class YamlParser {
             delay:
               typeof delayValue === 'string'
                 ? delayValue
-                : typeof delayValue === 'object' && delayValue !== null
-                  ? (delayValue as {
-                      hours?: number;
-                      minutes?: number;
-                      seconds?: number;
-                      milliseconds?: number;
-                    })
-                  : '',
+                : // HA reads a bare number as seconds.
+                  typeof delayValue === 'number'
+                  ? { seconds: delayValue }
+                  : typeof delayValue === 'object' && delayValue !== null
+                    ? (delayValue as {
+                        hours?: number;
+                        minutes?: number;
+                        seconds?: number;
+                        milliseconds?: number;
+                      })
+                    : '',
             enabled: getNodeEnabled(typeof enabled === 'boolean' ? enabled : undefined),
           },
         };

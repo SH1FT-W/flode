@@ -40,6 +40,19 @@ interface RepeatPattern {
  * Native strategy for simple tree-shaped automations
  * Generates standard nested Home Assistant YAML with choose blocks
  */
+/** State/event trigger keys where `null` means something in HA (`to: null` = state changes only, no attribute changes). */
+const MEANINGFUL_NULL_KEYS = new Set(['from', 'to', 'not_from', 'not_to']);
+
+/** A trigger without empty form leftovers — keeps the `null`s HA gives a meaning to. */
+function cleanTrigger(data: object): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(data).filter(
+      ([key, value]) =>
+        value !== undefined && value !== '' && (value !== null || MEANINGFUL_NULL_KEYS.has(key))
+    )
+  );
+}
+
 export class NativeStrategy extends BaseStrategy {
   readonly name = 'native';
   readonly description = 'Generates nested HA YAML for simple tree-shaped automations';
@@ -202,8 +215,9 @@ export class NativeStrategy extends BaseStrategy {
     if (flow.metadata?.max_exceeded) {
       automation.max_exceeded = flow.metadata.max_exceeded;
     }
-    if (flow.metadata?.initial_state === false) {
-      automation.initial_state = false;
+    // Written whenever the automation has it — `true` also matters (on after every restart).
+    if (typeof flow.metadata?.initial_state === 'boolean') {
+      automation.initial_state = flow.metadata.initial_state;
     }
     if (flow.metadata?.trace) {
       automation.trace = flow.metadata.trace;
@@ -694,7 +708,7 @@ export class NativeStrategy extends BaseStrategy {
 
     while (currentId) {
       const node = this.getNode(flow, currentId);
-      if (!node || node.type !== 'condition') break;
+      if (node?.type !== 'condition') break;
 
       // Don't promote conditions that are part of a repeat pattern
       if (this.repeatPatterns.has(currentId) || this.repeatInternalNodeIds.has(currentId)) break;
@@ -749,12 +763,7 @@ export class NativeStrategy extends BaseStrategy {
    * Build a single trigger configuration
    */
   private buildTrigger(node: TriggerNode): Record<string, unknown> {
-    const trigger: Record<string, unknown> = { ...node.data };
-
-    // Clean up undefined/empty values
-    return Object.fromEntries(
-      Object.entries(trigger).filter(([, v]) => v !== undefined && v !== '' && v !== null)
-    );
+    return cleanTrigger(node.data);
   }
 
   /**
@@ -1638,12 +1647,7 @@ export class NativeStrategy extends BaseStrategy {
     if (wait_template) {
       wait.wait_template = wait_template;
     } else if (wait_for_trigger) {
-      wait.wait_for_trigger = wait_for_trigger.map((triggerData) => {
-        const trigger: Record<string, unknown> = { ...triggerData };
-        return Object.fromEntries(
-          Object.entries(trigger).filter(([, v]) => v !== undefined && v !== '' && v !== null)
-        );
-      });
+      wait.wait_for_trigger = wait_for_trigger.map(cleanTrigger);
     }
 
     if (timeout) {

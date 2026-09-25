@@ -16,10 +16,10 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_203:
+      trigger_test_0_205:
         x: 40
         "y": 40
-      action_test_1_204:
+      action_test_1_206:
         x: 420
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -71,16 +71,16 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_199:
+      trigger_test_0_201:
         x: 40
         "y": 58
-      condition_test_1_200:
+      condition_test_1_202:
         x: 420
         "y": 53
-      action_test_2_201:
+      action_test_2_203:
         x: 800
         "y": 40
-      action_test_3_202:
+      action_test_3_204:
         x: 800
         "y": 200
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -126,28 +126,28 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_191:
+      trigger_test_0_193:
         x: 40
         "y": 173
-      condition_test_1_192:
+      condition_test_1_194:
         x: 420
         "y": 168
-      condition_test_2_193:
+      condition_test_2_195:
         x: 800
         "y": 150
-      condition_test_3_194:
+      condition_test_3_196:
         x: 1180
         "y": 132
-      condition_test_4_195:
+      condition_test_4_197:
         x: 1560
         "y": 96
-      action_test_5_196:
+      action_test_5_198:
         x: 1940
         "y": 74
-      condition_test_6_197:
+      condition_test_6_199:
         x: 2320
         "y": 53
-      action_test_7_198:
+      action_test_7_200:
         x: 2700
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -205,22 +205,22 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_185:
+      trigger_test_0_187:
         x: 40
         "y": 196
-      condition_test_1_186:
+      condition_test_1_188:
         x: 420
         "y": 173
-      action_test_2_187:
+      action_test_2_189:
         x: 800
         "y": 160
-      condition_test_3_188:
+      condition_test_3_190:
         x: 420
         "y": 343
-      action_test_4_189:
+      action_test_4_191:
         x: 800
         "y": 330
-      action_test_5_190:
+      action_test_5_192:
         x: 800
         "y": 986
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -259,25 +259,25 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_178:
+      trigger_test_0_180:
         x: 40
         "y": 40
-      action_test_1_179:
+      action_test_1_181:
         x: 420
         "y": 40
-      delay_test_2_180:
+      delay_test_2_182:
         x: 800
         "y": 54
-      action_test_3_181:
+      action_test_3_183:
         x: 1180
         "y": 40
-      wait_test_4_182:
+      wait_test_4_184:
         x: 1560
         "y": 45
-      delay_test_5_183:
+      delay_test_5_185:
         x: 1940
         "y": 54
-      action_test_6_184:
+      action_test_6_186:
         x: 2320
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -316,22 +316,22 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_172:
+      trigger_test_0_174:
         x: 40
         "y": 200
-      trigger_test_1_173:
+      trigger_test_1_175:
         x: 40
         "y": 360
-      trigger_test_2_174:
+      trigger_test_2_176:
         x: 40
         "y": 520
-      trigger_test_3_175:
+      trigger_test_3_177:
         x: 40
         "y": 40
-      action_test_4_176:
+      action_test_4_178:
         x: 420
         "y": 210
-      action_test_5_177:
+      action_test_5_179:
         x: 800
         "y": 210
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -362,7 +362,7 @@ triggers:
       - 0/0/1
 actions:
   - variables:
-      current_node: condition_test_1_156
+      current_node: condition_test_1_158
       flow_context: {}
   - alias: State Machine Loop
     repeat:
@@ -371,33 +371,33 @@ actions:
         - choose:
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"condition_test_1_156\\" }}"
+                  value_template: "{{ current_node == \\"condition_test_1_158\\" }}"
               sequence:
                 - variables:
-                    current_node: "{% if trigger.payload == 1 %}condition_test_2_157{% else %}END{% endif %}"
+                    current_node: "{% if trigger.payload == 1 %}condition_test_2_159{% else %}END{% endif %}"
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"condition_test_2_157\\" }}"
+                  value_template: "{{ current_node == \\"condition_test_2_159\\" }}"
               sequence:
                 - variables:
-                    current_node: "{% if target_light is not none %}wait_test_3_158{% else %}END{% endif %}"
+                    current_node: "{% if target_light is not none %}wait_test_3_160{% else %}END{% endif %}"
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"wait_test_3_158\\" }}"
+                  value_template: "{{ current_node == \\"wait_test_3_160\\" }}"
               sequence:
                 - wait_template: "{{ is_state(target_light, 'on') }}"
                   timeout: "00:00:03"
                 - variables:
-                    current_node: condition_test_4_159
+                    current_node: condition_test_4_161
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"condition_test_4_159\\" }}"
+                  value_template: "{{ current_node == \\"condition_test_4_161\\" }}"
               sequence:
                 - variables:
-                    current_node: "{% if is_state(target_light, 'on') %}action_test_5_160{% else %}END{% endif %}"
+                    current_node: "{% if is_state(target_light, 'on') %}action_test_5_162{% else %}END{% endif %}"
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"action_test_5_160\\" }}"
+                  value_template: "{{ current_node == \\"action_test_5_162\\" }}"
               sequence:
                 - action: light.turn_on
                   target:
@@ -406,26 +406,26 @@ actions:
                     brightness_pct: 100
                     transition: 0
                 - variables:
-                    current_node: delay_test_6_161
+                    current_node: delay_test_6_163
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"delay_test_6_161\\" }}"
+                  value_template: "{{ current_node == \\"delay_test_6_163\\" }}"
               sequence:
                 - delay:
                     milliseconds: 500
                 - variables:
-                    current_node: set_variables_test_7_162
+                    current_node: set_variables_test_7_164
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"set_variables_test_7_162\\" }}"
+                  value_template: "{{ current_node == \\"set_variables_test_7_164\\" }}"
               sequence:
                 - variables:
                     color_before: "{% set a = state_attr(target_light, 'hs_color') %} {% set b = state_attr(target_light, 'xy_color') %} {% set c = state_attr(target_light, 'color_temp_kelvin') %} {% set d = state_attr(target_light, 'color_temp') %} {{ [a, b, c, d] }}"
                 - variables:
-                    current_node: action_test_8_163
+                    current_node: action_test_8_165
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"action_test_8_163\\" }}"
+                  value_template: "{{ current_node == \\"action_test_8_165\\" }}"
               sequence:
                 - action: adaptive_lighting.apply
                   data:
@@ -437,32 +437,32 @@ actions:
                     adapt_color: true
                     transition: 0
                 - variables:
-                    current_node: delay_test_9_164
+                    current_node: delay_test_9_166
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"delay_test_9_164\\" }}"
+                  value_template: "{{ current_node == \\"delay_test_9_166\\" }}"
               sequence:
                 - delay:
                     milliseconds: 350
                 - variables:
-                    current_node: set_variables_test_10_165
+                    current_node: set_variables_test_10_167
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"set_variables_test_10_165\\" }}"
+                  value_template: "{{ current_node == \\"set_variables_test_10_167\\" }}"
               sequence:
                 - variables:
                     color_after_1: "{% set a = state_attr(target_light, 'hs_color') %} {% set b = state_attr(target_light, 'xy_color') %} {% set c = state_attr(target_light, 'color_temp_kelvin') %} {% set d = state_attr(target_light, 'color_temp') %} {{ [a, b, c, d] }}"
                 - variables:
-                    current_node: condition_test_11_166
+                    current_node: condition_test_11_168
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"condition_test_11_166\\" }}"
+                  value_template: "{{ current_node == \\"condition_test_11_168\\" }}"
               sequence:
                 - variables:
-                    current_node: "{% if is_state(target_light, 'on') and (color_after_1 == color_before) %}action_test_12_167{% else %}set_variables_test_14_169{% endif %}"
+                    current_node: "{% if is_state(target_light, 'on') and (color_after_1 == color_before) %}action_test_12_169{% else %}set_variables_test_14_171{% endif %}"
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"action_test_12_167\\" }}"
+                  value_template: "{{ current_node == \\"action_test_12_169\\" }}"
               sequence:
                 - action: adaptive_lighting.apply
                   data:
@@ -474,32 +474,32 @@ actions:
                     adapt_color: true
                     transition: 0
                 - variables:
-                    current_node: delay_test_13_168
+                    current_node: delay_test_13_170
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"delay_test_13_168\\" }}"
+                  value_template: "{{ current_node == \\"delay_test_13_170\\" }}"
               sequence:
                 - delay:
                     milliseconds: 350
                 - variables:
-                    current_node: set_variables_test_14_169
+                    current_node: set_variables_test_14_171
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"set_variables_test_14_169\\" }}"
+                  value_template: "{{ current_node == \\"set_variables_test_14_171\\" }}"
               sequence:
                 - variables:
                     color_after_2: "{% set a = state_attr(target_light, 'hs_color') %} {% set b = state_attr(target_light, 'xy_color') %} {% set c = state_attr(target_light, 'color_temp_kelvin') %} {% set d = state_attr(target_light, 'color_temp') %} {{ [a, b, c, d] }}"
                 - variables:
-                    current_node: condition_test_15_170
+                    current_node: condition_test_15_172
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"condition_test_15_170\\" }}"
+                  value_template: "{{ current_node == \\"condition_test_15_172\\" }}"
               sequence:
                 - variables:
-                    current_node: "{% if is_state(target_light, 'on') and (color_after_2 == color_before) %}action_test_16_171{% else %}END{% endif %}"
+                    current_node: "{% if is_state(target_light, 'on') and (color_after_2 == color_before) %}action_test_16_173{% else %}END{% endif %}"
             - conditions:
                 - condition: template
-                  value_template: "{{ current_node == \\"action_test_16_171\\" }}"
+                  value_template: "{{ current_node == \\"action_test_16_173\\" }}"
               sequence:
                 - action: adaptive_lighting.apply
                   data:
@@ -536,55 +536,55 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_155:
+      trigger_test_0_157:
         x: 40
         "y": 115
-      condition_test_1_156:
+      condition_test_1_158:
         x: 420
         "y": 110
-      condition_test_2_157:
+      condition_test_2_159:
         x: 800
         "y": 92
-      wait_test_3_158:
+      wait_test_3_160:
         x: 1180
         "y": 84
-      condition_test_4_159:
+      condition_test_4_161:
         x: 1560
         "y": 74
-      action_test_5_160:
+      action_test_5_162:
         x: 1940
         "y": 61
-      delay_test_6_161:
+      delay_test_6_163:
         x: 2320
         "y": 75
-      set_variables_test_7_162:
+      set_variables_test_7_164:
         x: 2700
         "y": 66
-      action_test_8_163:
+      action_test_8_165:
         x: 3080
         "y": 61
-      delay_test_9_164:
+      delay_test_9_166:
         x: 3460
         "y": 75
-      set_variables_test_10_165:
+      set_variables_test_10_167:
         x: 3840
         "y": 66
-      condition_test_11_166:
+      condition_test_11_168:
         x: 4220
         "y": 59
-      action_test_12_167:
+      action_test_12_169:
         x: 4600
         "y": 46
-      delay_test_13_168:
+      delay_test_13_170:
         x: 4980
         "y": 60
-      set_variables_test_14_169:
+      set_variables_test_14_171:
         x: 5360
         "y": 66
-      condition_test_15_170:
+      condition_test_15_172:
         x: 5740
         "y": 53
-      action_test_16_171:
+      action_test_16_173:
         x: 6120
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -693,43 +693,43 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_142:
+      trigger_test_0_144:
         x: 40
         "y": 397
-      trigger_test_1_143:
+      trigger_test_1_145:
         x: 40
         "y": 237
-      trigger_test_2_144:
+      trigger_test_2_146:
         x: 40
         "y": 77
-      condition_test_3_145:
+      condition_test_3_147:
         x: 420
         "y": 259
-      condition_test_4_146:
+      condition_test_4_148:
         x: 800
         "y": 241
-      condition_test_5_147:
+      condition_test_5_149:
         x: 1180
         "y": 223
-      action_test_6_148:
+      action_test_6_150:
         x: 1560
         "y": 200
-      action_test_7_149:
+      action_test_7_151:
         x: 1560
         "y": 360
-      action_test_8_150:
+      action_test_8_152:
         x: 1940
         "y": 360
-      condition_test_9_151:
+      condition_test_9_153:
         x: 420
         "y": 520
-      condition_test_10_152:
+      condition_test_10_154:
         x: 800
         "y": 502
-      condition_test_11_153:
+      condition_test_11_155:
         x: 1180
         "y": 484
-      action_test_12_154:
+      action_test_12_156:
         x: 1560
         "y": 471
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -790,25 +790,25 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_135:
+      trigger_test_0_137:
         x: 40
         "y": 236
-      trigger_test_1_136:
+      trigger_test_1_138:
         x: 40
         "y": 76
-      condition_test_2_137:
+      condition_test_2_139:
         x: 420
         "y": 89
-      condition_test_3_138:
+      condition_test_3_140:
         x: 800
         "y": 53
-      action_test_4_139:
+      action_test_4_141:
         x: 1180
         "y": 40
-      condition_test_5_140:
+      condition_test_5_142:
         x: 800
         "y": 223
-      action_test_6_141:
+      action_test_6_143:
         x: 1180
         "y": 210
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -915,22 +915,22 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_129:
+      trigger_test_0_131:
         x: 40
         "y": 58
-      condition_test_1_130:
+      condition_test_1_132:
         x: 420
         "y": 53
-      wait_test_2_131:
+      wait_test_2_133:
         x: 800
         "y": 45
-      wait_test_3_132:
+      wait_test_3_134:
         x: 1180
         "y": 45
-      wait_test_4_133:
+      wait_test_4_135:
         x: 1560
         "y": 45
-      action_test_5_134:
+      action_test_5_136:
         x: 1940
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1058,67 +1058,67 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_108:
+      trigger_test_0_110:
         x: 40
         "y": 804
-      trigger_test_1_109:
+      trigger_test_1_111:
         x: 40
         "y": 644
-      trigger_test_2_110:
+      trigger_test_2_112:
         x: 40
         "y": 324
-      trigger_test_3_111:
+      trigger_test_3_113:
         x: 40
         "y": 484
-      condition_test_4_112:
+      condition_test_4_114:
         x: 440
         "y": 513
-      condition_test_5_113:
+      condition_test_5_115:
         x: 820
         "y": 474
-      wait_test_6_114:
+      wait_test_6_116:
         x: 1200
         "y": 347
-      action_test_7_115:
+      action_test_7_117:
         x: 1580
         "y": 346
-      action_test_8_116:
+      action_test_8_118:
         x: 1200
         "y": 497
-      condition_test_9_117:
+      condition_test_9_119:
         x: 440
         "y": 683
-      condition_test_10_118:
+      condition_test_10_120:
         x: 820
         "y": 665
-      condition_test_11_119:
+      condition_test_11_121:
         x: 1200
         "y": 647
-      condition_test_12_120:
+      condition_test_12_122:
         x: 1580
         "y": 629
-      action_test_13_121:
+      action_test_13_123:
         x: 1960
         "y": 616
-      condition_test_14_122:
+      condition_test_14_124:
         x: 440
         "y": 853
-      condition_test_15_123:
+      condition_test_15_125:
         x: 820
         "y": 705
-      condition_test_16_124:
+      condition_test_16_126:
         x: 1200
         "y": 687
-      delay_test_17_125:
+      delay_test_17_127:
         x: 1580
         "y": 564
-      action_test_18_126:
+      action_test_18_128:
         x: 1960
         "y": 550
-      delay_test_19_127:
+      delay_test_19_129:
         x: 1580
         "y": 724
-      action_test_20_128:
+      action_test_20_130:
         x: 1960
         "y": 710
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1196,40 +1196,40 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_96:
+      trigger_test_0_98:
         x: 40
         "y": 239
-      trigger_test_1_97:
+      trigger_test_1_99:
         x: 40
         "y": 79
-      condition_test_2_98:
+      condition_test_2_100:
         x: 420
         "y": 241
-      condition_test_3_99:
+      condition_test_3_101:
         x: 800
         "y": 223
-      action_test_4_100:
+      action_test_4_102:
         x: 1180
         "y": 210
-      action_test_5_101:
+      action_test_5_103:
         x: 1560
         "y": 210
-      condition_test_6_102:
+      condition_test_6_104:
         x: 420
         "y": 411
-      condition_test_7_103:
+      condition_test_7_105:
         x: 800
         "y": 393
-      action_test_8_104:
+      action_test_8_106:
         x: 1180
         "y": 380
-      set_variables_test_9_105:
+      set_variables_test_9_107:
         x: 1560
         "y": 385
-      action_test_10_106:
+      action_test_10_108:
         x: 1940
         "y": 380
-      action_test_11_107:
+      action_test_11_109:
         x: 2320
         "y": 380
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1306,43 +1306,43 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_83:
+      trigger_test_0_85:
         x: 40
         "y": 217
-      condition_test_1_84:
+      condition_test_1_86:
         x: 420
         "y": 213
-      action_test_2_85:
+      action_test_2_87:
         x: 800
         "y": 200
-      action_test_3_86:
+      action_test_3_88:
         x: 1180
         "y": 200
-      action_test_4_87:
+      action_test_4_89:
         x: 1560
         "y": 200
-      action_test_5_88:
+      action_test_5_90:
         x: 1940
         "y": 200
-      action_test_6_89:
+      action_test_6_91:
         x: 2320
         "y": 200
-      action_test_7_90:
+      action_test_7_92:
         x: 3080
         "y": 360
-      delay_test_8_91:
+      delay_test_8_93:
         x: 2700
         "y": 214
-      action_test_9_92:
+      action_test_9_94:
         x: 3080
         "y": 200
-      action_test_10_93:
+      action_test_10_95:
         x: 3460
         "y": 200
-      action_test_11_94:
+      action_test_11_96:
         x: 3460
         "y": 40
-      action_test_12_95:
+      action_test_12_97:
         x: 3840
         "y": 200
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1385,22 +1385,22 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_77:
+      trigger_test_0_79:
         x: 40
         "y": 58
-      condition_test_1_78:
+      condition_test_1_80:
         x: 420
         "y": 53
-      action_test_2_79:
+      action_test_2_81:
         x: 800
         "y": 40
-      action_test_3_80:
+      action_test_3_82:
         x: 1180
         "y": 40
-      delay_test_4_81:
+      delay_test_4_83:
         x: 1560
         "y": 54
-      action_test_5_82:
+      action_test_5_84:
         x: 1940
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1477,25 +1477,25 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_70:
+      trigger_test_0_72:
         x: 40
         "y": 520
-      trigger_test_1_71:
+      trigger_test_1_73:
         x: 40
         "y": 360
-      trigger_test_2_72:
+      trigger_test_2_74:
         x: 40
         "y": 200
-      trigger_test_3_73:
+      trigger_test_3_75:
         x: 40
         "y": 40
-      condition_test_4_74:
+      condition_test_4_76:
         x: 420
         "y": 206
-      action_test_5_75:
+      action_test_5_77:
         x: 800
         "y": 193
-      action_test_6_76:
+      action_test_6_78:
         x: 800
         "y": 353
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1528,10 +1528,10 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_68:
+      trigger_test_0_70:
         x: 40
         "y": 40
-      action_test_1_69:
+      action_test_1_71:
         x: 420
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1561,13 +1561,13 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_65:
+      trigger_test_0_67:
         x: 40
         "y": 58
-      condition_test_1_66:
+      condition_test_1_68:
         x: 420
         "y": 53
-      action_test_2_67:
+      action_test_2_69:
         x: 800
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1607,16 +1607,16 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_61:
+      trigger_test_0_63:
         x: 40
         "y": 58
-      condition_test_1_62:
+      condition_test_1_64:
         x: 420
         "y": 53
-      action_test_2_63:
+      action_test_2_65:
         x: 800
         "y": 40
-      action_test_3_64:
+      action_test_3_66:
         x: 1180
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1633,6 +1633,7 @@ triggers:
     entity_id:
       - climate.CLIMATE_ENTITY
     from: "off"
+    to: null
 actions:
   - delay:
       hours: 0
@@ -1644,10 +1645,10 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_59:
+      trigger_test_0_61:
         x: 40
         "y": 40
-      delay_test_1_60:
+      delay_test_1_62:
         x: 420
         "y": 54
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1675,10 +1676,10 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_57:
+      trigger_test_0_59:
         x: 40
         "y": 40
-      action_test_1_58:
+      action_test_1_60:
         x: 420
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1711,13 +1712,13 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_54:
+      trigger_test_0_56:
         x: 40
         "y": 40
-      action_test_1_55:
+      action_test_1_57:
         x: 420
         "y": 40
-      action_test_2_56:
+      action_test_2_58:
         x: 800
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1793,19 +1794,19 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_49:
+      trigger_test_0_51:
         x: 40
         "y": 57
-      set_variables_test_1_50:
+      set_variables_test_1_52:
         x: 420
         "y": 62
-      action_test_2_51:
+      action_test_2_53:
         x: 800
         "y": 57
-      condition_test_3_52:
+      condition_test_3_54:
         x: 1180
         "y": 53
-      action_test_4_53:
+      action_test_4_55:
         x: 1560
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1838,16 +1839,16 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_45:
+      trigger_test_0_47:
         x: 40
         "y": 58
-      condition_test_1_46:
+      condition_test_1_48:
         x: 420
         "y": 53
-      action_test_2_47:
+      action_test_2_49:
         x: 800
         "y": 40
-      delay_test_3_48:
+      delay_test_3_50:
         x: 1180
         "y": 54
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1880,16 +1881,16 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_41:
+      trigger_test_0_43:
         x: 40
         "y": 45
-      action_test_1_42:
+      action_test_1_44:
         x: 420
         "y": 45
-      delay_test_2_43:
+      delay_test_2_45:
         x: 800
         "y": 59
-      condition_test_3_44:
+      condition_test_3_46:
         x: 1180
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1919,22 +1920,22 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_35:
+      trigger_test_0_37:
         x: 40
         "y": 45
-      set_variables_test_1_36:
+      set_variables_test_1_38:
         x: 420
         "y": 50
-      action_test_2_37:
+      action_test_2_39:
         x: 800
         "y": 45
-      delay_test_3_38:
+      delay_test_3_40:
         x: 1180
         "y": 59
-      set_variables_test_4_39:
+      set_variables_test_4_41:
         x: 1560
         "y": 50
-      condition_test_5_40:
+      condition_test_5_42:
         x: 1940
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -1975,22 +1976,22 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_29:
+      trigger_test_0_31:
         x: 40
         "y": 76
-      condition_test_1_30:
+      condition_test_1_32:
         x: 420
         "y": 71
-      condition_test_2_31:
+      condition_test_2_33:
         x: 800
         "y": 53
-      action_test_3_32:
+      action_test_3_34:
         x: 1180
         "y": 40
-      delay_test_4_33:
+      delay_test_4_35:
         x: 1560
         "y": 54
-      action_test_5_34:
+      action_test_5_36:
         x: 800
         "y": 223
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2017,13 +2018,13 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_26:
+      trigger_test_0_28:
         x: 40
         "y": 58
-      condition_test_1_27:
+      condition_test_1_29:
         x: 420
         "y": 53
-      action_test_2_28:
+      action_test_2_30:
         x: 800
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2053,13 +2054,13 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_23:
+      trigger_test_0_25:
         x: 40
         "y": 200
-      trigger_test_1_24:
+      trigger_test_1_26:
         x: 40
         "y": 40
-      action_test_2_25:
+      action_test_2_27:
         x: 420
         "y": 57
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2098,16 +2099,16 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_19:
+      trigger_test_0_21:
         x: 40
         "y": 58
-      condition_test_1_20:
+      condition_test_1_22:
         x: 420
         "y": 53
-      action_test_2_21:
+      action_test_2_23:
         x: 800
         "y": 40
-      action_test_3_22:
+      action_test_3_24:
         x: 800
         "y": 200
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2141,13 +2142,13 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_16:
+      trigger_test_0_18:
         x: 40
         "y": 58
-      condition_test_1_17:
+      condition_test_1_19:
         x: 420
         "y": 53
-      action_test_2_18:
+      action_test_2_20:
         x: 800
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2177,13 +2178,13 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_13:
+      trigger_test_0_15:
         x: 40
         "y": 40
-      set_variables_test_1_14:
+      set_variables_test_1_16:
         x: 420
         "y": 45
-      action_test_2_15:
+      action_test_2_17:
         x: 800
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2216,10 +2217,10 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_11:
+      trigger_test_0_13:
         x: 40
         "y": 40
-      action_test_1_12:
+      action_test_1_14:
         x: 420
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2253,19 +2254,19 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_6:
+      trigger_test_0_8:
         x: 40
         "y": 200
-      trigger_test_1_7:
+      trigger_test_1_9:
         x: 40
         "y": 360
-      trigger_test_2_8:
+      trigger_test_2_10:
         x: 40
         "y": 520
-      trigger_test_3_9:
+      trigger_test_3_11:
         x: 40
         "y": 40
-      action_test_4_10:
+      action_test_4_12:
         x: 420
         "y": 210
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2290,10 +2291,10 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_4:
+      trigger_test_0_6:
         x: 40
         "y": 40
-      action_test_1_5:
+      action_test_1_7:
         x: 420
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2320,10 +2321,10 @@ variables:
   _flode_metadata:
     version: 1
     nodes:
-      trigger_test_0_2:
+      trigger_test_0_4:
         x: 40
         "y": 40
-      action_test_1_3:
+      action_test_1_5:
         x: 420
         "y": 40
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
@@ -2352,6 +2353,34 @@ actions:
     data:
       message: Smoke detected!
 mode: single
+variables:
+  _flode_metadata:
+    version: 1
+    nodes:
+      trigger_test_0_2:
+        x: 40
+        "y": 40
+      action_test_1_3:
+        x: 420
+        "y": 40
+    graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
+    graph_version: 1
+    strategy: native
+"
+`;
+
+exports[`YAML round-trip (fixtures) > round-trips 39-initial-state-true.yaml to identical YAML 1`] = `
+"alias: Lock the door at night
+description: ""
+triggers:
+  - trigger: time
+    at: "22:00:00"
+actions:
+  - action: lock.lock
+    target:
+      entity_id: lock.front_door
+mode: single
+initial_state: true
 variables:
   _flode_metadata:
     version: 1

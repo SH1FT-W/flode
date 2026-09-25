@@ -4,6 +4,42 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.0.0] — 2026-09-26 — FLODE 3: built from Home Assistant's own parts
+
+FLODE 3 is a new editor built entirely from Home Assistant's own elements — the same forms, dialogs, pickers and menus you know from *Settings → Automations & scenes*. The engine that reads and writes your automations is the same as in 2.x, so flows from 2.x open and save as before (and three old data-loss bugs are fixed, see below).
+
+**Requires Home Assistant 2026.3 or newer.**
+
+### Added
+- **Home Assistant's own editors** — every trigger, condition and action is edited with Home Assistant's own editor, including *Add trigger / condition / action*, renaming (with area, category and labels), the mode dialog, the save dialog, *unsaved changes* and the script fields editor.
+- **HA blocks stay blocks** — *If-then*, *Choose*, *Repeat*, *Parallel* and *Sequence* stay single cards edited with Home Assistant's nested editor instead of being taken apart into many cards.
+- **Runs** — Home Assistant's own trace timeline, step details and logbook next to the canvas, with the path of a run drawn on the cards. *Run from here* shows its steps in the logbook too.
+- **AI assistant in the editor** — ask about the open flow, let it find mistakes or suggest a better version; a proposed change is shown first and applied as one undoable step. *Create with AI* and *Explain a run* are still there.
+- **Relations** — a third view next to automations and scripts: which automations react to what and switch what, chains between them, opposite control, self-triggering, missing entities, and *Where is … used?*.
+- **Template workshop** (⌘J) — Jinja in Home Assistant's code editor, rendered live by Home Assistant with the result type, what it reacts to and optionally the variables of a real run.
+- **Canvas** — right-click menus, a minimap, *Show YAML*, copy/paste/duplicate and enable/disable cards, dragging a connection into empty space adds a connected card there, and a keyboard-shortcut overview (`?`).
+- **Import and export** — paste YAML, import/export FLODE files (JSON), *Save as copy*.
+- **Phones** — two-row header with a swipeable tool strip, the side panels open as a bottom sheet and the selected card moves above it.
+- **Warning when something isn't recognised** — if parts of an automation can't be read when it is opened, Home Assistant's warning box lists them, so nobody saves over something FLODE didn't understand.
+- **New icon** and sidebar icon.
+
+### Changed
+- FLODE follows Home Assistant's language and theme — the separate language option and design switch are gone.
+- *Merge* keeps each merged automation reacting only to its own triggers (trigger ids + a *triggered by* condition) and lays the result out right away.
+- Loads faster: the editor engine is only downloaded when a flow is opened.
+
+### Removed
+- The React editor of FLODE 2.x, including the *simulation* (use real runs and *Run from here*), the problem list (Home Assistant's editors check each step; the rest is reported when saving) and multi-select/align.
+- The `flode.report_import_issue` service (replaced by the warning in the editor).
+
+### Fixed
+- **`to: null` was lost on save** — a state trigger with `to: null` (only real state changes, not attribute changes) lost that line when saved with FLODE, so the automation also fired on attribute changes.
+- **`initial_state: true` was lost on save**, which changed how the automation behaves after a restart.
+- **A delay written as a plain number** (`delay: 5`, seconds) came back empty.
+- **Merge** ran every merged automation on every trigger.
+
+---
+
 ## [2.2.0] — 2026-09-23 — Scripts, tabs, run from here
 
 ### Added

@@ -2,7 +2,7 @@ import type { FlowGraph } from '@flode/shared';
 import { dump as yamlDump } from 'js-yaml';
 import { analyzeTopology, type TopologyAnalysis } from './analyzer/topology';
 import { type ValidationResult, validateFlowGraph } from './analyzer/validator';
-import { type ParseResult, YamlParser } from './parser/YamlParser';
+import { type ParseResult, YamlParser, type YamlParserOptions } from './parser/YamlParser';
 import type { HAYamlOutput, TranspilerStrategy } from './strategies/base';
 import { NativeStrategy } from './strategies/native';
 import { StateMachineStrategy } from './strategies/state-machine';
@@ -56,7 +56,7 @@ export interface TranspileResult {
 }
 
 /**
- * Main transpiler class for converting React Flow graphs to Home Assistant YAML
+ * Main transpiler class for converting flow graphs to Home Assistant YAML
  */
 export class FlowTranspiler {
   private strategies: TranspilerStrategy[] = [new NativeStrategy(), new StateMachineStrategy()];
@@ -205,8 +205,8 @@ export class FlowTranspiler {
   /**
    * Parse Home Assistant YAML back into FlowGraph
    */
-  fromYaml(yamlString: string): Promise<ParseResult> {
-    const parser = new YamlParser();
+  fromYaml(yamlString: string, options: YamlParserOptions = {}): Promise<ParseResult> {
+    const parser = new YamlParser(options);
     return parser.parse(yamlString);
   }
 

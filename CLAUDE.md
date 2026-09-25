@@ -1,9 +1,9 @@
 ## Coding Guidelines
 
-- **Never use IIFEs (Immediately Invoked Function Expressions) in React components or TypeScript files.**
-  - Always extract logic into a named component or custom hook instead of using IIFEs.
-  - Use plain variables or helper functions for local logic, but prefer components for UI logic.
-  - IIFEs are forbidden in all React and TypeScript code.
+- **Never use IIFEs (Immediately Invoked Function Expressions) in TypeScript files.**
+  - Always extract logic into a named helper function, method or element instead of using IIFEs.
+  - Use plain variables or helper functions for local logic, but prefer separate elements for UI logic.
+  - IIFEs are forbidden in all TypeScript code.
 
 # Project Overview
 
@@ -15,8 +15,9 @@
 flode/
 ├── packages/
 │   ├── shared/          # @flode/shared - Types and Zod schemas
-│   ├── frontend/        # @flode/frontend - React UI (Vite + Tailwind)
-│   └── transpiler/      # @flode/transpiler - YAML parser/generator
+│   ├── transpiler/      # @flode/transpiler - YAML parser/generator
+│   ├── ui-core/         # @flode/ui-core - Framework-free UI logic (card texts, AI, traces, dependency map)
+│   └── frontend/        # @flode/frontend - The HA panel (Lit + HA's own components), built into custom_components/flode/www
 ├── custom_components/flode/  # Home Assistant integration (Python)
 └── .github/workflows/        # CI/CD pipelines
 ```
@@ -24,21 +25,21 @@ flode/
 # Package Descriptions
 
 - **@flode/shared**: Zod schemas, TypeScript types, validation utilities
-- **@flode/frontend**: React 18 + XYFlow canvas + Zustand state + Radix UI
 - **@flode/transpiler**: YAML parsing, topology analysis, transpilation strategies
+- **@flode/ui-core**: Logic without UI framework — card summaries + i18next locales, AI assist/draft via HA `ai_task`, trace mapping, dependency map, template preview, automation merge
+- **@flode/frontend**: Lit web components; canvas pan/zoom/minimap from `@xyflow/system`; every form, dialog, picker and menu is Home Assistant's own element (`ha-dialog`, `ha-dropdown`, `ha-automation-*` editors …)
 
 # Key Domains/Features
 
-- Flow Canvas (trigger, condition, action, delay, wait nodes)
-- YAML Parsing & Transpilation (YamlParser, FlowTranspiler)
-- Home Assistant Integration (WebSocket API, entity/device/service registry)
-- Simulation & Trace Visualization
-- Property Editing Panels
+- Flow Canvas (trigger, condition, action, delay, wait nodes; HA blocks like if/choose stay HA blocks)
+- YAML Parsing & Transpilation (YamlParser, FlowTranspiler) — must round-trip users' automations losslessly
+- Home Assistant Integration (WebSocket API, HA's automation/script editor dialogs, traces, logbook)
+- Runs & debugging (HA traces, run from here), AI assistant (HA `ai_task`), dependency map, template workshop
 
 # Build System & Tooling
 
 - Yarn 4 workspaces + Turbo for orchestration
-- TypeScript 5.7 with strict mode
+- TypeScript 6 with strict mode
 - Vite for frontend builds
 - Vitest for testing, make sure to use the --run flag to avoid issues with watch mode
 - Biome for linting, and for formatting
@@ -48,14 +49,15 @@ flode/
 In addition to strict TypeScript rules:
 
 - **Zod for Schema Validation**: All data structures use Zod schemas in `@flode/shared`
-- **Zustand for State**: Single cohesive store pattern in `flow-store.ts`
-- **React Patterns**: Use `memo()` for nodes, `cn()` for class merging, and typed NodeProps
-- **Import Aliases**: `@/` for frontend, `@flode/*` for packages
+- **HA-native UI**: Use Home Assistant's own elements and dialogs wherever one exists; no own design system. Minimum HA version is in `hacs.json` — check new HA internals against it
+- **Lit Patterns**: One element per file (`flode-*.ts`), state via reactive properties, the panel (`flode-panel.ts`) owns the open flows and undo history
+- **Strings**: UI text lives in `packages/frontend/src/strings.ts` (de + en); card texts in `@flode/ui-core` locales
+- **Import Aliases**: `@flode/*` for packages
 
 # Common Commands
 
 ```bash
-yarn dev          # Watch mode
+yarn dev          # Watch mode (rebuilds the panel into custom_components/flode/www)
 yarn build        # Build all packages
 yarn build:ha     # Build + copy to custom_components
 yarn test         # Run tests
@@ -111,15 +113,15 @@ The codebase should compile with zero TypeScript errors and maintain type safety
 **MANDATORY PRACTICES**:
 
 - **Helper Functions/Utilities**: Extract common logic into reusable helper functions or utility modules. If you write the same logic twice, you have failed.
-- **Generic Components**: Design React components to be as generic and reusable as possible, accepting props to customize behavior and appearance. Components MUST be designed for reuse from the start.
+- **Generic Elements**: Design Lit elements and helpers to be as generic and reusable as possible, accepting properties to customize behavior and appearance. They MUST be designed for reuse from the start.
 - **Shared Types/Schemas**: Leverage `@flode/shared` for all common types, interfaces, and Zod schemas to ensure consistency and avoid duplication across `frontend` and `transpiler`.
-- **Custom Hooks**: For shared stateful logic in React, create custom hooks. ANY repeated stateful pattern MUST become a hook.
+- **Shared Logic**: Logic both the panel and tests need, and anything framework-free, belongs in `@flode/ui-core`. ANY repeated stateful pattern MUST become a shared helper.
 - **Before Writing Code**: ALWAYS search the codebase first to check if similar functionality exists. Reuse and extend existing code rather than creating new duplicates.
 - **Refactor Immediately**: If you discover existing duplication while working, refactor it into a shared abstraction before proceeding.
 
 **ABSOLUTELY FORBIDDEN - VIOLATIONS WILL NOT BE ACCEPTED**:
 
-- **Copy-pasting code**: NEVER duplicate blocks of code under any circumstances. If you find yourself copying and pasting, STOP and create a reusable function, component, or hook instead.
+- **Copy-pasting code**: NEVER duplicate blocks of code under any circumstances. If you find yourself copying and pasting, STOP and create a reusable function or element instead.
 - **Redundant Type Definitions**: NEVER redefine types or interfaces that already exist in `@flode/shared` or can be derived from existing schemas.
 - **Similar but slightly different implementations**: If two pieces of code do similar things, they MUST be unified into a single parameterized implementation.
 - **Duplicated constants or configuration**: All shared values MUST be defined once and imported where needed.

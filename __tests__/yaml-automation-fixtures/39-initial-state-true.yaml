@@ -1,0 +1,12 @@
+alias: Lock the door at night
+description: ""
+initial_state: true
+triggers:
+  - trigger: time
+    at: "22:00:00"
+conditions: []
+actions:
+  - action: lock.lock
+    target:
+      entity_id: lock.front_door
+mode: single

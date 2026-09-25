@@ -9,7 +9,7 @@ const program = new Command();
 
 program
   .name('flode')
-  .description('Transpile React Flow graphs to Home Assistant YAML')
+  .description('Transpile FLODE flow graphs to Home Assistant YAML')
   .version('0.1.0');
 
 /**

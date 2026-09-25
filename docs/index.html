@@ -3,547 +3,548 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FLODE – Visual Flow Editor for Home Assistant</title>
-<meta name="description" content="Draw your automations as diagrams. FLODE transpiles them into 100% native Home Assistant YAML." />
+<title>FLODE – Flow editor inside Home Assistant</title>
+<meta name="description" content="FLODE shows Home Assistant automations and scripts as a flow you can read, test and understand — built from Home Assistant's own editors, saved as plain Home Assistant YAML." />
 
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://sh1ft-w.github.io/flode/" />
-<meta property="og:title" content="FLODE – Visual Flow Editor for Home Assistant" />
-<meta property="og:description" content="Draw your automations as diagrams — FLODE transpiles them into 100% native Home Assistant YAML. No external server. No vendor lock-in." />
-<meta property="og:image" content="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-dark.png" />
-<meta property="og:image:width" content="1280" />
-<meta property="og:image:height" content="640" />
+<meta property="og:title" content="FLODE – Flow editor inside Home Assistant" />
+<meta property="og:description" content="Automations and scripts as a flow — with Home Assistant's own editors, real runs on the canvas and optional AI help. Saved as plain Home Assistant YAML." />
+<meta property="og:image" content="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-dark.png" />
 <meta property="og:site_name" content="FLODE" />
-
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="FLODE – Visual Flow Editor for Home Assistant" />
-<meta name="twitter:description" content="Draw your automations as diagrams — FLODE transpiles them into 100% native Home Assistant YAML." />
-<meta name="twitter:image" content="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-dark.png" />
+<meta name="twitter:title" content="FLODE – Flow editor inside Home Assistant" />
+<meta name="twitter:description" content="Automations and scripts as a flow — with Home Assistant's own editors, real runs on the canvas and optional AI help." />
+<meta name="twitter:image" content="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-dark.png" />
+<link rel="icon" type="image/svg+xml" href="images/flode.svg" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
 
 <style>
   :root {
-    --ink: #0B0C0E;
-    --ink-panel: #17181B;
-    --ink-line: #2A2B2E;
-    --ink-text: #F5F5F7;
-    --ink-text-muted: #98989D;
+    /* From the logo: navy tile, sky-blue F, violet connector rings. */
+    --navy: #0b1220;
+    --navy-2: #111a2b;
+    --navy-3: #1a2539;
+    --navy-line: #25324a;
+    --sky: #4cc9fb;
+    --sky-deep: #0ea5e9;
+    --violet: #a78bfa;
+    --on-navy: #eef3fa;
+    --on-navy-muted: #9aa8bd;
 
-    --paper: #FBFBFA;
-    --paper-panel: #F2F2F0;
-    --paper-line: #E2E2E0;
-    --paper-text: #1D1D1F;
-    --paper-text-muted: #6E6E73;
+    --paper: #f5f8fb;
+    --paper-2: #ffffff;
+    --paper-line: #dfe6ee;
+    --ink: #0f1a2a;
+    --ink-muted: #5a6879;
 
-    --accent: #2F6FED;
-    --accent-soft: rgba(47, 111, 237, 0.12);
+    /* Card colours of the canvas */
+    --trigger: #ffc107;
+    --condition: #2196f3;
+    --action: #4caf50;
 
-    --trigger: #C9821A;
-    --cond: #2F6FED;
-    --action: #1F8B4C;
-    --logic: #8A5FD6;
-
-    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+    --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   body {
-    font-family: var(--font);
-    -webkit-font-smoothing: antialiased;
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--ink);
     background: var(--paper);
-    color: var(--paper-text);
+    -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
-
-  img { max-width: 100%; display: block; }
+  img { display: block; max-width: 100%; height: auto; }
   a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; border-radius: 6px; }
 
-  .band { padding: 128px 24px; }
-  .band-dark { background: var(--ink); color: var(--ink-text); }
-  .band-light { background: var(--paper); color: var(--paper-text); }
-
-  .wrap { max-width: 1120px; margin: 0 auto; }
-  .wrap-narrow { max-width: 780px; margin: 0 auto; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding-inline: 24px; }
+  .band { padding-block: 112px; }
+  .band.dark { background: var(--navy); color: var(--on-navy); }
 
   .kicker {
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-  }
-  .band-dark .kicker { color: var(--ink-text-muted); }
-  .band-light .kicker { color: var(--paper-text-muted); }
-
-  h2 {
-    font-size: clamp(28px, 4vw, 40px);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.15;
-    text-wrap: balance;
-    margin-bottom: 20px;
-  }
-
-  .lede {
-    font-size: 18px;
-    line-height: 1.6;
-    max-width: 640px;
-  }
-  .band-dark .lede { color: var(--ink-text-muted); }
-  .band-light .lede { color: var(--paper-text-muted); }
-
-  /* NAV */
-  nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 24px; height: 56px;
-    background: rgba(11,12,14,0.72);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border-bottom: 1px solid var(--ink-line);
-  }
-  .nav-inner { width: 100%; max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
-  .nav-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
-  .nav-logo img { width: 22px; height: 22px; border-radius: 5px; }
-  .nav-wordmark { font-size: 14px; font-weight: 600; color: var(--ink-text); letter-spacing: -0.01em; }
-  .nav-links { display: flex; align-items: center; gap: 28px; }
-  .nav-links a { color: var(--ink-text-muted); text-decoration: none; font-size: 13px; font-weight: 400; transition: color .15s; }
-  .nav-links a:hover { color: var(--ink-text); }
-  .nav-links a.nav-cta { color: var(--ink-text); }
-
-  /* HERO */
-  .hero {
-    background: var(--ink); color: var(--ink-text);
-    padding: 168px 24px 96px;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero-glow {
-    position: absolute; top: -20%; left: 50%; transform: translateX(-50%);
-    width: 900px; height: 500px; pointer-events: none;
-    background: radial-gradient(ellipse at center, rgba(47,111,237,0.16) 0%, transparent 68%);
-  }
-  .hero-inner { max-width: 1120px; margin: 0 auto; text-align: center; position: relative; }
-
-  .hero-badge {
-    display: inline-flex; align-items: center; gap: 7px;
-    background: var(--ink-panel); border: 1px solid var(--ink-line);
-    color: var(--ink-text-muted); font-size: 12px; padding: 6px 14px;
-    border-radius: 100px; margin-bottom: 28px;
-  }
-  .hero-badge .dot { width: 6px; height: 6px; background: var(--action); border-radius: 50%; }
-
-  .hero h1 {
-    font-size: clamp(48px, 8vw, 84px);
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.03;
-    text-wrap: balance;
-    margin-bottom: 24px;
-  }
-
-  .hero-sub {
-    font-size: clamp(17px, 2vw, 20px);
-    color: var(--ink-text-muted);
-    max-width: 560px;
-    margin: 0 auto 40px;
-    line-height: 1.6;
-    text-wrap: balance;
-  }
-  .hero-sub strong { color: var(--ink-text); font-weight: 600; }
-
-  .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 88px; }
-  .btn {
     display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 24px; border-radius: 980px;
-    font-size: 14px; font-weight: 600; text-decoration: none;
-    transition: transform .15s, background .15s, opacity .15s;
-    border: 1px solid transparent; font-family: var(--font); cursor: pointer;
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--sky-deep); margin-bottom: 14px;
   }
-  .btn-primary { background: var(--ink-text); color: var(--ink); }
-  .btn-primary:hover { transform: translateY(-1px); opacity: .9; }
-  .btn-ghost { background: transparent; color: var(--ink-text); border-color: var(--ink-line); }
-  .btn-ghost:hover { border-color: #4A4B4E; }
+  .dark .kicker { color: var(--sky); }
+  /* The connector ring from the logo marks every section. */
+  .kicker::before {
+    content: ""; width: 9px; height: 9px; border-radius: 50%;
+    border: 2px solid var(--violet);
+  }
+  h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; text-wrap: balance; }
+  h2 { font-size: clamp(30px, 4.2vw, 46px); line-height: 1.08; font-weight: 700; margin-bottom: 18px; }
+  h3 { font-size: 20px; line-height: 1.25; font-weight: 700; }
+  .lede { font-size: 19px; color: var(--ink-muted); max-width: 62ch; }
+  .dark .lede { color: var(--on-navy-muted); }
 
-  .stage {
-    position: relative;
-    max-width: 980px;
-    margin: 0 auto;
-    border-radius: 18px;
-    overflow: hidden;
-    border: 1px solid var(--ink-line);
-    box-shadow: 0 40px 90px -30px rgba(0,0,0,0.65);
+  /* ---------- nav ---------- */
+  nav {
+    position: fixed; inset: 0 0 auto; z-index: 50;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: rgba(11, 18, 32, 0.78);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-bottom: 1px solid var(--navy-line);
   }
-  .stage-bar { display: flex; align-items: center; gap: 6px; padding: 12px 14px; background: var(--ink-panel); border-bottom: 1px solid var(--ink-line); }
-  .stage-dot { width: 10px; height: 10px; border-radius: 50%; }
-  .stage-dot.r { background: #4A4B4E; }
-  .stage-dot.y { background: #4A4B4E; }
-  .stage-dot.g { background: #4A4B4E; }
-  .stage img { width: 100%; height: auto; display: block; }
+  .nav-inner { height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--on-navy); }
+  .brand img { width: 26px; height: 26px; border-radius: 7px; }
+  .brand span { font-family: var(--display); font-weight: 800; font-size: 17px; letter-spacing: -0.01em; }
+  .nav-links { display: flex; align-items: center; gap: 26px; }
+  .nav-links a { color: var(--on-navy-muted); text-decoration: none; font-size: 14px; }
+  .nav-links a:hover { color: var(--on-navy); }
+  .nav-links .gh {
+    color: var(--on-navy); padding: 7px 14px; border-radius: 999px; border: 1px solid var(--navy-line);
+  }
 
-  /* SCREENSHOT BANDS */
-  .shot-figure {
-    margin-top: 56px;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid var(--paper-line);
-    box-shadow: 0 30px 70px -35px rgba(20,20,25,0.25);
+  /* ---------- hero ---------- */
+  .hero {
+    background:
+      radial-gradient(900px 480px at 50% -10%, rgba(76, 201, 251, 0.16), transparent 70%),
+      radial-gradient(600px 360px at 85% 30%, rgba(167, 139, 250, 0.10), transparent 70%),
+      var(--navy);
+    color: var(--on-navy);
+    padding-top: 148px; padding-bottom: 88px;
+    text-align: center;
   }
-  .band-dark .shot-figure { border-color: var(--ink-line); box-shadow: 0 30px 70px -35px rgba(0,0,0,0.6); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 6px 14px 6px 8px; border-radius: 999px;
+    background: var(--navy-2); border: 1px solid var(--navy-line);
+    font-size: 13px; color: var(--on-navy-muted); margin-bottom: 26px;
+  }
+  .badge b {
+    font-weight: 600; color: var(--navy); background: var(--sky);
+    padding: 2px 8px; border-radius: 999px; font-size: 12px;
+  }
+  .hero h1 {
+    font-size: clamp(46px, 8.4vw, 96px); line-height: 0.98; font-weight: 800;
+    letter-spacing: -0.035em; margin: 0 auto 24px; max-width: 12ch;
+  }
+  .hero h1 em { font-style: normal; color: var(--sky); }
+  .hero-sub { font-size: clamp(17px, 2vw, 21px); color: var(--on-navy-muted); max-width: 60ch; margin: 0 auto 36px; }
+  .hero-sub strong { color: var(--on-navy); font-weight: 600; }
 
-  /* CODE PANEL */
-  .code-panel {
-    margin-top: 48px;
-    background: var(--ink-panel);
-    border: 1px solid var(--ink-line);
-    border-radius: 16px;
-    padding: 32px;
-    overflow-x: auto;
+  .cta { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 64px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+    font-weight: 600; font-size: 15px; padding: 13px 24px; border-radius: 999px;
+    border: 1px solid transparent; transition: transform .15s ease, background .15s ease;
   }
-  .code-panel .file {
-    font-family: var(--mono); font-size: 12px; color: var(--ink-text-muted);
-    margin-bottom: 18px; letter-spacing: 0.02em;
-  }
-  .code-panel pre { font-family: var(--mono); font-size: 13.5px; line-height: 1.85; }
-  .code-panel .kw { color: #8FB6FF; }
-  .code-panel .str { color: #7FD99A; }
-  .code-panel .val { color: #E8B876; }
-  .code-panel .cm { color: #6E6E73; font-style: italic; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.primary { background: var(--sky); color: var(--navy); }
+  .btn.ghost { color: var(--on-navy); border-color: var(--navy-line); }
+  .btn.ghost:hover { background: var(--navy-2); }
 
-  /* FEATURE ROWS */
-  .feature-row {
-    padding: 28px 0;
-    border-top: 1px solid var(--paper-line);
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    gap: 32px;
+  .stage { max-width: 1100px; margin: 0 auto; }
+  .stage-frame {
+    border-radius: 16px; overflow: hidden; border: 1px solid var(--navy-line);
+    box-shadow: 0 50px 110px -40px rgba(0, 0, 0, 0.7), 0 0 0 6px rgba(255, 255, 255, 0.02);
+    background: #111;
   }
-  .feature-row:first-of-type { border-top: none; }
-  .feature-row h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
-  .feature-row p { font-size: 16px; color: var(--paper-text-muted); line-height: 1.6; }
+  .stage-frame img { width: 100%; }
+  .theme-switch {
+    display: inline-flex; margin-top: 18px; padding: 4px; gap: 4px;
+    border-radius: 999px; background: var(--navy-2); border: 1px solid var(--navy-line);
+  }
+  .theme-switch button {
+    font: inherit; font-size: 13px; font-weight: 600; color: var(--on-navy-muted);
+    background: transparent; border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  }
+  .theme-switch button[aria-pressed="true"] { background: var(--navy-3); color: var(--on-navy); }
 
-  /* NODE TYPES */
-  .nodes-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-    background: var(--ink-line);
-    border: 1px solid var(--ink-line);
-    border-radius: 16px;
-    overflow: hidden;
-    margin-top: 48px;
+  /* ---------- "made of Home Assistant" ---------- */
+  .native-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: center; margin-top: 8px; }
+  .points { display: grid; gap: 22px; margin-top: 28px; }
+  .point { display: grid; grid-template-columns: 36px 1fr; gap: 14px; }
+  .point .ic {
+    width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+    background: var(--paper-2); border: 1px solid var(--paper-line);
   }
-  .ncard { background: var(--ink); padding: 32px 28px; }
-  .ncard-label {
-    font-family: var(--mono); font-size: 11px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;
+  .point .ic span { width: 12px; height: 12px; border-radius: 3px; }
+  .point p { color: var(--ink-muted); font-size: 16px; }
+  .point h3 { font-size: 18px; margin-bottom: 2px; }
+  .shot {
+    border-radius: 14px; overflow: hidden; border: 1px solid var(--paper-line);
+    box-shadow: 0 30px 70px -40px rgba(15, 26, 42, 0.45);
   }
-  .nc-trigger .ncard-label { color: var(--trigger); }
-  .nc-cond .ncard-label { color: var(--cond); }
-  .nc-action .ncard-label { color: var(--action); }
-  .nc-logic .ncard-label { color: var(--logic); }
-  .ncard-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.01em; }
-  .ncard-desc { font-size: 14px; color: var(--ink-text-muted); line-height: 1.6; }
+  .dark .shot { border-color: var(--navy-line); box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.8); }
 
-  /* INSTALL */
-  .install-card {
-    margin-top: 48px;
-    background: var(--paper-panel);
-    border: 1px solid var(--paper-line);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-  .install-steps { list-style: none; padding: 8px 32px; }
-  .install-steps li {
-    display: flex; gap: 20px; align-items: baseline;
-    padding: 20px 0; border-bottom: 1px solid var(--paper-line);
-  }
-  .install-steps li:last-child { border-bottom: none; }
-  .step-num {
-    font-family: var(--mono); font-size: 13px; font-weight: 600;
-    color: var(--accent); min-width: 20px;
-  }
-  .step-body { font-size: 15px; color: var(--paper-text-muted); line-height: 1.6; }
-  .step-body strong { color: var(--paper-text); font-weight: 600; }
-  .step-body code {
-    font-family: var(--mono); font-size: 13px; color: var(--paper-text);
-    background: var(--paper); border: 1px solid var(--paper-line);
-    padding: 1px 6px; border-radius: 5px;
-  }
-  .install-hacs-btn { padding: 0 32px 32px; }
-  .install-hacs-btn a {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    background: var(--accent); color: #fff; padding: 14px; border-radius: 12px;
-    text-decoration: none; font-weight: 600; font-size: 14px;
-    transition: opacity .15s;
-  }
-  .install-hacs-btn a:hover { opacity: .88; }
-  .install-manual { margin-top: 20px; font-size: 14px; color: var(--paper-text-muted); }
-  .install-manual a { color: var(--accent); text-decoration: none; font-weight: 500; }
-  .install-manual a:hover { text-decoration: underline; }
+  /* ---------- runs ---------- */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 48px; }
+  .split figure { display: grid; gap: 14px; }
+  figcaption { font-size: 15px; color: var(--ink-muted); }
+  .dark figcaption { color: var(--on-navy-muted); }
+  figcaption strong { color: var(--ink); font-weight: 600; }
+  .dark figcaption strong { color: var(--on-navy); }
 
-  /* FOOTER */
-  footer.band-dark { padding: 72px 24px 48px; text-align: center; }
-  .footer-wordmark { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
-  .footer-sub { font-size: 13px; color: var(--ink-text-muted); margin-bottom: 28px; }
-  .footer-links { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
-  .footer-links a { color: var(--ink-text-muted); text-decoration: none; font-size: 13px; transition: color .15s; }
-  .footer-links a:hover { color: var(--ink-text); }
-  .footer-copy { font-size: 12px; color: #4A4B4E; }
+  /* ---------- AI ---------- */
+  .ai-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 24px; }
+  .optional {
+    display: grid; gap: 4px; max-width: 420px; padding: 16px 18px; border-radius: 12px;
+    background: var(--navy-2); border: 1px solid var(--navy-line); font-size: 14px; color: var(--on-navy-muted);
+  }
+  .optional b { color: var(--violet); font-weight: 600; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .ai-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 40px 0 18px; }
+  .ai-tabs button {
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    padding: 10px 16px; border-radius: 999px; color: var(--on-navy-muted);
+    background: transparent; border: 1px solid var(--navy-line);
+  }
+  .ai-tabs button[aria-selected="true"] {
+    color: var(--navy); background: linear-gradient(135deg, #b794f6, var(--violet)); border-color: transparent;
+  }
+  .ai-panel { display: grid; grid-template-columns: 1fr 300px; gap: 32px; align-items: start; }
+  .ai-panel[hidden] { display: none; }
+  .ai-panel .text { display: grid; gap: 12px; }
+  .ai-panel .text p { color: var(--on-navy-muted); font-size: 16px; }
+  .ai-panel .text h3 { color: var(--on-navy); }
+  .ai-panel .stack { display: grid; gap: 16px; }
 
-  @media (max-width: 720px) {
-    .nav-links a:not(.nav-cta) { display: none; }
-    .band { padding: 88px 20px; }
-    .hero { padding: 128px 20px 72px; }
-    .btn-group { margin-bottom: 56px; }
-    .feature-row { grid-template-columns: 1fr; gap: 8px; }
-    .nodes-grid { grid-template-columns: 1fr 1fr; }
-    .install-steps { padding: 8px 20px; }
-    .install-hacs-btn { padding: 0 20px 24px; }
+  /* ---------- features ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 48px; }
+  .tile {
+    background: var(--paper-2); border: 1px solid var(--paper-line); border-radius: 14px;
+    padding: 22px; display: grid; gap: 8px; align-content: start;
+  }
+  .tile p { color: var(--ink-muted); font-size: 15px; }
+  .tile kbd {
+    font-family: var(--mono); font-size: 12px; padding: 1px 6px; border-radius: 5px;
+    border: 1px solid var(--paper-line); background: var(--paper);
+  }
+  .showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 28px; }
+  .phone-row { display: grid; grid-template-columns: 300px 1fr; gap: 40px; align-items: center; margin-top: 64px; }
+  .phone {
+    border-radius: 34px; padding: 10px; background: #05080f; border: 1px solid var(--paper-line);
+    box-shadow: 0 30px 70px -35px rgba(15, 26, 42, 0.55);
+  }
+  .phone img { border-radius: 26px; }
+
+  /* ---------- yaml ---------- */
+  .code {
+    margin-top: 40px; background: var(--navy-2); border: 1px solid var(--navy-line);
+    border-radius: 14px; padding: 26px 28px; overflow-x: auto;
+  }
+  .code .file { font-family: var(--mono); font-size: 12px; color: var(--on-navy-muted); margin-bottom: 14px; }
+  .code pre { font-family: var(--mono); font-size: 13.5px; line-height: 1.8; color: var(--on-navy); }
+  .code .k { color: #8fc8ff; }
+  .code .s { color: #8fe0a8; }
+  .code .v { color: #f4c47a; }
+  .yaml-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .facts { display: grid; gap: 18px; margin-top: 40px; }
+  .facts div { border-top: 1px solid var(--navy-line); padding-top: 16px; }
+  .facts b { display: block; color: var(--on-navy); font-weight: 600; }
+  .facts span { color: var(--on-navy-muted); font-size: 15px; }
+
+  /* ---------- install ---------- */
+  .install { max-width: 760px; }
+  .steps { list-style: none; margin-top: 36px; border: 1px solid var(--paper-line); border-radius: 14px; background: var(--paper-2); }
+  .steps li { display: grid; grid-template-columns: 36px 1fr; gap: 12px; padding: 18px 22px; border-top: 1px solid var(--paper-line); }
+  .steps li:first-child { border-top: 0; }
+  .steps .n { font-family: var(--mono); font-weight: 500; color: var(--sky-deep); }
+  .steps code, .install code { font-family: var(--mono); font-size: 14px; background: var(--paper); border: 1px solid var(--paper-line); padding: 1px 6px; border-radius: 5px; }
+  .req { margin-top: 18px; font-size: 15px; color: var(--ink-muted); }
+  .install .btn.primary { margin-top: 24px; }
+
+  footer { background: var(--navy); color: var(--on-navy-muted); padding-block: 56px calc(40px + env(safe-area-inset-bottom, 0px)); font-size: 14px; }
+  .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px; align-items: center; }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 20px; }
+  .foot-links a { text-decoration: none; }
+  .foot-links a:hover { color: var(--on-navy); }
+
+  @media (max-width: 900px) {
+    .native-grid, .split, .showcase, .yaml-grid, .ai-panel, .phone-row { grid-template-columns: 1fr; }
+    .tiles { grid-template-columns: 1fr 1fr; }
+    .phone-row .phone { max-width: 300px; }
+    .ai-panel .stack { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 620px) {
+    body { font-size: 16px; }
+    .wrap { padding-inline: 18px; }
+    .band { padding-block: 80px; }
+    .hero { padding-top: 116px; padding-bottom: 64px; }
+    .nav-links a:not(.gh) { display: none; }
+    .tiles { grid-template-columns: 1fr; }
+    .ai-panel .stack { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 
 <nav>
-  <div class="nav-inner">
-    <a href="#" class="nav-logo">
-      <img src="images/icon.png" alt="" />
-      <span class="nav-wordmark">FLODE</span>
-    </a>
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top"><img src="images/icon.png" alt="" /><span>FLODE</span></a>
     <div class="nav-links">
+      <a href="#native">How it works</a>
+      <a href="#ai">AI</a>
       <a href="#features">Features</a>
-      <a href="#nodes">Nodes</a>
-      <a href="#installation">Installation</a>
-      <a href="https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md">Changelog</a>
-      <a href="https://github.com/SH1FT-W/flode" class="nav-cta">GitHub</a>
+      <a href="#install">Install</a>
+      <a class="gh" href="https://github.com/SH1FT-W/flode">GitHub</a>
     </div>
   </div>
 </nav>
 
-<header class="hero">
-  <div class="hero-glow"></div>
-  <div class="hero-inner">
-    <div class="hero-badge">
-      <span class="dot"></span>
-      <span class="version-tag">FLODE 2.2</span> — now with scripts &amp; tabs
-    </div>
-
-    <h1>Flows.<br/>Not YAML fights.</h1>
-
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="badge"><b class="version-tag">v3.0</b> Now built entirely from Home Assistant's own parts</div>
+    <h1>See your <em>automations</em>.</h1>
     <p class="hero-sub">
-      FLODE is a visual editor for <strong>Home Assistant automations</strong>.
-      Connect triggers, conditions, and actions on a canvas —
-      get clean, native YAML in return. No server. No lock-in.
+      FLODE shows <strong>Home Assistant automations and scripts as a flow</strong> you can read, test and understand —
+      edited with Home Assistant's own editors, saved as plain Home Assistant YAML. No server, no lock-in.
     </p>
-
-    <div class="btn-group">
-      <a href="https://github.com/SH1FT-W/flode" class="btn btn-primary">View on GitHub</a>
-      <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration" class="btn btn-ghost">Install via HACS</a>
+    <div class="cta">
+      <a class="btn primary" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration">Install via HACS</a>
+      <a class="btn ghost" href="https://github.com/SH1FT-W/flode">View on GitHub</a>
     </div>
-
     <div class="stage">
-      <div class="stage-bar">
-        <span class="stage-dot r"></span>
-        <span class="stage-dot y"></span>
-        <span class="stage-dot g"></span>
+      <div class="stage-frame">
+        <img id="hero-shot" src="images/flode-editor-dark.png" width="2000" height="1233"
+             alt="FLODE inside Home Assistant: a flow with two triggers, a condition and actions; the selected If-then block is edited with Home Assistant's own editor on the right." />
       </div>
-      <img src="images/flode-dark.png" alt="FLODE visual flow editor, dark mode" />
+      <div class="theme-switch" role="group" aria-label="Screenshot theme">
+        <button type="button" data-theme-shot="dark" aria-pressed="true">Dark</button>
+        <button type="button" data-theme-shot="light" aria-pressed="false">Light</button>
+      </div>
     </div>
   </div>
 </header>
 
-<section class="band band-light">
-  <div class="wrap">
-    <p class="kicker">The canvas</p>
-    <h2>Every trigger, condition, and action — one flow.</h2>
-    <p class="lede">Cards that say what they do — "Bed light changes to On", "Between 06:00 and 22:00" — with the live state of every device. The last real run is drawn right onto the flow, step by step.</p>
-    <div class="shot-figure">
-      <img src="images/flode-light.png" alt="FLODE flow editor with the automation's last run highlighted, light mode" />
-    </div>
-  </div>
-</section>
-
-<section class="band band-light">
-  <div class="wrap">
-    <p class="kicker">Start screen</p>
-    <h2>All your automations. One glance.</h2>
-    <p class="lede">Grouped by area, searchable, with a plain-language preview of what triggers each one. Switch automations on and off, or jump straight to their last run.</p>
-    <div class="shot-figure">
-      <img src="images/flode-home.png" alt="FLODE start screen listing automations by area" />
-    </div>
-  </div>
-</section>
-
-<section class="band band-dark">
-  <div class="wrap">
-    <p class="kicker">Under the hood</p>
-    <h2>Native, always.</h2>
-    <p class="lede">What you draw becomes standard Home Assistant automation YAML — stored directly in HA core. Nothing proprietary, nothing hidden, nothing to migrate away from later.</p>
-
-    <div class="code-panel">
-      <div class="file">automation.yaml — generated by FLODE</div>
-      <pre><span class="cm"># Evening Light</span>
-<span class="kw">alias</span>: <span class="str">Evening Light</span>
-<span class="kw">triggers</span>:
-  - <span class="kw">trigger</span>: <span class="val">sun</span>
-    <span class="kw">event</span>: <span class="str">sunset</span>
-<span class="kw">conditions</span>:
-  - <span class="kw">condition</span>: <span class="val">state</span>
-    <span class="kw">entity_id</span>: <span class="str">group.family</span>
-    <span class="kw">state</span>: <span class="str">not_home</span>
-<span class="kw">actions</span>:
-  - <span class="kw">action</span>: <span class="str">light.turn_off</span>
-    <span class="kw">target</span>:
-      <span class="kw">entity_id</span>: <span class="str">all</span></pre>
-    </div>
-  </div>
-</section>
-
-<section class="band band-light" id="features">
-  <div class="wrap">
-    <p class="kicker">Features</p>
-    <h2>Everything you need. Nothing you don't.</h2>
-
-    <div class="feature-row">
-      <h3>Scripts, too</h3>
-      <p>Edit Home Assistant scripts like automations — with input fields, a run button that asks for them, and AI that builds scripts from a description.</p>
-    </div>
-    <div class="feature-row">
-      <h3>Tabs &amp; run from here</h3>
-      <p>Keep several automations open side by side. Right-click any step to run it and everything after it, right now.</p>
-    </div>
-    <div class="feature-row">
-      <h3>Create with AI</h3>
-      <p>Describe an automation in plain words and get a draft flow built from your real devices — using the AI you already set up in Home Assistant. Nothing is saved until you save.</p>
-    </div>
-    <div class="feature-row">
-      <h3>Explain a run</h3>
-      <p>Why didn't it fire? One click and the AI explains the last run in plain language — which condition failed, with which value.</p>
-    </div>
-    <div class="feature-row">
-      <h3>Readable cards</h3>
-      <p>Every node says what it does in plain language and shows the live state of its device. Press <strong>+</strong> on a card to add the next step.</p>
-    </div>
-    <div class="feature-row">
-      <h3>⌘K / Ctrl+K command palette</h3>
-      <p>Insert blocks, run any command, open any automation — all from one search. Right-click menus and keyboard shortcuts everywhere (press <strong>?</strong>).</p>
-    </div>
-    <div class="feature-row">
-      <h3>Last run on the canvas</h3>
-      <p>See the path an automation actually took the last time it ran — executed, skipped, and failed steps, with the error right on the card. Updates live.</p>
-    </div>
-    <div class="feature-row">
-      <h3>Tidy up &amp; problem list</h3>
-      <p>One click lays out the whole flow. Anything that blocks saving shows up as a clickable list that jumps straight to the step.</p>
-    </div>
-    <div class="feature-row">
-      <h3>Bidirectional, lossless</h3>
-      <p>Open an existing automation, edit it visually, save it back. Steps FLODE has no block for are kept verbatim as editable YAML steps — nothing gets lost.</p>
-    </div>
-    <div class="feature-row">
-      <h3>Home Assistant 2026 ready</h3>
-      <p>The new target-based triggers and conditions with HA's own editors, Jinja2-templated action names, native pickers and translations, automatic light/dark theming.</p>
-    </div>
-    <div class="feature-row">
-      <h3>Speaks your language</h3>
-      <p>Full German and English support, with a per-installation override.</p>
-    </div>
-  </div>
-</section>
-
-<section class="band band-dark" id="nodes">
-  <div class="wrap">
-    <p class="kicker">Node types</p>
-    <h2>Four building blocks. Unlimited possibilities.</h2>
-    <p class="lede">Each node maps directly to a Home Assistant concept — nothing invented, nothing to relearn.</p>
-
-    <div class="nodes-grid">
-      <div class="ncard nc-trigger">
-        <div class="ncard-label">Trigger</div>
-        <div class="ncard-title">What starts it?</div>
-        <div class="ncard-desc">State, time, event, webhook — every HA trigger platform.</div>
+<section class="band" id="native">
+  <div class="wrap native-grid">
+    <div>
+      <p class="kicker">Made of Home Assistant</p>
+      <h2>Nothing new to learn. It's the editor you already know.</h2>
+      <p class="lede">Every trigger, condition and action opens in Home Assistant's own editor — the same forms, pickers and dialogs as in Settings. FLODE adds the canvas, so you see how it all connects.</p>
+      <div class="points">
+        <div class="point">
+          <div class="ic"><span style="background: var(--trigger)"></span></div>
+          <div><h3>Home Assistant's editors, dialogs and menus</h3><p>Adding steps, renaming, area, labels, mode, saving — all Home Assistant's own. If-then, Choose and Repeat stay single blocks.</p></div>
+        </div>
+        <div class="point">
+          <div class="ic"><span style="background: var(--condition)"></span></div>
+          <div><h3>Your language, your theme</h3><p>FLODE follows your Home Assistant profile, light or dark, on desktop and phone.</p></div>
+        </div>
+        <div class="point">
+          <div class="ic"><span style="background: var(--action)"></span></div>
+          <div><h3>Plain YAML, both ways</h3><p>Open any existing automation, change it visually, save it back. It stays editable in Home Assistant's own editor.</p></div>
+        </div>
       </div>
-      <div class="ncard nc-cond">
-        <div class="ncard-label">Condition</div>
-        <div class="ncard-title">When does it run?</div>
-        <div class="ncard-desc">A filter — the flow only continues if the condition holds.</div>
+    </div>
+    <div class="shot">
+      <img src="images/flode-home.png" width="2000" height="1233" loading="lazy"
+           alt="FLODE start screen inside Home Assistant with automations, scripts and relations." />
+    </div>
+  </div>
+</section>
+
+<section class="band dark" id="runs">
+  <div class="wrap">
+    <p class="kicker">Runs &amp; relations</p>
+    <h2>Know what happened — and why.</h2>
+    <p class="lede">Real runs are drawn right onto the flow, next to Home Assistant's own timeline. And one view shows how all your automations and scripts affect each other.</p>
+    <div class="split">
+      <figure>
+        <div class="shot"><img src="images/flode-runs.png" width="2000" height="1233" loading="lazy" alt="A real run of an automation: Home Assistant's trace timeline on the right, the steps that ran highlighted on the canvas." /></div>
+        <figcaption><strong>Runs.</strong> Pick a run, see its path, open any step's details. Run any step and everything after it for real with <em>Run from here</em>.</figcaption>
+      </figure>
+      <figure>
+        <div class="shot"><img src="images/flode-relations.png" width="2000" height="1233" loading="lazy" alt="Relations view: possible conflicts, self-triggering automations, chains, and what controls a light." /></div>
+        <figcaption><strong>Relations.</strong> Conflicting automations, ones that trigger themselves, chains, missing entities — and <em>where is this used?</em> for any entity.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="band dark" id="ai" style="padding-top: 0">
+  <div class="wrap">
+    <div class="ai-head">
+      <div>
+        <p class="kicker">AI help</p>
+        <h2>Stuck? Ask.</h2>
+        <p class="lede">FLODE can use the AI you've set up in Home Assistant to explain runs, find mistakes and draft new automations.</p>
       </div>
-      <div class="ncard nc-action">
-        <div class="ncard-label">Action</div>
-        <div class="ncard-title">What happens?</div>
-        <div class="ncard-desc">Call a service, fire an event, delay, run a script.</div>
+      <div class="optional">
+        <b>Optional</b>
+        Only appears when you've chosen an AI task in Home Assistant (Anthropic, OpenAI, Google, Ollama …). No extra key, no extra service — without one, FLODE works exactly the same.
       </div>
-      <div class="ncard nc-logic">
-        <div class="ncard-label">Logic</div>
-        <div class="ncard-title">AND / OR / NOT</div>
-        <div class="ncard-desc">Group conditions and triggers, and combine them.</div>
+    </div>
+
+    <div class="ai-tabs" role="tablist" aria-label="AI features">
+      <button role="tab" id="tab-explain" aria-controls="panel-explain" aria-selected="true">Explain a run</button>
+      <button role="tab" id="tab-assist" aria-controls="panel-assist" aria-selected="false">Assistant</button>
+      <button role="tab" id="tab-create" aria-controls="panel-create" aria-selected="false">Create with AI</button>
+    </div>
+
+    <div class="ai-panel" role="tabpanel" id="panel-explain" aria-labelledby="tab-explain">
+      <div class="shot"><img src="images/flode-ai-explain.png" width="2000" height="1233" loading="lazy" alt="The AI explains why a run failed: brightness 150 % is above the allowed 100 %." /></div>
+      <div class="text">
+        <h3>Why did it fail?</h3>
+        <p>One click on a run and the AI explains it in plain words — which condition held, which step broke and how to fix it.</p>
+      </div>
+    </div>
+    <div class="ai-panel" role="tabpanel" id="panel-assist" aria-labelledby="tab-assist" hidden>
+      <div class="shot"><img src="images/flode-ai-assistant.png" width="2000" height="1233" loading="lazy" alt="The AI assistant lists problems it found in the open flow." /></div>
+      <div class="text">
+        <h3>A second pair of eyes</h3>
+        <p>Ask about the open flow, let it find mistakes or suggest a better version. Changes are shown first and applied as one step you can undo.</p>
+      </div>
+    </div>
+    <div class="ai-panel" role="tabpanel" id="panel-create" aria-labelledby="tab-create" hidden>
+      <div class="stack">
+        <div class="shot"><img src="images/flode-ai-create.png" width="2000" height="1233" loading="lazy" alt="Create with AI: describing an automation in plain words." /></div>
+        <div class="shot"><img src="images/flode-ai-draft.png" width="2000" height="1233" loading="lazy" alt="The draft the AI built from the description, not yet saved." /></div>
+      </div>
+      <div class="text">
+        <h3>From a sentence to a flow</h3>
+        <p>Describe what should happen. FLODE builds a draft from your real entities, checks it — and nothing is saved until you save.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="band band-light" id="installation">
-  <div class="wrap-narrow">
-    <p class="kicker">Installation</p>
+<section class="band" id="features">
+  <div class="wrap">
+    <p class="kicker">Everything else</p>
+    <h2>Small things that add up.</h2>
+    <div class="tiles">
+      <div class="tile"><h3>Scripts, too</h3><p>With fields, a run button that asks for them, and <em>Run from here</em> for any step.</p></div>
+      <div class="tile"><h3>Template workshop</h3><p>Jinja rendered live by Home Assistant — with the result type, what it reacts to and the variables of a real run. <kbd>⌘J</kbd></p></div>
+      <div class="tile"><h3>Commands &amp; shortcuts</h3><p>Everything in one search <kbd>⌘K</kbd>, right-click menus, copy, paste, duplicate, and an overview on <kbd>?</kbd>.</p></div>
+      <div class="tile"><h3>Tabs &amp; minimap</h3><p>Several flows open at once, each with its own undo; a minimap for big ones; tidy up in one click.</p></div>
+      <div class="tile"><h3>Import, export, merge</h3><p>Paste YAML, save as copy, FLODE files, and merge several automations into one.</p></div>
+      <div class="tile"><h3>Careful with your data</h3><p>Warns when it can't read part of an automation. HA blocks stay blocks, and saving keeps what Home Assistant wrote.</p></div>
+    </div>
+    <div class="showcase">
+      <figure>
+        <div class="shot"><img src="images/flode-templates.png" width="2000" height="1233" loading="lazy" alt="Template workshop with a live-rendered result." /></div>
+        <figcaption><strong>Template workshop.</strong> Try Jinja before it goes into an automation.</figcaption>
+      </figure>
+      <figure>
+        <div class="shot"><img src="images/flode-context-menu.png" width="2000" height="1233" loading="lazy" alt="Right-click menu on a card with copy, duplicate, disable, run from here, disconnect and delete." /></div>
+        <figcaption><strong>Right-click.</strong> The common actions right where you work, with their shortcuts.</figcaption>
+      </figure>
+    </div>
+    <div class="phone-row">
+      <div class="phone"><img src="images/flode-phone.png" width="550" height="1100" loading="lazy" alt="FLODE on a phone: two-row header and the selected block as a bottom sheet." /></div>
+      <div>
+        <p class="kicker">On the go</p>
+        <h2>Fix it from the couch.</h2>
+        <p class="lede">On a phone the tools move into a swipeable strip and the editor slides up as a sheet — the card you're editing stays in view above it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band dark" id="yaml">
+  <div class="wrap yaml-grid">
+    <div>
+      <p class="kicker">Under the hood</p>
+      <h2>Your automations stay yours.</h2>
+      <p class="lede">What you build is ordinary Home Assistant YAML, stored by Home Assistant. Uninstall FLODE tomorrow and every automation keeps working.</p>
+      <div class="facts">
+        <div><b>No server, no account</b><span>FLODE is a panel inside Home Assistant and talks only to your Home Assistant.</span></div>
+        <div><b>Round-trips your YAML</b><span>Tested against real installations: open, save, and the automation comes back the same.</span></div>
+        <div><b>Open source</b><span>Apache 2.0, based on C.A.F.E. by Federico Zivolo.</span></div>
+      </div>
+    </div>
+    <div class="code">
+      <div class="file">automations.yaml — saved by FLODE</div>
+<pre><span class="k">alias</span>: <span class="s">Abendlicht Schlafzimmer</span>
+<span class="k">triggers</span>:
+  - <span class="k">trigger</span>: <span class="v">sun</span>
+    <span class="k">event</span>: <span class="s">sunset</span>
+    <span class="k">offset</span>: <span class="s">"-00:15:00"</span>
+<span class="k">conditions</span>:
+  - <span class="k">condition</span>: <span class="v">state</span>
+    <span class="k">entity_id</span>: <span class="s">input_boolean.person_julia</span>
+    <span class="k">state</span>: <span class="s">"on"</span>
+<span class="k">actions</span>:
+  - <span class="k">action</span>: <span class="s">light.turn_on</span>
+    <span class="k">target</span>:
+      <span class="k">entity_id</span>: <span class="s">light.bed_light</span>
+    <span class="k">data</span>:
+      <span class="k">brightness_pct</span>: <span class="v">40</span>
+  - <span class="k">if</span>:
+      - <span class="k">condition</span>: <span class="v">state</span>
+        <span class="k">entity_id</span>: <span class="s">switch.decorative_lights</span>
+        <span class="k">state</span>: <span class="s">"off"</span>
+    <span class="k">then</span>:
+      - <span class="k">action</span>: <span class="s">switch.turn_on</span>
+        <span class="k">target</span>:
+          <span class="k">entity_id</span>: <span class="s">switch.decorative_lights</span>
+<span class="k">mode</span>: <span class="v">restart</span></pre>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="install">
+  <div class="wrap install">
+    <p class="kicker">Install</p>
     <h2>Up and running in five minutes.</h2>
-
-    <div class="install-card">
-      <ol class="install-steps">
-        <li>
-          <span class="step-num">1</span>
-          <span class="step-body">HACS → Integrations → search for <strong>FLODE</strong> → Install</span>
-        </li>
-        <li>
-          <span class="step-num">2</span>
-          <span class="step-body"><strong>Restart</strong> Home Assistant</span>
-        </li>
-        <li>
-          <span class="step-num">3</span>
-          <span class="step-body">Settings → Integrations → Add Integration → <strong>FLODE</strong></span>
-        </li>
-      </ol>
-      <div class="install-hacs-btn">
-        <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration">Open in HACS</a>
-      </div>
-    </div>
-
-    <p class="install-manual">
-      Prefer to install by hand? Download <code>flode.zip</code> from the
-      <a href="https://github.com/SH1FT-W/flode/releases">releases page</a> and copy it to
-      <code>config/custom_components/flode/</code>.
-    </p>
+    <ol class="steps">
+      <li><span class="n">1</span><span>HACS → search for <strong>FLODE</strong> → Download.</span></li>
+      <li><span class="n">2</span><span>Restart Home Assistant.</span></li>
+      <li><span class="n">3</span><span>Settings → Devices &amp; services → Add integration → <strong>FLODE</strong>. It appears in the sidebar.</span></li>
+    </ol>
+    <p class="req">Needs <strong>Home Assistant 2026.3</strong> or newer and an admin account. By hand: copy <code>flode.zip</code> from the <a href="https://github.com/SH1FT-W/flode/releases">releases</a> into <code>config/custom_components/flode/</code>.</p>
+    <a class="btn primary" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration">Open in HACS</a>
   </div>
 </section>
 
-<footer class="band-dark">
-  <div class="footer-wordmark">FLODE</div>
-  <p class="footer-sub">A visual flow editor for Home Assistant.</p>
-  <div class="footer-links">
-    <a href="https://github.com/SH1FT-W/flode">GitHub</a>
-    <a href="https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md">Changelog</a>
-    <a href="https://github.com/SH1FT-W/flode/blob/main/CONTRIBUTING.md">Contribute</a>
-    <a href="https://github.com/SH1FT-W/flode/issues">Report issues</a>
-    <a href="https://github.com/FezVrasta/cafe-hass">C.A.F.E. (original)</a>
+<footer>
+  <div class="wrap foot">
+    <a class="brand" href="#top"><img src="images/icon.png" alt="" /><span>FLODE</span></a>
+    <div class="foot-links">
+      <a href="https://github.com/SH1FT-W/flode">GitHub</a>
+      <a href="https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/SH1FT-W/flode/issues">Issues</a>
+      <a href="https://github.com/SH1FT-W/flode/blob/main/CONTRIBUTING.md">Contribute</a>
+      <a href="https://github.com/FezVrasta/cafe-hass">C.A.F.E. (original)</a>
+    </div>
+    <span>Apache 2.0 · Built with Claude (Anthropic)</span>
   </div>
-  <p class="footer-copy">Fork of C.A.F.E. · Apache 2.0 · Built with Claude (Anthropic)</p>
 </footer>
 
 <script>
+  // Latest release number in the badge.
   fetch('https://api.github.com/repos/SH1FT-W/flode/releases/latest')
-    .then(r => r.json())
-    .then(data => {
-      const v = data.tag_name || '';
-      if (v) document.querySelectorAll('.version-tag').forEach(el => el.textContent = v);
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.tag_name) document.querySelectorAll('.version-tag').forEach((el) => { el.textContent = data.tag_name; });
     })
     .catch(() => {});
 
-  document.querySelectorAll('a[href^="#"]').forEach(a => {
-    a.addEventListener('click', e => {
-      const target = document.querySelector(a.getAttribute('href'));
-      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+  // Hero screenshot: dark / light.
+  const hero = document.getElementById('hero-shot');
+  document.querySelectorAll('[data-theme-shot]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const theme = button.dataset.themeShot;
+      hero.src = `images/flode-editor-${theme}.png`;
+      document.querySelectorAll('[data-theme-shot]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+    });
+  });
+
+  // AI tabs.
+  const tabs = [...document.querySelectorAll('.ai-tabs [role="tab"]')];
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => {
+        const selected = t === tab;
+        t.setAttribute('aria-selected', String(selected));
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !selected;
+      });
     });
   });
 </script>

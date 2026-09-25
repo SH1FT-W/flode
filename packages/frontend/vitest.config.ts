@@ -1,18 +1,8 @@
-import path from 'node:path';
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+import { defineProject } from 'vitest/config';
 
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
+export default defineProject({
   test: {
-    globals: true,
-    // Use Node environment by default
+    name: '@flode/frontend',
     environment: 'node',
-    setupFiles: ['./src/test-setup.ts'],
   },
 });

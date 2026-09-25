@@ -112,4 +112,18 @@ mode: single
     const result = await parser.parse(yaml);
     expect(result.success).toBe(true);
   });
+
+  it('reads a bare-number delay as seconds (HA semantics) instead of dropping it', async () => {
+    const result = await parser.parse(`
+alias: Number Delay
+triggers:
+  - trigger: state
+    entity_id: input_boolean.enabled
+actions:
+  - delay: 5
+`);
+    expect(result.success).toBe(true);
+    const delay = result.graph?.nodes.find((node) => node.type === 'delay');
+    expect(delay?.data.delay).toEqual({ seconds: 5 });
+  });
 });

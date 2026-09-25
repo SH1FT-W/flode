@@ -32,6 +32,9 @@ jobs:
       - name: Build transpiler package
         run: yarn workspace @flode/transpiler build
 
+      - name: Build UI core package
+        run: yarn workspace @flode/ui-core build
+
       - name: Build frontend
         run: yarn workspace @flode/frontend build
 
@@ -39,7 +42,7 @@ jobs:
         run: |
           ls -la custom_components/flode/
           ls -la custom_components/flode/www/
-          ls -la custom_components/flode/www/assets/
+          test -f custom_components/flode/www/flode-panel.js
 
       - name: Create release archive
         run: |
