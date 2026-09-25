@@ -5,7 +5,7 @@
 
   <p><strong>See your Home Assistant automations — as a flow, inside Home Assistant.</strong></p>
 
-  [![Release](https://img.shields.io/badge/version-3.0.0-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
+  [![Release](https://img.shields.io/badge/version-3.0.1-2F81F7?style=flat-square)](https://github.com/SH1FT-W/flode/releases/latest)
   [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.3%2B-41BDF5?style=flat-square&logo=homeassistant&logoColor=white)](https://www.home-assistant.io)
   [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](https://github.com/SH1FT-W/flode/blob/main/LICENSE)
   [![HACS](https://img.shields.io/badge/HACS-default-41BDF5?style=flat-square)](https://hacs.xyz)

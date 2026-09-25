@@ -4,6 +4,16 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.0.1] — 2026-09-26 — Security updates
+
+A maintenance release with no new features — it only updates dependencies with known security issues. Everything from 3.0.0 below still applies.
+
+### Security
+- **Dependencies updated** — js-yaml 4.3.2 (ships with the editor), plus the build and test tools tar, postcss, brace-expansion, ip-address and vitest.
+- **Two text patterns hardened** — creating a card name while merging and reading the YAML out of an AI reply could become very slow on specially crafted input. Both are now fast whatever the input.
+
+---
+
 ## [3.0.0] — 2026-09-26 — FLODE 3: built from Home Assistant's own parts
 
 FLODE 3 is a new editor built entirely from Home Assistant's own elements — the same forms, dialogs, pickers and menus you know from *Settings → Automations & scenes*. The engine that reads and writes your automations is the same as in 2.x, so flows from 2.x open and save as before (and three old data-loss bugs are fixed, see below).
