@@ -27,6 +27,22 @@ FLODE shows your automations and scripts as a flow you can **read, test and unde
 | **Relations between automations** | **From a sentence to a flow** *(optional AI)* |
 | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-relations.png" width="420" alt="Conflicts, self-triggering automations, chains and what controls a light." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-draft.png" width="420" alt="A draft automation built by the AI, not yet saved." /> |
 
+<details>
+<summary><strong>More screenshots</strong></summary>
+<br/>
+
+| Light theme | Start screen |
+|:---:|:---:|
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-light.png" width="420" alt="The editor in Home Assistant's light theme." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-home.png" width="420" alt="Start screen with automations, scripts and relations." /> |
+| **AI assistant** | **Create with AI** |
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-assistant.png" width="420" alt="The AI assistant lists problems in the open flow." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-create.png" width="420" alt="Describing an automation in plain words." /> |
+| **Template workshop** | **Commands (⌘K)** |
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-templates.png" width="420" alt="Template workshop with a live-rendered result." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-palette.png" width="420" alt="Command palette." /> |
+| **Right-click menu** | **On a phone** |
+| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-context-menu.png" width="420" alt="Right-click menu on a card." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-phone.png" width="200" alt="FLODE on a phone with the editor as a bottom sheet." /> |
+
+</details>
+
 ## What it does
 
 - **Home Assistant's own editors** for every trigger, condition and action — adding steps, renaming (area, category, labels), mode and saving included. *If-then*, *Choose*, *Repeat* and *Parallel* stay single blocks.
@@ -47,22 +63,6 @@ If you've set up an AI in Home Assistant (Anthropic, OpenAI, Google Gemini, Olla
 - **Create with AI** — describe what should happen, get a draft built from your real entities.
 
 FLODE uses Home Assistant's own `ai_task` — no extra key, no extra service. Without an AI task these buttons simply don't appear; everything else works the same.
-
-<details>
-<summary><strong>More screenshots</strong></summary>
-<br/>
-
-| Light theme | Start screen |
-|:---:|:---:|
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-light.png" width="420" alt="The editor in Home Assistant's light theme." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-home.png" width="420" alt="Start screen with automations, scripts and relations." /> |
-| **AI assistant** | **Create with AI** |
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-assistant.png" width="420" alt="The AI assistant lists problems in the open flow." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-create.png" width="420" alt="Describing an automation in plain words." /> |
-| **Template workshop** | **Commands (⌘K)** |
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-templates.png" width="420" alt="Template workshop with a live-rendered result." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-palette.png" width="420" alt="Command palette." /> |
-| **Right-click menu** | **On a phone** |
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-context-menu.png" width="420" alt="Right-click menu on a card." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-phone.png" width="200" alt="FLODE on a phone with the editor as a bottom sheet." /> |
-
-</details>
 
 ## Installation
 
