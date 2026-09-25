@@ -274,7 +274,7 @@ export function buildExplainInstructions({
 
 /** The YAML in a model reply — tolerates Markdown fences and chatter around them. */
 export function extractYaml(reply: string): string {
-  const fenced = reply.match(/```(?:ya?ml)?\s*\n([\s\S]*?)```/i);
+  const fenced = reply.match(/```(?:ya?ml)?[ \t]*\r?\n([\s\S]*?)```/i);
   return (fenced ? fenced[1] : reply).trim();
 }
 

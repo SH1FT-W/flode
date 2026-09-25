@@ -41,10 +41,13 @@ function calculateBounds(nodes: FlowNode[]): GraphBounds {
 }
 
 export function sanitizeSourcePrefix(input: string, index: number): string {
-  const normalized = input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+  const underscored = input.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  // Trim underscores by index — a `^_+|_+$` regex is quadratic on long `_` runs.
+  let start = 0;
+  let end = underscored.length;
+  while (start < end && underscored[start] === '_') start++;
+  while (end > start && underscored[end - 1] === '_') end--;
+  const normalized = underscored.slice(start, end);
 
   const base = normalized || `source_${index + 1}`;
   return `${base}_${index + 1}`;
