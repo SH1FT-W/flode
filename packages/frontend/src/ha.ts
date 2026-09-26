@@ -30,6 +30,9 @@ export interface HomeAssistant {
   connection?: TemplateConnection;
   /** Loads an HA backend translation category (`services`, `title` …) into `localize`. */
   loadBackendTranslation?: (category: string) => Promise<unknown>;
+  /** Sidebar setting: `always_hidden` when the user hid it (long-press on "Home Assistant"). */
+  dockedSidebar?: 'docked' | 'always_hidden' | 'auto';
+  kioskMode?: boolean;
   /** Loads a panel's UI strings into `localize` (HA does this per panel). */
   loadFragmentTranslation?: (fragment: string) => Promise<unknown>;
 }

@@ -1652,6 +1652,11 @@ export class FlodePanel extends LitElement {
     </div>`;
   }
 
+  private showMenuButton(): boolean {
+    const hass = this.hass;
+    return hass?.kioskMode !== true && (this.narrow || hass?.dockedSidebar === 'always_hidden');
+  }
+
   private renderHome() {
     const hass = this.hass;
     const q = this.query.trim().toLowerCase();
@@ -1668,8 +1673,8 @@ export class FlodePanel extends LitElement {
       <div class="home-scroll"><div class="home">
         <header class="home-head">
           ${
-            // Phones: HA hides its sidebar — HA's own menu button opens it.
-            this.narrow
+            // No sidebar (phones, or hidden by the user) — HA's own menu button opens it, same rule as HA's pages.
+            this.showMenuButton()
               ? html`<ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>`
               : nothing
           }
