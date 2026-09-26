@@ -6,6 +6,7 @@ export * from './dependency-map';
 export * from './locales';
 export * from './node-data';
 export * from './node-summary';
+export * from './random-id';
 export * from './summary-context';
 export * from './template-preview';
 export * from './trace-mapping';

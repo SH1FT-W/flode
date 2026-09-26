@@ -1,4 +1,5 @@
 import type { FlowEdge, FlowGraph, FlowMetadata, FlowNode, FlowWorkspace } from '@flode/shared';
+import { randomId } from './random-id';
 
 export interface MergeAutomationSource {
   graph: FlowGraph;
@@ -219,7 +220,7 @@ export function mergeAutomationGraphs(sources: MergeAutomationSource[]): FlowGra
   };
 
   return {
-    id: crypto.randomUUID(),
+    id: randomId(),
     name: 'Merged Automation',
     description: `Merged from ${sources.length} automations`,
     nodes: mergedNodes,

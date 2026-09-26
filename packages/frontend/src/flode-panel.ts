@@ -18,7 +18,7 @@ import './flode-map';
 import './flode-templates';
 import './flode-runfrom';
 import './flode-shortcuts';
-import { chooseAiTask, mergeAutomationGraphs } from '@flode/ui-core';
+import { chooseAiTask, mergeAutomationGraphs, randomId } from '@flode/ui-core';
 import type { AddAt, CanvasMenuDetail, FlodeCanvas } from './flode-canvas';
 import { downloadFlowJson, type ImportedFlow, pickFlowJson } from './flode-io';
 import type { PaletteEntry } from './flode-palette';
@@ -385,7 +385,7 @@ export class FlodePanel extends LitElement {
     const { sequence, nodeIds, label } = event.detail;
     const language = this.language;
     const run: ManualRun = {
-      id: crypto.randomUUID(),
+      id: randomId(),
       graphId: flow.graph.id,
       label,
       startedAt: new Date().toISOString(),
@@ -436,7 +436,7 @@ export class FlodePanel extends LitElement {
         enabled: true,
         lastTriggered: null,
       },
-      graph: { ...flow.graph, id: crypto.randomUUID(), name },
+      graph: { ...flow.graph, id: randomId(), name },
       isNew: true,
       registryEntry: null,
     });
@@ -470,7 +470,7 @@ export class FlodePanel extends LitElement {
     const name = t(this.language, 'ioCopyOf').replace('{name}', flow.graph.name);
     this.openTab({
       item: { ...flow.item, entityId: '', configId: String(Date.now()), name, lastTriggered: null },
-      graph: { ...structuredClone(flow.graph), id: crypto.randomUUID(), name },
+      graph: { ...structuredClone(flow.graph), id: randomId(), name },
       isNew: true,
       registryEntry: null,
     });
@@ -1094,7 +1094,7 @@ export class FlodePanel extends LitElement {
         lastTriggered: null,
       },
       graph: {
-        id: crypto.randomUUID(),
+        id: randomId(),
         name,
         // A script is a flow with one "script start" card carrying its fields.
         nodes:
@@ -1166,7 +1166,7 @@ export class FlodePanel extends LitElement {
     const activeIsBlank =
       active !== undefined && this.flow?.isNew === true && this.flow.graph.nodes.length === 0;
     const tab: EditorTab = {
-      id: activeIsBlank && active ? active.id : crypto.randomUUID(),
+      id: activeIsBlank && active ? active.id : randomId(),
       flow,
       past: [],
       future: [],
