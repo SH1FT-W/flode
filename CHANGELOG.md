@@ -13,6 +13,9 @@ Everything from 3.0.0 below still applies.
 - **Merging automations** now picks via the table's select mode.
 - **Start page uses the full width** and has a Home Assistant-style app bar at the top.
 
+### Added
+- **Welcome and "What's new" sheet** — on the first visit FLODE introduces itself; after every update it shows once what's new in that version, with a link to all changes.
+
 ### Fixed
 - *Zusammenhänge* / *Dependencies* no longer shows its search field twice.
 

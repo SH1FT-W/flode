@@ -24,6 +24,7 @@ import type { AddAt, CanvasMenuDetail, FlodeCanvas } from './flode-canvas';
 import { type FlodeHaList, HA_LIST_TAGS } from './flode-ha-list';
 import { downloadFlowJson, type ImportedFlow, pickFlowJson } from './flode-io';
 import type { PaletteEntry } from './flode-palette';
+import { type WelcomeMode, welcomeMode } from './flode-welcome';
 import {
   addNode,
   connect,
@@ -221,6 +222,7 @@ export class FlodePanel extends LitElement {
     mergeMode: { state: true },
     mergeIds: { state: true },
     haList: { state: true },
+    welcome: { state: true },
     templateVars: { state: true },
     aiSetupHidden: { state: true },
     runMarks: { state: true },
@@ -272,6 +274,8 @@ export class FlodePanel extends LitElement {
   declare mergeIds: string[];
   /** HA's own list page is available (null = still loading it). */
   declare haList: boolean | null;
+  /** Start sheet: welcome on the first visit, what's new after an update. */
+  declare welcome: WelcomeMode | null;
   /** Variables handed over from a run step ("test a template with these"). */
   declare templateVars: Record<string, unknown> | null;
   declare aiSetupHidden: boolean;
@@ -314,6 +318,7 @@ export class FlodePanel extends LitElement {
     this.mergeMode = false;
     this.mergeIds = [];
     this.haList = null;
+    this.welcome = welcomeMode();
     this.aiSetupHidden = readFlag(AI_SETUP_HIDDEN_KEY);
     this.runMarks = null;
     this.activeRunNode = null;
@@ -2280,6 +2285,13 @@ export class FlodePanel extends LitElement {
   render() {
     return html`
       ${this.flow && !this.showHome ? this.renderEditor(this.flow) : this.renderHome()}
+      <flode-welcome
+        .language=${this.language}
+        .mode=${this.welcome}
+        @closed=${() => {
+          this.welcome = null;
+        }}
+      ></flode-welcome>
       <flode-palette
         .hass=${this.hass}
         .entries=${this.paletteOpen ? this.paletteEntries() : []}

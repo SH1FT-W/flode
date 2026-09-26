@@ -140,6 +140,11 @@ To cut a new release, follow these steps:
 - The version number should be determined based on semantic versioning and recent changes.
 - The release notes should be compiled from user-facing changes in the commit history (new features, bug fixes, breaking changes), without requiring user input.
 
+0. **Update the "What's new" sheet** (`packages/frontend/src/flode-welcome.ts`)
+
+- Replace `WHATS_NEW` with this release's user-facing features (icon + title + text, 2–4 entries); add their `newXYZ…` strings in `strings.ts` (de + en) and drop the previous release's.
+- Bump `version` in `packages/frontend/package.json` together with `manifest.json` — the sheet shows once per version to everyone who used an older one.
+
 1. **Commit your changes**
 
 - Ensure all changes are staged and committed with a clear message.

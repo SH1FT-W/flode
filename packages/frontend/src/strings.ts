@@ -250,6 +250,31 @@ const STRINGS = {
     type_delay: 'Verzögerung',
     type_wait: 'Warten',
     type_set_variables: 'Variablen',
+    welcomeTitle: 'Willkommen bei FLODE',
+    welcomeFlowTitle: 'Automationen als Flow',
+    welcomeFlowText:
+      'Auslöser, Bedingungen und Aktionen als Bausteine auf einer Fläche – gespeichert wird ganz normales Home-Assistant-YAML.',
+    welcomeRunsTitle: 'Läufe verstehen',
+    welcomeRunsText:
+      'Jeder Lauf erscheint direkt auf dem Flow: welcher Weg genommen wurde und wo es hakt.',
+    welcomeAiTitle: 'Mit KI bauen',
+    welcomeAiText:
+      'Beschreib, was passieren soll – FLODE entwirft den Flow mit deiner KI aus Home Assistant (optional).',
+    welcomeMapTitle: 'Zusammenhänge',
+    welcomeMapText:
+      'Sieh auf einen Blick, wer was steuert, wo sich Automationen widersprechen und was fehlt.',
+    whatsNewTitle: 'Neu in FLODE {version}',
+    whatsNewAll: 'Alle Änderungen',
+    continue: 'Weiter',
+    new305TableTitle: 'Die Tabelle von Home Assistant',
+    new305TableText:
+      'Automationen und Skripte stehen jetzt in HAs eigener Tabelle – mit Filtern, Gruppen, Sortierung, Labels und Schaltern. Ein Klick öffnet den Flow.',
+    new305WideTitle: 'Volle Breite',
+    new305WideText:
+      'Die Startseite nutzt den ganzen Bildschirm und hat oben eine Leiste wie Home Assistant.',
+    new305MergeTitle: 'Zusammenführen per Auswahl',
+    new305MergeText:
+      'Automationen in der Tabelle anhaken und mit einem Klick zu einem Flow zusammenführen.',
   },
   en: {
     title: 'FLODE',
@@ -495,6 +520,30 @@ const STRINGS = {
     type_delay: 'Delay',
     type_wait: 'Wait',
     type_set_variables: 'Variables',
+    welcomeTitle: 'Welcome to FLODE',
+    welcomeFlowTitle: 'Automations as a flow',
+    welcomeFlowText:
+      'Triggers, conditions and actions as blocks on a canvas – saved as plain Home Assistant YAML.',
+    welcomeRunsTitle: 'Understand runs',
+    welcomeRunsText:
+      'Every run shows up right on the flow: which path it took and where it got stuck.',
+    welcomeAiTitle: 'Build with AI',
+    welcomeAiText:
+      'Describe what should happen – FLODE drafts the flow with your Home Assistant AI (optional).',
+    welcomeMapTitle: 'Dependencies',
+    welcomeMapText:
+      'See at a glance what controls what, where automations contradict each other and what is missing.',
+    whatsNewTitle: 'New in FLODE {version}',
+    whatsNewAll: 'All changes',
+    continue: 'Continue',
+    new305TableTitle: "Home Assistant's table",
+    new305TableText:
+      "Automations and scripts are now listed in HA's own table – with filters, grouping, sorting, labels and switches. A click opens the flow.",
+    new305WideTitle: 'Full width',
+    new305WideText: 'The start page uses the whole screen and has an app bar like Home Assistant.',
+    new305MergeTitle: 'Merge by selection',
+    new305MergeText:
+      'Tick automations in the table and merge them into one flow with a single click.',
   },
 } as const;
 
