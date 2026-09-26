@@ -4,6 +4,15 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.0.2] — 2026-09-26 — Works over plain http again
+
+A bug-fix release. Everything from 3.0.0 below still applies.
+
+### Fixed
+- **Home Assistant opened via `http://<ip>:8123`** — the browser only offers the ID generator FLODE used over HTTPS or on `localhost`. Over plain http, *Create with AI* closed its dialog after the AI had finished and showed the overview instead of the draft; *New*, *Duplicate*, *Save as copy* and merging automations failed the same way. FLODE now falls back to an ID generator that works everywhere.
+
+---
+
 ## [3.0.1] — 2026-09-26 — Security updates
 
 A maintenance release with no new features — it only updates dependencies with known security issues. Everything from 3.0.0 below still applies.
