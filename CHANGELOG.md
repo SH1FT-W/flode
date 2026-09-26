@@ -4,6 +4,20 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.0.5] — 2026-09-26 — Home Assistant's table on the start page
+
+Everything from 3.0.0 below still applies.
+
+### Changed
+- **Start page list is Home Assistant's own table** — the automation and script lists now use the same table as *Settings → Automations & Scenes*: filters (areas, devices, entities, labels, categories, blueprints), grouping, sorting, search, labels, the on/off switch, multi-select with bulk actions and the ⋮ menu per row. Filters and sorting are shared with Home Assistant's page. Clicking a row still opens the flow in FLODE. If a Home Assistant version can't provide the table, FLODE falls back to its own cards.
+- **Merging automations** now picks via the table's select mode.
+- **Start page uses the full width** and has a Home Assistant-style app bar at the top.
+
+### Fixed
+- *Zusammenhänge* / *Dependencies* no longer shows its search field twice.
+
+---
+
 ## [3.0.2] — 2026-09-26 — Works over plain http and without sidebar
 
 A bug-fix release. Everything from 3.0.0 below still applies.

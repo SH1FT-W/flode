@@ -18,8 +18,10 @@ import './flode-map';
 import './flode-templates';
 import './flode-runfrom';
 import './flode-shortcuts';
+import './flode-ha-list';
 import { chooseAiTask, mergeAutomationGraphs, randomId } from '@flode/ui-core';
 import type { AddAt, CanvasMenuDetail, FlodeCanvas } from './flode-canvas';
+import { type FlodeHaList, HA_LIST_TAGS } from './flode-ha-list';
 import { downloadFlowJson, type ImportedFlow, pickFlowJson } from './flode-io';
 import type { PaletteEntry } from './flode-palette';
 import {
@@ -114,6 +116,11 @@ function storeInspectorWidth(width: number | null): void {
 
 /** What the start screen lists: automations, scripts or the Zusammenhänge map. */
 type HomeView = FlowKind | 'map';
+
+interface HomeTab {
+  view: HomeView;
+  label: string;
+}
 
 /** Stable empty list for HA's hidden add lists (a new array per render would reset them). */
 const NO_STEPS: readonly unknown[] = [];
@@ -213,6 +220,7 @@ export class FlodePanel extends LitElement {
     yamlImportOpen: { state: true },
     mergeMode: { state: true },
     mergeIds: { state: true },
+    haList: { state: true },
     templateVars: { state: true },
     aiSetupHidden: { state: true },
     runMarks: { state: true },
@@ -262,6 +270,8 @@ export class FlodePanel extends LitElement {
   /** Start screen: picking automations to merge. */
   declare mergeMode: boolean;
   declare mergeIds: string[];
+  /** HA's own list page is available (null = still loading it). */
+  declare haList: boolean | null;
   /** Variables handed over from a run step ("test a template with these"). */
   declare templateVars: Record<string, unknown> | null;
   declare aiSetupHidden: boolean;
@@ -303,6 +313,7 @@ export class FlodePanel extends LitElement {
     this.yamlImportOpen = false;
     this.mergeMode = false;
     this.mergeIds = [];
+    this.haList = null;
     this.aiSetupHidden = readFlag(AI_SETUP_HIDDEN_KEY);
     this.runMarks = null;
     this.activeRunNode = null;
@@ -504,6 +515,7 @@ export class FlodePanel extends LitElement {
       this.mergeMode = false;
       this.mergeIds = [];
       this.message = null;
+      this.haListElement?.clearSelection();
       this.openTab({
         item: {
           kind: 'automation',
@@ -776,9 +788,7 @@ export class FlodePanel extends LitElement {
     command('merge', t(language, 'mergeStart'), 'mdi:call-merge', () => {
       this.parkActiveTab();
       this.showHome = true;
-      this.homeKind = 'automation';
-      this.mergeMode = true;
-      this.mergeIds = [];
+      this.startMerge();
     });
     command('templates', t(language, 'tplTitle'), 'mdi:code-braces', () =>
       this.openTemplates(null)
@@ -931,7 +941,14 @@ export class FlodePanel extends LitElement {
       // First `hass` after a reload: refresh the restored active tab.
       if (!changed.get('hass') && this.activeTabId) void this.refreshStaleTab(this.activeTabId);
       if (!changed.get('hass')) void this.loadAiChoice();
+      if (!changed.get('hass')) void this.loadHaList();
     }
+  }
+
+  /** The start screen is HA's own automation list — FLODE's cards stay the fallback. */
+  private async loadHaList(): Promise<void> {
+    const ready = await ensureAutomationEditors(this.hass);
+    this.haList = ready && HA_LIST_TAGS.every((tag) => customElements.get(tag) !== undefined);
   }
 
   protected updated(changed: PropertyValues<this>): void {
@@ -1657,7 +1674,116 @@ export class FlodePanel extends LitElement {
     return hass?.kioskMode !== true && (this.narrow || hass?.dockedSidebar === 'always_hidden');
   }
 
+  private homeTabs(): HomeTab[] {
+    const language = this.language;
+    return [
+      { view: 'automation', label: t(language, 'automations') },
+      { view: 'script', label: t(language, 'scripts') },
+      { view: 'map', label: mapT(language, 'title') },
+    ];
+  }
+
+  private homeMenu(): MenuEntry[] {
+    return [
+      {
+        id: 'merge',
+        icon: 'mdi:call-merge',
+        label: t(this.language, 'mergeStart'),
+        run: () => this.startMerge(),
+      },
+      {
+        id: 'yaml',
+        icon: 'mdi:code-braces-box',
+        label: t(this.language, 'ioImportYaml'),
+        run: () => {
+          this.yamlImportOpen = true;
+        },
+      },
+      {
+        id: 'json',
+        icon: 'mdi:file-import-outline',
+        label: t(this.language, 'ioImportJson'),
+        run: () => void this.importJson(),
+      },
+      {
+        id: 'shortcuts',
+        icon: 'mdi:keyboard-outline',
+        label: t(this.language, 'shortcutsTitle'),
+        run: () => {
+          this.shortcutsOpen = true;
+        },
+      },
+    ];
+  }
+
+  private startMerge(): void {
+    this.homeKind = 'automation';
+    this.mergeMode = true;
+    this.mergeIds = [];
+    // HA's list picks via its own select mode; the merge button sits in its selection bar.
+    if (this.haList) void this.updateComplete.then(() => this.haListElement?.startSelection());
+  }
+
+  private get haListElement(): FlodeHaList | null {
+    return this.renderRoot.querySelector('flode-ha-list');
+  }
+
+  private renderCards(
+    active: AutomationListItem[],
+    inactive: AutomationListItem[],
+    view: HomeView
+  ) {
+    return html`${this.renderItemGroup(active)}
+      ${
+        inactive.length > 0
+          ? html`<h2 class="group-title">${t(this.language, 'disabledGroup')} (${inactive.length})</h2>
+              ${this.renderItemGroup(inactive)}`
+          : nothing
+      }
+      ${
+        active.length + inactive.length === 0 && view !== 'map'
+          ? html`<p class="muted center">${t(this.language, 'empty')}</p>`
+          : nothing
+      }`;
+  }
+
+  /** Rows ticked in HA's table are the automations to merge. */
+  private onListSelection(entityIds: string[]): void {
+    const hass = this.hass;
+    this.mergeIds = hass
+      ? listFlows(hass, 'automation')
+          .filter((item) => entityIds.includes(item.entityId))
+          .map((item) => item.configId)
+      : [];
+  }
+
+  private renderMapView() {
+    return html`<flode-map
+        .hass=${this.hass}
+        .query=${this.query}
+        @open-item=${(event: CustomEvent<AutomationListItem>) => void this.open(event.detail)}
+        @clear-query=${() => {
+          this.query = '';
+        }}
+      ></flode-map>`;
+  }
+
+  private renderSearch() {
+    return html`<label class="search">
+      <ha-icon icon="mdi:magnify"></ha-icon>
+      <input
+        .value=${this.query}
+        placeholder=${this.homeKind === 'map' ? mapT(this.language, 'searchPlaceholder') : this.searchPlaceholder()}
+        @input=${(e: InputEvent) => {
+          if (e.target instanceof HTMLInputElement) this.query = e.target.value;
+        }}
+        @keydown=${(e: KeyboardEvent) => e.stopPropagation()}
+      />
+    </label>`;
+  }
+
   private renderHome() {
+    if (this.haList === null) return nothing;
     const hass = this.hass;
     const q = this.query.trim().toLowerCase();
     const view = this.homeKind;
@@ -1669,15 +1795,21 @@ export class FlodePanel extends LitElement {
     // Active automations first, deactivated ones in their own group below (both A–Z).
     const active = items.filter((item) => item.enabled);
     const inactive = items.filter((item) => !item.enabled);
+    // HA's own table (filters, grouping, search) instead of FLODE's cards.
+    const haTable = this.haList === true && view !== 'map';
     return html`
-      <div class="home-scroll"><div class="home">
-        <header class="home-head">
+      <div class="home-scroll ${haTable ? 'fill' : ''}">
+        <header class="home-toolbar">
           ${
             // No sidebar (phones, or hidden by the user) — HA's own menu button opens it, same rule as HA's pages.
             this.showMenuButton()
               ? html`<ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>`
               : nothing
           }
+          <div class="home-toolbar-title">${t(this.language, 'title')}</div>
+        </header>
+        <div class="home">
+        <header class="home-head">
           <div>
             <h1>${t(this.language, 'title')}</h1>
             <p class="muted">${t(this.language, 'homeHint')}</p>
@@ -1686,16 +1818,16 @@ export class FlodePanel extends LitElement {
         ${this.renderAiSetup()}
         <div class="home-bar">
           <div class="kinds" role="tablist">
-            ${(['automation', 'script', 'map'] as const).map(
-              (option) => html`<button
+            ${this.homeTabs().map(
+              (tab) => html`<button
                 role="tab"
-                class=${option === view ? 'active' : ''}
-                aria-selected=${option === view ? 'true' : 'false'}
+                class=${tab.view === view ? 'active' : ''}
+                aria-selected=${tab.view === view ? 'true' : 'false'}
                 @click=${() => {
-                  this.homeKind = option;
+                  this.homeKind = tab.view;
                 }}
               >
-                ${option === 'map' ? mapT(this.language, 'title') : t(this.language, option === 'script' ? 'scripts' : 'automations')}
+                ${tab.label}
               </button>`
             )}
           </div>
@@ -1712,53 +1844,10 @@ export class FlodePanel extends LitElement {
             <button class="save" @click=${() => this.startNew(kind)}>
               <ha-icon icon="mdi:plus"></ha-icon>${t(this.language, kind === 'script' ? 'newScript' : 'newAutomation')}
             </button>
-            ${this.renderMenu([
-              {
-                id: 'merge',
-                icon: 'mdi:call-merge',
-                label: t(this.language, 'mergeStart'),
-                run: () => {
-                  this.homeKind = 'automation';
-                  this.mergeMode = true;
-                  this.mergeIds = [];
-                },
-              },
-              {
-                id: 'yaml',
-                icon: 'mdi:code-braces-box',
-                label: t(this.language, 'ioImportYaml'),
-                run: () => {
-                  this.yamlImportOpen = true;
-                },
-              },
-              {
-                id: 'json',
-                icon: 'mdi:file-import-outline',
-                label: t(this.language, 'ioImportJson'),
-                run: () => void this.importJson(),
-              },
-              {
-                id: 'shortcuts',
-                icon: 'mdi:keyboard-outline',
-                label: t(this.language, 'shortcutsTitle'),
-                run: () => {
-                  this.shortcutsOpen = true;
-                },
-              },
-            ])}
+            ${this.renderMenu(this.homeMenu())}
           </div>
         </div>
-        <label class="search">
-          <ha-icon icon="mdi:magnify"></ha-icon>
-          <input
-            .value=${this.query}
-            placeholder=${view === 'map' ? mapT(this.language, 'searchPlaceholder') : this.searchPlaceholder()}
-            @input=${(e: InputEvent) => {
-              if (e.target instanceof HTMLInputElement) this.query = e.target.value;
-            }}
-            @keydown=${(e: KeyboardEvent) => e.stopPropagation()}
-          />
-        </label>
+        ${haTable ? nothing : this.renderSearch()}
         ${this.message ? html`<p class="message">${this.message}</p>` : nothing}
         ${
           this.mergeMode && view === 'automation'
@@ -1771,6 +1860,7 @@ export class FlodePanel extends LitElement {
                 <ha-button appearance="plain" @click=${() => {
                   this.mergeMode = false;
                   this.mergeIds = [];
+                  this.haListElement?.clearSelection();
                 }}>${t(this.language, 'cancel')}</ha-button>
                 <ha-button .disabled=${this.mergeIds.length < 2} @click=${() => void this.mergeSelected()}>
                   ${t(this.language, 'mergeRun')}
@@ -1778,26 +1868,19 @@ export class FlodePanel extends LitElement {
               </div>`
             : nothing
         }
+        ${view === 'map' ? this.renderMapView() : nothing}
         ${
-          view === 'map'
-            ? html`<flode-map
+          haTable
+            ? html`<flode-ha-list
+                class="ha-table"
                 .hass=${this.hass}
-                .query=${this.query}
+                .narrow=${this.narrow}
+                .kind=${kind}
                 @open-item=${(event: CustomEvent<AutomationListItem>) => void this.open(event.detail)}
-                @clear-query=${() => {
-                  this.query = '';
-                }}
-              ></flode-map>`
-            : nothing
+                @selection=${(event: CustomEvent<string[]>) => this.onListSelection(event.detail)}
+              ></flode-ha-list>`
+            : this.renderCards(active, inactive, view)
         }
-        ${this.renderItemGroup(active)}
-        ${
-          inactive.length > 0
-            ? html`<h2 class="group-title">${t(this.language, 'disabledGroup')} (${inactive.length})</h2>
-                ${this.renderItemGroup(inactive)}`
-            : nothing
-        }
-        ${items.length === 0 && view !== 'map' ? html`<p class="muted center">${t(this.language, 'empty')}</p>` : nothing}
       </div></div>
     `;
   }
@@ -2116,7 +2199,7 @@ export class FlodePanel extends LitElement {
     const language = this.language;
     return html`<ha-alert alert-type="info" .title=${t(language, 'aiSetupTitle')}>
       ${t(language, this.aiNeedsDefault ? 'aiSetupDefault' : 'aiSetupText')}
-      <div class="ai-setup-actions">
+      <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px">
         ${
           this.aiNeedsDefault
             ? nothing
@@ -2278,17 +2361,15 @@ export class FlodePanel extends LitElement {
     .center {
       text-align: center;
     }
-    /* The whole start screen scrolls at the panel's edge, so the centred
-       content keeps one width whether the list is long (automations) or not. */
+    /* The whole start screen scrolls at the panel's edge; the content fills
+       the available width and the card grid adds columns as it grows. */
     .home-scroll {
       height: 100%;
       overflow-y: auto;
     }
     .home {
       box-sizing: border-box;
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 32px 16px 64px;
+      padding: 24px clamp(16px, 3vw, 40px) 64px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -2352,12 +2433,6 @@ export class FlodePanel extends LitElement {
     .save.ai:hover {
       filter: brightness(1.1);
     }
-    .ai-setup-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 8px;
-    }
     .home-head {
       display: flex;
       align-items: flex-start;
@@ -2371,9 +2446,44 @@ export class FlodePanel extends LitElement {
       flex: 1;
       min-width: 0;
     }
-    .home-head ha-menu-button {
-      flex: none;
-      margin: -2px -8px 0 -12px;
+    /* With HA's table the page itself stays put; the table scrolls inside. */
+    .home-scroll.fill {
+      display: flex;
+      flex-direction: column;
+    }
+    .home-scroll.fill .home {
+      flex: 1;
+      min-height: 0;
+      padding-bottom: 16px;
+    }
+    .ha-table {
+      flex: 1;
+      min-height: 320px;
+      border: 1px solid var(--divider-color);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    /* HA-style app bar, like HA's own pages (and Evenlight). */
+    .home-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: var(--header-height, 56px);
+      padding: 0 12px;
+      box-sizing: border-box;
+      background: var(--app-header-background-color, var(--primary-background-color));
+      color: var(--app-header-text-color, var(--primary-text-color));
+      border-bottom: var(--app-header-border-bottom, 1px solid var(--divider-color));
+    }
+    .home-toolbar-title {
+      margin-inline-start: 8px;
+      font-size: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .empty-start {
       display: flex;
