@@ -17,7 +17,7 @@ jobs:
 
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # Erlaubt das Triagieren von Issues auch von Nutzern ohne
           # Schreibrechte (externe Reporter). Sicher hier, weil der Job
