@@ -34,6 +34,16 @@ export class FlodeInspector extends LitElement {
   /** Below this width HA's forms switch to their stacked (mobile) layout. */
   declare narrow: boolean;
 
+  /**
+   * The step object handed to HA's editor, one per node. HA keys its nested
+   * rows (the actions of an if/choose block …) by object identity, so a fresh
+   * copy on every render — each `hass` update — rebuilds them and collapses
+   * any row the user just expanded (#24).
+   */
+  private steps = new WeakMap<FlowNode, Record<string, unknown>>();
+  /** The step HA's editor just reported, reused for the node it turns into. */
+  private reported: { from: FlowNode; step: Record<string, unknown> } | null = null;
+
   private resizeObserver = new ResizeObserver(([entry]) => {
     const narrow = (entry?.contentRect.width ?? 0) < NARROW_BELOW;
     if (narrow !== this.narrow) this.narrow = narrow;
@@ -72,6 +82,24 @@ export class FlodeInspector extends LitElement {
     const previous = changed.get('node');
     // A different block starts in form mode again.
     if (changed.has('node') && previous?.id !== this.node?.id) this.yamlMode = false;
+    if (changed.has('node')) {
+      const node = this.node;
+      const reported = this.reported;
+      // Our own edit coming back as the new node: keep HA's object (and its row keys).
+      if (node && reported && reported.from === previous && previous?.id === node.id) {
+        this.steps.set(node, reported.step);
+      }
+      this.reported = null;
+    }
+  }
+
+  private stepOf(node: FlowNode): Record<string, unknown> {
+    let step = this.steps.get(node);
+    if (!step) {
+      step = nodeToStep(node);
+      this.steps.set(node, step);
+    }
+    return step;
   }
 
   private emit(
@@ -88,8 +116,10 @@ export class FlodeInspector extends LitElement {
   ): void {
     event.stopPropagation();
     const step = event.detail.value;
-    if (typeof step !== 'object' || step === null || Array.isArray(step)) return;
-    this.emit('step-change', { id: node.id, kind, step });
+    if (!isPlainObject(step)) return;
+    this.reported = { from: node, step };
+    // A copy for the graph: HA's editors keep normalising their own object in place.
+    this.emit('step-change', { id: node.id, kind, step: structuredClone(step) });
   }
 
   /** A script's start card: HA's own field editor (`fields:`), like HA's script editor. */
@@ -114,7 +144,7 @@ export class FlodeInspector extends LitElement {
   private renderEditor(node: FlowNode) {
     if (isScriptStart(node.data)) return this.renderScriptFields(node);
     const kind = stepKind(node.type);
-    const step = nodeToStep(node);
+    const step = this.stepOf(node);
     const ui = hasUiEditor(kind, step);
     const yaml = this.yamlMode || !ui;
     const onChange = (e: CustomEvent<{ value: unknown }>) => this.onStepChanged(node, kind, e);
