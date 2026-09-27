@@ -1,6 +1,6 @@
 {
   "name": "@flode/frontend",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "private": true,
   "type": "module",
   "description": "FLODE's Home Assistant panel — Lit + Home Assistant's own components, canvas on @xyflow/system",

@@ -266,15 +266,12 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new305TableTitle: 'Die Tabelle von Home Assistant',
-    new305TableText:
-      'Automationen und Skripte stehen jetzt in HAs eigener Tabelle – mit Filtern, Gruppen, Sortierung, Labels und Schaltern. Ein Klick öffnet den Flow.',
-    new305WideTitle: 'Volle Breite',
-    new305WideText:
-      'Die Startseite nutzt den ganzen Bildschirm und hat oben eine Leiste wie Home Assistant.',
-    new305MergeTitle: 'Zusammenführen per Auswahl',
-    new305MergeText:
-      'Automationen in der Tabelle anhaken und mit einem Klick zu einem Flow zusammenführen.',
+    new306RowsTitle: 'Zeilen bleiben offen',
+    new306RowsText:
+      'Aufgeklappte Bedingungen und Aktionen in Wenn-dann- und Auswahl-Blöcken klappen in der Seitenleiste nicht mehr von selbst zu.',
+    new306NameTitle: 'Name beim Speichern',
+    new306NameText:
+      'Hat eine neue Automation schon einen Namen – von der KI, aus einem Import oder aus der Titelleiste –, steht er im Speichern-Dialog bereits drin.',
   },
   en: {
     title: 'FLODE',
@@ -536,14 +533,12 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new305TableTitle: "Home Assistant's table",
-    new305TableText:
-      "Automations and scripts are now listed in HA's own table – with filters, grouping, sorting, labels and switches. A click opens the flow.",
-    new305WideTitle: 'Full width',
-    new305WideText: 'The start page uses the whole screen and has an app bar like Home Assistant.',
-    new305MergeTitle: 'Merge by selection',
-    new305MergeText:
-      'Tick automations in the table and merge them into one flow with a single click.',
+    new306RowsTitle: 'Rows stay open',
+    new306RowsText:
+      'Expanded conditions and actions inside if-then and choose blocks no longer collapse by themselves in the sidebar.',
+    new306NameTitle: 'Name when saving',
+    new306NameText:
+      'A new automation that already has a name – from the AI, an import or the title bar – now shows it in the save dialog.',
   },
 } as const;
 

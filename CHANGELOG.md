@@ -4,6 +4,16 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.0.6] — 2026-09-27 — Sidebar rows stay open
+
+A bug-fix release. Everything from 3.0.0 below still applies.
+
+### Fixed
+- **Expanded rows collapsed by themselves** — in the sidebar editor, a condition or action opened inside an if-then or choose block closed again after a moment, whenever Home Assistant reported a state change. It now stays open until you close it (#24).
+- **Save dialog showed "New automation"** — a new automation or script that already had a name (from *Create with AI*, an import or the title bar) opened the save dialog with Home Assistant's default name. The dialog now shows the flow's name (#25).
+
+---
+
 ## [3.0.5] — 2026-09-26 — Home Assistant's table on the start page
 
 Everything from 3.0.0 below still applies.

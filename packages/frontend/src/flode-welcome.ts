@@ -23,9 +23,8 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:table-large', title: 'new305TableTitle', text: 'new305TableText' },
-  { icon: 'mdi:arrow-expand-horizontal', title: 'new305WideTitle', text: 'new305WideText' },
-  { icon: 'mdi:call-merge', title: 'new305MergeTitle', text: 'new305MergeText' },
+  { icon: 'mdi:unfold-more-horizontal', title: 'new306RowsTitle', text: 'new306RowsText' },
+  { icon: 'mdi:form-textbox', title: 'new306NameTitle', text: 'new306NameText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';
