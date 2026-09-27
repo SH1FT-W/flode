@@ -63,16 +63,18 @@ jobs:
             5. Falls es ein Bug-Report ist, dem wichtige Infos fehlen
                (keine Reproduktionsschritte, keine Versionsangabe),
                hinterlasse einen kurzen, hoeflichen Kommentar, der den
-               Autor um die fehlenden Details bittet. Antworte in der
-               Sprache, in der das Issue geschrieben wurde.
+               Autor um die fehlenden Details bittet. Schreibe den
+               Kommentar auf Englisch.
 
             6. Falls du noch keinen Kommentar hinterlassen hast,
                hinterlasse eine kurze, freundliche Bestaetigung
                (1-2 Saetze), dass das Issue triagiert und als
-               <Kategorie> eingeordnet wurde. Antworte in der Sprache,
-               in der das Issue geschrieben wurde.
+               <Kategorie> eingeordnet wurde. Schreibe den Kommentar
+               auf Englisch.
 
             Wichtig:
+            - Alle Kommentare auf GitHub IMMER auf Englisch schreiben,
+              egal in welcher Sprache das Issue verfasst ist.
             - Erfinde keine neuen Labels.
             - Schliesse keine Issues, weise niemanden zu.
             - Halte Kommentare kurz und freundlich.
