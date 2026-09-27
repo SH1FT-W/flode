@@ -405,6 +405,32 @@ function registryUpdateFrom(editor: HTMLElement): RegistryUpdate | undefined {
 }
 
 /**
+ * HA's save dialog only shows a name when the config has an alias — and then
+ * turns into "Rename" with its button disabled until something changes. A new
+ * flow that already has a name keeps the empty alias (so it stays "Save") and
+ * gets its name typed into the dialog once it opens. Without the dialog (HA
+ * changed it) the field simply keeps HA's default name.
+ */
+function prefillSaveDialog(config: Record<string, unknown>, name: string): void {
+  const deadline = Date.now() + 3000;
+  const tick = () => {
+    const dialog = document
+      .querySelector('home-assistant')
+      ?.shadowRoot?.querySelector('ha-dialog-automation-save');
+    const params: unknown = dialog ? Reflect.get(dialog, '_params') : undefined;
+    // HA keeps the dialog element around — only touch it once it shows our config.
+    if (dialog && isRecord(params) && params.config === config) {
+      Reflect.set(dialog, '_newName', name);
+      const requestUpdate: unknown = Reflect.get(dialog, 'requestUpdate');
+      if (typeof requestUpdate === 'function') Reflect.apply(requestUpdate, dialog, []);
+      return;
+    }
+    if (Date.now() < deadline) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/**
  * Opens HA's own "rename" (name, description, area, category, labels) or
  * "mode" dialog — the ones of Settings → Automations. Resolves the edited
  * settings, or `null` when cancelled.
@@ -415,11 +441,15 @@ export async function promptAutomationDialog(
   target: { flowKind: FlowKind; configId: string | undefined },
   kind: DialogKind,
   settings: AutomationSettings,
-  registry: { entry?: RegistryEntry | null; update?: RegistryUpdate }
+  registry: { entry?: RegistryEntry | null; update?: RegistryUpdate },
+  /** A name for the still empty "save" dialog of a new flow that already got one (#25). */
+  prefillName?: string
 ): Promise<{ settings: AutomationSettings; registryUpdate?: RegistryUpdate } | null> {
+  const config = { ...settings };
+  if (prefillName) prefillSaveDialog(config, prefillName);
   const run = await runEditorDialog(hass, host, target.flowKind, EDITOR[target.flowKind][kind], {
     ...editorIdentity(target.flowKind, target.configId, registry.entry),
-    config: { ...settings },
+    config,
     entityRegistryUpdate: registry.update,
   });
   if (!run?.changed) return null;

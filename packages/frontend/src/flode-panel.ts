@@ -184,6 +184,11 @@ async function layoutGraph(graph: FlowGraph): Promise<FlowGraph> {
   };
 }
 
+/** The name a new automation / script starts with ("New automation", "Neues Skript" …). */
+function newFlowName(language: string, kind: FlowKind): string {
+  return t(language, kind === 'script' ? 'newScript' : 'newAutomation');
+}
+
 /**
  * FLODE's panel (`/flode`): automation and script list → canvas editor.
  * Lit + Home Assistant's own components end to end; saving goes through the
@@ -440,8 +445,7 @@ export class FlodePanel extends LitElement {
 
   /** An imported flow (pasted YAML, FLODE file) opens as a new, unsaved draft. */
   private openImported(flow: ImportedFlow): void {
-    const name =
-      flow.graph.name || t(this.language, flow.kind === 'script' ? 'newScript' : 'newAutomation');
+    const name = flow.graph.name || newFlowName(this.language, flow.kind);
     this.yamlImportOpen = false;
     this.openTab({
       item: {
@@ -865,7 +869,7 @@ export class FlodePanel extends LitElement {
   ): void {
     const { graph, unknownEntityIds, kind } = event.detail;
     this.aiOpen = false;
-    const name = graph.name || t(this.language, kind === 'script' ? 'newScript' : 'newAutomation');
+    const name = graph.name || newFlowName(this.language, kind);
     this.openTab({
       item: {
         kind,
@@ -1103,7 +1107,7 @@ export class FlodePanel extends LitElement {
   private startNew(
     kind: FlowKind = this.flow?.item.kind ?? (this.homeKind === 'script' ? 'script' : 'automation')
   ): void {
-    const name = t(this.language, kind === 'script' ? 'newScript' : 'newAutomation');
+    const name = newFlowName(this.language, kind);
     this.message = null;
     this.openTab({
       item: {
@@ -1257,7 +1261,7 @@ export class FlodePanel extends LitElement {
     const metadata = flow.graph.metadata;
     return {
       // Like HA's editor: a new automation has no alias yet, so the dialog
-      // opens as "save" with an empty, required name field.
+      // opens as "save" (see `prefillSaveDialog` for a name it already has).
       alias: flow.isNew ? '' : flow.graph.name,
       description: flow.graph.description ?? '',
       mode: metadata?.mode ?? 'single',
@@ -1265,6 +1269,15 @@ export class FlodePanel extends LitElement {
       max_exceeded: metadata?.max_exceeded,
       icon: metadata?.icon,
     };
+  }
+
+  /** Still the "New automation" / "New script" a new flow starts with (any UI language). */
+  private isPlaceholderName(flow: OpenFlow): boolean {
+    const name = flow.graph.name.trim();
+    return (
+      !name ||
+      ['en', 'de', this.language].some((lang) => newFlowName(lang, flow.item.kind) === name)
+    );
   }
 
   /** Opens HA's rename or mode dialog; resolves `false` when cancelled. */
@@ -1277,10 +1290,16 @@ export class FlodePanel extends LitElement {
       flowKind: flow.item.kind,
       configId: flow.isNew ? undefined : flow.item.configId,
     };
-    const result = await promptAutomationDialog(hass, host, target, kind, this.settingsOf(flow), {
-      entry: flow.registryEntry,
-      update: flow.registryUpdate,
-    });
+    const result = await promptAutomationDialog(
+      hass,
+      host,
+      target,
+      kind,
+      this.settingsOf(flow),
+      { entry: flow.registryEntry, update: flow.registryUpdate },
+      // A new flow named in the title bar, by the AI, an import … (#25)
+      flow.isNew && !this.isPlaceholderName(flow) ? flow.graph.name : undefined
+    );
     if (!result || !this.flow) return false;
     this.applySettings(result.settings, result.registryUpdate);
     return true;
@@ -1847,7 +1866,7 @@ export class FlodePanel extends LitElement {
                 : nothing
             }
             <button class="save" @click=${() => this.startNew(kind)}>
-              <ha-icon icon="mdi:plus"></ha-icon>${t(this.language, kind === 'script' ? 'newScript' : 'newAutomation')}
+              <ha-icon icon="mdi:plus"></ha-icon>${newFlowName(this.language, kind)}
             </button>
             ${this.renderMenu(this.homeMenu())}
           </div>
