@@ -12,6 +12,13 @@ const STRINGS = {
     saving: 'Speichert …',
     unsaved: 'Ungespeichert',
     loading: 'Wird geladen …',
+    progressOpenAutomation: 'Automation wird geöffnet',
+    progressOpenScript: 'Skript wird geöffnet',
+    progressMerge: 'Automationen werden zusammengeführt',
+    progressConfig: 'Konfiguration aus Home Assistant laden …',
+    progressParse: 'Ablauf aufbauen …',
+    progressRegistry: 'Bereich, Kategorie und Labels laden …',
+    progressOpen: 'Editor öffnen …',
     delete: 'Löschen',
     fit: 'Alles zeigen',
     zoomIn: 'Vergrößern',
@@ -266,12 +273,12 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new306RowsTitle: 'Zeilen bleiben offen',
-    new306RowsText:
-      'Aufgeklappte Bedingungen und Aktionen in Wenn-dann- und Auswahl-Blöcken klappen in der Seitenleiste nicht mehr von selbst zu.',
-    new306NameTitle: 'Name beim Speichern',
-    new306NameText:
-      'Hat eine neue Automation schon einen Namen – von der KI, aus einem Import oder aus der Titelleiste –, steht er im Speichern-Dialog bereits drin.',
+    new307ScrollTitle: 'Startseite scrollt sauber',
+    new307ScrollText:
+      'Die Automationsliste hatte zwei Scrollbalken, die sich gegenseitig ins Gehege kamen. Jetzt scrollt nur noch die Liste.',
+    new307ProgressTitle: 'Ladebalken beim Öffnen',
+    new307ProgressText:
+      'Dauert das Öffnen einer Automation oder das Zusammenführen länger, zeigt FLODE jetzt einen Dialog mit Fortschritt und dem aktuellen Schritt.',
   },
   en: {
     title: 'FLODE',
@@ -282,6 +289,13 @@ const STRINGS = {
     saving: 'Saving …',
     unsaved: 'Unsaved',
     loading: 'Loading …',
+    progressOpenAutomation: 'Opening automation',
+    progressOpenScript: 'Opening script',
+    progressMerge: 'Merging automations',
+    progressConfig: 'Loading configuration from Home Assistant …',
+    progressParse: 'Building the flow …',
+    progressRegistry: 'Loading area, category and labels …',
+    progressOpen: 'Opening the editor …',
     delete: 'Delete',
     fit: 'Fit view',
     zoomIn: 'Zoom in',
@@ -533,12 +547,12 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new306RowsTitle: 'Rows stay open',
-    new306RowsText:
-      'Expanded conditions and actions inside if-then and choose blocks no longer collapse by themselves in the sidebar.',
-    new306NameTitle: 'Name when saving',
-    new306NameText:
-      'A new automation that already has a name – from the AI, an import or the title bar – now shows it in the save dialog.',
+    new307ScrollTitle: 'Start page scrolls cleanly',
+    new307ScrollText:
+      'The automation list had two scroll bars that got in each other\'s way. Now only the list scrolls.',
+    new307ProgressTitle: 'Progress when opening',
+    new307ProgressText:
+      'When opening an automation or merging takes longer, FLODE now shows a dialog with the progress and the current step.',
   },
 } as const;
 

@@ -4,6 +4,21 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.0.7] — 2026-09-28 — Clean scrolling and a progress dialog
+
+Everything from 3.0.0 below still applies.
+
+### Fixed
+- **Two scroll bars on the start page** — Home Assistant sized its table to the whole window, but FLODE's own header sits above it, so the page scrolled as well as the list and the two got in each other's way. Now only the list scrolls, with or without the filter pane.
+
+### Added
+- **Progress dialog when opening** — if opening an automation or script takes longer (large flows, a slow connection), a dialog shows the progress and the current step instead of a small "Loading …" line. Merging automations uses the same dialog. Quick loads don't show it at all.
+
+### Changed
+- **Screenshots in light and dark** — the README and website show every screenshot in both themes.
+
+---
+
 ## [3.0.6] — 2026-09-27 — Sidebar rows stay open
 
 A bug-fix release. Everything from 3.0.0 below still applies.

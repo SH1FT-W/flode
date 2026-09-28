@@ -19,11 +19,13 @@ import './flode-templates';
 import './flode-runfrom';
 import './flode-shortcuts';
 import './flode-ha-list';
+import './flode-progress';
 import { chooseAiTask, mergeAutomationGraphs, randomId } from '@flode/ui-core';
 import type { AddAt, CanvasMenuDetail, FlodeCanvas } from './flode-canvas';
 import { type FlodeHaList, HA_LIST_TAGS } from './flode-ha-list';
 import { downloadFlowJson, type ImportedFlow, pickFlowJson } from './flode-io';
 import type { PaletteEntry } from './flode-palette';
+import type { Progress } from './flode-progress';
 import { type WelcomeMode, welcomeMode } from './flode-welcome';
 import {
   addNode,
@@ -203,6 +205,7 @@ export class FlodePanel extends LitElement {
     selectedId: { state: true },
     saveState: { state: true },
     message: { state: true },
+    progress: { state: true },
     inspectorError: { state: true },
     addOpen: { state: true },
     inspectorWidth: { state: true },
@@ -241,6 +244,8 @@ export class FlodePanel extends LitElement {
   declare selectedId: string | null;
   declare saveState: SaveState;
   declare message: string | null;
+  /** A running load (opening, merging) — shown as HA dialog with a progress bar. */
+  declare progress: Progress | null;
   declare inspectorError: string | null;
   declare addOpen: boolean;
   /** User-dragged inspector width in px; `null` = responsive default. */
@@ -323,6 +328,7 @@ export class FlodePanel extends LitElement {
     this.mergeMode = false;
     this.mergeIds = [];
     this.haList = null;
+    this.progress = null;
     this.welcome = welcomeMode();
     this.aiSetupHidden = readFlag(AI_SETUP_HIDDEN_KEY);
     this.runMarks = null;
@@ -503,11 +509,15 @@ export class FlodePanel extends LitElement {
     const items = listFlows(hass, 'automation').filter((item) =>
       this.mergeIds.includes(item.configId)
     );
-    this.message = t(this.language, 'loading');
+    const heading = t(this.language, 'progressMerge');
+    this.message = null;
     try {
       const sources = [];
-      for (const item of items) {
-        const flow = await this.loadFlow(hass, item);
+      for (const [index, item] of items.entries()) {
+        // Each source is an equal share of the bar.
+        const flow = await this.loadFlow(hass, item, (step, value) => {
+          this.progress = { heading, name: item.name, step, value: (index + value) / items.length };
+        });
         sources.push({
           graph: flow.graph,
           automationId: item.configId,
@@ -541,6 +551,8 @@ export class FlodePanel extends LitElement {
       this.notify(t(this.language, 'mergeDone'));
     } catch (error) {
       this.message = `${t(this.language, 'mergeFailed')} ${errorMessage(error)}`;
+    } finally {
+      this.progress = null;
     }
   }
 
@@ -978,8 +990,16 @@ export class FlodePanel extends LitElement {
   // ---- open / save -----------------------------------------------------------
 
   /** Loads an automation from HA as a flow (HA blocks kept as blocks). */
-  private async loadFlow(hass: HomeAssistant, item: AutomationListItem): Promise<OpenFlow> {
+  /** `report(step, value)`: how far loading got, 0–1. */
+  private async loadFlow(
+    hass: HomeAssistant,
+    item: AutomationListItem,
+    report: (step: string, value: number) => void = () => undefined
+  ): Promise<OpenFlow> {
+    const language = this.language;
+    report(t(language, 'progressConfig'), 0.1);
     const config = await loadFlowConfig(hass, item.kind, item.configId);
+    report(t(language, 'progressParse'), 0.35);
     const { transpiler, parseScript } = await loadTranspiler();
     // Wenn-dann, Auswählen, Wiederholen, Parallel stay HA blocks (HA's own nested editor).
     const options = { keepBlocks: true };
@@ -991,6 +1011,9 @@ export class FlodePanel extends LitElement {
             options
           );
     if (!result.success || !result.graph) throw new Error(result.errors?.join('\n') ?? 'parse');
+    report(t(language, 'progressRegistry'), 0.8);
+    const registryEntry = await getRegistryEntry(hass, item.entityId);
+    report(t(language, 'progressOpen'), 1);
     return {
       item,
       graph: {
@@ -999,7 +1022,7 @@ export class FlodePanel extends LitElement {
         description: typeof config.description === 'string' ? config.description : '',
       },
       isNew: false,
-      registryEntry: await getRegistryEntry(hass, item.entityId),
+      registryEntry,
       ...(result.warnings?.length ? { importWarnings: result.warnings } : {}),
     };
   }
@@ -1015,12 +1038,20 @@ export class FlodePanel extends LitElement {
       this.switchTab(openTab.id);
       return;
     }
-    this.message = t(this.language, 'loading');
+    const heading = t(
+      this.language,
+      item.kind === 'script' ? 'progressOpenScript' : 'progressOpenAutomation'
+    );
+    this.message = null;
     try {
-      this.openTab(await this.loadFlow(hass, item));
-      this.message = null;
+      const flow = await this.loadFlow(hass, item, (step, value) => {
+        this.progress = { heading, name: item.name, step, value };
+      });
+      this.openTab(flow);
     } catch (error) {
       this.message = `${t(this.language, 'loadFailed')}: ${errorMessage(error)}`;
+    } finally {
+      this.progress = null;
     }
   }
 
@@ -2304,6 +2335,7 @@ export class FlodePanel extends LitElement {
   render() {
     return html`
       ${this.flow && !this.showHome ? this.renderEditor(this.flow) : this.renderHome()}
+      <flode-progress .progress=${this.progress}></flode-progress>
       <flode-welcome
         .language=${this.language}
         .mode=${this.welcome}

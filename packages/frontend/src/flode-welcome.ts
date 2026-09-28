@@ -23,8 +23,8 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:unfold-more-horizontal', title: 'new306RowsTitle', text: 'new306RowsText' },
-  { icon: 'mdi:form-textbox', title: 'new306NameTitle', text: 'new306NameText' },
+  { icon: 'mdi:format-list-bulleted', title: 'new307ScrollTitle', text: 'new307ScrollText' },
+  { icon: 'mdi:progress-clock', title: 'new307ProgressTitle', text: 'new307ProgressText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';
