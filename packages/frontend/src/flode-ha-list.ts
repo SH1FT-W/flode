@@ -42,14 +42,36 @@ const FRAME_CSS = `
   }
 `;
 
-let frameSheet: CSSStyleSheet | null = null;
-
-function frameStyles(): CSSStyleSheet {
-  if (!frameSheet) {
-    frameSheet = new CSSStyleSheet();
-    frameSheet.replaceSync(FRAME_CSS);
+/**
+ * HA sizes its table (and the filter pane) to the viewport minus HA's app bar.
+ * Here FLODE's own header sits above it too, so that was too tall and the page
+ * frame scrolled as well as the table — size to the frame instead.
+ */
+const TABLE_CSS = `
+  :host(:not([narrow])) ha-data-table,
+  :host(:not([narrow])) .pane {
+    height: 100%;
   }
-  return frameSheet;
+  :host(:not([narrow])) .pane-content {
+    height: calc(100% - var(--header-height, 56px));
+  }
+`;
+
+const sheets = new Map<string, CSSStyleSheet>();
+
+/** One shared stylesheet per CSS text, adopted into HA's shadow roots. */
+function sheet(cssText: string): CSSStyleSheet {
+  let result = sheets.get(cssText);
+  if (!result) {
+    result = new CSSStyleSheet();
+    result.replaceSync(cssText);
+    sheets.set(cssText, result);
+  }
+  return result;
+}
+
+function adopt(root: ShadowRoot, cssText: string): void {
+  root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet(cssText)];
 }
 
 /** HA's `fireEvent` puts `detail` on a plain `Event`, not a `CustomEvent`. */
@@ -186,7 +208,8 @@ export class FlodeHaList extends LitElement {
     });
     const refresh: unknown = Reflect.get(table, 'requestUpdate');
     if (typeof refresh === 'function') refresh.call(table);
-    page.shadowRoot.adoptedStyleSheets = [...page.shadowRoot.adoptedStyleSheets, frameStyles()];
+    adopt(page.shadowRoot, FRAME_CSS);
+    if (table.shadowRoot) adopt(table.shadowRoot, TABLE_CSS);
   }
 
   static styles = css`
