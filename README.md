@@ -14,7 +14,7 @@
 
   <br/>
 
-  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-dark.png" alt="FLODE inside Home Assistant: a flow with two triggers, a condition and actions; the selected If-then block is edited with Home Assistant's own editor." />
+  <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-dark.png" alt="FLODE inside Home Assistant: a flow with two triggers, a condition and actions; the selected If-then block is edited with Home Assistant's own editor." /></picture>
 </div>
 
 <br/>
@@ -23,23 +23,23 @@ FLODE shows your automations and scripts as a flow you can **read, test and unde
 
 | Runs on the canvas | Why did it fail? *(optional AI)* |
 |:---:|:---:|
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-runs.png" width="420" alt="A real run: Home Assistant's trace timeline and the steps that ran highlighted on the canvas." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-explain.png" width="420" alt="The AI explains a failed run in plain words." /> |
+| <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-runs-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-runs-dark.png" width="420" alt="A real run: Home Assistant's trace timeline and the steps that ran highlighted on the canvas." /></picture> | <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-explain-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-explain-dark.png" width="420" alt="The AI explains a failed run in plain words." /></picture> |
 | **Relations between automations** | **From a sentence to a flow** *(optional AI)* |
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-relations.png" width="420" alt="Conflicts, self-triggering automations, chains and what controls a light." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-draft.png" width="420" alt="A draft automation built by the AI, not yet saved." /> |
+| <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-relations-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-relations-dark.png" width="420" alt="Conflicts, self-triggering automations, chains and what controls a light." /></picture> | <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-draft-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-draft-dark.png" width="420" alt="A draft automation built by the AI, not yet saved." /></picture> |
 
 <details>
 <summary><strong>More screenshots</strong></summary>
 <br/>
 
-| Light theme | Start screen |
+| The other theme | Start screen |
 |:---:|:---:|
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-light.png" width="420" alt="The editor in Home Assistant's light theme." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-home.png" width="420" alt="Start screen with automations, scripts and relations." /> |
+| <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-dark.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-light.png" width="420" alt="The editor in Home Assistant's other theme." /></picture> | <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-home-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-home-dark.png" width="420" alt="Start screen with automations, scripts and relations." /></picture> |
 | **AI assistant** | **Create with AI** |
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-assistant.png" width="420" alt="The AI assistant lists problems in the open flow." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-create.png" width="420" alt="Describing an automation in plain words." /> |
+| <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-assistant-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-assistant-dark.png" width="420" alt="The AI assistant lists problems in the open flow." /></picture> | <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-create-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-ai-create-dark.png" width="420" alt="Describing an automation in plain words." /></picture> |
 | **Template workshop** | **Commands (⌘K)** |
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-templates.png" width="420" alt="Template workshop with a live-rendered result." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-palette.png" width="420" alt="Command palette." /> |
+| <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-templates-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-templates-dark.png" width="420" alt="Template workshop with a live-rendered result." /></picture> | <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-palette-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-palette-dark.png" width="420" alt="Command palette." /></picture> |
 | **Right-click menu** | **On a phone** |
-| <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-context-menu.png" width="420" alt="Right-click menu on a card." /> | <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-phone.png" width="200" alt="FLODE on a phone with the editor as a bottom sheet." /> |
+| <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-context-menu-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-context-menu-dark.png" width="420" alt="Right-click menu on a card." /></picture> | <picture><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-phone-light.png" /><img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-phone-dark.png" width="200" alt="FLODE on a phone with the editor as a bottom sheet." /></picture> |
 
 </details>
 
