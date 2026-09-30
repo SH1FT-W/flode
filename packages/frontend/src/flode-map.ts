@@ -8,6 +8,7 @@ import {
   type ReferenceRole,
 } from '@flode/ui-core';
 import { css, html, LitElement, nothing, type TemplateResult } from 'lit';
+import { defineElement } from './define-element';
 import { type AutomationListItem, type HomeAssistant, listFlows, loadFlowConfig } from './ha';
 import { mapT, summaryContext } from './i18n';
 
@@ -633,7 +634,7 @@ export class FlodeMap extends LitElement {
   `;
 }
 
-customElements.define('flode-map', FlodeMap);
+defineElement('flode-map', FlodeMap);
 
 declare global {
   interface HTMLElementTagNameMap {

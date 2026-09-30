@@ -8,6 +8,7 @@ import {
   readableAiError,
 } from '@flode/ui-core';
 import { css, html, LitElement, nothing } from 'lit';
+import { defineElement } from './define-element';
 import { errorMessage, type HomeAssistant } from './ha';
 import { t } from './strings';
 
@@ -222,7 +223,7 @@ export class FlodeAiDialog extends LitElement {
   `;
 }
 
-customElements.define('flode-ai-dialog', FlodeAiDialog);
+defineElement('flode-ai-dialog', FlodeAiDialog);
 
 declare global {
   interface HTMLElementTagNameMap {

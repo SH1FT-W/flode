@@ -1,4 +1,5 @@
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
+import { defineElement } from './define-element';
 import type { HomeAssistant } from './ha';
 import { t } from './strings';
 
@@ -246,7 +247,7 @@ export class FlodePalette extends LitElement {
   `;
 }
 
-customElements.define('flode-palette', FlodePalette);
+defineElement('flode-palette', FlodePalette);
 
 declare global {
   interface HTMLElementTagNameMap {

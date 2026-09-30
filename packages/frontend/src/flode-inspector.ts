@@ -1,6 +1,7 @@
 import { type FlowNode, getScriptFields, isPlainObject, isScriptStart } from '@flode/shared';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
+import { defineElement } from './define-element';
 import { ensureAutomationEditors, ensureHaSelector, type HomeAssistant } from './ha';
 import { hasUiEditor, nodeToStep, type StepKind, stepKind } from './ha-step';
 import { NODE_META, nodeIcon, nodeTitle } from './node-meta';
@@ -342,7 +343,7 @@ export class FlodeInspector extends LitElement {
   `;
 }
 
-customElements.define('flode-inspector', FlodeInspector);
+defineElement('flode-inspector', FlodeInspector);
 
 declare global {
   interface HTMLElementTagNameMap {

@@ -13,6 +13,7 @@ import {
   XYPanZoom,
 } from '@xyflow/system';
 import { css, html, LitElement, nothing, type PropertyValues, svg } from 'lit';
+import { defineElement } from './define-element';
 import {
   connect,
   connectionError,
@@ -1011,7 +1012,7 @@ export class FlodeCanvas extends LitElement {
   `;
 }
 
-customElements.define('flode-canvas', FlodeCanvas);
+defineElement('flode-canvas', FlodeCanvas);
 
 declare global {
   interface HTMLElementTagNameMap {

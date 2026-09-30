@@ -6,6 +6,7 @@ import {
   templateResultType,
 } from '@flode/ui-core';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
+import { defineElement } from './define-element';
 import {
   type AutomationListItem,
   errorMessage,
@@ -403,7 +404,7 @@ export class FlodeTemplates extends LitElement {
   `;
 }
 
-customElements.define('flode-templates', FlodeTemplates);
+defineElement('flode-templates', FlodeTemplates);
 
 declare global {
   interface HTMLElementTagNameMap {

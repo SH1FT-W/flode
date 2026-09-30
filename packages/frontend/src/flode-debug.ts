@@ -1,6 +1,7 @@
 import type { FlowGraph } from '@flode/shared';
 import { buildExplainInstructions, generateWithAiTask, readableAiError } from '@flode/ui-core';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
+import { defineElement } from './define-element';
 import {
   type AutomationListItem,
   ensureTraceViewer,
@@ -510,7 +511,7 @@ export class FlodeDebug extends LitElement {
   `;
 }
 
-customElements.define('flode-debug', FlodeDebug);
+defineElement('flode-debug', FlodeDebug);
 
 declare global {
   interface HTMLElementTagNameMap {

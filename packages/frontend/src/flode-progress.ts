@@ -1,4 +1,5 @@
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
+import { defineElement } from './define-element';
 
 /** What a longer task reports while it runs; `value` goes from 0 to 1. */
 export interface Progress {
@@ -126,7 +127,7 @@ export class FlodeProgress extends LitElement {
   `;
 }
 
-customElements.define('flode-progress', FlodeProgress);
+defineElement('flode-progress', FlodeProgress);
 
 declare global {
   interface HTMLElementTagNameMap {

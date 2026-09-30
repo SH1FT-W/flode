@@ -1,6 +1,7 @@
 import { type FlowGraph, FlowGraphSchema, isPlainObject } from '@flode/shared';
 import { load as yamlLoad } from 'js-yaml';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
+import { defineElement } from './define-element';
 import { flowYaml } from './flow-yaml';
 import { errorMessage, type FlowKind, type HomeAssistant } from './ha';
 import { copyToClipboard } from './notify';
@@ -256,8 +257,8 @@ export class FlodeYamlView extends LitElement {
   `;
 }
 
-customElements.define('flode-yaml-import', FlodeYamlImport);
-customElements.define('flode-yaml-view', FlodeYamlView);
+defineElement('flode-yaml-import', FlodeYamlImport);
+defineElement('flode-yaml-view', FlodeYamlView);
 
 declare global {
   interface HTMLElementTagNameMap {

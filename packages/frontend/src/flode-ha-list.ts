@@ -1,4 +1,5 @@
 import { css, LitElement, nothing, type PropertyValues } from 'lit';
+import { defineElement } from './define-element';
 import {
   type AutomationListItem,
   type FlowKind,
@@ -223,4 +224,4 @@ export class FlodeHaList extends LitElement {
   `;
 }
 
-customElements.define('flode-ha-list', FlodeHaList);
+defineElement('flode-ha-list', FlodeHaList);

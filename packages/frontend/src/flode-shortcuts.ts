@@ -1,4 +1,5 @@
 import { css, html, LitElement } from 'lit';
+import { defineElement } from './define-element';
 import type { HomeAssistant } from './ha';
 import { formatKeys, SHORTCUTS, type ShortcutGroup } from './shortcuts';
 import { t } from './strings';
@@ -97,7 +98,7 @@ export class FlodeShortcuts extends LitElement {
   `;
 }
 
-customElements.define('flode-shortcuts', FlodeShortcuts);
+defineElement('flode-shortcuts', FlodeShortcuts);
 
 declare global {
   interface HTMLElementTagNameMap {

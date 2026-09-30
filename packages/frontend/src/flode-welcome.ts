@@ -1,5 +1,6 @@
 import { css, html, LitElement, nothing } from 'lit';
 import { version } from '../package.json';
+import { defineElement } from './define-element';
 import { type StringKey, t } from './strings';
 
 export const FLODE_VERSION: string = version;
@@ -212,4 +213,4 @@ export class FlodeWelcome extends LitElement {
   `;
 }
 
-customElements.define('flode-welcome', FlodeWelcome);
+defineElement('flode-welcome', FlodeWelcome);

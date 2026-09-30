@@ -1,5 +1,6 @@
 import type { FlowGraph } from '@flode/shared';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
+import { defineElement } from './define-element';
 import { errorMessage, type HomeAssistant } from './ha';
 import { t } from './strings';
 
@@ -144,7 +145,7 @@ export class FlodeRunFrom extends LitElement {
   `;
 }
 
-customElements.define('flode-runfrom', FlodeRunFrom);
+defineElement('flode-runfrom', FlodeRunFrom);
 
 declare global {
   interface HTMLElementTagNameMap {

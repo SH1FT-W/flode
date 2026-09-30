@@ -21,6 +21,7 @@ import './flode-shortcuts';
 import './flode-ha-list';
 import './flode-progress';
 import { chooseAiTask, keepAiTask, mergeAutomationGraphs, randomId } from '@flode/ui-core';
+import { defineElement } from './define-element';
 import type { AddAt, CanvasMenuDetail, FlodeCanvas } from './flode-canvas';
 import { type FlodeHaList, HA_LIST_TAGS } from './flode-ha-list';
 import { downloadFlowJson, type ImportedFlow, pickFlowJson } from './flode-io';
@@ -3108,4 +3109,4 @@ export class FlodePanel extends LitElement {
   `;
 }
 
-customElements.define('flode-panel', FlodePanel);
+defineElement('flode-panel', FlodePanel);

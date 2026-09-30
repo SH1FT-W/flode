@@ -20,6 +20,7 @@ import {
   startRequest,
   watchConversations,
 } from './assist-conversations';
+import { defineElement } from './define-element';
 import { entityCandidates } from './flode-ai';
 import { flowYaml } from './flow-yaml';
 import { errorMessage, type FlowKind, type HomeAssistant } from './ha';
@@ -406,7 +407,7 @@ export class FlodeAssist extends LitElement {
   `;
 }
 
-customElements.define('flode-assist', FlodeAssist);
+defineElement('flode-assist', FlodeAssist);
 
 declare global {
   interface HTMLElementTagNameMap {
