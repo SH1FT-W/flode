@@ -114,8 +114,11 @@ export {
   buildRawStepAction,
   createRawConditionData,
   createRawStepData,
+  createShorthandConditionData,
   getRawStep,
+  getShorthandCondition,
   RAW_STEP_KEY,
+  SHORTHAND_CONDITION_KEY,
 } from './raw-step';
 // Scripts
 export {

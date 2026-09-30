@@ -74,6 +74,18 @@ describe('ha-step', () => {
     });
   });
 
+  it('shows a Jinja shorthand condition as its template condition', () => {
+    const shorthand = node('condition', {
+      condition: 'template',
+      value_template: '{{ x }}',
+      _shorthand: true,
+    });
+    expect(nodeToStep(shorthand)).toEqual({ condition: 'template', value_template: '{{ x }}' });
+    expect(
+      stepToNode('condition', { condition: 'template', value_template: '{{ y }}' }, shorthand).data
+    ).toEqual({ condition: 'template', value_template: '{{ y }}', _shorthand: true });
+  });
+
   it('hides and preserves FLODE-internal condition keys', () => {
     const cond = node('condition', { condition: 'state', entity_id: 'x', _chooseCase: 1 });
     expect(nodeToStep(cond)).toEqual({ condition: 'state', entity_id: 'x' });

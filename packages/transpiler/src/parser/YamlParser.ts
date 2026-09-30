@@ -19,6 +19,7 @@ import {
   CafeMetadataSchema,
   createRawConditionData,
   createRawStepData,
+  createShorthandConditionData,
   FlowGraphMetadataSchema,
   FlowGraphSchema,
   HAConditionSchema,
@@ -1515,8 +1516,8 @@ export class YamlParser {
         ? [conditionData]
         : [];
 
-    if (conditions.length > 0) {
-      const conditionResults = this.parseConditions(conditions, warnings, getNextNodeId);
+    const conditionResults = this.parseConditions(conditions, warnings, getNextNodeId);
+    if (conditionResults.nodes.length > 0) {
       nodes.push(...conditionResults.nodes);
       edges.push(...conditionResults.edges);
 
@@ -1677,7 +1678,18 @@ export class YamlParser {
     const edges: FlowEdge[] = [];
     const outputNodeIds: string[] = [];
 
-    conditions.filter(isHACondition).forEach((condition, index) => {
+    conditions.forEach((condition, index) => {
+      if (typeof condition === 'string') {
+        // Jinja shorthand (`- "{{ … }}"`): a template condition, written back as a string
+        nodes.push({
+          id: getNextNodeId('condition'),
+          type: 'condition',
+          position: { x: 0, y: 0 },
+          data: HAConditionSchema.parse(createShorthandConditionData(condition)),
+        });
+        return;
+      }
+      if (!isHACondition(condition)) return;
       const nodeId = getNextNodeId('condition');
       try {
         const result = HAConditionSchema.safeParse(condition);

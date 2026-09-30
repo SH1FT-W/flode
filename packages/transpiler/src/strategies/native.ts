@@ -8,7 +8,13 @@ import type {
   TriggerNode,
   WaitNode,
 } from '@flode/shared';
-import { buildRawCondition, buildRawStepAction, isDeviceAction } from '@flode/shared';
+import {
+  buildRawCondition,
+  buildRawStepAction,
+  getShorthandCondition,
+  isDeviceAction,
+  SHORTHAND_CONDITION_KEY,
+} from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { findBackEdges } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
@@ -724,11 +730,7 @@ export class NativeStrategy extends BaseStrategy {
       // Must have at least one path
       if (truePaths.length === 0 && falsePaths.length === 0) break;
 
-      // Build the condition object with alias preserved
-      const condition = this.buildCondition(node as ConditionNode);
-      if ((node as ConditionNode).data.alias) {
-        condition.alias = (node as ConditionNode).data.alias;
-      }
+      const condition = this.buildRootCondition(node);
 
       if (falsePaths.length > 0) {
         // Connected via false handle only → inverted condition, wrap in "not"
@@ -757,6 +759,20 @@ export class NativeStrategy extends BaseStrategy {
     }
 
     return { conditions, nextNodeIds: currentId ? [currentId] : [], visitedIds };
+  }
+
+  /**
+   * A condition for the root `conditions:` block — with its alias, or as the
+   * Jinja shorthand string it was written as.
+   */
+  private buildRootCondition(node: ConditionNode): unknown {
+    const shorthand = getShorthandCondition(node.data);
+    if (shorthand !== null) return shorthand;
+    const condition = this.buildCondition(node);
+    if (node.data.alias) {
+      condition.alias = node.data.alias;
+    }
+    return condition;
   }
 
   /**
@@ -1450,8 +1466,16 @@ export class NativeStrategy extends BaseStrategy {
     function mapCondition(data: Record<string, unknown>): Record<string, unknown> {
       if (!data || typeof data !== 'object') return data;
       // Destructure and exclude internal FLODE fields and legacy 'template' key
-      const { condition, conditions, alias, template, _chooseCase, _chooseCaseTotal, ...rest } =
-        data;
+      const {
+        condition,
+        conditions,
+        alias,
+        template,
+        _chooseCase,
+        _chooseCaseTotal,
+        [SHORTHAND_CONDITION_KEY]: _shorthand,
+        ...rest
+      } = data;
       const out: Record<string, unknown> = {
         condition: condition,
         ...rest,

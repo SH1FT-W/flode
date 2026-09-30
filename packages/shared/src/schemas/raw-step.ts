@@ -64,3 +64,26 @@ export function buildRawCondition(data: Record<string, unknown>): Record<string,
     ? { ...raw }
     : buildRawStepAction(data);
 }
+
+/** Marks a condition node that HA had as a Jinja shorthand (a bare template string). */
+export const SHORTHAND_CONDITION_KEY = '_shorthand';
+
+/** Condition node data for a Jinja shorthand condition (`- "{{ … }}"`). */
+export function createShorthandConditionData(template: string): Record<string, unknown> {
+  return { condition: 'template', value_template: template, [SHORTHAND_CONDITION_KEY]: true };
+}
+
+const SHORTHAND_KEYS = new Set(['condition', 'value_template', SHORTHAND_CONDITION_KEY]);
+
+/**
+ * The shorthand string to write back for a condition node that came in as
+ * one — as long as it is still a plain template condition (nothing set that
+ * only the long form can hold, e.g. an alias).
+ */
+export function getShorthandCondition(data: Record<string, unknown>): string | null {
+  const isPlainTemplate =
+    data[SHORTHAND_CONDITION_KEY] === true &&
+    data.condition === 'template' &&
+    Object.entries(data).every(([key, value]) => SHORTHAND_KEYS.has(key) || value === undefined);
+  return isPlainTemplate && typeof data.value_template === 'string' ? data.value_template : null;
+}

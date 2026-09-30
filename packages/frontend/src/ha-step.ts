@@ -3,10 +3,11 @@ import {
   buildRawStepAction,
   createRawConditionData,
   createRawStepData,
-  HAConditionSchema,
   type FlowNode,
+  HAConditionSchema,
   isDeviceAction,
   isPlainObject,
+  SHORTHAND_CONDITION_KEY,
 } from '@flode/shared';
 import type { NodeType } from './flow-model';
 
@@ -23,7 +24,11 @@ export function stepKind(type: NodeType): StepKind {
 }
 
 /** FLODE-internal keys HA's editors must not see (and that survive an edit). */
-const INTERNAL_CONDITION_KEYS = ['_chooseCase', '_chooseCaseTotal'] as const;
+const INTERNAL_CONDITION_KEYS = [
+  '_chooseCase',
+  '_chooseCaseTotal',
+  SHORTHAND_CONDITION_KEY,
+] as const;
 
 function withoutId(data: Record<string, unknown>): Record<string, unknown> {
   const { id: _id, ...rest } = data;

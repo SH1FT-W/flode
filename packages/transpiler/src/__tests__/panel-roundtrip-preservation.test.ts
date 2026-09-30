@@ -75,4 +75,20 @@ describe('panel round trip keeps what HA accepts', () => {
       `"if":[${JSON.stringify(condition)}]`
     );
   });
+
+  it('keeps Jinja shorthand conditions as written (A2)', async () => {
+    const triggers = [{ trigger: 'state', entity_id: 'sensor.a' }];
+    const actions = [{ action: 'light.turn_on' }];
+    const conditions = [
+      "{{ is_state('sun.sun', 'below_horizon') }}",
+      { condition: 'state', entity_id: 'a.b', state: 'on' },
+      '{{ 1 == 1 }}',
+    ];
+    const saved = await panelSave({ alias: 'Shorthand', triggers, conditions, actions });
+    expectExact(saved.conditions, conditions);
+
+    const only = await panelSave({ alias: 'Only', triggers, conditions: '{{ true }}', actions });
+    expectExact(only.conditions, ['{{ true }}']);
+    expectExact(only.actions, actions);
+  });
 });
