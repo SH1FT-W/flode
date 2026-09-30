@@ -13,6 +13,7 @@ import {
   buildRawStepAction,
   getShorthandCondition,
   isDeviceAction,
+  mapOneOrMany,
   SHORTHAND_CONDITION_KEY,
 } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
@@ -1674,7 +1675,7 @@ export class NativeStrategy extends BaseStrategy {
     if (wait_template) {
       wait.wait_template = wait_template;
     } else if (wait_for_trigger) {
-      wait.wait_for_trigger = wait_for_trigger.map(cleanTrigger);
+      wait.wait_for_trigger = mapOneOrMany(wait_for_trigger, cleanTrigger);
     }
 
     if (timeout) {

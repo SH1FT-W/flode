@@ -78,7 +78,7 @@ export interface DelayNodeData {
 export interface WaitNodeData {
   alias?: string;
   wait_template?: string;
-  wait_for_trigger?: TriggerNodeData[];
+  wait_for_trigger?: TriggerNodeData | TriggerNodeData[];
   timeout?: string;
   continue_on_timeout?: boolean;
   [key: string]: unknown;

@@ -429,7 +429,8 @@ export const HAWaitSchema = z
     id: z.string().optional(),
     alias: z.string().optional(),
     wait_template: z.string().optional(),
-    wait_for_trigger: z.array(HATriggerSchema).optional(),
+    // HA's TRIGGER_SCHEMA takes one trigger or a list
+    wait_for_trigger: z.union([HATriggerSchema, z.array(HATriggerSchema)]).optional(),
     timeout: z
       .union([
         z.string(),

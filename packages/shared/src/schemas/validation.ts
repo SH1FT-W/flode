@@ -16,14 +16,15 @@ import { getRawStep } from './raw-step';
 export const WaitNodeValidationSchema = z
   .object({
     wait_template: z.string().optional(),
-    wait_for_trigger: z.array(z.any()).optional(),
+    wait_for_trigger: z.union([z.array(z.any()), z.record(z.string(), z.unknown())]).optional(),
     timeout: z.union([z.string(), z.object({})]).optional(),
   })
   .passthrough()
   .refine(
     (data) => {
       const hasTemplate = data.wait_template && data.wait_template.trim() !== '';
-      const hasTrigger = data.wait_for_trigger && data.wait_for_trigger.length > 0;
+      const hasTrigger =
+        data.wait_for_trigger !== undefined && [data.wait_for_trigger].flat().length > 0;
       return hasTemplate || hasTrigger;
     },
     {

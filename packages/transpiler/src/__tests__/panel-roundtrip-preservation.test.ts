@@ -91,4 +91,21 @@ describe('panel round trip keeps what HA accepts', () => {
     expectExact(only.conditions, ['{{ true }}']);
     expectExact(only.actions, actions);
   });
+
+  it('keeps a single wait_for_trigger mapping (A3)', async () => {
+    const actions = [
+      {
+        wait_for_trigger: { trigger: 'state', entity_id: 'a.b', to: 'on' },
+        timeout: '00:01:00',
+      },
+      { wait_for_trigger: [{ trigger: 'state', entity_id: 'a.c', to: 'off' }] },
+      { action: 'light.turn_on' },
+    ];
+    const saved = await panelSave({
+      alias: 'Wait',
+      triggers: [{ trigger: 'state', entity_id: 'sensor.a' }],
+      actions,
+    });
+    expectExact(saved.actions, actions);
+  });
 });

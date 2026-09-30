@@ -681,7 +681,7 @@ export function summarizeDelay(
 export function summarizeWait(data: WaitNodeData, ctx: SummaryContext): NodeSummary {
   const { t } = ctx;
   const timeout = humanizeDuration(data.timeout, t);
-  const triggers = Array.isArray(data.wait_for_trigger) ? data.wait_for_trigger.length : 0;
+  const triggers = data.wait_for_trigger === undefined ? 0 : [data.wait_for_trigger].flat().length;
   const template = asString(data.wait_template);
   return {
     title:

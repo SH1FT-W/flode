@@ -1920,9 +1920,9 @@ export class YamlParser {
 
         if (typeof waitTemplate === 'string') {
           waitData.wait_template = waitTemplate;
-        } else if (Array.isArray(waitForTrigger)) {
+        } else if (Array.isArray(waitForTrigger) || isPlainObject(waitForTrigger)) {
           const parsedTriggers = [];
-          for (const trigger of waitForTrigger) {
+          for (const trigger of [waitForTrigger].flat()) {
             const result = HATriggerSchema.safeParse(trigger);
             if (result.success) {
               parsedTriggers.push(result.data);
@@ -1932,7 +1932,10 @@ export class YamlParser {
               );
             }
           }
-          waitData.wait_for_trigger = parsedTriggers;
+          // Keep the shape as written: one trigger mapping or a list
+          waitData.wait_for_trigger = Array.isArray(waitForTrigger)
+            ? parsedTriggers
+            : parsedTriggers[0];
         }
 
         const waitNode: WaitNode = {

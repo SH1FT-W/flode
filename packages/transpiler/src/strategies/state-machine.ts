@@ -15,6 +15,7 @@ import {
   getRawStep,
   isDeviceAction,
   isPlainObject,
+  mapOneOrMany,
 } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
@@ -1229,7 +1230,7 @@ export class StateMachineStrategy extends BaseStrategy {
     if (wait_template) {
       waitAction.wait_template = wait_template;
     } else if (wait_for_trigger) {
-      waitAction.wait_for_trigger = wait_for_trigger.map((triggerData) => {
+      waitAction.wait_for_trigger = mapOneOrMany(wait_for_trigger, (triggerData) => {
         const { alias: _alias, ...rest } = triggerData;
         const trigger: Record<string, unknown> = { ...rest };
         return Object.fromEntries(

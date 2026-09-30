@@ -29,7 +29,7 @@ export {
   FlowWorkspaceSourceSchema,
   validateGraphStructure,
 } from './graph';
-export { isPlainObject } from './guards';
+export { isPlainObject, mapOneOrMany } from './guards';
 // Home Assistant entity schemas
 export {
   type ConditionType,
