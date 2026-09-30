@@ -549,7 +549,7 @@ const STRINGS = {
     continue: 'Continue',
     new307ScrollTitle: 'Start page scrolls cleanly',
     new307ScrollText:
-      'The automation list had two scroll bars that got in each other\'s way. Now only the list scrolls.',
+      "The automation list had two scroll bars that got in each other's way. Now only the list scrolls.",
     new307ProgressTitle: 'Progress when opening',
     new307ProgressText:
       'When opening an automation or merging takes longer, FLODE now shows a dialog with the progress and the current step.',
