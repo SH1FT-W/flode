@@ -72,7 +72,15 @@ import { LOGBOOK_POLL_MS, type ManualRun } from './manual-runs';
 import { NODE_META, summarize, typeLabel } from './node-meta';
 import { labelWithHint, matchShortcut, type ShortcutId, shortcutHint } from './shortcuts';
 import { t } from './strings';
-import { type EditorTab, type OpenFlow, readTabs, type SaveState, writeTabs } from './tabs';
+import {
+  type EditorTab,
+  type OpenFlow,
+  readTabs,
+  type SaveResult,
+  type SaveState,
+  settleSave,
+  writeTabs,
+} from './tabs';
 import type { RunMark } from './trace';
 import { isNarrow } from './viewport';
 
@@ -1062,23 +1070,26 @@ export class FlodePanel extends LitElement {
     if (!hass || !flow || this.saveState === 'saving') return;
     // A new automation gets its name first, exactly like HA's own editor.
     if (flow.isNew && !named && !(await this.editSettings('alias'))) return;
+    // The tab can change while saving — the result belongs to the one saved.
+    const tabId = this.activeTabId;
+    let current = this.flow ?? flow;
     this.saveState = 'saving';
     try {
       const { FlowTranspiler, buildAutomationSaveConfig, transpileScript } = await loadTranspiler();
       const transpiler = new FlowTranspiler();
-      const validation = transpiler.validate(flow.graph);
+      const validation = transpiler.validate(current.graph);
       if (validation.errors.length > 0) {
         throw new Error(validation.errors.map((e) => e.message).join(', '));
       }
-      let current = this.flow ?? flow;
       const kind = current.item.kind;
       if (kind === 'script' && current.isNew) {
         // Like HA's script editor: a new script's id comes from its name.
-        current = {
-          ...current,
-          item: { ...current.item, configId: newScriptId(hass, current.graph.name) },
-        };
-        this.flow = current;
+        const configId = newScriptId(hass, current.graph.name);
+        current = { ...current, item: { ...current.item, configId } };
+        this.updateTab(tabId, (open, saveState) => ({
+          flow: { ...open, item: { ...open.item, configId } },
+          saveState,
+        }));
       }
       const result =
         kind === 'script'
@@ -1089,35 +1100,49 @@ export class FlodePanel extends LitElement {
             });
       if (!result.success || !result.config) throw new Error(result.errors?.join(', '));
       await saveFlowConfig(hass, kind, current.item.configId, result.config);
-      await this.afterSave(current);
-      this.saveState = 'saved';
-      this.message = null;
+      const saved = await this.afterSave(current);
+      if (this.updateTab(tabId, (open) => settleSave(open, { graph: current.graph, saved }))) {
+        this.message = null;
+      }
     } catch (error) {
-      this.saveState = 'unsaved';
-      this.message = `${t(this.language, 'saveFailed')}: ${errorMessage(error)}`;
+      const message = `${t(this.language, 'saveFailed')}: ${errorMessage(error)}`;
+      if (this.updateTab(tabId, (open) => settleSave(open, null))) this.message = message;
+      else this.notify(message);
     }
   }
 
+  /**
+   * Changes the tab `tabId` — live while it's active, else its parked copy
+   * (the user switched tabs meanwhile). `true` when it's the active one.
+   */
+  private updateTab(
+    tabId: string | null,
+    update: (flow: OpenFlow, saveState: SaveState) => { flow: OpenFlow; saveState: SaveState }
+  ): boolean {
+    if (tabId === this.activeTabId) {
+      if (!this.flow) return false;
+      const next = update(this.flow, this.saveState);
+      this.flow = next.flow;
+      this.saveState = next.saveState;
+      return true;
+    }
+    this.tabs = this.tabs.map((tab) =>
+      tab.id === tabId ? { ...tab, ...update(tab.flow, tab.saveState) } : tab
+    );
+    return false;
+  }
+
   /** A new automation's entity only exists after the first save; then area/category/labels follow. */
-  private async afterSave(saved: OpenFlow): Promise<void> {
-    const hass = this.hass;
-    if (!hass) return;
+  private async afterSave(saved: OpenFlow): Promise<SaveResult['saved']> {
     const entityId =
       saved.item.entityId ||
       (await waitForAutomationEntity(() => this.hass, saved.item.kind, saved.item.configId)) ||
       '';
-    if (entityId && saved.registryUpdate)
+    const hass = this.hass;
+    if (hass && entityId && saved.registryUpdate)
       await applyRegistryUpdate(hass, entityId, saved.registryUpdate);
-    const registryEntry = entityId ? await getRegistryEntry(hass, entityId) : null;
-    const flow = this.flow;
-    if (!flow || flow.item.configId !== saved.item.configId) return;
-    this.flow = {
-      ...flow,
-      isNew: false,
-      item: { ...flow.item, entityId },
-      registryEntry,
-      registryUpdate: undefined,
-    };
+    const registryEntry = hass && entityId ? await getRegistryEntry(hass, entityId) : null;
+    return { configId: saved.item.configId, entityId, registryEntry };
   }
 
   /** HA's own "run": the version saved in HA (fields → HA's dialog to fill them in). */

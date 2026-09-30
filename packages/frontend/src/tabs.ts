@@ -29,6 +29,35 @@ export interface OpenFlow {
   importWarnings?: string[];
 }
 
+/** A save that went through: the graph it wrote and the entity HA has for it. */
+export interface SaveResult {
+  graph: FlowGraph;
+  saved: { configId: string; entityId: string; registryEntry: RegistryEntry | null };
+}
+
+/**
+ * A tab's flow and state once its save finished (`null` = it failed). Edits
+ * made while saving are newer than what HA got, so they stay unsaved.
+ */
+export function settleSave(
+  flow: OpenFlow,
+  result: SaveResult | null
+): { flow: OpenFlow; saveState: SaveState } {
+  if (!result) return { flow, saveState: 'unsaved' };
+  const { configId, entityId, registryEntry } = result.saved;
+  const settled: OpenFlow =
+    flow.item.configId === configId
+      ? {
+          ...flow,
+          isNew: false,
+          item: { ...flow.item, entityId },
+          registryEntry,
+          registryUpdate: undefined,
+        }
+      : flow;
+  return { flow: settled, saveState: flow.graph === result.graph ? 'saved' : 'unsaved' };
+}
+
 // ---- remembered tabs (survive a page reload) ---------------------
 
 /** FLODE 3's own key — FLODE 2 kept its tabs in IndexedDB, the two never touch. */
