@@ -5,6 +5,7 @@ import type {
   DelayNode,
   FlowEdge,
   FlowGraph,
+  FlowGraphMetadata,
   FlowNode,
   HAAction,
   HACondition,
@@ -239,6 +240,18 @@ function createUnmodeledConditionData(raw: Record<string, unknown>): HACondition
 }
 
 /**
+ * The automation-level settings (mode, max, …) — each field on its own, so
+ * one HA does not know (or FLODE not yet) does not reset all the others.
+ */
+function parseMetadataFields(fields: Record<string, unknown>): FlowGraphMetadata {
+  const result = FlowGraphMetadataSchema.safeParse(fields);
+  if (result.success) return result.data;
+  const invalid = new Set(result.error.issues.map((issue) => issue.path[0]));
+  const valid = Object.fromEntries(Object.entries(fields).filter(([key]) => !invalid.has(key)));
+  return FlowGraphMetadataSchema.safeParse(valid).data ?? FlowGraphMetadataSchema.parse({});
+}
+
+/**
  * Options for parsing actions and nested blocks
  */
 interface ParseOptions {
@@ -418,10 +431,7 @@ export class YamlParser {
         hide_entity: content.hide_entity,
         trace: content.trace,
       };
-      const metadataResult = FlowGraphMetadataSchema.safeParse(rawMetadata);
-      const metadataBlock = metadataResult.success
-        ? metadataResult.data
-        : FlowGraphMetadataSchema.parse({});
+      const metadataBlock = parseMetadataFields(rawMetadata);
 
       const userTriggerVariables =
         typeof content.trigger_variables === 'object' &&

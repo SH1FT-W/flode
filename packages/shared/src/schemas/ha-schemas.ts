@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MaxExceededSchema } from './base';
 import { type TargetIds, TargetIdsSchema } from './ha-entities';
 
 /**
@@ -230,7 +231,7 @@ export interface HAChooseOption {
 export const FlowGraphMetadataSchema = z.object({
   mode: z.enum(['single', 'restart', 'queued', 'parallel']).default('single'),
   max: z.number().optional(),
-  max_exceeded: z.enum(['silent', 'warning', 'critical']).optional(),
+  max_exceeded: MaxExceededSchema.optional(),
   initial_state: z.boolean().optional(),
   hide_entity: z.boolean().optional(),
   trace: z.object({ stored_traces: z.number().optional() }).optional(),
@@ -381,7 +382,7 @@ export const HAAutomationSchema = z.object({
   action: z.union([HAActionSchema, z.array(HAActionSchema)]),
   mode: z.enum(['single', 'restart', 'queued', 'parallel']).optional().default('single'),
   max: z.number().optional(),
-  max_exceeded: z.enum(['silent', 'warning']).optional(),
+  max_exceeded: MaxExceededSchema.optional(),
   initial_state: z.boolean().optional(),
   hide_entity: z.boolean().optional(),
   trace: z.record(z.string(), z.unknown()).optional(),

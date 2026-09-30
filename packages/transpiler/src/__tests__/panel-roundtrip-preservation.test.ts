@@ -122,4 +122,41 @@ describe('panel round trip keeps what HA accepts', () => {
     });
     expectExact(saved.actions, actions);
   });
+
+  it('keeps every log level HA allows for max_exceeded (A5)', async () => {
+    const base = {
+      triggers: [{ trigger: 'state', entity_id: 'sensor.a' }],
+      actions: [{ action: 'light.turn_on' }],
+    };
+    for (const level of ['info', 'ERROR', 'debug', 'notset', 'silent', 'Warning']) {
+      const saved = await panelSave({
+        ...base,
+        alias: level,
+        mode: 'queued',
+        max: 10,
+        max_exceeded: level,
+      });
+      expect(saved).toMatchObject({ mode: 'queued', max: 10, max_exceeded: level });
+    }
+  });
+
+  it('keeps the valid settings when one of them is invalid (A5)', async () => {
+    const saved = await panelSave({
+      alias: 'Settings',
+      triggers: [{ trigger: 'state', entity_id: 'sensor.a' }],
+      actions: [{ action: 'light.turn_on' }],
+      mode: 'parallel',
+      max: 4,
+      max_exceeded: 'loudly',
+      trace: { stored_traces: 20 },
+      initial_state: false,
+    });
+    expect(saved).toMatchObject({
+      mode: 'parallel',
+      max: 4,
+      trace: { stored_traces: 20 },
+      initial_state: false,
+    });
+    expect(saved.max_exceeded).toBeUndefined();
+  });
 });

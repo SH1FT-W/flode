@@ -8,6 +8,7 @@ export {
   EntityIdSchema,
   type Handle,
   HandleSchema,
+  MAX_EXCEEDED_LEVELS,
   type MaxExceeded,
   MaxExceededSchema,
   type NodeId,

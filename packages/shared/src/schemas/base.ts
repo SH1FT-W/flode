@@ -42,5 +42,21 @@ export type Handle = z.infer<typeof HandleSchema>;
 export const AutomationModeSchema = z.enum(['single', 'restart', 'queued', 'parallel']);
 export type AutomationMode = z.infer<typeof AutomationModeSchema>;
 
-export const MaxExceededSchema = z.enum(['silent', 'warning', 'critical']);
+/** What HA's `max_exceeded` accepts: any log level or `silent`, in any case. */
+export const MAX_EXCEEDED_LEVELS = [
+  'silent',
+  'critical',
+  'fatal',
+  'error',
+  'warning',
+  'warn',
+  'info',
+  'debug',
+  'notset',
+] as const;
+
+/** Kept as written — HA reads it case-insensitively. */
+export const MaxExceededSchema = z
+  .string()
+  .refine((level) => MAX_EXCEEDED_LEVELS.some((known) => known === level.toLowerCase()));
 export type MaxExceeded = z.infer<typeof MaxExceededSchema>;
