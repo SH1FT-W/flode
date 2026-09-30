@@ -63,6 +63,17 @@ describe('ha-step', () => {
     expect(stepToNode('action', device).data).toEqual({ _raw: device });
   });
 
+  it('shows pass-through conditions to HA as written and keeps unmodelled edits verbatim', () => {
+    const condition = { condition: 'time', after: 5, weekday: 'someday' };
+    const result = stepToNode('condition', condition);
+    expect(result).toEqual({ type: 'condition', data: { _raw: condition, condition: 'time' } });
+    expect(nodeToStep(node('condition', result.data))).toEqual(condition);
+    expect(stepToNode('condition', { condition: 'state', entity_id: 'x' }).data).toEqual({
+      condition: 'state',
+      entity_id: 'x',
+    });
+  });
+
   it('hides and preserves FLODE-internal condition keys', () => {
     const cond = node('condition', { condition: 'state', entity_id: 'x', _chooseCase: 1 });
     expect(nodeToStep(cond)).toEqual({ condition: 'state', entity_id: 'x' });

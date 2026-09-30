@@ -9,6 +9,17 @@ export const VALID_WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] 
 export type Weekday = (typeof VALID_WEEKDAYS)[number];
 
 /**
+ * A time period as HA's `cv.time_period` accepts it: `"HH:MM:SS"`, seconds,
+ * or a `{ hours, minutes, … }` mapping.
+ */
+const TimePeriodSchema = z.union([
+  z.string(),
+  z.number(),
+  z.record(z.string(), z.union([z.number(), z.string()])),
+]);
+type TimePeriod = z.infer<typeof TimePeriodSchema>;
+
+/**
  * Zod schema for Home Assistant condition objects.
  * Supports recursive conditions for and/or/not groups.
  */
@@ -23,9 +34,10 @@ export const HAConditionSchema: z.ZodType<
     value_template?: string;
     after?: string;
     before?: string;
-    weekday?: Weekday[];
-    after_offset?: string;
-    before_offset?: string;
+    // HA's `ensure_list`: one weekday or a list
+    weekday?: Weekday | Weekday[];
+    after_offset?: TimePeriod;
+    before_offset?: TimePeriod;
     zone?: string;
     conditions?: z.infer<typeof HAConditionSchema>[];
     above?: string | number;
@@ -46,9 +58,9 @@ export const HAConditionSchema: z.ZodType<
   value_template: z.string().optional(),
   after: z.string().optional(),
   before: z.string().optional(),
-  weekday: z.array(z.enum(VALID_WEEKDAYS)).optional(),
-  after_offset: z.string().optional(),
-  before_offset: z.string().optional(),
+  weekday: z.union([z.enum(VALID_WEEKDAYS), z.array(z.enum(VALID_WEEKDAYS))]).optional(),
+  after_offset: TimePeriodSchema.optional(),
+  before_offset: TimePeriodSchema.optional(),
   zone: z.string().optional(),
   conditions: z.array(z.lazy(() => HAConditionSchema)).optional(),
   above: z.union([z.string(), z.number()]).optional(),

@@ -8,7 +8,7 @@ import type {
   TriggerNode,
   WaitNode,
 } from '@flode/shared';
-import { buildRawStepAction, isDeviceAction } from '@flode/shared';
+import { buildRawCondition, buildRawStepAction, isDeviceAction } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { findBackEdges } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
@@ -1443,6 +1443,9 @@ export class NativeStrategy extends BaseStrategy {
    * Build condition configuration
    */
   private buildCondition(node: ConditionNode): Record<string, unknown> {
+    // Pass-through condition (kept verbatim at import) — write it back unchanged
+    const rawCondition = buildRawCondition(node.data);
+    if (rawCondition) return rawCondition;
     // Helper to recursively map condition to condition
     function mapCondition(data: Record<string, unknown>): Record<string, unknown> {
       if (!data || typeof data !== 'object') return data;

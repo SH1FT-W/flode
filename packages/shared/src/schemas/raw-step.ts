@@ -37,3 +37,30 @@ export function buildRawStepAction(data: Record<string, unknown>): Record<string
   const { enabled: _originalEnabled, ...rest } = raw;
   return data.enabled === false ? { ...rest, enabled: false } : rest;
 }
+
+/**
+ * Condition node data for a condition FLODE cannot model (its fields fail
+ * `HAConditionSchema`, e.g. from a newer HA version). The condition is kept
+ * verbatim under `RAW_STEP_KEY` and written back unchanged, instead of being
+ * replaced by something that means a different thing to HA.
+ */
+export function createRawConditionData(
+  condition: Record<string, unknown>
+): Record<string, unknown> {
+  return {
+    ...createRawStepData(condition),
+    ...(typeof condition.condition === 'string' ? { condition: condition.condition } : {}),
+  };
+}
+
+/**
+ * The HA condition to write for a pass-through condition node — the original
+ * unchanged unless its `enabled` state was toggled in FLODE.
+ */
+export function buildRawCondition(data: Record<string, unknown>): Record<string, unknown> | null {
+  const raw = getRawStep(data);
+  if (!raw) return null;
+  return (raw.enabled === false) === (data.enabled === false)
+    ? { ...raw }
+    : buildRawStepAction(data);
+}

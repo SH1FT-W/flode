@@ -9,7 +9,13 @@ import type {
   TriggerNode,
   WaitNode,
 } from '@flode/shared';
-import { buildRawStepAction, isDeviceAction, isPlainObject } from '@flode/shared';
+import {
+  buildRawCondition,
+  buildRawStepAction,
+  getRawStep,
+  isDeviceAction,
+  isPlainObject,
+} from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
 
@@ -1109,6 +1115,11 @@ export class StateMachineStrategy extends BaseStrategy {
   private needsNativeConditionCheck(node: ConditionNode): boolean {
     const data = node.data;
 
+    // A pass-through condition has no Jinja translation — HA checks it as written
+    if (getRawStep(data)) {
+      return true;
+    }
+
     // A duration ("on for 10 minutes") has no Jinja equivalent in
     // buildConditionTemplate — inlining would silently drop it and make the
     // condition true the moment the state changes (upstream C.A.F.E. #247).
@@ -1145,7 +1156,7 @@ export class StateMachineStrategy extends BaseStrategy {
    * Build native HA condition object for use in if/then/else
    */
   private buildNativeCondition(node: ConditionNode): Record<string, unknown> {
-    return toNativeCondition(node.data);
+    return buildRawCondition(node.data) ?? toNativeCondition(node.data);
   }
 
   /**
@@ -1435,8 +1446,9 @@ export class StateMachineStrategy extends BaseStrategy {
     if (data.before) {
       parts.push(`now().strftime('%H:%M:%S') < '${data.before}'`);
     }
-    if (data.weekday && data.weekday.length > 0) {
-      const days = data.weekday.map((d) => `'${d}'`).join(', ');
+    const weekdays = data.weekday === undefined ? [] : [data.weekday].flat();
+    if (weekdays.length > 0) {
+      const days = weekdays.map((d) => `'${d}'`).join(', ');
       parts.push(`now().strftime('%a').lower()[:3] in [${days}]`);
     }
 

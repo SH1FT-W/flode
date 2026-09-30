@@ -17,6 +17,7 @@ import type {
 } from '@flode/shared';
 import {
   CafeMetadataSchema,
+  createRawConditionData,
   createRawStepData,
   FlowGraphMetadataSchema,
   FlowGraphSchema,
@@ -203,29 +204,36 @@ function resolveConditionType(conditionType: string): string {
 }
 
 /**
- * Data for a condition that failed HAConditionSchema validation.
- * Target-based conditions (`condition: <domain>.<name>`) are opaque to FLODE, so they
- * are kept instead of being replaced by the template fallback. A `target`/`options`
- * that is not an object (e.g. an empty `options:` key, parsed as null) is dropped so the
- * kept data still satisfies HAConditionSchema, which the graph validation relies on.
+ * Target-based conditions (`condition: <domain>.<name>`) are opaque to FLODE, so a
+ * failed HAConditionSchema validation keeps them instead of a fallback. A
+ * `target`/`options` that is not an object (e.g. an empty `options:` key, parsed as
+ * null) is dropped so the kept data still satisfies HAConditionSchema, which the
+ * graph validation relies on.
  */
-function createConditionFallbackData(raw: unknown, templateFallback: HACondition): HACondition {
-  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
-    const record: Record<string, unknown> = { ...raw };
-    if (typeof record.condition === 'string' && isTargetedPlatform(record.condition)) {
-      for (const key of ['target', 'options']) {
-        const value = record[key];
-        if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-          delete record[key];
-        }
-      }
-      const result = HAConditionSchema.safeParse(record);
-      if (result.success) {
-        return result.data;
-      }
+function keepTargetedCondition(raw: unknown): HACondition | null {
+  if (!isPlainObject(raw) || typeof raw.condition !== 'string') return null;
+  if (!isTargetedPlatform(raw.condition)) return null;
+  const record: Record<string, unknown> = { ...raw };
+  for (const key of ['target', 'options']) {
+    if (!isPlainObject(record[key])) {
+      delete record[key];
     }
   }
-  return templateFallback;
+  const result = HAConditionSchema.safeParse(record);
+  return result.success ? result.data : null;
+}
+
+/** Data for a condition that failed HAConditionSchema validation (see keepTargetedCondition). */
+function createConditionFallbackData(raw: unknown, templateFallback: HACondition): HACondition {
+  return keepTargetedCondition(raw) ?? templateFallback;
+}
+
+/**
+ * Data for a condition as the user wrote it that failed HAConditionSchema
+ * validation: kept verbatim (a pass-through condition, written back unchanged).
+ */
+function createUnmodeledConditionData(raw: Record<string, unknown>): HACondition {
+  return keepTargetedCondition(raw) ?? HAConditionSchema.parse(createRawConditionData(raw));
 }
 
 /**
@@ -1681,11 +1689,7 @@ export class YamlParser {
             id: nodeId,
             type: 'condition',
             position: { x: 0, y: 0 },
-            data: createConditionFallbackData(condition, {
-              condition: 'template',
-              alias: 'Unknown Condition',
-              value_template: JSON.stringify(condition),
-            }),
+            data: createUnmodeledConditionData(condition),
           });
           return;
         }
@@ -1705,11 +1709,7 @@ export class YamlParser {
           id: nodeId,
           type: 'condition',
           position: { x: 0, y: 0 },
-          data: createConditionFallbackData(condition, {
-            condition: 'template',
-            alias: 'Unknown Condition',
-            value_template: JSON.stringify(condition),
-          }),
+          data: createUnmodeledConditionData(condition),
         });
       }
     });
@@ -1796,8 +1796,6 @@ export class YamlParser {
         // Inline condition guard in action sequence
         const nodeId = getNextNodeId('condition');
         const act = action as Record<string, unknown>;
-        const conditionType = (act.condition as string) || 'template';
-        const validatedType = resolveConditionType(conditionType);
 
         // Use Zod schema for parsing and type safety
         let parsedData: ConditionNode['data'];
@@ -1807,11 +1805,7 @@ export class YamlParser {
           warnings.push(
             `Inline condition at index ${index} failed schema validation: ${e instanceof Error ? e.message : JSON.stringify(e)}`
           );
-          parsedData = createConditionFallbackData(act, {
-            condition: validatedType,
-            alias: typeof act.alias === 'string' ? act.alias : undefined,
-            value_template: JSON.stringify(act),
-          });
+          parsedData = createUnmodeledConditionData(act);
         }
         // Apply inherited enabled state
         parsedData.enabled = getNodeEnabled(parsedData.enabled);

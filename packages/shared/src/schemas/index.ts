@@ -109,7 +109,14 @@ export {
   WaitNodeSchema,
 } from './nodes';
 // Pass-through (raw) action steps
-export { buildRawStepAction, createRawStepData, getRawStep, RAW_STEP_KEY } from './raw-step';
+export {
+  buildRawCondition,
+  buildRawStepAction,
+  createRawConditionData,
+  createRawStepData,
+  getRawStep,
+  RAW_STEP_KEY,
+} from './raw-step';
 // Scripts
 export {
   automationToScriptConfig,

@@ -1,6 +1,9 @@
 import {
+  buildRawCondition,
   buildRawStepAction,
+  createRawConditionData,
   createRawStepData,
+  HAConditionSchema,
   type FlowNode,
   isDeviceAction,
   isPlainObject,
@@ -97,6 +100,8 @@ function rawNodeToStep(node: FlowNode): Record<string, unknown> {
     case 'trigger':
       return data;
     case 'condition': {
+      const raw = buildRawCondition(data);
+      if (raw) return raw;
       const out = { ...data };
       for (const key of INTERNAL_CONDITION_KEYS) delete out[key];
       return out;
@@ -127,7 +132,11 @@ export function stepToNode(
         if (key in previous.data) kept[key] = previous.data[key];
       }
     }
-    return { type: 'condition', data: { ...step, ...kept } };
+    // A condition FLODE cannot model stays a pass-through (written back verbatim).
+    const condition = HAConditionSchema.safeParse(step).success
+      ? step
+      : createRawConditionData(step);
+    return { type: 'condition', data: { ...condition, ...kept } };
   }
   if ('delay' in step) return { type: 'delay', data: step };
   if ('wait_template' in step || 'wait_for_trigger' in step) return { type: 'wait', data: step };
