@@ -17,7 +17,7 @@ export const WaitNodeValidationSchema = z
   .object({
     wait_template: z.string().optional(),
     wait_for_trigger: z.union([z.array(z.any()), z.record(z.string(), z.unknown())]).optional(),
-    timeout: z.union([z.string(), z.object({})]).optional(),
+    timeout: z.union([z.string(), z.number(), z.object({})]).optional(),
   })
   .passthrough()
   .refine(

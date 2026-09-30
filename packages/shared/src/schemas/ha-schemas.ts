@@ -434,6 +434,8 @@ export const HAWaitSchema = z
     timeout: z
       .union([
         z.string(),
+        // Seconds (`timeout: 30`)
+        z.number(),
         z.looseObject({
           hours: z.union([z.number(), z.string()]).optional(),
           minutes: z.union([z.number(), z.string()]).optional(),
@@ -454,6 +456,11 @@ export const HAWaitSchema = z
     }
   );
 export type HAWait = z.infer<typeof HAWaitSchema>;
+
+/** Whether a wait step sets a timeout — `0` (give up at once) counts, an empty form field does not. */
+export function hasTimeout(timeout: unknown): boolean {
+  return timeout !== undefined && timeout !== null && timeout !== '';
+}
 
 /**
  * Zod schema for Home Assistant variables action.

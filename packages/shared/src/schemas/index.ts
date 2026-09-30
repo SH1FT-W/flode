@@ -76,6 +76,7 @@ export {
   HAVariablesSchema,
   type HAWait,
   HAWaitSchema,
+  hasTimeout,
   isCafeMetadata,
   isDeviceAction,
   isFlodeMetadata,

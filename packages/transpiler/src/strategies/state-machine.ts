@@ -13,6 +13,7 @@ import {
   buildRawCondition,
   buildRawStepAction,
   getRawStep,
+  hasTimeout,
   isDeviceAction,
   isPlainObject,
   mapOneOrMany,
@@ -1239,7 +1240,7 @@ export class StateMachineStrategy extends BaseStrategy {
       });
     }
 
-    if (timeout) {
+    if (hasTimeout(timeout)) {
       waitAction.timeout = timeout;
     }
 

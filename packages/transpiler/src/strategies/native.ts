@@ -12,6 +12,7 @@ import {
   buildRawCondition,
   buildRawStepAction,
   getShorthandCondition,
+  hasTimeout,
   isDeviceAction,
   mapOneOrMany,
   SHORTHAND_CONDITION_KEY,
@@ -1678,7 +1679,7 @@ export class NativeStrategy extends BaseStrategy {
       wait.wait_for_trigger = mapOneOrMany(wait_for_trigger, cleanTrigger);
     }
 
-    if (timeout) {
+    if (hasTimeout(timeout)) {
       wait.timeout = timeout;
     }
 

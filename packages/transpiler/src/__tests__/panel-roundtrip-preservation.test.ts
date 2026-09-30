@@ -108,4 +108,18 @@ describe('panel round trip keeps what HA accepts', () => {
     });
     expectExact(saved.actions, actions);
   });
+
+  it('keeps a numeric wait timeout, including 0 (A4)', async () => {
+    const actions = [
+      { wait_template: '{{ true }}', timeout: 30 },
+      { wait_template: '{{ true }}', timeout: 0, continue_on_timeout: false },
+      { wait_for_trigger: [{ trigger: 'state', entity_id: 'a.b' }], timeout: 45 },
+    ];
+    const saved = await panelSave({
+      alias: 'Timeout',
+      triggers: [{ trigger: 'state', entity_id: 'sensor.a' }],
+      actions,
+    });
+    expectExact(saved.actions, actions);
+  });
 });

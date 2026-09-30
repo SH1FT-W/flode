@@ -24,6 +24,7 @@ import {
   FlowGraphSchema,
   HAConditionSchema,
   HATriggerSchema,
+  hasTimeout,
   isDeviceAction,
   isHACondition,
   isPlainObject,
@@ -1036,7 +1037,7 @@ export class YamlParser {
       const data: Record<string, unknown> = {};
       if (item.wait_template) data.wait_template = item.wait_template;
       if (item.wait_for_trigger) data.wait_for_trigger = item.wait_for_trigger;
-      if (item.timeout) data.timeout = item.timeout;
+      if (hasTimeout(item.timeout)) data.timeout = item.timeout;
       if (item.continue_on_timeout !== undefined)
         data.continue_on_timeout = item.continue_on_timeout;
       if (alias) data.alias = alias;
@@ -1896,9 +1897,9 @@ export class YamlParser {
           ...extraProps
         } = act;
 
-        // Handle timeout as either string or object format
+        // Handle timeout as a string, seconds or object format
         let timeout: WaitNode['data']['timeout'];
-        if (typeof timeoutValue === 'string') {
+        if (typeof timeoutValue === 'string' || typeof timeoutValue === 'number') {
           timeout = timeoutValue;
         } else if (typeof timeoutValue === 'object' && timeoutValue !== null) {
           timeout = timeoutValue as {
