@@ -1683,7 +1683,13 @@ export class FlodePanel extends LitElement {
   private async tidy(): Promise<void> {
     const flow = this.flow;
     if (!flow || visibleGraph(flow.graph).nodes.length < 2) return;
-    const tidied = await layoutGraph(flow.graph);
+    let tidied: FlowGraph;
+    try {
+      tidied = await layoutGraph(flow.graph);
+    } catch (error) {
+      this.notify(`${t(this.language, 'tidy')}: ${errorMessage(error)}`);
+      return;
+    }
     const current = this.flow;
     if (!current || current.graph !== flow.graph) return;
     this.commit(tidied);

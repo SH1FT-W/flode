@@ -6,8 +6,14 @@ import {
   templateResultType,
 } from '@flode/ui-core';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
-import { type AutomationListItem, getTrace, type HomeAssistant, listTraces } from './ha';
-import { copyToClipboard } from './notify';
+import {
+  type AutomationListItem,
+  errorMessage,
+  getTrace,
+  type HomeAssistant,
+  listTraces,
+} from './ha';
+import { copyToClipboard, notify } from './notify';
 import { t } from './strings';
 import { runVariables } from './trace';
 
@@ -132,10 +138,14 @@ export class FlodeTemplates extends LitElement {
     this.source = 'lastRun';
     const { hass, item } = this;
     if (!hass || !item || this.lastRun) return;
-    const [latest] = await listTraces(hass, item.kind, item.configId);
-    if (!latest) return;
-    const trace = await getTrace(hass, item.kind, item.configId, latest.run_id);
-    this.lastRun = runVariables(trace);
+    try {
+      const [latest] = await listTraces(hass, item.kind, item.configId);
+      if (!latest) return;
+      const trace = await getTrace(hass, item.kind, item.configId, latest.run_id);
+      this.lastRun = runVariables(trace);
+    } catch (error) {
+      notify(this, `${t(hass.language, 'loadFailed')}: ${errorMessage(error)}`);
+    }
   }
 
   private setTemplate(value: string): void {

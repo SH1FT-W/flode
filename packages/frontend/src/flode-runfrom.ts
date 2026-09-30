@@ -1,6 +1,6 @@
 import type { FlowGraph } from '@flode/shared';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
-import type { HomeAssistant } from './ha';
+import { errorMessage, type HomeAssistant } from './ha';
 import { t } from './strings';
 
 interface Prepared {
@@ -52,17 +52,22 @@ export class FlodeRunFrom extends LitElement {
   private async prepare(nodeId: string): Promise<void> {
     const graph = this.graph;
     if (!graph) return;
-    const { transpiler, transpileSequence, buildSequenceFlow, SEQUENCE_ENTRY_ID } = await import(
-      '@flode/transpiler'
-    );
-    const result = transpileSequence(transpiler, graph, [nodeId]);
-    if (this.nodeId !== nodeId) return;
-    const nodeIds = buildSequenceFlow(graph, [nodeId])
-      .nodes.map((node) => node.id)
-      .filter((id) => id !== SEQUENCE_ENTRY_ID);
-    this.prepared = result.success
-      ? { sequence: result.sequence, nodeIds, usesTriggerData: result.usesTriggerData }
-      : { errors: result.errors ?? [] };
+    try {
+      const { transpiler, transpileSequence, buildSequenceFlow, SEQUENCE_ENTRY_ID } = await import(
+        '@flode/transpiler'
+      );
+      const result = transpileSequence(transpiler, graph, [nodeId]);
+      if (this.nodeId !== nodeId) return;
+      const nodeIds = buildSequenceFlow(graph, [nodeId])
+        .nodes.map((node) => node.id)
+        .filter((id) => id !== SEQUENCE_ENTRY_ID);
+      this.prepared = result.success
+        ? { sequence: result.sequence, nodeIds, usesTriggerData: result.usesTriggerData }
+        : { errors: result.errors ?? [] };
+    } catch (error) {
+      // Shown like any other reason it can't run — not "Preparing…" forever.
+      if (this.nodeId === nodeId) this.prepared = { errors: [errorMessage(error)] };
+    }
   }
 
   private close(): void {

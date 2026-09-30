@@ -47,29 +47,30 @@ export function downloadFlowJson(graph: FlowGraph): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/** A FLODE flow file's content (rejects when it can't be read or isn't a flow). */
+async function readFlowFile(file: Pick<Blob, 'text'>): Promise<ImportedFlow> {
+  const parsed = FlowGraphSchema.safeParse(JSON.parse(await file.text()));
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'invalid');
+  return {
+    graph: parsed.data,
+    kind: parsed.data.metadata?.kind === 'script' ? 'script' : 'automation',
+  };
+}
+
+/** `null` when the file dialog was closed without a file. */
 export function pickFlowJson(): Promise<ImportedFlow | null> {
   return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json,application/json';
+    input.addEventListener('cancel', () => resolve(null));
     input.addEventListener('change', () => {
       const file = input.files?.[0];
       if (!file) {
         resolve(null);
         return;
       }
-      void file.text().then((text) => {
-        try {
-          const parsed = FlowGraphSchema.safeParse(JSON.parse(text));
-          if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'invalid');
-          resolve({
-            graph: parsed.data,
-            kind: parsed.data.metadata?.kind === 'script' ? 'script' : 'automation',
-          });
-        } catch (error) {
-          reject(error);
-        }
-      });
+      readFlowFile(file).then(resolve, reject);
     });
     input.click();
   });
