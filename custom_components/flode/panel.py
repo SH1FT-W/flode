@@ -7,6 +7,7 @@ from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryError
 
 from .const import DOMAIN, PANEL_ICON, PANEL_TITLE
 
@@ -19,9 +20,12 @@ STATIC_URL = "/flode-hass"
 async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Register the FLODE panel."""
     www_path = Path(__file__).parent / "www"
-    if not (www_path / "flode-panel.js").exists():
-        _LOGGER.error("flode-panel.js not found in %s", www_path)
-        return
+    panel_file = www_path / "flode-panel.js"
+    if not await hass.async_add_executor_job(panel_file.is_file):
+        # A missing build does not heal itself, so fail the setup instead of retrying.
+        raise ConfigEntryError(
+            f"flode-panel.js not found in {www_path}, reinstall FLODE"
+        )
 
     await hass.http.async_register_static_paths(
         [StaticPathConfig(STATIC_URL, str(www_path), False)]
