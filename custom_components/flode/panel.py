@@ -15,6 +15,8 @@ _LOGGER = logging.getLogger(__name__)
 
 PANEL_NAME = f"{DOMAIN}-panel"
 STATIC_URL = "/flode-hass"
+# Static routes cannot be removed from aiohttp, so register them only once per HA run.
+DATA_STATIC_REGISTERED = f"{DOMAIN}_static_registered"
 
 
 async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -27,9 +29,12 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
             f"flode-panel.js not found in {www_path}, reinstall FLODE"
         )
 
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(STATIC_URL, str(www_path), False)]
-    )
+    if not hass.data.get(DATA_STATIC_REGISTERED):
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(STATIC_URL, str(www_path), False)]
+        )
+        hass.data[DATA_STATIC_REGISTERED] = True
+
     await panel_custom.async_register_panel(
         hass,
         webcomponent_name=PANEL_NAME,
