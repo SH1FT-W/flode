@@ -275,4 +275,18 @@ describe('panel round trip keeps what HA accepts', () => {
     });
     expectExact(saved.actions, [{ action: 'light.turn_on' }]);
   });
+
+  it('saves a condition as the last action step as written (A10)', async () => {
+    const actions = [
+      { action: 'light.turn_on' },
+      { condition: 'state', entity_id: 'a.b', state: 'on' },
+      { condition: 'template', value_template: '{{ true }}', alias: 'Last' },
+    ];
+    const saved = await panelSave({
+      alias: 'Trailing guard',
+      triggers: [{ trigger: 'state', entity_id: 'sensor.a' }],
+      actions,
+    });
+    expectExact(saved.actions, actions);
+  });
 });

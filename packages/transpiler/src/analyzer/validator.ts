@@ -81,22 +81,8 @@ export function validateFlowGraph(input: unknown): ValidationResult {
 function validateSemantics(graph: FlowGraph): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  // Check that all condition nodes have both true and false edges
-  const conditionNodes = graph.nodes.filter((n) => n.type === 'condition');
-  for (const node of conditionNodes) {
-    const outgoingEdges = graph.edges.filter((e) => e.source === node.id);
-    const hasTrue = outgoingEdges.some((e) => e.sourceHandle === 'true');
-    const hasFalse = outgoingEdges.some((e) => e.sourceHandle === 'false');
-
-    if (!hasTrue && !hasFalse) {
-      errors.push({
-        code: 'CONDITION_NO_EDGES',
-        message: `Condition node "${node.id}" has no outgoing edges`,
-        path: ['nodes', node.id],
-      });
-    }
-    // Either branch alone is valid - the missing branch implicitly ends the flow
-  }
+  // A condition needs no outgoing edges: a missing branch implicitly ends the
+  // flow, and a condition without any is a guard as the last step.
 
   // Check that action nodes have valid service format
   const actionNodes = graph.nodes.filter((n) => n.type === 'action');

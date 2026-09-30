@@ -746,8 +746,11 @@ export class NativeStrategy extends BaseStrategy {
    * Jinja shorthand string it was written as.
    */
   private buildRootCondition(node: ConditionNode): unknown {
-    const shorthand = getShorthandCondition(node.data);
-    if (shorthand !== null) return shorthand;
+    return getShorthandCondition(node.data) ?? this.buildConditionWithAlias(node);
+  }
+
+  /** A condition with its alias — as a root condition or a condition step. */
+  private buildConditionWithAlias(node: ConditionNode): Record<string, unknown> {
     const condition = this.buildCondition(node);
     if (node.data.alias) {
       condition.alias = node.data.alias;
@@ -1046,6 +1049,7 @@ export class NativeStrategy extends BaseStrategy {
         // ===== Condition Chain Logic (AND-chain → if/then/else) =====
 
         const conditions: unknown[] = [];
+        const chainNodes: ConditionNode[] = [];
         let currentNode: FlowNode = node;
         let thenNodeIds: string[] = [];
         let elseNodeIds: string[] = [];
@@ -1057,6 +1061,7 @@ export class NativeStrategy extends BaseStrategy {
 
         while (currentNode?.type === 'condition') {
           conditions.push(this.buildCondition(currentNode as ConditionNode));
+          chainNodes.push(currentNode as ConditionNode);
 
           const truePaths = this.getOutgoingEdges(flow, currentNode.id).filter(
             (edge) => edge.sourceHandle === 'true' && !this.backEdgeIds.has(edge.id)
@@ -1099,6 +1104,13 @@ export class NativeStrategy extends BaseStrategy {
             thenNodeIds = [truePath.target];
             break;
           }
+        }
+
+        if (thenNodeIds.length === 0 && elseNodeIds.length === 0) {
+          // The chain ends the flow (a guard as the last step): nothing to
+          // branch into, so write the conditions as the plain steps they are.
+          sequence.push(...chainNodes.map((chainNode) => this.buildConditionWithAlias(chainNode)));
+          return sequence;
         }
 
         const ifAction: Record<string, unknown> = {
