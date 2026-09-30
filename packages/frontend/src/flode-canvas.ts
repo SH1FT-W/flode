@@ -450,6 +450,15 @@ export class FlodeCanvas extends LitElement {
       this.emitGraph(moveNode(this.graph, drag.id, snap(node.position.x), snap(node.position.y)));
   }
 
+  /** The browser took the pointer away (system gesture, lost capture …): the drag changes nothing. */
+  private onNodePointerCancel(event: PointerEvent): void {
+    const drag = this.drag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    this.drag = null;
+    // Back to where the model has it — the preview was never committed.
+    if (drag.moved) this.graph = moveNode(this.graph, drag.id, drag.startPos.x, drag.startPos.y);
+  }
+
   // ---- connecting --------------------------------------------------------
 
   private onHandlePointerDown(event: PointerEvent, node: FlowNode, handle: string | null): void {
@@ -470,6 +479,10 @@ export class FlodeCanvas extends LitElement {
     const connecting = this.connecting;
     if (!connecting || connecting.pointerId !== event.pointerId) return;
     this.connecting = { ...connecting, cursor: this.toFlow(event.clientX, event.clientY) };
+  }
+
+  private onHandlePointerCancel(event: PointerEvent): void {
+    if (this.connecting?.pointerId === event.pointerId) this.connecting = null;
   }
 
   /** Node under a flow-space point (connections can be dropped anywhere on a card). */
@@ -608,6 +621,8 @@ export class FlodeCanvas extends LitElement {
         @pointerdown=${(e: PointerEvent) => this.onNodePointerDown(e, node)}
         @pointermove=${(e: PointerEvent) => this.onNodePointerMove(e)}
         @pointerup=${(e: PointerEvent) => this.onNodePointerUp(e)}
+        @pointercancel=${(e: PointerEvent) => this.onNodePointerCancel(e)}
+        @lostpointercapture=${(e: PointerEvent) => this.onNodePointerCancel(e)}
         @contextmenu=${(e: MouseEvent) => this.onContextMenu(e, node)}
       >
         ${off ? html`<span class="off-badge"><ha-icon icon="mdi:cancel"></ha-icon>${t(language, 'disabledGroup')}</span>` : nothing}
@@ -628,6 +643,8 @@ export class FlodeCanvas extends LitElement {
               @pointerdown=${(e: PointerEvent) => this.onHandlePointerDown(e, node, handle)}
               @pointermove=${(e: PointerEvent) => this.onHandlePointerMove(e)}
               @pointerup=${(e: PointerEvent) => this.onHandlePointerUp(e)}
+              @pointercancel=${(e: PointerEvent) => this.onHandlePointerCancel(e)}
+              @lostpointercapture=${(e: PointerEvent) => this.onHandlePointerCancel(e)}
             ></span>
             <button
               class="add-next"
