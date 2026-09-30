@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Lint & format check (Biome)
+        run: yarn biome ci .
+
       - name: Type checking
         run: yarn typecheck
 
@@ -35,6 +38,20 @@ jobs:
 
       - name: Build packages
         run: yarn build
+
+  python-lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Ruff
+        uses: astral-sh/ruff-action@v4
+        with:
+          version: "0.16.9"
+          src: custom_components
 
   publish-check:
     name: Publish Check
