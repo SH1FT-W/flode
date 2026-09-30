@@ -3,6 +3,8 @@ name: Release
 on:
   release:
     types: [published]
+  # Manueller Start nur zum erneuten Hochladen: im "Use workflow from"-Feld
+  # den Release-Tag waehlen, ein Branch wird vom Guard unten abgelehnt.
   workflow_dispatch:
 
 jobs:
@@ -13,6 +15,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Verify tag and versions
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" != "tag" ]; then
+            echo "::error::Release muss von einem Tag laufen, nicht von '$TAG' ($REF_TYPE)"
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          MANIFEST=$(jq -r .version custom_components/flode/manifest.json)
+          FRONTEND=$(jq -r .version packages/frontend/package.json)
+          echo "Tag: $VERSION, manifest.json: $MANIFEST, frontend/package.json: $FRONTEND"
+          if [ "$VERSION" != "$MANIFEST" ] || [ "$VERSION" != "$FRONTEND" ]; then
+            echo "::error::Versionen passen nicht zum Tag $TAG"
+            exit 1
+          fi
 
       - name: Enable Corepack
         run: corepack enable
