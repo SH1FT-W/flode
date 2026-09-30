@@ -5,7 +5,6 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
 
@@ -37,15 +36,4 @@ class FlodeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
-            description_placeholders={
-                "name": "FLODE",
-                "description": "Visual automation editor for Home Assistant"
-            }
         )
-
-    async def async_step_import(self, user_input: dict[str, Any]) -> ConfigFlowResult:
-        """Handle import from configuration.yaml."""
-        await self.async_set_unique_id(DOMAIN)
-        self._abort_if_unique_id_configured()
-
-        return self.async_create_entry(title="FLODE", data={})
