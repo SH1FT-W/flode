@@ -134,6 +134,16 @@ function isStopAction(action: unknown): action is Record<string, unknown> {
   return typeof action === 'object' && action !== null && 'stop' in action;
 }
 
+/** The keys FLODE's event node models — a step with any other key is kept verbatim. */
+const EVENT_NODE_KEYS = ['alias', 'event', 'event_data', 'enabled'];
+/** The keys FLODE's stop node models — a step with any other key is kept verbatim. */
+const STOP_NODE_KEYS = ['alias', 'stop', 'error', 'enabled'];
+
+/** True if every key of the step is one of `keys`. */
+function hasOnlyKeys(step: object, keys: readonly string[]): boolean {
+  return Object.keys(step).every((key) => keys.includes(key));
+}
+
 /** Returns true if the action is a repeat block */
 function isRepeatAction(action: unknown): action is Record<string, unknown> {
   return (
@@ -2151,7 +2161,7 @@ export class YamlParser {
         // After parallel block, all branch end nodes become the current nodes
         // (subsequent actions will connect from all of them)
         currentNodeIds = allBranchEndNodes.length > 0 ? allBranchEndNodes : parallelStartNodes;
-      } else if (isEventAction(action)) {
+      } else if (isEventAction(action) && hasOnlyKeys(action, EVENT_NODE_KEYS)) {
         // Event action - fires a Home Assistant event
         const nodeId = getNextNodeId('action');
         const act = action as Record<string, unknown>;
@@ -2562,7 +2572,7 @@ export class YamlParser {
         nodes.push(actionNode);
         createEdgesFromCurrent(nodeId);
         currentNodeIds = [nodeId];
-      } else if (isStopAction(action)) {
+      } else if (isStopAction(action) && hasOnlyKeys(action, STOP_NODE_KEYS)) {
         // Stop action - halts automation execution
         const nodeId = getNextNodeId('action');
         const act = action as Record<string, unknown>;

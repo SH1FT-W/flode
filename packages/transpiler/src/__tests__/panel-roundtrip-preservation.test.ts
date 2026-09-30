@@ -3,6 +3,7 @@ import { dump } from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';
 import { buildAutomationSaveConfig } from '../save-config';
+import { parseScript, transpileScript } from '../script';
 
 /**
  * Opens and saves an automation exactly like the panel does (load with
@@ -210,5 +211,34 @@ describe('panel round trip keeps what HA accepts', () => {
       actions: [{ action: 'light.turn_on' }],
     });
     expectExact(saved.triggers, triggers);
+  });
+
+  it('keeps every field of event and stop steps (A8)', async () => {
+    const actions = [
+      { event: 'plain', event_data: { a: 1 } },
+      { event: 'foo', event_data: { a: 1 }, continue_on_error: true },
+      { alias: 'Tpl', event: 'bar', event_data_template: { b: '{{ 2 }}' } },
+      { variables: { out: { value: 1 } } },
+      { stop: 'done', response_variable: 'out' },
+    ];
+    const saved = await panelSave({
+      alias: 'Event and stop',
+      triggers: [{ trigger: 'state', entity_id: 'sensor.a' }],
+      actions,
+    });
+    expectExact(saved.actions, actions);
+  });
+
+  it('keeps the response of a script stop step (A8)', async () => {
+    const script = {
+      alias: 'Response',
+      sequence: [{ variables: { out: { value: 1 } } }, { stop: 'done', response_variable: 'out' }],
+    };
+    const transpiler = new FlowTranspiler();
+    const parsed = await parseScript(transpiler, script, { keepBlocks: true });
+    expect(parsed.graph).toBeDefined();
+    if (!parsed.graph) return;
+    const saved = transpileScript(transpiler, parsed.graph);
+    expectExact(saved.config?.sequence, script.sequence);
   });
 });
