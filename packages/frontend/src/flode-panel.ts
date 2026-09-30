@@ -1083,8 +1083,9 @@ export class FlodePanel extends LitElement {
       }
       const kind = current.item.kind;
       if (kind === 'script' && current.isNew) {
-        // Like HA's script editor: a new script's id comes from its name.
-        const configId = newScriptId(hass, current.graph.name);
+        // Like HA's script editor: a new script's id comes from its name —
+        // checked against today's states, not those from before the name dialog.
+        const configId = newScriptId(this.hass ?? hass, current.graph.name);
         current = { ...current, item: { ...current.item, configId } };
         this.updateTab(tabId, (open, saveState) => ({
           flow: { ...open, item: { ...open.item, configId } },
