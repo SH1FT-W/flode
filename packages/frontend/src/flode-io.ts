@@ -3,6 +3,7 @@ import { load as yamlLoad } from 'js-yaml';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { flowYaml } from './flow-yaml';
 import { errorMessage, type FlowKind, type HomeAssistant } from './ha';
+import { copyToClipboard } from './notify';
 import { t } from './strings';
 
 /** A flow read from pasted YAML or a JSON file — opened as a new, unsaved draft. */
@@ -212,14 +213,7 @@ export class FlodeYamlView extends LitElement {
 
   private copy(): void {
     const language = this.hass?.language ?? 'en';
-    void navigator.clipboard?.writeText(this.yaml);
-    this.dispatchEvent(
-      new CustomEvent('hass-notification', {
-        detail: { message: t(language, 'ioYamlCopied') },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    void copyToClipboard(this, () => this.yaml, t(language, 'ioYamlCopied'));
   }
 
   render() {

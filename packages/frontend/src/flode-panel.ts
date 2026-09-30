@@ -72,6 +72,7 @@ import { mapT } from './i18n';
 import { InFlight } from './in-flight';
 import { LOGBOOK_POLL_MS, type ManualRun } from './manual-runs';
 import { NODE_META, summarize, typeLabel } from './node-meta';
+import { copyToClipboard, notify } from './notify';
 import { labelWithHint, matchShortcut, type ShortcutId, shortcutHint } from './shortcuts';
 import { t } from './strings';
 import {
@@ -403,9 +404,7 @@ export class FlodePanel extends LitElement {
   }
 
   private notify(message: string): void {
-    this.dispatchEvent(
-      new CustomEvent('hass-notification', { detail: { message }, bubbles: true, composed: true })
-    );
+    notify(this, message);
   }
 
   /**
@@ -491,12 +490,11 @@ export class FlodePanel extends LitElement {
   private async copyYaml(): Promise<void> {
     const flow = this.flow;
     if (!flow) return;
-    try {
-      await navigator.clipboard.writeText(await flowYaml(flow.graph, flow.item.kind));
-      this.notify(t(this.language, 'ioYamlCopied'));
-    } catch (error) {
-      this.notify(errorMessage(error));
-    }
+    await copyToClipboard(
+      this,
+      () => flowYaml(flow.graph, flow.item.kind),
+      t(this.language, 'ioYamlCopied')
+    );
   }
 
   /** "Save as copy": the same flow as a new automation/script — HA's save dialog asks for the name. */
@@ -876,13 +874,7 @@ export class FlodePanel extends LitElement {
     });
     this.selectedId = null;
     void this.updateComplete.then(() => this.canvas?.fitView());
-    this.dispatchEvent(
-      new CustomEvent('hass-notification', {
-        detail: { message: t(this.language, 'assistAppliedToast') },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.notify(t(this.language, 'assistAppliedToast'));
   }
 
   /** A draft from "Build with AI" opens as a new, unsaved tab. */
@@ -909,13 +901,7 @@ export class FlodePanel extends LitElement {
       unknownEntityIds.length > 0
         ? `${t(this.language, 'aiUnknown')}${unknownEntityIds.join(', ')}`
         : null;
-    this.dispatchEvent(
-      new CustomEvent('hass-notification', {
-        detail: { message: t(this.language, 'aiDone') },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.notify(t(this.language, 'aiDone'));
   }
 
   /** A restored tab without changes: show HA's current version, not the remembered one. */
@@ -1704,13 +1690,7 @@ export class FlodePanel extends LitElement {
     await this.updateComplete;
     this.canvas?.fitView();
     // HA's own toast (the same event HA's panels use for "Saved" etc.).
-    this.dispatchEvent(
-      new CustomEvent('hass-notification', {
-        detail: { message: t(this.language, 'tidied') },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.notify(t(this.language, 'tidied'));
   }
 
   // ---- render ----------------------------------------------------------------

@@ -7,6 +7,7 @@ import {
 } from '@flode/ui-core';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { type AutomationListItem, getTrace, type HomeAssistant, listTraces } from './ha';
+import { copyToClipboard } from './notify';
 import { t } from './strings';
 import { runVariables } from './trace';
 
@@ -263,16 +264,7 @@ export class FlodeTemplates extends LitElement {
         <ha-button
           slot="secondaryAction"
           appearance="plain"
-          @click=${() => {
-            void navigator.clipboard?.writeText(this.template);
-            this.dispatchEvent(
-              new CustomEvent('hass-notification', {
-                detail: { message: t(language, 'tplCopied') },
-                bubbles: true,
-                composed: true,
-              })
-            );
-          }}
+          @click=${() => void copyToClipboard(this, () => this.template, t(language, 'tplCopied'))}
         >
           <ha-icon slot="start" icon="mdi:content-copy"></ha-icon>${t(language, 'tplCopy')}
         </ha-button>
