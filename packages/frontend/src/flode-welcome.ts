@@ -24,8 +24,9 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:format-list-bulleted', title: 'new307ScrollTitle', text: 'new307ScrollText' },
-  { icon: 'mdi:progress-clock', title: 'new307ProgressTitle', text: 'new307ProgressText' },
+  { icon: 'mdi:content-save-check-outline', title: 'new308KeepTitle', text: 'new308KeepText' },
+  { icon: 'mdi:folder-open-outline', title: 'new308OpenTitle', text: 'new308OpenText' },
+  { icon: 'mdi:tab', title: 'new308SaveTitle', text: 'new308SaveText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

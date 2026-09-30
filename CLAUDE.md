@@ -158,10 +158,10 @@ To cut a new release, follow these steps:
 
 2. **Create a new git tag**
 
-- Use semantic versioning (e.g., v0.7.7). For 1.x.x.
+- Use semantic versioning, **without a leading "v"** (e.g., 3.0.8) — since 3.0.8 tags, release titles and the version badge are just the number.
 - Example:
   ```bash
-  git tag v0.7.7
+  git tag 3.0.8
   ```
 
 3. **Push changes to remote**
@@ -185,7 +185,7 @@ To cut a new release, follow these steps:
 
 ```bash
 # IMPORTANT: Use real newlines in the --notes argument, not literal \n. For multiline notes, write each line on a new line inside the string.
-gh release create v0.7.7 --title "FLODE v0.7.7" --notes "<release notes>"
+gh release create 3.0.8 --title "3.0.8" --notes "<release notes>"
 ```
 
 5. **Verify release on GitHub**

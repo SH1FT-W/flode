@@ -275,12 +275,15 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new307ScrollTitle: 'Startseite scrollt sauber',
-    new307ScrollText:
-      'Die Automationsliste hatte zwei Scrollbalken, die sich gegenseitig ins Gehege kamen. Jetzt scrollt nur noch die Liste.',
-    new307ProgressTitle: 'Ladebalken beim Öffnen',
-    new307ProgressText:
-      'Dauert das Öffnen einer Automation oder das Zusammenführen länger, zeigt FLODE jetzt einen Dialog mit Fortschritt und dem aktuellen Schritt.',
+    new308KeepTitle: 'Beim Speichern geht nichts mehr verloren',
+    new308KeepText:
+      'Bedingungen wie „weekday: mon“, Template-Kurzformen, Wartezeiten als Zahl und Einstellungen wie max_exceeded werden jetzt genau so gespeichert, wie sie in Home Assistant stehen.',
+    new308OpenTitle: 'Mehr Automationen lassen sich öffnen',
+    new308OpenText:
+      'Trigger mit Zahlenwerten oder eine Bedingung als letzter Schritt verhinderten das Öffnen oder Speichern. Blueprint-Automationen sagen jetzt, dass sie in Home Assistant bearbeitet werden.',
+    new308SaveTitle: 'Zuverlässiger speichern',
+    new308SaveText:
+      'Änderungen während des Speicherns bleiben erhalten, Status und KI-Antworten bleiben beim richtigen Tab, und ein Doppelklick öffnet nur einen Tab.',
   },
   en: {
     title: 'FLODE',
@@ -551,12 +554,15 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new307ScrollTitle: 'Start page scrolls cleanly',
-    new307ScrollText:
-      "The automation list had two scroll bars that got in each other's way. Now only the list scrolls.",
-    new307ProgressTitle: 'Progress when opening',
-    new307ProgressText:
-      'When opening an automation or merging takes longer, FLODE now shows a dialog with the progress and the current step.',
+    new308KeepTitle: 'Nothing gets lost when saving',
+    new308KeepText:
+      'Conditions like "weekday: mon", template shorthands, numeric wait timeouts and settings like max_exceeded are now saved exactly as they are in Home Assistant.',
+    new308OpenTitle: 'More automations open',
+    new308OpenText:
+      "Triggers with number values or a condition as the last step kept automations from opening or saving. Blueprint automations now say they're edited in Home Assistant.",
+    new308SaveTitle: 'More reliable saving',
+    new308SaveText:
+      'Edits made while saving are kept, the status and AI answers stay with the right tab, and a double click opens just one tab.',
   },
 } as const;
 

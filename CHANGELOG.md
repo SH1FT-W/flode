@@ -4,6 +4,33 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.0.8] — 2026-09-30 — Nothing gets lost when saving
+
+A bug-fix release. Everything from 3.0.0 below still applies. From this release on, tags and releases are just the number (`3.0.8`, no "v").
+
+### Fixed
+- **Conditions FLODE doesn't model are kept as written** — e.g. `weekday: mon`, a sun offset like `{minutes: -30}` or a numeric state were saved as an always-false template, so the automation stopped running. They're now saved exactly as written.
+- **Template shorthand conditions** (`- "{{ … }}"`) were dropped when saving; with only a shorthand condition the automation didn't open at all.
+- **Waits** — a single `wait_for_trigger` (not a list) disappeared, and a numeric `timeout` (also `0`) was dropped, so the wait never ended.
+- **Mode and limits** — `max_exceeded` with a log level like `info` reset the mode to *single* and dropped `max`.
+- **Flows with separate paths** lost `variables`, `max`, `initial_state`, `trace` and `trigger_variables`.
+- **More kept fields** — `for: {days: …}` on triggers, `response_variable` on stop, `continue_on_error` / `event_data_template` on events.
+- **Automations that didn't open** — triggers with number values (`to: 5`, MQTT `payload: 1`), a condition as the last step and a non-standard flow id now open and save.
+- **Pasted or AI YAML** — unquoted dates stay text instead of shifting to UTC.
+- **Edits made while saving** are no longer marked as saved; switching tabs mid-save reports the result on the right tab.
+- **Assistant answers** stay with the flow that asked, even after switching tabs.
+- **Double click** opens an automation only once.
+- **Touch** — a cancelled drag no longer leaves the card out of place.
+- The runs view no longer hangs on "Loading …" after renaming; "Copied" only shows when the clipboard took the text; the AI buttons stay through short connection drops; errors in *Run from here*, *Tidy up* and file import are reported instead of spinning.
+- **Blueprint automations** show a clear "edit in Home Assistant" message.
+- **A missing panel file** now shows as a setup error instead of a silently missing sidebar entry; reloading the integration no longer registers its files again.
+
+### Changed
+- **Only one FLODE entry** can be added (it never supported more).
+- **Manual install** instructions now say to unzip `flode.zip`.
+
+---
+
 ## [3.0.7] — 2026-09-28 — Clean scrolling and a progress dialog
 
 Everything from 3.0.0 below still applies.
