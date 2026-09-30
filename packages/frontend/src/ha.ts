@@ -138,6 +138,11 @@ export async function loadFlowConfig(
   return config;
 }
 
+/** Made from a blueprint — its steps live in the blueprint, only its inputs in the config. */
+export function usesBlueprint(config: Record<string, unknown>): boolean {
+  return 'use_blueprint' in config;
+}
+
 export async function saveFlowConfig(
   hass: HomeAssistant,
   kind: FlowKind,

@@ -248,6 +248,8 @@ const STRINGS = {
       'Automationen und Skripte als Flow bauen, testen und verstehen – gespeichert wird ganz normales Home-Assistant-YAML.',
     loadFailed: 'Konnte nicht geladen werden',
     saveFailed: 'Speichern fehlgeschlagen',
+    blueprintNotEditable:
+      'Diese Automation basiert auf einem Blueprint – bitte in Home Assistant bearbeiten.',
     invalid: 'Ungültig',
     type_trigger: 'Auslöser',
     type_automation: 'Automation',
@@ -522,6 +524,8 @@ const STRINGS = {
       'Build, test and understand automations and scripts as flows – saved as plain Home Assistant YAML.',
     loadFailed: 'Could not be loaded',
     saveFailed: 'Saving failed',
+    blueprintNotEditable:
+      'This automation is based on a blueprint – please edit it in Home Assistant.',
     invalid: 'Invalid',
     type_trigger: 'Trigger',
     type_automation: 'Automation',

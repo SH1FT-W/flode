@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type AutomationListItem, sameFlow } from '../ha';
+import { type AutomationListItem, sameFlow, usesBlueprint } from '../ha';
 
 const item: AutomationListItem = {
   kind: 'automation',
@@ -17,5 +17,14 @@ describe('sameFlow', () => {
     expect(sameFlow(item, { ...item, kind: 'script' })).toBe(false);
     expect(sameFlow(item, { ...item, configId: '2' })).toBe(false);
     expect(sameFlow(item, undefined)).toBe(false);
+  });
+});
+
+describe('usesBlueprint', () => {
+  it('spots automations and scripts made from a blueprint', () => {
+    expect(
+      usesBlueprint({ alias: 'Bewegung', use_blueprint: { path: 'motion.yaml', input: {} } })
+    ).toBe(true);
+    expect(usesBlueprint({ alias: 'Flur', triggers: [], actions: [] })).toBe(false);
   });
 });

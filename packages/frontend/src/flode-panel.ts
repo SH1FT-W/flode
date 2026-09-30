@@ -65,6 +65,7 @@ import {
   runScript,
   sameFlow,
   saveFlowConfig,
+  usesBlueprint,
   waitForAutomationEntity,
 } from './ha';
 import { type StepKind, stepToNode } from './ha-step';
@@ -1004,6 +1005,8 @@ export class FlodePanel extends LitElement {
     const language = this.language;
     report(t(language, 'progressConfig'), 0.1);
     const config = await loadFlowConfig(hass, item.kind, item.configId);
+    // FLODE can't show a blueprint's steps — and must not overwrite its inputs.
+    if (usesBlueprint(config)) throw new Error(t(language, 'blueprintNotEditable'));
     report(t(language, 'progressParse'), 0.35);
     const { transpiler, parseScript } = await loadTranspiler();
     // Wenn-dann, Auswählen, Wiederholen, Parallel stay HA blocks (HA's own nested editor).
