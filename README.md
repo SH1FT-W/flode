@@ -72,7 +72,7 @@ FLODE uses Home Assistant's own `ai_task` — no extra key, no extra service. Wi
 2. Restart Home Assistant.
 3. Settings → Devices & services → Add integration → **FLODE**. It appears in the sidebar (admins only).
 
-Requires **Home Assistant 2026.3** or newer. To install by hand, copy `flode.zip` from the [latest release](https://github.com/SH1FT-W/flode/releases/latest) into `config/custom_components/flode/`.
+Requires **Home Assistant 2026.3** or newer. To install by hand, unzip `flode.zip` from the [latest release](https://github.com/SH1FT-W/flode/releases/latest) into `config/custom_components/flode/`.
 
 ### Coming from FLODE 2.x?
 
