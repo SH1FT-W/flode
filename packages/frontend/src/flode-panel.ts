@@ -68,6 +68,7 @@ import {
 } from './ha';
 import { type StepKind, stepToNode } from './ha-step';
 import { mapT } from './i18n';
+import { InFlight } from './in-flight';
 import { LOGBOOK_POLL_MS, type ManualRun } from './manual-runs';
 import { NODE_META, summarize, typeLabel } from './node-meta';
 import { labelWithHint, matchShortcut, type ShortcutId, shortcutHint } from './shortcuts';
@@ -1035,17 +1036,27 @@ export class FlodePanel extends LitElement {
     };
   }
 
-  private async open(item: AutomationListItem): Promise<void> {
-    const hass = this.hass;
-    if (!hass) return;
-    const openTab = this.tabs.find((tab) => {
+  /** The tab showing this automation/script, if it's open. */
+  private findTab(item: AutomationListItem): EditorTab | undefined {
+    return this.tabs.find((tab) => {
       const open = this.tabFlow(tab).item;
       return open.kind === item.kind && open.configId === item.configId;
     });
+  }
+
+  private readonly opening = new InFlight();
+
+  private async open(item: AutomationListItem): Promise<void> {
+    const hass = this.hass;
+    if (!hass) return;
+    const openTab = this.findTab(item);
     if (openTab) {
       this.switchTab(openTab.id);
       return;
     }
+    // A double click / second ⌘K while it loads: the first one opens it.
+    const key = `${item.kind}:${item.configId}`;
+    if (!this.opening.start(key)) return;
     const heading = t(
       this.language,
       item.kind === 'script' ? 'progressOpenScript' : 'progressOpenAutomation'
@@ -1055,11 +1066,14 @@ export class FlodePanel extends LitElement {
       const flow = await this.loadFlow(hass, item, (step, value) => {
         this.progress = { heading, name: item.name, step, value };
       });
-      this.openTab(flow);
+      const opened = this.findTab(item);
+      if (opened) this.switchTab(opened.id);
+      else this.openTab(flow);
     } catch (error) {
       this.message = `${t(this.language, 'loadFailed')}: ${errorMessage(error)}`;
     } finally {
-      this.progress = null;
+      // Another flow still loading keeps its progress dialog.
+      if (this.opening.end(key)) this.progress = null;
     }
   }
 
