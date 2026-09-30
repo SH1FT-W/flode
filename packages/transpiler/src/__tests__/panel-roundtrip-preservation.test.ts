@@ -3,7 +3,7 @@ import { dump } from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';
 import { buildAutomationSaveConfig } from '../save-config';
-import { parseScript, transpileScript } from '../script';
+import { parseFlowYaml, parseScript, transpileScript } from '../script';
 
 /**
  * Opens and saves an automation exactly like the panel does (load with
@@ -288,5 +288,55 @@ describe('panel round trip keeps what HA accepts', () => {
       actions,
     });
     expectExact(saved.actions, actions);
+  });
+
+  it('reads pasted or AI YAML dates as the text HA sees, merge keys still work (A11)', async () => {
+    const transpiler = new FlowTranspiler();
+    const automationYaml = [
+      'alias: Dates',
+      'triggers:',
+      '  - trigger: time',
+      '    at: 2026-10-01 10:00:00',
+      'actions:',
+      '  - action: calendar.create_event',
+      '    target: &cal',
+      '      entity_id: calendar.home',
+      '    data:',
+      '      start_date_time: 2026-10-01 10:00:00',
+      '      end_date: 2026-10-02',
+      '  - action: calendar.create_event',
+      '    target:',
+      '      <<: *cal',
+      '      area_id: kitchen',
+    ].join('\n');
+    const automation = await parseFlowYaml(transpiler, automationYaml, 'automation');
+    expect(automation.graph).toBeDefined();
+    if (!automation.graph) return;
+    const saved = buildAutomationSaveConfig(transpiler, automation.graph, {
+      alias: 'Dates',
+      description: '',
+    });
+    expect(saved.config).toMatchObject({
+      triggers: [{ trigger: 'time', at: '2026-10-01 10:00:00' }],
+      actions: [
+        { data: { start_date_time: '2026-10-01 10:00:00', end_date: '2026-10-02' } },
+        { target: { entity_id: 'calendar.home', area_id: 'kitchen' } },
+      ],
+    });
+
+    const scriptYaml = [
+      'alias: Date script',
+      'sequence:',
+      '  - delay: 00:00:05',
+      '  - variables:',
+      '      day: 2026-10-01',
+    ].join('\n');
+    const script = await parseFlowYaml(transpiler, scriptYaml, 'script');
+    expect(script.graph).toBeDefined();
+    if (!script.graph) return;
+    expect(transpileScript(transpiler, script.graph).config?.sequence).toEqual([
+      { delay: '00:00:05' },
+      { variables: { day: '2026-10-01' } },
+    ]);
   });
 });

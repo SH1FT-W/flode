@@ -1,5 +1,4 @@
 import { type FlowGraph, FlowGraphSchema, isPlainObject } from '@flode/shared';
-import { load as yamlLoad } from 'js-yaml';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { defineElement } from './define-element';
 import { flowYaml } from './flow-yaml';
@@ -21,7 +20,8 @@ export function yamlKind(config: unknown): FlowKind {
 }
 
 export async function flowFromYaml(yaml: string): Promise<ImportedFlow> {
-  let config: unknown = yamlLoad(yaml);
+  const { transpiler, parseFlowYaml, loadHaYaml } = await import('@flode/transpiler');
+  let config: unknown = loadHaYaml(yaml);
   // A pasted scripts.yaml entry (`my_script: {…}`) — take the script itself.
   if (isPlainObject(config) && Object.keys(config).length === 1) {
     const [only] = Object.values(config);
@@ -30,7 +30,6 @@ export async function flowFromYaml(yaml: string): Promise<ImportedFlow> {
   // automations.yaml is a list — the first automation.
   if (Array.isArray(config)) config = config[0];
   const kind = yamlKind(config);
-  const { transpiler, parseFlowYaml } = await import('@flode/transpiler');
   const { dump } = await import('js-yaml');
   const result = await parseFlowYaml(transpiler, dump(config), kind, { keepBlocks: true });
   if (!result.success || !result.graph) throw new Error(result.errors?.join('\n') ?? 'parse');

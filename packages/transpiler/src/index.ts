@@ -17,6 +17,7 @@ export type { ScriptTranspileResult } from './script';
 export { parseFlowYaml, parseScript, transpileScript } from './script';
 export type { SequenceResult } from './sequence';
 export { buildSequenceFlow, SEQUENCE_ENTRY_ID, transpileSequence } from './sequence';
+export { loadHaYaml } from './yaml';
 export type { HAYamlOutput, TranspilerStrategy } from './strategies/base';
 // Strategies
 export { BaseStrategy } from './strategies/base';

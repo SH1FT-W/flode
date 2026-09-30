@@ -3,6 +3,7 @@ import { automationToScriptConfig, isPlainObject, scriptToAutomationConfig } fro
 import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
 import type { FlowTranspiler, YamlOptions } from './FlowTranspiler';
 import type { ParseResult, YamlParserOptions } from './parser/YamlParser';
+import { loadHaYaml } from './yaml';
 
 export interface ScriptTranspileResult {
   success: boolean;
@@ -95,10 +96,9 @@ export async function parseFlowYaml(
   kind: 'automation' | 'script',
   options: YamlParserOptions = {}
 ): Promise<ParseResult> {
-  if (kind === 'automation') return transpiler.fromYaml(yaml, options);
   let config: unknown;
   try {
-    config = yamlLoad(yaml);
+    config = loadHaYaml(yaml);
   } catch (error) {
     return {
       success: false,
@@ -106,6 +106,10 @@ export async function parseFlowYaml(
       warnings: [],
       hadMetadata: false,
     };
+  }
+  if (kind === 'automation') {
+    // Empty text loads as `undefined`, which cannot be dumped — `null` fails the same way
+    return transpiler.fromYaml(yamlDump(config ?? null, YAML_DUMP_OPTIONS), options);
   }
   if (!isPlainObject(config)) {
     return {
