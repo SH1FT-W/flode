@@ -50,5 +50,5 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 def async_unregister_panel(hass: HomeAssistant) -> None:
     """Unregister the FLODE panel."""
-    frontend.async_remove_panel(hass, DOMAIN)
+    frontend.async_remove_panel(hass, DOMAIN, warn_if_unknown=False)
     _LOGGER.info("FLODE panel unregistered")
