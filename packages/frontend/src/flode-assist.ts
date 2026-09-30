@@ -9,6 +9,17 @@ import {
   selectPromptEntities,
 } from '@flode/ui-core';
 import { css, html, LitElement, nothing } from 'lit';
+import {
+  addTurn,
+  type ChatTurn,
+  conversation,
+  endRequest,
+  isAsking,
+  type Proposal,
+  setConversation,
+  startRequest,
+  watchConversations,
+} from './assist-conversations';
 import { entityCandidates } from './flode-ai';
 import { flowYaml } from './flow-yaml';
 import { errorMessage, type FlowKind, type HomeAssistant } from './ha';
@@ -17,20 +28,6 @@ import { t } from './strings';
 function loadTranspiler() {
   return import('@flode/transpiler');
 }
-
-interface Proposal {
-  graph?: FlowGraph;
-  /** Why it can't be applied as is (unparseable YAML, unknown entities …). */
-  problems: string[];
-}
-
-interface ChatTurn extends AssistTurn {
-  proposal?: Proposal;
-  applied?: boolean;
-}
-
-/** One conversation per open flow (tab), kept while the page lives. */
-const conversations = new Map<string, ChatTurn[]>();
 
 /**
  * The AI assistant beside the editor: ask about the open automation/script,
@@ -78,20 +75,41 @@ export class FlodeAssist extends LitElement {
       previous && typeof previous === 'object' && 'id' in previous ? previous.id : undefined;
     // Another tab: show its own conversation.
     if (changed.has('graph') && before !== this.graph?.id) {
-      this.turns = (this.graph && conversations.get(this.graph.id)) ?? [];
+      this.showConversation();
       this.error = null;
     }
   }
 
-  private setTurns(turns: ChatTurn[]): void {
-    this.turns = turns;
-    if (this.graph) conversations.set(this.graph.id, turns);
+  private unwatch: (() => void) | undefined;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.unwatch = watchConversations(() => this.showConversation());
+    this.showConversation();
   }
 
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.unwatch?.();
+    this.unwatch = undefined;
+  }
+
+  /** The shown flow's conversation, and whether it is still waiting for an answer. */
+  private showConversation(): void {
+    this.turns = this.graph ? conversation(this.graph.id) : [];
+    this.running = this.graph ? isAsking(this.graph.id) : false;
+  }
+
+  private setTurns(turns: ChatTurn[]): void {
+    this.turns = turns;
+    if (this.graph) setConversation(this.graph.id, turns);
+  }
+
+  /** The answer belongs to the flow that asked — the tab may have changed meanwhile. */
   private async ask(request: string): Promise<void> {
-    const { hass, aiEntityId, graph } = this;
+    const { hass, aiEntityId, graph, kind } = this;
     const text = request.trim();
-    if (!hass || !aiEntityId || !graph || !text || this.running) return;
+    if (!hass || !aiEntityId || !graph || !text || !startRequest(graph.id)) return;
     const history: AssistTurn[] = this.turns.map(({ role, text: turnText }) => ({
       role,
       text: turnText,
@@ -101,14 +119,14 @@ export class FlodeAssist extends LitElement {
     this.running = true;
     this.error = null;
     try {
-      const currentYaml = await flowYaml(graph, this.kind);
+      const currentYaml = await flowYaml(graph, kind);
       const candidates = entityCandidates(hass);
       const reply = await generateWithAiTask(
         (message) => hass.callWS(message),
         aiEntityId,
         'FLODE: assistant',
         buildAssistInstructions({
-          kind: this.kind,
+          kind,
           flowYaml: currentYaml,
           request: text,
           entities: selectPromptEntities(text, candidates),
@@ -117,25 +135,22 @@ export class FlodeAssist extends LitElement {
         })
       );
       const parsed = parseAssistReply(reply);
-      this.setTurns([
-        ...this.turns,
-        {
-          role: 'assistant',
-          text: parsed.text,
-          ...(parsed.yaml ? { proposal: await this.readProposal(parsed.yaml) } : {}),
-        },
-      ]);
+      addTurn(graph.id, {
+        role: 'assistant',
+        text: parsed.text,
+        ...(parsed.yaml ? { proposal: await this.readProposal(parsed.yaml, kind) } : {}),
+      });
     } catch (error) {
-      this.error = readableAiError(errorMessage(error));
+      if (this.graph?.id === graph.id) this.error = readableAiError(errorMessage(error));
     } finally {
-      this.running = false;
+      endRequest(graph.id);
     }
   }
 
-  private async readProposal(yaml: string): Promise<Proposal> {
+  private async readProposal(yaml: string, kind: FlowKind): Promise<Proposal> {
     const hass = this.hass;
     const { transpiler, parseFlowYaml, validateFlowGraph } = await loadTranspiler();
-    const result = await parseFlowYaml(transpiler, yaml, this.kind, { keepBlocks: true });
+    const result = await parseFlowYaml(transpiler, yaml, kind, { keepBlocks: true });
     if (!result.success || !result.graph) {
       return { problems: result.errors ?? [t(this.language, 'assistUnreadable')] };
     }
