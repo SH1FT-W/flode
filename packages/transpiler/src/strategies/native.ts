@@ -19,7 +19,7 @@ import {
 } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { findBackEdges } from '../analyzer/topology';
-import { BaseStrategy, type HAYamlOutput } from './base';
+import { BaseStrategy, buildAutomationSettings, type HAYamlOutput } from './base';
 
 /**
  * Describes a detected repeat pattern in the flow graph
@@ -210,29 +210,7 @@ export class NativeStrategy extends BaseStrategy {
 
     automation.actions = actions;
     automation.mode = flow.metadata?.mode ?? 'single';
-
-    // Preserve top-level variables from original YAML (round-trip)
-    if (flow.userVariables && Object.keys(flow.userVariables).length > 0) {
-      automation.variables = flow.userVariables;
-    }
-
-    // Add optional metadata
-    if (flow.metadata?.max) {
-      automation.max = flow.metadata.max;
-    }
-    if (flow.metadata?.max_exceeded) {
-      automation.max_exceeded = flow.metadata.max_exceeded;
-    }
-    // Written whenever the automation has it — `true` also matters (on after every restart).
-    if (typeof flow.metadata?.initial_state === 'boolean') {
-      automation.initial_state = flow.metadata.initial_state;
-    }
-    if (flow.metadata?.trace) {
-      automation.trace = flow.metadata.trace;
-    }
-    if (flow.userTriggerVariables && Object.keys(flow.userTriggerVariables).length > 0) {
-      automation.trigger_variables = flow.userTriggerVariables;
-    }
+    Object.assign(automation, buildAutomationSettings(flow));
 
     return {
       automation,

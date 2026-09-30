@@ -1,4 +1,4 @@
-import { isPlainObject } from '@flode/shared';
+import { type FlowGraph, isPlainObject } from '@flode/shared';
 import { dump } from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';
@@ -158,5 +158,44 @@ describe('panel round trip keeps what HA accepts', () => {
       initial_state: false,
     });
     expect(saved.max_exceeded).toBeUndefined();
+  });
+
+  it('keeps the automation-level keys of a state-machine flow (A6)', () => {
+    const graph: FlowGraph = {
+      id: 'a18b0fbb-d966-432c-aba7-4f7361da8d29',
+      name: 'Two paths',
+      version: 1,
+      metadata: {
+        mode: 'queued',
+        max: 7,
+        max_exceeded: 'silent',
+        initial_state: false,
+        trace: { stored_traces: 50 },
+      },
+      userVariables: { threshold: 5 },
+      userTriggerVariables: { tv: 1 },
+      nodes: [
+        { id: 't1', type: 'trigger', position: { x: 0, y: 0 }, data: { trigger: 'state' } },
+        { id: 't2', type: 'trigger', position: { x: 0, y: 0 }, data: { trigger: 'state' } },
+        { id: 'x', type: 'action', position: { x: 0, y: 0 }, data: { service: 'light.turn_on' } },
+        { id: 'y', type: 'action', position: { x: 0, y: 0 }, data: { service: 'light.toggle' } },
+      ],
+      edges: [
+        { id: 'e1', source: 't1', target: 'x' },
+        { id: 'e2', source: 't2', target: 'y' },
+      ],
+    };
+    const transpiler = new FlowTranspiler();
+    expect(transpiler.transpile(graph).output?.strategy).toBe('state-machine');
+    const saved = buildAutomationSaveConfig(transpiler, graph, { alias: 'x', description: '' });
+    expect(saved.config).toMatchObject({
+      mode: 'queued',
+      variables: { threshold: 5 },
+      max: 7,
+      max_exceeded: 'silent',
+      initial_state: false,
+      trace: { stored_traces: 50 },
+      trigger_variables: { tv: 1 },
+    });
   });
 });

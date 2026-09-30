@@ -19,7 +19,7 @@ import {
   mapOneOrMany,
 } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
-import { BaseStrategy, type HAYamlOutput } from './base';
+import { BaseStrategy, buildAutomationSettings, type HAYamlOutput } from './base';
 
 /**
  * Outcome of planning a fan-out: either the set of branch nodes whose standalone
@@ -325,6 +325,7 @@ export class StateMachineStrategy extends BaseStrategy {
           triggers: triggers,
           actions: actionSequence,
           mode: flow.metadata?.mode ?? 'single',
+          ...buildAutomationSettings(flow),
         },
         warnings,
         strategy: this.name,

@@ -24,6 +24,35 @@ export interface HAYamlOutput {
 }
 
 /**
+ * The automation-level keys after `mode` that every strategy keeps from the
+ * original automation — user variables, run limits, initial state, traces.
+ */
+export function buildAutomationSettings(flow: FlowGraph): Record<string, unknown> {
+  const settings: Record<string, unknown> = {};
+  // Preserve top-level variables from original YAML (round-trip)
+  if (flow.userVariables && Object.keys(flow.userVariables).length > 0) {
+    settings.variables = flow.userVariables;
+  }
+  if (flow.metadata?.max) {
+    settings.max = flow.metadata.max;
+  }
+  if (flow.metadata?.max_exceeded) {
+    settings.max_exceeded = flow.metadata.max_exceeded;
+  }
+  // Written whenever the automation has it — `true` also matters (on after every restart).
+  if (typeof flow.metadata?.initial_state === 'boolean') {
+    settings.initial_state = flow.metadata.initial_state;
+  }
+  if (flow.metadata?.trace) {
+    settings.trace = flow.metadata.trace;
+  }
+  if (flow.userTriggerVariables && Object.keys(flow.userTriggerVariables).length > 0) {
+    settings.trigger_variables = flow.userTriggerVariables;
+  }
+  return settings;
+}
+
+/**
  * Base interface for transpiler strategies
  */
 export interface TranspilerStrategy {
