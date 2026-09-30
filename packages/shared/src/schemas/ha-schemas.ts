@@ -9,15 +9,22 @@ import { type TargetIds, TargetIdsSchema } from './ha-entities';
 export const VALID_WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 export type Weekday = (typeof VALID_WEEKDAYS)[number];
 
+const DurationPartSchema = z.union([z.number(), z.string()]).optional();
+
+/** A `{ days, hours, minutes, seconds, milliseconds }` duration (parts may be templates). */
+const DurationMappingSchema = z.looseObject({
+  days: DurationPartSchema,
+  hours: DurationPartSchema,
+  minutes: DurationPartSchema,
+  seconds: DurationPartSchema,
+  milliseconds: DurationPartSchema,
+});
+
 /**
- * A time period as HA's `cv.time_period` accepts it: `"HH:MM:SS"`, seconds,
- * or a `{ hours, minutes, … }` mapping.
+ * A time period as HA's `cv.time_period` accepts it: `"HH:MM:SS"` (or a
+ * template), seconds, or a duration mapping.
  */
-const TimePeriodSchema = z.union([
-  z.string(),
-  z.number(),
-  z.record(z.string(), z.union([z.number(), z.string()])),
-]);
+const TimePeriodSchema = z.union([z.string(), z.number(), DurationMappingSchema]);
 type TimePeriod = z.infer<typeof TimePeriodSchema>;
 
 /**
@@ -112,18 +119,7 @@ export const HATriggerSchema = z
     // Home Assistant supports both string, array, and null for from/to fields
     from: z.union([z.string(), z.array(z.string()), z.null()]).optional(),
     to: z.union([z.string(), z.array(z.string()), z.null()]).optional(),
-    for: z
-      .union([
-        z.string(),
-        z.number(),
-        z.object({
-          hours: z.union([z.number(), z.string()]).optional(),
-          minutes: z.union([z.number(), z.string()]).optional(),
-          seconds: z.union([z.number(), z.string()]).optional(),
-          milliseconds: z.union([z.number(), z.string()]).optional(),
-        }),
-      ])
-      .optional(),
+    for: TimePeriodSchema.optional(),
     at: z.unknown().optional(),
     offset: z.union([z.string(), z.number(), z.record(z.string(), z.number())]).optional(),
     event: z.string().optional(),
@@ -165,7 +161,7 @@ export interface HATriggerInput {
   entity_id?: string | string[];
   from?: string | string[] | null;
   to?: string | string[] | null;
-  for?: string | { hours?: number; minutes?: number; seconds?: number };
+  for?: TimePeriod;
   at?: string | string[] | { entity_id: string; offset?: string };
   offset?: string | number | Record<string, number>;
   event?: string;
@@ -410,15 +406,7 @@ export type HAScript = z.infer<typeof HAScriptSchema>;
 export const HADelaySchema = z.looseObject({
   id: z.string().optional(),
   alias: z.string().optional(),
-  delay: z.union([
-    z.string(),
-    z.looseObject({
-      hours: z.union([z.number(), z.string()]).optional(),
-      minutes: z.union([z.number(), z.string()]).optional(),
-      seconds: z.union([z.number(), z.string()]).optional(),
-      milliseconds: z.union([z.number(), z.string()]).optional(),
-    }),
-  ]),
+  delay: z.union([z.string(), DurationMappingSchema]),
 });
 export type HADelay = z.infer<typeof HADelaySchema>;
 
@@ -432,19 +420,7 @@ export const HAWaitSchema = z
     wait_template: z.string().optional(),
     // HA's TRIGGER_SCHEMA takes one trigger or a list
     wait_for_trigger: z.union([HATriggerSchema, z.array(HATriggerSchema)]).optional(),
-    timeout: z
-      .union([
-        z.string(),
-        // Seconds (`timeout: 30`)
-        z.number(),
-        z.looseObject({
-          hours: z.union([z.number(), z.string()]).optional(),
-          minutes: z.union([z.number(), z.string()]).optional(),
-          seconds: z.union([z.number(), z.string()]).optional(),
-          milliseconds: z.union([z.number(), z.string()]).optional(),
-        }),
-      ])
-      .optional(),
+    timeout: TimePeriodSchema.optional(),
     continue_on_timeout: z.boolean().optional(),
   })
   .refine(

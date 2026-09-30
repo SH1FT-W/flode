@@ -198,4 +198,17 @@ describe('panel round trip keeps what HA accepts', () => {
       trigger_variables: { tv: 1 },
     });
   });
+
+  it('keeps days in a trigger duration (A7)', async () => {
+    const triggers = [
+      { trigger: 'state', entity_id: 'sensor.a', for: { days: 1, hours: 2 } },
+      { trigger: 'state', entity_id: 'sensor.b', to: 'on', for: { days: 2, milliseconds: 5 } },
+    ];
+    const saved = await panelSave({
+      alias: 'Days',
+      triggers,
+      actions: [{ action: 'light.turn_on' }],
+    });
+    expectExact(saved.triggers, triggers);
+  });
 });
