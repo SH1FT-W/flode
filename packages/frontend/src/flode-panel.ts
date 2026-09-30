@@ -20,7 +20,7 @@ import './flode-runfrom';
 import './flode-shortcuts';
 import './flode-ha-list';
 import './flode-progress';
-import { chooseAiTask, mergeAutomationGraphs, randomId } from '@flode/ui-core';
+import { chooseAiTask, keepAiTask, mergeAutomationGraphs, randomId } from '@flode/ui-core';
 import type { AddAt, CanvasMenuDetail, FlodeCanvas } from './flode-canvas';
 import { type FlodeHaList, HA_LIST_TAGS } from './flode-ha-list';
 import { downloadFlowJson, type ImportedFlow, pickFlowJson } from './flode-io';
@@ -391,10 +391,19 @@ export class FlodePanel extends LitElement {
   /** HA has no event when the AI default changes — re-read it whenever the window regains focus. */
   private onWindowFocus = (): void => void this.loadAiChoice();
 
+  /** Counts the reads — an older answer arriving late is ignored. */
+  private aiChoiceRead = 0;
+
   private async loadAiChoice(): Promise<void> {
     const hass = this.hass;
     if (!hass) return;
-    const choice = await chooseAiTask((message) => hass.callWS(message), hass.states);
+    const read = ++this.aiChoiceRead;
+    const next = await chooseAiTask((message) => hass.callWS(message), hass.states);
+    if (read !== this.aiChoiceRead) return;
+    const choice = keepAiTask(
+      { entityId: this.aiEntityId, needsDefault: this.aiNeedsDefault },
+      next
+    );
     this.aiEntityId = choice.entityId;
     this.aiNeedsDefault = choice.needsDefault;
   }

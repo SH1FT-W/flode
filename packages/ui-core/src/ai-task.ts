@@ -27,6 +27,8 @@ export interface AiTaskChoice {
   entityId: string | null;
   /** AI Tasks exist, but none is chosen as HA's default ("AI suggestions" → data generation). */
   needsDefault: boolean;
+  /** HA's preferences couldn't be read (connection hiccup …). */
+  failed?: boolean;
 }
 
 export async function chooseAiTask(
@@ -43,8 +45,13 @@ export async function chooseAiTask(
     const entityId = preferred && ids.includes(preferred) ? preferred : null;
     return { entityId, needsDefault: entityId === null };
   } catch {
-    return { entityId: null, needsDefault: true };
+    return { entityId: null, needsDefault: true, failed: true };
   }
+}
+
+/** A failed re-read keeps the AI Task already in use — a short WS error doesn't hide the AI buttons. */
+export function keepAiTask(previous: AiTaskChoice, next: AiTaskChoice): AiTaskChoice {
+  return next.failed && previous.entityId !== null ? previous : next;
 }
 
 /** One `ai_task.generate_data` call; resolves the model's text reply. */
