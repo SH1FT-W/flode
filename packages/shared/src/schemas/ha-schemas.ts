@@ -102,6 +102,11 @@ export const HAPlatformEnum = z.enum([
 ]);
 export type HAPlatform = z.infer<typeof HAPlatformEnum>;
 
+const StateScalarSchema = z.union([z.string(), z.number(), z.boolean()]);
+/** A state trigger's `from`/`to`: one value, a list, or `null` (any state change). */
+const StateValueSchema = z.union([StateScalarSchema, z.array(StateScalarSchema), z.null()]);
+type StateValue = z.infer<typeof StateValueSchema>;
+
 /**
  * Zod schema for Home Assistant trigger objects.
  * Normalizes both legacy 'platform' and modern 'trigger' fields to a single 'trigger' property.
@@ -116,9 +121,10 @@ export const HATriggerSchema = z
     target: TargetIdsSchema.optional(),
     options: z.looseObject({}).optional(),
     entity_id: z.union([z.string(), z.array(z.string())]).optional(),
-    // Home Assistant supports both string, array, and null for from/to fields
-    from: z.union([z.string(), z.array(z.string()), z.null()]).optional(),
-    to: z.union([z.string(), z.array(z.string()), z.null()]).optional(),
+    // Home Assistant supports string, array, and null for from/to fields — and,
+    // with `attribute:`, any value (`to: 255`, `to: true`)
+    from: StateValueSchema.optional(),
+    to: StateValueSchema.optional(),
     for: TimePeriodSchema.optional(),
     at: z.unknown().optional(),
     offset: z.union([z.string(), z.number(), z.record(z.string(), z.number())]).optional(),
@@ -132,7 +138,8 @@ export const HATriggerSchema = z
     webhook_id: z.string().optional(),
     zone: z.string().optional(),
     topic: z.string().optional(),
-    payload: z.string().optional(),
+    // A template in HA — a bare number is fine too
+    payload: z.union([z.string(), z.number()]).optional(),
     // Conversation trigger fields
     command: z.union([z.string(), z.array(z.string())]).optional(),
   })
@@ -159,8 +166,8 @@ export interface HATriggerInput {
   target?: TargetIds;
   options?: Record<string, unknown>;
   entity_id?: string | string[];
-  from?: string | string[] | null;
-  to?: string | string[] | null;
+  from?: StateValue;
+  to?: StateValue;
   for?: TimePeriod;
   at?: string | string[] | { entity_id: string; offset?: string };
   offset?: string | number | Record<string, number>;
@@ -174,7 +181,7 @@ export interface HATriggerInput {
   webhook_id?: string;
   zone?: string;
   topic?: string;
-  payload?: string;
+  payload?: string | number;
   command?: string | string[];
 }
 

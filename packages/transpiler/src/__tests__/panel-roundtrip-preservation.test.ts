@@ -241,4 +241,38 @@ describe('panel round trip keeps what HA accepts', () => {
     const saved = transpileScript(transpiler, parsed.graph);
     expectExact(saved.config?.sequence, script.sequence);
   });
+
+  it('opens triggers with number and boolean values and keeps their type (A9)', async () => {
+    const triggers = [
+      { trigger: 'state', entity_id: 'light.a', attribute: 'brightness', from: 0, to: 255 },
+      { trigger: 'state', entity_id: 'media_player.a', attribute: 'is_volume_muted', to: true },
+      { trigger: 'state', entity_id: 'input_number.x', attribute: 'step', to: [1, 2] },
+      { trigger: 'mqtt', topic: 'a/b', payload: 1 },
+    ];
+    const saved = await panelSave({
+      alias: 'Numbers',
+      triggers,
+      actions: [{ action: 'light.turn_on' }],
+    });
+    // Same values and types (the schema lists its known trigger keys first, as before)
+    expect(saved.triggers).toEqual(triggers);
+  });
+
+  it('opens a flow whose saved graph id is not a UUID (A9)', async () => {
+    const saved = await panelSave({
+      alias: 'Old id',
+      triggers: [{ trigger: 'state', entity_id: 'sensor.a' }],
+      actions: [{ action: 'light.turn_on' }],
+      variables: {
+        _flode_metadata: {
+          version: 1,
+          nodes: {},
+          graph_id: 'my-flow',
+          graph_version: 1,
+          strategy: 'native',
+        },
+      },
+    });
+    expectExact(saved.actions, [{ action: 'light.turn_on' }]);
+  });
 });

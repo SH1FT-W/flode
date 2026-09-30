@@ -451,7 +451,8 @@ export class YamlParser {
           : undefined;
 
       const graph: FlowGraph = {
-        id: metadata?.graph_id || generateGraphId(),
+        // An id from elsewhere that is no UUID cannot be a flow's id — start a new one
+        id: FlowGraphSchema.shape.id.safeParse(metadata?.graph_id).data ?? generateGraphId(),
         name: typeof content.alias === 'string' ? content.alias : 'Imported Automation',
         description: typeof content.description === 'string' ? content.description : '',
         nodes: nodesWithPositions,
