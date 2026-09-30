@@ -59,6 +59,13 @@ export interface AutomationListItem {
   lastTriggered: string | null;
 }
 
+type FlowRef = Pick<AutomationListItem, 'kind' | 'configId'>;
+
+/** The same automation/script — items are re-created on rename or save, so not by identity. */
+export function sameFlow(a: FlowRef | undefined, b: FlowRef | undefined): boolean {
+  return a !== undefined && b !== undefined && a.kind === b.kind && a.configId === b.configId;
+}
+
 /** Every UI-editable automation HA knows (entities with a config `id`). */
 export function listAutomations(hass: HomeAssistant): AutomationListItem[] {
   return Object.values(hass.states)

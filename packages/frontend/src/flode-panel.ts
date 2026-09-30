@@ -63,6 +63,7 @@ import {
   promptAutomationDialog,
   type RegistryUpdate,
   runScript,
+  sameFlow,
   saveFlowConfig,
   waitForAutomationEntity,
 } from './ha';
@@ -1038,10 +1039,7 @@ export class FlodePanel extends LitElement {
 
   /** The tab showing this automation/script, if it's open. */
   private findTab(item: AutomationListItem): EditorTab | undefined {
-    return this.tabs.find((tab) => {
-      const open = this.tabFlow(tab).item;
-      return open.kind === item.kind && open.configId === item.configId;
-    });
+    return this.tabs.find((tab) => sameFlow(this.tabFlow(tab).item, item));
   }
 
   private readonly opening = new InFlight();

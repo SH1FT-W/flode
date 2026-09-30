@@ -9,6 +9,7 @@ import {
   getTrace,
   type HomeAssistant,
   listTraces,
+  sameFlow,
   type TraceListItem,
 } from './ha';
 import type { ManualRun } from './manual-runs';
@@ -124,10 +125,7 @@ export class FlodeDebug extends LitElement {
 
   protected willUpdate(changed: PropertyValues<this>): void {
     const previous = changed.get('item');
-    if (
-      changed.has('item') &&
-      (previous?.configId !== this.item?.configId || previous?.kind !== this.item?.kind)
-    ) {
+    if (changed.has('item') && !sameFlow(previous, this.item)) {
       this.runs = null;
       this.trace = null;
       this.runId = null;
@@ -193,7 +191,7 @@ export class FlodeDebug extends LitElement {
     if (!hass || !item?.configId) return;
     try {
       const runs = await listTraces(hass, item.kind, item.configId);
-      if (this.item !== item) return;
+      if (!sameFlow(this.item, item)) return;
       this.runs = runs;
       this.message = null;
       const keep = runs.find((run) => run.run_id === this.runId);
