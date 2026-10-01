@@ -172,6 +172,8 @@ const STRINGS = {
     assistPrivacy:
       'Die aktuelle Fassung und passende Entitäten gehen an die KI aus deinem Home Assistant. Gespeichert wird nichts ohne dich.',
     disabledGroup: 'Deaktiviert',
+    issueService: '⚠ Diesen Dienst gibt es nicht',
+    issueEntity: '⚠ Diese Entität gibt es nicht',
     aiButton: 'Mit KI erstellen',
     aiTitle: 'Mit KI erstellen',
     aiTitleScript: 'Skript mit KI erstellen',
@@ -275,15 +277,18 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new308KeepTitle: 'Beim Speichern geht nichts mehr verloren',
-    new308KeepText:
-      'Bedingungen wie „weekday: mon“, Template-Kurzformen, Wartezeiten als Zahl und Einstellungen wie max_exceeded werden jetzt genau so gespeichert, wie sie in Home Assistant stehen.',
-    new308OpenTitle: 'Mehr Automationen lassen sich öffnen',
-    new308OpenText:
-      'Trigger mit Zahlenwerten oder eine Bedingung als letzter Schritt verhinderten das Öffnen oder Speichern. Blueprint-Automationen sagen jetzt, dass sie in Home Assistant bearbeitet werden.',
-    new308SaveTitle: 'Zuverlässiger speichern',
-    new308SaveText:
-      'Änderungen während des Speicherns bleiben erhalten, Status und KI-Antworten bleiben beim richtigen Tab, und ein Doppelklick öffnet nur einen Tab.',
+    new310CardsTitle: 'Karten wie in Home Assistant',
+    new310CardsText:
+      'Jede Karte zeigt jetzt Home Assistants eigenes Symbol – das Gerät mit seinem Zustand oder den Auslöser, die Bedingung, den Dienst. Lange Namen werden in der Mitte gekürzt, damit „über 10 W“ sichtbar bleibt, und Felder heißen wie in Home Assistant („Helligkeit: 40 %“).',
+    new310IssuesTitle: 'Fehler sofort sehen',
+    new310IssuesText:
+      'Ruft ein Schritt einen Dienst auf, den es nicht gibt, oder nutzt er eine Entität, die fehlt, wird die Karte rot umrandet und die Linie dorthin rot – schon vor dem ersten Lauf.',
+    new310ZoomTitle: 'Lesbar beim Herauszoomen',
+    new310ZoomText:
+      'Weit herausgezoomt zeigen die Karten nur noch Symbol, Titel und was passiert – in großer Schrift. Ganz weit draußen bleibt das Symbol. Zahlen und Uhrzeiten folgen deinem Home-Assistant-Profil.',
+    new310TriggerTitle: '„Ausgelöst durch“ für Home Assistant 2026.10',
+    new310TriggerText:
+      'Die Bedingung zeigt jetzt alle Auslöser deiner Automation. Wähle einfach die passenden aus – fehlende Auslöser-IDs vergibt FLODE dabei selbst, und doppelte IDs lassen sich mit einem Klick beheben.',
   },
   en: {
     title: 'FLODE',
@@ -453,6 +458,8 @@ const STRINGS = {
     assistPrivacy:
       'The current version and matching entities go to the AI from your Home Assistant. Nothing is saved without you.',
     disabledGroup: 'Disabled',
+    issueService: '⚠ This service does not exist',
+    issueEntity: '⚠ This entity does not exist',
     aiButton: 'Create with AI',
     aiTitle: 'Create with AI',
     aiTitleScript: 'Create script with AI',
@@ -554,15 +561,18 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new308KeepTitle: 'Nothing gets lost when saving',
-    new308KeepText:
-      'Conditions like "weekday: mon", template shorthands, numeric wait timeouts and settings like max_exceeded are now saved exactly as they are in Home Assistant.',
-    new308OpenTitle: 'More automations open',
-    new308OpenText:
-      "Triggers with number values or a condition as the last step kept automations from opening or saving. Blueprint automations now say they're edited in Home Assistant.",
-    new308SaveTitle: 'More reliable saving',
-    new308SaveText:
-      'Edits made while saving are kept, the status and AI answers stay with the right tab, and a double click opens just one tab.',
+    new310CardsTitle: 'Cards like in Home Assistant',
+    new310CardsText:
+      'Every card now shows Home Assistant\'s own icon — the device with its state, or the trigger, condition or action. Long names are shortened in the middle so "above 10 W" stays visible, and fields are named as in Home Assistant ("Brightness: 40 %").',
+    new310IssuesTitle: 'See mistakes right away',
+    new310IssuesText:
+      'If a step calls an action that does not exist or uses an entity that is missing, its card gets a red border and the line into it turns red — before it ever runs.',
+    new310ZoomTitle: 'Readable when zoomed out',
+    new310ZoomText:
+      'Zoomed far out, cards show just icon, title and what happens, in large type. Even further out, the icon stays. Numbers and times follow your Home Assistant profile.',
+    new310TriggerTitle: '"Triggered by" for Home Assistant 2026.10',
+    new310TriggerText:
+      "The condition now lists all of your automation's triggers. Just pick the ones you want — FLODE gives them a trigger ID if they have none, and shared IDs are fixed with one click.",
   },
 } as const;
 

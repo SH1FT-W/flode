@@ -5,6 +5,7 @@ import {
   formatClockTime,
   humanizeDuration,
   type SummaryContext,
+  shortenMiddle,
   summarizeAction,
   summarizeCondition,
   summarizeDelay,
@@ -38,8 +39,16 @@ function makeContext(lang: 'de' | 'en' = 'de'): SummaryContext {
   return {
     t: i18n.getFixedT(lang, NAMESPACES),
     entityName: (id) => FRIENDLY_NAMES[id] ?? id,
+    entityUnit: (id) => (id === 'sensor.power' ? 'W' : undefined),
+    nameMax: 24,
+    formatNumber: (value) => new Intl.NumberFormat('de').format(value),
+    formatTime: (value) => formatClockTime(value),
     stateLabel: (_id, state) => ({ on: 'An', off: 'Aus' })[state] ?? state,
     serviceLabel: (service) => ({ 'light.turn_on': 'Einschalten' })[service] ?? service,
+    serviceField: (service, field) =>
+      service === 'light.turn_on' && field === 'brightness_pct'
+        ? { label: 'Helligkeit', unit: '%' }
+        : { label: field },
     domainLabel: (domain) => ({ light: 'Licht' })[domain] ?? domain,
     deviceName: (id) => (id === 'dev1' ? 'Flur-Taster' : null),
     areaName: (id) => (id === 'kueche' ? 'Küche' : null),
@@ -58,9 +67,83 @@ describe('formatClockTime', () => {
     expect(formatClockTime('06:00:00')).toBe('06:00');
     expect(formatClockTime('6:30')).toBe('06:30');
   });
+  it('12-hour format', () => {
+    expect(formatClockTime('18:30:00', true)).toBe('6:30 PM');
+    expect(formatClockTime('00:05', true)).toBe('12:05 AM');
+  });
   it('keeps non-zero seconds and leaves non-times alone', () => {
     expect(formatClockTime('06:00:15')).toBe('06:00:15');
     expect(formatClockTime('input_datetime.wecker')).toBe('input_datetime.wecker');
+  });
+});
+
+describe('shortenMiddle', () => {
+  it('keeps short names and the start and end of long ones', () => {
+    expect(shortenMiddle('Bettlicht')).toBe('Bettlicht');
+    const short = shortenMiddle('Blok noord (wasplaats) - wasmachine (vermogen)');
+    expect(short.length).toBeLessThanOrEqual(24);
+    expect(short.startsWith('Blok noord')).toBe(true);
+    expect(short.endsWith('(vermogen)')).toBe(true);
+  });
+  it('never cuts an emoji in half', () => {
+    const short = shortenMiddle('Wohnzimmer 🛋️🛋️🛋️🛋️🛋️🛋️ Stehlampe links (Steckdose)');
+    expect(short).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+  });
+});
+
+describe('numbers, units and long names', () => {
+  it("thresholds use the entity's unit and the user's number format", () => {
+    expect(
+      summarizeTrigger(
+        { trigger: 'numeric_state', entity_id: 'sensor.power', above: 10.5 },
+        makeContext()
+      ).title
+    ).toBe('sensor.power über 10,5 W');
+  });
+  it('no unit when an attribute is compared', () => {
+    expect(
+      summarizeTrigger(
+        { trigger: 'numeric_state', entity_id: 'sensor.power', attribute: 'battery', below: 20 },
+        makeContext()
+      ).title
+    ).toBe('sensor.power unter 20');
+  });
+  it('no unit when a value_template computes the value', () => {
+    expect(
+      summarizeTrigger(
+        {
+          trigger: 'numeric_state',
+          entity_id: 'sensor.power',
+          value_template: '{{ state.state | float / 1000 }}',
+          above: 1.5,
+        },
+        makeContext()
+      ).title
+    ).toBe('sensor.power über 1,5');
+  });
+  it('a long entity name is shortened so the comparison stays visible', () => {
+    const ctx = makeContext();
+    const summary = summarizeTrigger(
+      { trigger: 'numeric_state', entity_id: 'sensor.blok_noord_wasplaats_wasmachine', above: 10 },
+      { ...ctx, entityName: () => 'Blok noord (wasplaats) - wasmachine (vermogen)' }
+    );
+    expect(summary.title.endsWith(' über 10')).toBe(true);
+    expect(summary.title.length).toBeLessThan(40);
+  });
+  it('service data numbers use the number format', () => {
+    const summary = summarizeServiceAction(
+      { service: 'media_player.volume_set', data: { volume_level: 0.3 } },
+      makeContext()
+    );
+    expect(summary.detail).toBe('volume_level: 0,3');
+  });
+  it('time units use the number format too', () => {
+    const t = i18n.getFixedT('de', NAMESPACES);
+    const transition = () => ({ label: 'Übergang', unit: 'seconds' });
+    const de = (value: number) => new Intl.NumberFormat('de').format(value);
+    expect(summarizeServiceData({ transition: 0.5 }, t, 2, transition, de)).toBe(
+      'Übergang: 0,5 Sekunden'
+    );
   });
 });
 
@@ -220,7 +303,7 @@ describe('actions and other steps', () => {
     );
     expect(summary.kind).toBe('Licht');
     expect(summary.title).toBe('Deckenlicht');
-    expect(summary.detail).toBe('Einschalten · brightness_pct: 60 · transition: 2');
+    expect(summary.detail).toBe('Einschalten · Helligkeit: 60 % · transition: 2');
     expect(summary.entityId).toBe('light.ceiling_lights');
   });
 
@@ -243,6 +326,15 @@ describe('actions and other steps', () => {
     const t = i18n.getFixedT('de', NAMESPACES);
     expect(summarizeServiceData({ a: 1, b: 2, c: 3, d: 4 }, t)).toBe('a: 1 · b: 2 · +2 weitere');
     expect(summarizeServiceData({}, t)).toBeUndefined();
+  });
+
+  it("service data uses HA's field label, the unit only for numbers", () => {
+    const t = i18n.getFixedT('de', NAMESPACES);
+    const field = (key: string) => ({ label: key === 'b' ? 'Helligkeit' : key, unit: '%' });
+    expect(summarizeServiceData({ b: 60 }, t, 2, field)).toBe('Helligkeit: 60 %');
+    expect(summarizeServiceData({ b: '{{ x }}' }, t, 2, field)).toBe('Helligkeit: {{ x }}');
+    const transition = () => ({ label: 'Übergang', unit: 'seconds' });
+    expect(summarizeServiceData({ transition: 2 }, t, 2, transition)).toBe('Übergang: 2 Sekunden');
   });
 
   it('delay, wait and variables', () => {

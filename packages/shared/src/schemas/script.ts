@@ -1,4 +1,4 @@
-import { isPlainObject } from './guards';
+import { isPlainObject, toList } from './guards';
 
 /**
  * Home Assistant scripts in FLODE.
@@ -30,11 +30,6 @@ export function getScriptFields(data: unknown): ScriptFields {
   );
 }
 
-function asList(value: unknown): unknown[] {
-  if (Array.isArray(value)) return value;
-  return value === undefined || value === null ? [] : [value];
-}
-
 /** Keys an automation has but a script config doesn't. */
 const AUTOMATION_ONLY_KEYS = new Set([
   'id',
@@ -60,7 +55,7 @@ export function automationToScriptConfig(
   automation: Record<string, unknown>,
   extra: { icon?: string } = {}
 ): Record<string, unknown> {
-  const start = asList(automation.triggers ?? automation.trigger).find(isScriptStart);
+  const start = toList(automation.triggers ?? automation.trigger).find(isScriptStart);
   const fields = getScriptFields(start);
   const rest = Object.fromEntries(
     Object.entries(automation).filter(([key]) => !AUTOMATION_ONLY_KEYS.has(key))
@@ -70,8 +65,8 @@ export function automationToScriptConfig(
     ...(extra.icon ? { icon: extra.icon } : {}),
     ...(Object.keys(fields).length > 0 ? { fields } : {}),
     sequence: [
-      ...asList(automation.conditions ?? automation.condition),
-      ...asList(automation.actions ?? automation.action),
+      ...toList(automation.conditions ?? automation.condition),
+      ...toList(automation.actions ?? automation.action),
     ],
   };
 }
@@ -91,6 +86,6 @@ export function scriptToAutomationConfig(script: Record<string, unknown>): Recor
       },
     ],
     conditions: [],
-    actions: asList(sequence),
+    actions: toList(sequence),
   };
 }

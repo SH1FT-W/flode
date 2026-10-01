@@ -10,6 +10,7 @@ import { dump as yamlDump } from 'js-yaml';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import './flode-canvas';
 import './flode-inspector';
+import type { NodeDataEdit, NodesChange } from './flode-inspector';
 import './flode-debug';
 import './flode-ai';
 import './flode-assist';
@@ -69,7 +70,7 @@ import {
   usesBlueprint,
   waitForAutomationEntity,
 } from './ha';
-import { type StepKind, stepToNode } from './ha-step';
+import { type StepEdit, type StepKind, stepToNode } from './ha-step';
 import { mapT } from './i18n';
 import { InFlight } from './in-flight';
 import { LOGBOOK_POLL_MS, type ManualRun } from './manual-runs';
@@ -1528,22 +1529,32 @@ export class FlodePanel extends LitElement {
     this.selectedId = id;
   }
 
-  private onStepChange(
-    event: CustomEvent<{ id: string; kind: StepKind; step: Record<string, unknown> }>
-  ): void {
-    const flow = this.flow;
-    if (!flow) return;
-    const previous = flow.graph.nodes.find((n) => n.id === event.detail.id);
-    const { type, data } = stepToNode(event.detail.kind, event.detail.step, previous);
-    const { graph, error } = setNodeStep(flow.graph, event.detail.id, type, data);
-    this.inspectorError = error ? `${t(this.language, 'invalid')}: ${error}` : null;
-    if (!error) this.commit(graph);
+  private onStepChange(event: CustomEvent<StepEdit>): void {
+    this.applyEdits([], event.detail);
   }
 
-  private onDataChange(event: CustomEvent<{ id: string; data: unknown }>): void {
+  private onDataChange(event: CustomEvent<NodeDataEdit>): void {
+    this.applyEdits([event.detail]);
+  }
+
+  /** Card data edits plus the open card's HA step, committed as one undo step. */
+  private applyEdits(data: readonly NodeDataEdit[], step?: StepEdit): void {
     const flow = this.flow;
     if (!flow) return;
-    const { graph, error } = updateNodeData(flow.graph, event.detail.id, event.detail.data);
+    let graph = flow.graph;
+    let error: string | null = null;
+    for (const edit of data) {
+      const result = updateNodeData(graph, edit.id, edit.data);
+      graph = result.graph;
+      error ??= result.error;
+    }
+    if (step && !error) {
+      const previous = graph.nodes.find((n) => n.id === step.id);
+      const { type, data: stepData } = stepToNode(step.kind, step.step, previous);
+      const result = setNodeStep(graph, step.id, type, stepData);
+      graph = result.graph;
+      error = result.error;
+    }
     this.inspectorError = error ? `${t(this.language, 'invalid')}: ${error}` : null;
     if (!error) this.commit(graph);
   }
@@ -2250,9 +2261,13 @@ export class FlodePanel extends LitElement {
               style=${this.inspectorWidth ? `--inspector-width: ${this.inspectorWidth}px` : ''}
               .hass=${this.hass}
               .node=${selected}
+              .nodes=${this.flow?.graph.nodes ?? []}
+              .flowVariables=${[this.flow?.graph.userVariables, this.flow?.graph.userTriggerVariables]}
               .error=${this.inspectorError}
               @data-change=${this.onDataChange}
               @step-change=${this.onStepChange}
+              @nodes-change=${(e: CustomEvent<NodesChange>) =>
+                this.applyEdits(e.detail.data, e.detail.step)}
             @run-from=${(e: CustomEvent<{ id: string }>) => {
               this.runFromId = e.detail.id;
             }}

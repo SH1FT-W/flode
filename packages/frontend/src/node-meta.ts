@@ -1,7 +1,14 @@
 import { type FlowNode, getRawStep, isPlainObject, isScriptStart } from '@flode/shared';
-import { type HaBlockType, haBlockType, type NodeSummary, summarizeNode } from '@flode/ui-core';
+import {
+  type HaBlockType,
+  haBlockType,
+  type NodeSummary,
+  type StepIssue,
+  stepIssues,
+  summarizeNode,
+} from '@flode/ui-core';
 import type { NodeType } from './flow-model';
-import type { HomeAssistant } from './ha';
+import { type HomeAssistant, serviceInfo } from './ha';
 import { summaryContext } from './i18n';
 import { t } from './strings';
 
@@ -41,12 +48,19 @@ export function nodeIcon(node: FlowNode): string {
   return NODE_META[node.type].icon;
 }
 
-/** Card eyebrow: "Aktion · Leuchte", or just "Skript-Start" for a script's start card. */
+/**
+ * Card eyebrow: just the kind ("Leuchte", "Zustandsänderung") — the card's
+ * colour already says trigger / condition / action, and a long "Auslöser ·
+ * Numerischer Zustand" was always cut off. Without a kind: the node type.
+ */
 export function nodeEyebrow(node: FlowNode, summary: NodeSummary, language: string): string {
-  if (isScriptStart(node.data)) return summary.kind ?? typeLabel(node.type, language);
-  return summary.kind
-    ? `${typeLabel(node.type, language)} · ${summary.kind}`
-    : typeLabel(node.type, language);
+  return summary.kind ?? typeLabel(node.type, language);
+}
+
+/** The full eyebrow for tooltips: "Aktion · Leuchte". */
+export function nodeTypeLine(node: FlowNode, summary: NodeSummary, language: string): string {
+  if (isScriptStart(node.data) || !summary.kind) return nodeEyebrow(node, summary, language);
+  return `${typeLabel(node.type, language)} · ${summary.kind}`;
 }
 
 /** Inspector heading: HA's block name ("Wenn-dann") or the node type ("Aktion"). */
@@ -68,12 +82,59 @@ export function typeLabel(type: NodeType, language: string): string {
  * Plain-language card text ("Movement Backyard changes to Detected") — the
  * `@flode/ui-core` summaries, with HA's own translations.
  */
-export function summarize(node: FlowNode, hass: HomeAssistant | undefined): NodeSummary {
+export function summarize(
+  node: FlowNode,
+  hass: HomeAssistant | undefined,
+  fullNames = false
+): NodeSummary {
   const data: Record<string, unknown> = isPlainObject(node.data) ? node.data : {};
-  const ctx = summaryContext(hass);
+  const ctx = summaryContext(hass, fullNames);
   return (
     (ctx && summarizeNode(node.type, data, ctx)) ?? {
       title: typeLabel(node.type, hass?.language ?? 'en'),
     }
+  );
+}
+
+interface CachedIssues {
+  hass: HomeAssistant;
+  created: ReadonlySet<string>;
+  issues: StepIssue[];
+}
+
+/** Per card data: its issues while neither HA's data nor the flow's created entities changed. */
+const issueCache = new WeakMap<object, CachedIssues>();
+
+/**
+ * What would make this step fail: a service HA doesn't have, an entity that
+ * doesn't exist. Entities the flow creates itself (`created`, from
+ * `createdEntityIds`) count as existing. Nothing is reported while HA's data
+ * isn't loaded yet.
+ */
+export function nodeIssues(
+  node: FlowNode,
+  hass: HomeAssistant | undefined,
+  created: ReadonlySet<string>
+): StepIssue[] {
+  if (!hass?.services) return [];
+  const data: Record<string, unknown> = isPlainObject(node.data) ? node.data : {};
+  const cached = issueCache.get(data);
+  if (cached && cached.hass === hass && cached.created === created) return cached.issues;
+  const { states, entities } = hass;
+  const issues = stepIssues(node.type, data, {
+    hasService: (service) => serviceInfo(hass, service) !== undefined,
+    hasEntity: (entityId) =>
+      entityId in states || entities?.[entityId] !== undefined || created.has(entityId),
+  });
+  issueCache.set(data, { hass, created, issues });
+  return issues;
+}
+
+/** One tooltip line per issue: "Dienst gibt es nicht: notify.x". */
+export function issueLines(issues: StepIssue[], language: string): string[] {
+  return issues.map((issue) =>
+    issue.kind === 'unknownService'
+      ? `${t(language, 'issueService')}: ${issue.service}`
+      : `${t(language, 'issueEntity')}: ${issue.entityId}`
   );
 }

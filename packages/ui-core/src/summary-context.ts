@@ -1,5 +1,10 @@
 import { isTargetedPlatform, TargetIdsSchema } from '@flode/shared';
-import type { SummaryContext, SummaryT } from './node-summary';
+import {
+  formatClockTime,
+  SENTENCE_NAME_MAX,
+  type SummaryContext,
+  type SummaryT,
+} from './node-summary';
 
 /**
  * Builds a `SummaryContext` from what any FLODE UI has at hand — the React
@@ -27,8 +32,16 @@ export interface SummaryHost {
   localize?: (key: string) => string | undefined;
   /** Friendly name of an entity, read fresh on every call. */
   friendlyName: (entityId: string) => string | undefined;
+  /** `unit_of_measurement` of an entity's state. */
+  unitOfMeasurement?: (entityId: string) => string | undefined;
+  /** Numbers in the user's number format (HA profile); plain `String` without. */
+  formatNumber?: (value: number) => string;
+  /** Whether the user's HA profile shows times in 12-hour format. */
+  hour12?: boolean;
   /** Name from the service registry, when HA has no translation for it. */
   serviceName?: (service: string) => string | undefined;
+  /** A service field's name and unit from the service registry (`services.yaml`). */
+  serviceFieldInfo?: (service: string, field: string) => { name?: string; unit?: string };
   deviceName: (deviceId: string) => string | null;
   areaName: (areaId: string) => string | null;
 }
@@ -107,6 +120,10 @@ export function createSummaryContext(host: SummaryHost): SummaryContext {
   return {
     t: host.t,
     entityName: (entityId) => host.friendlyName(entityId) || entityId,
+    entityUnit: (entityId) => host.unitOfMeasurement?.(entityId) || undefined,
+    nameMax: SENTENCE_NAME_MAX,
+    formatNumber: host.formatNumber ?? String,
+    formatTime: (value) => formatClockTime(value, host.hour12 ?? false),
     stateLabel: (entityId, state) => {
       const domain = entityId.split('.')[0];
       return (
@@ -122,6 +139,17 @@ export function createSummaryContext(host: SummaryHost): SummaryContext {
         host.serviceName?.(service) ??
         humanize(name ?? service)
       );
+    },
+    serviceField: (service, field) => {
+      const [domain, name] = service.split('.');
+      const info = host.serviceFieldInfo?.(service, field);
+      return {
+        label:
+          localize(`component.${domain}.services.${name}.fields.${field}.name`) ??
+          info?.name ??
+          field,
+        unit: info?.unit,
+      };
     },
     domainLabel: (domain) => localize(`component.${domain}.title`) ?? humanize(domain),
     deviceName: host.deviceName,

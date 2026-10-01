@@ -19,6 +19,13 @@ import type { NodeType } from './flow-model';
 
 export type StepKind = 'trigger' | 'condition' | 'action';
 
+/** A card's step as HA's editor reported it. */
+export interface StepEdit {
+  id: string;
+  kind: StepKind;
+  step: Record<string, unknown>;
+}
+
 export function stepKind(type: NodeType): StepKind {
   return type === 'trigger' || type === 'condition' ? type : 'action';
 }

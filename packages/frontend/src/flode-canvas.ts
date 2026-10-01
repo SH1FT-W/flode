@@ -1,5 +1,6 @@
 import type { FlowEdge, FlowGraph, FlowNode } from '@flode/shared';
-import { isScriptStart } from '@flode/shared';
+import { isScriptStart, isTargetedPlatform } from '@flode/shared';
+import { createdEntityIds, type StepIssue } from '@flode/ui-core';
 import {
   getBezierPath,
   getViewportForBounds,
@@ -32,7 +33,15 @@ import {
   visibleGraph,
 } from './flow-model';
 import type { HomeAssistant } from './ha';
-import { NODE_META, nodeEyebrow, nodeIcon, summarize } from './node-meta';
+import { HA_ICON_ELEMENTS, nodeIconTemplate } from './node-icon';
+import {
+  issueLines,
+  NODE_META,
+  nodeEyebrow,
+  nodeIssues,
+  nodeTypeLine,
+  summarize,
+} from './node-meta';
 import { t } from './strings';
 import type { RunMark } from './trace';
 import { isNarrow } from './viewport';
@@ -106,6 +115,29 @@ const MINIMAP_WIDTH = 180;
 const NARROW_MIN_FIT_ZOOM = 0.55;
 const MINIMAP_HEIGHT = 115;
 
+/** Below this zoom the cards show only icon and title, in large type … */
+const FAR_ZOOM = 0.6;
+/** … and below this one only a large icon — no text would be readable. */
+const FARTHEST_ZOOM = 0.35;
+
+/**
+ * HA's target-based steps (`light.turned_on`) say what happens only in their
+ * kind ("Leuchte eingeschaltet") — the title is just the entity.
+ */
+function kindIsKey(node: FlowNode): boolean {
+  const type: unknown = Reflect.get(node.data, node.type === 'condition' ? 'condition' : 'trigger');
+  return (
+    (node.type === 'trigger' || node.type === 'condition') &&
+    typeof type === 'string' &&
+    isTargetedPlatform(type)
+  );
+}
+
+function zoomClass(zoom: number): string {
+  if (zoom < FARTHEST_ZOOM) return 'far farthest';
+  return zoom < FAR_ZOOM ? 'far' : '';
+}
+
 export class FlodeCanvas extends LitElement {
   static properties = {
     graph: { attribute: false },
@@ -169,6 +201,10 @@ export class FlodeCanvas extends LitElement {
     if (this.pane) this.resizeObserver.observe(this.pane);
     this.initPanZoom();
     this.fitView(false);
+    // HA's icon elements arrive with its automation editor — then show them on the cards.
+    for (const tag of HA_ICON_ELEMENTS) {
+      void customElements.whenDefined(tag).then(() => this.requestUpdate());
+    }
   }
 
   connectedCallback(): void {
@@ -553,6 +589,25 @@ export class FlodeCanvas extends LitElement {
 
   // ---- render --------------------------------------------------------------
 
+  private created: { graph: FlowGraph | undefined; ids: ReadonlySet<string> } = {
+    graph: undefined,
+    ids: new Set(),
+  };
+
+  /** Entities the flow creates itself (`scene.create` …), recomputed only when the graph changes. */
+  private createdEntities(): ReadonlySet<string> {
+    if (this.created.graph !== this.graph) {
+      this.created = {
+        graph: this.graph,
+        ids: createdEntityIds(this.graph?.nodes.map((node) => node.data) ?? []),
+      };
+    }
+    return this.created.ids;
+  }
+
+  /** Per node: what would make it fail (unknown service, missing entity) — red border and red incoming line. */
+  private issues = new Map<string, StepIssue[]>();
+
   private renderEdge(edge: FlowEdge) {
     const source = this.graph.nodes.find((n) => n.id === edge.source);
     const target = this.graph.nodes.find((n) => n.id === edge.target);
@@ -570,15 +625,16 @@ export class FlodeCanvas extends LitElement {
     const selected = this.selectedEdgeId === edge.id;
     const isNo = edge.sourceHandle === 'false';
     const isLoop = edge.type === 'loop-back';
+    const faulty = (this.issues.get(edge.target)?.length ?? 0) > 0;
     return svg`
-      <g class="edge ${selected ? 'selected' : ''} ${isNo ? 'no' : ''} ${isLoop ? 'loop' : ''}">
+      <g class="edge ${selected ? 'selected' : ''} ${isNo ? 'no' : ''} ${isLoop ? 'loop' : ''} ${faulty ? 'faulty' : ''}">
         <path class="edge-hit" d=${path}
           @click=${(e: Event) => {
             e.stopPropagation();
             this.selectedEdgeId = edge.id;
             this.dispatchEvent(new CustomEvent('select', { detail: { id: null } }));
           }}></path>
-        <path class="edge-line" d=${path} marker-end="url(#arrow)"></path>
+        <path class="edge-line" d=${path} marker-end=${faulty ? 'url(#arrow-faulty)' : 'url(#arrow)'}></path>
       </g>`;
   }
 
@@ -611,14 +667,22 @@ export class FlodeCanvas extends LitElement {
     const handles = sourceHandles(node.type);
     const selected = this.selectedId === node.id;
     const summary = summarize(node, this.hass);
+    const issues = issueLines(this.issues.get(node.id) ?? [], language);
     // HA's `enabled: false` — the step stays in the flow but is skipped.
     const off = 'enabled' in node.data && node.data.enabled === false;
     return html`
       <div
-        class="node nopan ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${this.runClass(node.id)}"
+        class="node nopan ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${this.runClass(node.id)}"
         style="transform: translate(${node.position.x}px, ${node.position.y}px); --node-color: ${meta.color}"
         data-node-id=${node.id}
-        title=${[summary.title, summary.detail].filter(Boolean).join('\n')}
+        title=${[
+          nodeTypeLine(node, summary, language),
+          summarize(node, this.hass, true).title,
+          summary.detail,
+          ...issues,
+        ]
+          .filter(Boolean)
+          .join('\n')}
         @pointerdown=${(e: PointerEvent) => this.onNodePointerDown(e, node)}
         @pointermove=${(e: PointerEvent) => this.onNodePointerMove(e)}
         @pointerup=${(e: PointerEvent) => this.onNodePointerUp(e)}
@@ -628,7 +692,7 @@ export class FlodeCanvas extends LitElement {
       >
         ${off ? html`<span class="off-badge"><ha-icon icon="mdi:cancel"></ha-icon>${t(language, 'disabledGroup')}</span>` : nothing}
         ${isEntry ? html`<span class="entry"><ha-icon icon="mdi:play"></ha-icon>${t(language, 'entry')}</span>` : nothing}
-        <span class="icon"><ha-icon .icon=${nodeIcon(node)}></ha-icon></span>
+        <span class="icon">${nodeIconTemplate(node, summary, this.hass)}</span>
         <span class="text">
           <span class="type">${nodeEyebrow(node, summary, language)}</span>
           <span class="title">${summary.title}</span>
@@ -672,6 +736,10 @@ export class FlodeCanvas extends LitElement {
     const shown = this.graph ? visibleGraph(this.graph) : undefined;
     const entries = this.graph ? scriptEntryIds(this.graph) : new Set<string>();
     const edges = shown?.edges.filter(isDrawnEdge) ?? [];
+    const created = this.createdEntities();
+    this.issues = new Map(
+      (shown?.nodes ?? []).map((node) => [node.id, nodeIssues(node, this.hass, created)])
+    );
     return html`
       <div
         class="pane"
@@ -681,11 +749,17 @@ export class FlodeCanvas extends LitElement {
         @click=${this.onPaneClick}
         @contextmenu=${(e: MouseEvent) => this.onContextMenu(e, null)}
       >
-        <div class="viewport" style="transform: translate(${x}px, ${y}px) scale(${zoom})">
+        <div
+          class="viewport ${zoomClass(zoom)}"
+          style="transform: translate(${x}px, ${y}px) scale(${zoom})"
+        >
           <svg class="edges">
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                 <path d="M 0 0 L 10 5 L 0 10 z" class="arrow"></path>
+              </marker>
+              <marker id="arrow-faulty" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" class="arrow faulty"></path>
               </marker>
             </defs>
             ${edges.map((edge) => this.renderEdge(edge))} ${this.renderConnectionPreview()}
@@ -807,6 +881,18 @@ export class FlodeCanvas extends LitElement {
     .arrow {
       fill: var(--secondary-text-color);
     }
+    /* A step that would fail (unknown service, missing entity) and the line into it. */
+    .edge.faulty .edge-line {
+      stroke: var(--error-color, #db4437);
+      stroke-width: 2.4px;
+    }
+    .arrow.faulty {
+      fill: var(--error-color, #db4437);
+    }
+    .node.faulty {
+      border-color: var(--error-color, #db4437);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--error-color, #db4437) 30%, transparent);
+    }
     .node {
       position: absolute;
       box-sizing: border-box;
@@ -885,11 +971,54 @@ export class FlodeCanvas extends LitElement {
       text-transform: uppercase;
       color: var(--secondary-text-color);
     }
-    .type,
-    .detail {
+    .type {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .detail {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      line-height: 1.3;
+    }
+    /* Zoomed far out: icon, title and one line of detail (what an action does —
+       "Leuchte einschalten"), large enough to read. */
+    .far .node:not(.kind-key) .type {
+      display: none;
+    }
+    .far .node .type {
+      font-size: 14px;
+    }
+    .far .node .title {
+      font-size: 20px;
+      line-height: 1.15;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+    .far .node .detail {
+      font-size: 16px;
+      -webkit-line-clamp: 1;
+      overflow-wrap: normal;
+    }
+    .far .node .icon {
+      width: 40px;
+      height: 40px;
+      --mdc-icon-size: 26px;
+    }
+    .farthest .node {
+      justify-content: center;
+    }
+    .farthest .node .text {
+      display: none;
+    }
+    .farthest .node .icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      --mdc-icon-size: 48px;
     }
     .title {
       font-size: 14px;

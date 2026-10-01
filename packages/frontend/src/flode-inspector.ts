@@ -1,11 +1,32 @@
 import { type FlowNode, getScriptFields, isPlainObject, isScriptStart } from '@flode/shared';
+import {
+  getTriggerIdOptions,
+  makeDuplicateTriggerIdsUnique,
+  selectTriggerIds,
+  type TriggerIdFlow,
+  type TriggerIdOption,
+} from '@flode/ui-core';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
 import { defineElement } from './define-element';
 import { ensureAutomationEditors, ensureHaSelector, type HomeAssistant } from './ha';
-import { hasUiEditor, nodeToStep, type StepKind, stepKind } from './ha-step';
-import { NODE_META, nodeIcon, nodeTitle } from './node-meta';
+import { hasUiEditor, nodeToStep, type StepEdit, type StepKind, stepKind } from './ha-step';
+import { nodeIconTemplate } from './node-icon';
+import { NODE_META, nodeTitle, summarize } from './node-meta';
 import { t } from './strings';
+import { TriggerIdsContext } from './trigger-ids-context';
+
+/** A card whose data changed along with the open one (trigger IDs). */
+export interface NodeDataEdit {
+  id: string;
+  data: unknown;
+}
+
+/** `nodes-change`: cards whose data changed, plus the open card's new step — one undo step. */
+export interface NodesChange {
+  data: NodeDataEdit[];
+  step?: StepEdit;
+}
 
 /**
  * Right-hand panel for the selected node. Editing goes through HA's own
@@ -19,7 +40,12 @@ export class FlodeInspector extends LitElement {
   static properties = {
     hass: { attribute: false },
     node: { attribute: false },
+    /** All cards of the flow — the triggers HA's "Triggered by" form lists. */
+    nodes: { attribute: false },
+    /** The automation's `variables` / `trigger_variables` — templates in there may read `trigger.id`. */
+    flowVariables: { attribute: false },
     error: { attribute: false },
+    confirmDuplicateIds: { state: true },
     selectorReady: { state: true },
     editorsReady: { state: true },
     yamlMode: { state: true },
@@ -28,7 +54,10 @@ export class FlodeInspector extends LitElement {
 
   declare hass: HomeAssistant | undefined;
   declare node: FlowNode | null;
+  declare nodes: readonly FlowNode[];
+  declare flowVariables: readonly unknown[];
   declare error: string | null;
+  declare confirmDuplicateIds: boolean;
   declare selectorReady: boolean;
   declare editorsReady: boolean;
   declare yamlMode: boolean;
@@ -45,6 +74,22 @@ export class FlodeInspector extends LitElement {
   /** The step HA's editor just reported, reused for the node it turns into. */
   private reported: { from: FlowNode; step: Record<string, unknown> } | null = null;
 
+  /** Options keep their candidate IDs while the trigger cards stay the same. */
+  private triggerOptions: { triggers: readonly unknown[]; options: TriggerIdOption[] } | null =
+    null;
+  private triggerIds = new TriggerIdsContext(this, {
+    select: (condition, ids) => {
+      const flow = this.triggerIdFlow();
+      this.applyTriggerIds(
+        flow,
+        selectTriggerIds(flow, this.optionsFor(flow.triggers), condition, ids)
+      );
+    },
+    fixDuplicateIds: async () => {
+      this.confirmDuplicateIds = true;
+    },
+  });
+
   private resizeObserver = new ResizeObserver(([entry]) => {
     const narrow = (entry?.contentRect.width ?? 0) < NARROW_BELOW;
     if (narrow !== this.narrow) this.narrow = narrow;
@@ -53,7 +98,9 @@ export class FlodeInspector extends LitElement {
   constructor() {
     super();
     this.node = null;
+    this.nodes = [];
     this.error = null;
+    this.confirmDuplicateIds = false;
     this.selectorReady = false;
     this.editorsReady = false;
     this.yamlMode = false;
@@ -92,6 +139,92 @@ export class FlodeInspector extends LitElement {
       }
       this.reported = null;
     }
+    const { triggers } = this.triggerIdFlow();
+    this.triggerIds.setTriggers(triggers, this.optionsFor(triggers));
+  }
+
+  private optionsFor(triggers: readonly unknown[]): TriggerIdOption[] {
+    const cached = this.triggerOptions;
+    if (
+      cached &&
+      cached.triggers.length === triggers.length &&
+      cached.triggers.every((trigger, index) => trigger === triggers[index])
+    ) {
+      return cached.options;
+    }
+    const options = getTriggerIdOptions(triggers);
+    this.triggerOptions = { triggers, options };
+    return options;
+  }
+
+  /** The flow's trigger cards and all other cards — the open one as the step HA's editor holds. */
+  private triggerIdFlow(): TriggerIdFlow {
+    const triggers: unknown[] = [];
+    const steps: unknown[] = [];
+    for (const node of this.nodes) {
+      if (node.type === 'trigger') triggers.push(node.data);
+      else steps.push(node === this.node ? this.stepOf(node) : node.data);
+    }
+    return { triggers, steps, templates: this.flowVariables ?? [] };
+  }
+
+  /** Hands the cards a trigger-ID change touched to the panel — as one undo step. */
+  private applyTriggerIds(before: TriggerIdFlow, after: TriggerIdFlow): void {
+    const open = this.node;
+    const change: NodesChange = { data: [] };
+    let triggerIndex = 0;
+    let stepIndex = 0;
+    for (const node of this.nodes) {
+      const isTrigger = node.type === 'trigger';
+      const index = isTrigger ? triggerIndex++ : stepIndex++;
+      const was = isTrigger ? before.triggers[index] : before.steps[index];
+      const now = isTrigger ? after.triggers[index] : after.steps[index];
+      if (now === was) continue;
+      if (node !== open || isTrigger) {
+        change.data.push({ id: node.id, data: now });
+      } else if (isPlainObject(now)) {
+        // The open card comes back as HA's step; keep HA's object (and its row keys).
+        this.reported = { from: node, step: now };
+        change.step = { id: node.id, kind: stepKind(node.type), step: structuredClone(now) };
+      }
+    }
+    if (change.data.length > 0 || change.step) this.emit('nodes-change', { ...change });
+  }
+
+  private fixDuplicateIds(): void {
+    this.confirmDuplicateIds = false;
+    const flow = this.triggerIdFlow();
+    this.applyTriggerIds(flow, makeDuplicateTriggerIdsUnique(flow));
+  }
+
+  /** HA's own confirmation before splitting shared trigger IDs (its texts, FLODE's dialog). */
+  private renderDuplicateIdsDialog() {
+    const localize = this.hass?.localize;
+    if (!this.confirmDuplicateIds || !localize) return nothing;
+    const key = 'ui.panel.config.automation.editor.conditions.type.trigger';
+    return html`<ha-dialog
+      open
+      .headerTitle=${localize(`${key}.assign_unique_ids_title`)}
+      @closed=${() => {
+        this.confirmDuplicateIds = false;
+      }}
+    >
+      <p>${localize(`${key}.assign_unique_ids_description`)}</p>
+      <ha-dialog-footer slot="footer">
+        <ha-button
+          slot="secondaryAction"
+          appearance="plain"
+          @click=${() => {
+            this.confirmDuplicateIds = false;
+          }}
+        >
+          ${localize('ui.common.cancel')}
+        </ha-button>
+        <ha-button slot="primaryAction" @click=${() => this.fixDuplicateIds()}>
+          ${localize(`${key}.duplicate_ids_fix`)}
+        </ha-button>
+      </ha-dialog-footer>
+    </ha-dialog>`;
   }
 
   private stepOf(node: FlowNode): Record<string, unknown> {
@@ -104,7 +237,7 @@ export class FlodeInspector extends LitElement {
   }
 
   private emit(
-    name: 'data-change' | 'step-change' | 'delete' | 'run-from',
+    name: 'data-change' | 'step-change' | 'nodes-change' | 'delete' | 'run-from',
     detail: Record<string, unknown> = {}
   ): void {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
@@ -216,7 +349,7 @@ export class FlodeInspector extends LitElement {
     const meta = NODE_META[node.type];
     return html`
       <div class="head" style="--node-color: ${meta.color}">
-        <span class="icon"><ha-icon .icon=${nodeIcon(node)}></ha-icon></span>
+        <span class="icon">${nodeIconTemplate(node, summarize(node, this.hass), this.hass)}</span>
         <div class="titles">
           <span class="type">${nodeTitle(node, this.hass)}</span>
           <span class="id">${node.id}</span>
@@ -264,6 +397,7 @@ export class FlodeInspector extends LitElement {
           : this.renderFallback(node, language)
       }
       ${this.error ? html`<p class="error">${this.error}</p>` : nothing}
+      ${this.renderDuplicateIdsDialog()}
     `;
   }
 

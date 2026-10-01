@@ -24,9 +24,10 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:content-save-check-outline', title: 'new308KeepTitle', text: 'new308KeepText' },
-  { icon: 'mdi:folder-open-outline', title: 'new308OpenTitle', text: 'new308OpenText' },
-  { icon: 'mdi:tab', title: 'new308SaveTitle', text: 'new308SaveText' },
+  { icon: 'mdi:card-text-outline', title: 'new310CardsTitle', text: 'new310CardsText' },
+  { icon: 'mdi:alert-circle-outline', title: 'new310IssuesTitle', text: 'new310IssuesText' },
+  { icon: 'mdi:magnify-minus-outline', title: 'new310ZoomTitle', text: 'new310ZoomText' },
+  { icon: 'mdi:ray-start-arrow', title: 'new310TriggerTitle', text: 'new310TriggerText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

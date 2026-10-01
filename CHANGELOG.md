@@ -4,6 +4,27 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.1.0] — 2026-10-01 — Clearer cards
+
+Everything from 3.0.0 below still applies.
+
+### Added
+- **Home Assistant's icons on the cards** — the entity's own icon with its live state when a step is about one entity, otherwise HA's icon for the trigger, condition or action (as in Settings → Automations). Also in the inspector header.
+- **Mistakes show up in red** — a step that calls an action Home Assistant doesn't have, or uses an entity that doesn't exist, gets a red border, and the line into it turns red. The card's tooltip says what's wrong. Templates are not checked, since what they read is only known at run time.
+- **Readable when zoomed out** — below 60 % the cards show only icon, title and one line of what happens, in large type (for HA's newer triggers/conditions like "Light turned on" also that name); below 35 % just a large icon.
+
+### Changed
+- **Shorter card header** — only the kind ("Light", "State change"); the card's colour already says trigger, condition or action. The full "Action · Light" is in the tooltip.
+- **The important part stays visible** — long entity names inside a sentence are shortened in the middle, so "Blok noord (w…(vermogen) above 10 W" keeps its comparison. Thresholds show the sensor's unit.
+- **Field names as in Home Assistant** — "Brightness: 40 % · Transition: 2 seconds" instead of `brightness_pct: 40`. The detail line can use two lines.
+- **Numbers and times follow your HA profile** — number format (e.g. "0,3") and 12/24-hour time as set under Profile.
+
+### Fixed
+- **"Triggered by" condition** — Home Assistant's form gets the automation's triggers from its editor, so in FLODE it only said there were no triggers. FLODE now hands it the flow's triggers. On HA 2026.10: pick the ones you want, and a trigger without an ID gets one (`generated-…`) — removed again when nothing uses it. *Fix* for triggers sharing an ID gives each its own and updates every condition that used it. Each pick is one undo step, also inside if/choose blocks.
+- **Closing a tab on HA 2026.10** — "Don't save" in the unsaved-changes dialog left the tab open and the dialog hanging.
+
+---
+
 ## [3.0.8] — 2026-09-30 — Nothing gets lost when saving
 
 A bug-fix release. Everything from 3.0.0 below still applies. From this release on, tags and releases are just the number (`3.0.8`, no "v").

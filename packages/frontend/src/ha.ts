@@ -14,14 +14,29 @@ export interface HassEntityState {
   last_changed?: string;
 }
 
+/** A field of a service as HA's registry describes it (`services.yaml`). */
+export interface HassServiceField {
+  name?: string;
+  selector?: { number?: { unit_of_measurement?: string } | null } & Record<string, unknown>;
+  /** Set on a section (e.g. `advanced_fields`), which groups further fields. */
+  fields?: Record<string, HassServiceField>;
+}
+
+export interface HassService {
+  name?: string;
+  fields?: Record<string, HassServiceField>;
+}
+
 export interface HomeAssistant {
   states: Record<string, HassEntityState>;
   language: string;
+  /** The user's profile formats (Profile → Number / Time format). */
+  locale?: { language: string; number_format?: string; time_format?: string };
   themes: { darkMode: boolean };
   localize: (key: string, ...args: unknown[]) => string;
   callApi: <T>(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown) => Promise<T>;
   callWS: <T>(message: Record<string, unknown> & { type: string }) => Promise<T>;
-  services?: Record<string, Record<string, { name?: string }>>;
+  services?: Record<string, Record<string, HassService>>;
   devices?: Record<string, { name?: string | null; name_by_user?: string | null }>;
   areas?: Record<string, { name: string }>;
   entities?: Record<string, { area_id?: string | null; device_id?: string | null }>;
@@ -35,6 +50,12 @@ export interface HomeAssistant {
   kioskMode?: boolean;
   /** Loads a panel's UI strings into `localize` (HA does this per panel). */
   loadFragmentTranslation?: (fragment: string) => Promise<unknown>;
+}
+
+/** HA's description of a service (`light.turn_on`), if it has one. */
+export function serviceInfo(hass: HomeAssistant, service: string): HassService | undefined {
+  const [domain = '', name = ''] = service.split('.');
+  return hass.services?.[domain]?.[name];
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
@@ -363,6 +384,8 @@ async function runEditorDialog(
       _updateDirtyState: () => {
         changed = true;
       },
+      // HA 2026.10's "unsaved changes" dialog calls this on "Don't save"; without it the promise never resolves.
+      _markDirtyStateClean: () => undefined,
       requestUpdate: () => undefined,
     }
   );

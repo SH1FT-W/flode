@@ -1,4 +1,4 @@
-import { isPlainObject, isTemplateString } from '@flode/shared';
+import { isPlainObject, isTemplateString, toList } from '@flode/shared';
 
 /**
  * Dependency map over every automation and script: which entities each one
@@ -112,11 +112,6 @@ export function areOppositeServices(a: string, b: string): boolean {
   return OPPOSITES.some(([p, q]) => (x === p && y === q) || (x === q && y === p));
 }
 
-function toList(value: unknown): unknown[] {
-  if (Array.isArray(value)) return value;
-  return value === undefined || value === null ? [] : [value];
-}
-
 function entityIdsIn(value: unknown): string[] {
   return toList(value).flatMap((v) =>
     typeof v === 'string'
@@ -143,6 +138,28 @@ function stepService(step: Record<string, unknown>): string | undefined {
   return typeof service === 'string' && service.includes('.') && !isTemplateString(service)
     ? service
     : undefined;
+}
+
+/** Payloads of a step — values in there are data, never a service call. */
+const PAYLOAD_KEYS = new Set(['data', 'data_template', 'event_data', 'variables', 'for_each']);
+
+/** Every service a step calls (`light.turn_on`), also inside blocks — not inside its payload. */
+export function collectServices(value: unknown): string[] {
+  const found = new Set<string>();
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (!isPlainObject(node)) return;
+    const service = stepService(node);
+    if (service) found.add(service);
+    for (const [key, child] of Object.entries(node)) {
+      if (!PAYLOAD_KEYS.has(key)) walk(child);
+    }
+  };
+  walk(value);
+  return [...found];
 }
 
 /**

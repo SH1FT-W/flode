@@ -29,10 +29,20 @@ export interface SummaryContext {
   t: SummaryT;
   /** Friendly name for an entity id, falls back to the id itself. */
   entityName: (entityId: string) => string;
+  /** Unit of an entity's state ("W", "°C"), if it has one. */
+  entityUnit: (entityId: string) => string | undefined;
+  /** Longest entity name inside a sentence before it's shortened; `Infinity` for full names (tooltips). */
+  nameMax: number;
+  /** A number in the user's HA number format ("0,3" / "0.3"). */
+  formatNumber: (value: number) => string;
+  /** A clock time ("18:30:00") in the user's HA time format ("18:30" / "6:30 PM"). */
+  formatTime: (value: string) => string;
   /** Translated state value for an entity ("on" → "On"/"An"). */
   stateLabel: (entityId: string, state: string) => string;
   /** Translated service name ("light.turn_on" → "Turn on"). */
   serviceLabel: (service: string) => string;
+  /** HA's label (and unit) for a service field ("brightness_pct" → "Helligkeit", "%"). */
+  serviceField: (service: string, field: string) => ServiceFieldLabel;
   /** Translated integration/domain name ("light" → "Light"). */
   domainLabel: (domain: string) => string;
   deviceName: (deviceId: string) => string | null;
@@ -43,6 +53,11 @@ export interface SummaryContext {
   targetSummary: (target: unknown) => string;
   /** HA's own name for a building block (`if` → "Wenn-dann"). */
   blockLabel: (type: HaBlockType) => string;
+}
+
+export interface ServiceFieldLabel {
+  label: string;
+  unit?: string;
 }
 
 export const HA_BLOCK_TYPES = ['if', 'choose', 'repeat', 'parallel', 'sequence'] as const;
@@ -90,13 +105,32 @@ function joinDetails(parts: Array<string | undefined>): string | undefined {
   return present.length > 0 ? present.join(' · ') : undefined;
 }
 
-/** "06:00:00" → "06:00"; leaves anything that isn't a plain clock time alone. */
-export function formatClockTime(value: string): string {
+/** "06:00:00" → "06:00" (or "6:00 AM"); leaves anything that isn't a plain clock time alone. */
+export function formatClockTime(value: string, hour12 = false): string {
   const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(value);
   if (!match) return value;
-  return match[3] && match[3] !== '00'
-    ? `${match[1].padStart(2, '0')}:${match[2]}:${match[3]}`
-    : `${match[1].padStart(2, '0')}:${match[2]}`;
+  const seconds = match[3] && match[3] !== '00' ? `:${match[3]}` : '';
+  if (!hour12) return `${match[1].padStart(2, '0')}:${match[2]}${seconds}`;
+  const hours = Number(match[1]);
+  return `${String(hours % 12 || 12)}:${match[2]}${seconds} ${hours < 12 ? 'AM' : 'PM'}`;
+}
+
+/** Long names would push the important part ("above 10") out of a two-line card. */
+export const SENTENCE_NAME_MAX = 24;
+
+/**
+ * "Blok noord (wasplaats) - wasmachine (vermogen)" → "Blok noord (w…(vermogen)" —
+ * start and end stay. Counts characters, so an emoji is never cut in half.
+ */
+export function shortenMiddle(value: string, max = SENTENCE_NAME_MAX): string {
+  const chars = Array.from(value);
+  if (chars.length <= max) return value;
+  const tail = Math.floor((max - 1) * 0.45);
+  const start = chars
+    .slice(0, max - 1 - tail)
+    .join('')
+    .trimEnd();
+  return `${start}…${chars.slice(-tail).join('').trimStart()}`;
 }
 
 interface DurationParts {
@@ -147,9 +181,14 @@ export function humanizeDuration(value: unknown, t: SummaryT): string | undefine
   return out.length > 0 ? out.join(' ') : t('nodes:summary.units.seconds', { count: 0 });
 }
 
+/** An entity's name inside a sentence, shortened in the middle when it is long. */
+function sentenceName(entityId: string, ctx: SummaryContext): string {
+  return shortenMiddle(ctx.entityName(entityId), ctx.nameMax);
+}
+
 /** Names for one or many entities — "Bed light" or "3 entities". */
 function entitiesLabel(ids: string[], ctx: SummaryContext): string {
-  if (ids.length === 1) return ctx.entityName(ids[0]);
+  if (ids.length === 1) return sentenceName(ids[0], ctx);
   return ctx.t('nodes:summary.entities', { count: ids.length });
 }
 
@@ -157,11 +196,36 @@ function entitiesDetail(ids: string[], ctx: SummaryContext): string | undefined 
   return ids.length > 1 ? ids.map(ctx.entityName).join(', ') : undefined;
 }
 
-/** Numeric thresholds may be numbers or entity ids (e.g. input_number helpers). */
-function thresholdLabel(value: unknown, ctx: SummaryContext): string | undefined {
+/**
+ * Numeric thresholds may be numbers or entity ids (e.g. input_number helpers);
+ * numbers get the user's number format and the compared entity's unit ("10 W").
+ */
+function thresholdLabel(
+  value: unknown,
+  unit: string | undefined,
+  ctx: SummaryContext
+): string | undefined {
+  if (typeof value === 'number') {
+    return unit ? `${ctx.formatNumber(value)} ${unit}` : ctx.formatNumber(value);
+  }
   const text = asString(value);
   if (!text) return undefined;
-  return /^[a-z_]+\.[a-z0-9_]+$/.test(text) ? ctx.entityName(text) : text;
+  return /^[a-z_]+\.[a-z0-9_]+$/.test(text) ? sentenceName(text, ctx) : text;
+}
+
+/**
+ * The unit of a numeric_state's value: the entity's own — unless an attribute
+ * is compared or a `value_template` computes the value (its unit is unknown).
+ */
+function thresholdUnit(
+  ids: string[],
+  data: Readonly<Record<string, unknown>>,
+  ctx: SummaryContext
+): string | undefined {
+  if (ids.length !== 1 || asString(data.attribute) || asString(data.value_template)) {
+    return undefined;
+  }
+  return ctx.entityUnit(ids[0]);
 }
 
 function stateList(entityId: string | undefined, states: string[], ctx: SummaryContext): string {
@@ -274,7 +338,7 @@ function formatTimeValue(value: unknown, ctx: SummaryContext): string | undefine
   const list = asStringList(value);
   if (list.length === 0) return undefined;
   return list
-    .map((v) => (v.includes('.') && !v.includes(':') ? ctx.entityName(v) : formatClockTime(v)))
+    .map((v) => (v.includes('.') && !v.includes(':') ? ctx.entityName(v) : ctx.formatTime(v)))
     .join(', ');
 }
 
@@ -339,8 +403,8 @@ export function summarizeTrigger(data: TriggerNodeData, ctx: SummaryContext): No
         kind,
         title: numericTitle(
           entitiesLabel(ids, ctx),
-          thresholdLabel(data.above, ctx),
-          thresholdLabel(data.below, ctx),
+          thresholdLabel(data.above, thresholdUnit(ids, data, ctx), ctx),
+          thresholdLabel(data.below, thresholdUnit(ids, data, ctx), ctx),
           t
         ),
         detail: joinDetails([entitiesDetail(ids, ctx), asString(data.attribute), forDetail]),
@@ -496,7 +560,7 @@ export function summarizeCondition(data: ConditionNodeData, ctx: SummaryContext)
       return {
         kind,
         title: single
-          ? t('nodes:summary.condState', { entity: ctx.entityName(single), state })
+          ? t('nodes:summary.condState', { entity: sentenceName(single, ctx), state })
           : t('nodes:summary.condStateMany', { count: ids.length, state }),
         detail: joinDetails([entitiesDetail(ids, ctx), asString(data.attribute), forDetail]),
         entityId: single,
@@ -508,8 +572,8 @@ export function summarizeCondition(data: ConditionNodeData, ctx: SummaryContext)
         kind,
         title: numericTitle(
           entitiesLabel(ids, ctx),
-          thresholdLabel(data.above, ctx),
-          thresholdLabel(data.below, ctx),
+          thresholdLabel(data.above, thresholdUnit(ids, data, ctx), ctx),
+          thresholdLabel(data.below, thresholdUnit(ids, data, ctx), ctx),
           t
         ),
         detail: joinDetails([entitiesDetail(ids, ctx), asString(data.attribute)]),
@@ -597,23 +661,53 @@ export function summarizeCondition(data: ConditionNodeData, ctx: SummaryContext)
 // Actions & other steps
 // ---------------------------------------------------------------------------
 
-function formatDataValue(value: unknown): string {
+function formatDataValue(value: unknown, formatNumber: (value: number) => string): string {
   if (typeof value === 'string') return snippet(value, 24);
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'number') return formatNumber(value);
+  if (typeof value === 'boolean') return String(value);
   if (Array.isArray(value)) return `[${value.length}]`;
   return '{…}';
 }
 
-/** "brightness_pct: 60 · transition: 2 · +1 more" */
+/** Without a field lookup the raw key is shown (event data has no HA labels). */
+function rawField(field: string): ServiceFieldLabel {
+  return { label: field };
+}
+
+/** Time units in `services.yaml` are English words — FLODE's own plurals translate them. */
+const TIME_UNITS = new Set(['hours', 'minutes', 'seconds', 'milliseconds']);
+
+function formatField(
+  value: unknown,
+  field: ServiceFieldLabel,
+  t: SummaryT,
+  formatNumber: (value: number) => string
+): string {
+  const { unit } = field;
+  if (!unit || typeof value !== 'number') {
+    return `${field.label}: ${formatDataValue(value, formatNumber)}`;
+  }
+  // FLODE's plural strings print `{{count}}` as is — swap in the user's number format.
+  const text = TIME_UNITS.has(unit)
+    ? t(`nodes:summary.units.${unit}`, { count: value }).replace(String(value), formatNumber(value))
+    : `${formatNumber(value)} ${unit}`;
+  return `${field.label}: ${text}`;
+}
+
+/** "Helligkeit: 60 % · Übergang: 2 Sekunden · +1 more" — HA's field labels where it has them. */
 export function summarizeServiceData(
   data: Record<string, unknown> | undefined,
   t: SummaryT,
-  max = 2
+  max = 2,
+  fieldLabel: (field: string) => ServiceFieldLabel = rawField,
+  formatNumber: (value: number) => string = String
 ): string | undefined {
   if (!data) return undefined;
   const entries = Object.entries(data).filter(([, v]) => v !== undefined && v !== null);
   if (entries.length === 0) return undefined;
-  const shown = entries.slice(0, max).map(([k, v]) => `${k}: ${formatDataValue(v)}`);
+  const shown = entries
+    .slice(0, max)
+    .map(([k, v]) => formatField(v, fieldLabel(k), t, formatNumber));
   if (entries.length > max) {
     shown.push(t('nodes:summary.moreData', { count: entries.length - max }));
   }
@@ -646,7 +740,13 @@ export function summarizeServiceAction(data: ActionNodeData, ctx: SummaryContext
     : ctx.t('nodes:types.action');
   const targets = targetNames(data.target, ctx);
   const targetIds = asStringList(data.target?.entity_id);
-  const dataSummary = summarizeServiceData(data.data, ctx.t);
+  const dataSummary = summarizeServiceData(
+    data.data,
+    ctx.t,
+    2,
+    service && !isTemplated ? (field) => ctx.serviceField(service, field) : rawField,
+    ctx.formatNumber
+  );
 
   if (targets.length === 0) {
     return { kind, title: serviceLabel, detail: dataSummary };
@@ -664,7 +764,7 @@ export function summarizeEventAction(data: ActionNodeData, ctx: SummaryContext):
   return {
     kind: ctx.t('nodes:actions.fireEvent'),
     title: ctx.t('nodes:summary.actionEvent', { event: asString(data.event) ?? '' }),
-    detail: summarizeServiceData(data.event_data, ctx.t),
+    detail: summarizeServiceData(data.event_data, ctx.t, 2, rawField, ctx.formatNumber),
   };
 }
 
