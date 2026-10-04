@@ -93,6 +93,10 @@ jobs:
 
             Kommentare immer genau in dieser Form:
               gh issue comment ${{ env.ISSUE_NUMBER }} --body "<Text>"
+            Der Text ist EINE Zeile ohne Zeilenumbrueche, ohne Backticks,
+            ohne $-Zeichen und ohne doppelte Anfuehrungszeichen (sonst
+            blockiert die Rechtepruefung den Befehl). Den Kommentar als
+            eigenen Befehl senden, nicht mit ; oder && verketten.
 
             Wichtig:
             - Alle Kommentare auf GitHub IMMER auf Englisch schreiben,
