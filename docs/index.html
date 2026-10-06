@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FLODE – Flow editor inside Home Assistant</title>
+<script src="https://sh1ft-w.github.io/bar.js" data-project="flode" defer></script>
 <meta name="description" content="FLODE shows Home Assistant automations and scripts as a flow you can read, test and understand — built from Home Assistant's own editors, saved as plain Home Assistant YAML." />
 
 <meta property="og:type" content="website" />
@@ -92,6 +93,7 @@
   /* ---------- nav ---------- */
   nav {
     position: fixed; inset: 0 0 auto; z-index: 50;
+    top: var(--sh1ftw-offset, 0px);
     padding-top: env(safe-area-inset-top, 0px);
     background: rgba(11, 18, 32, 0.78);
     backdrop-filter: blur(18px) saturate(160%);
