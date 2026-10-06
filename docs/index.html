@@ -281,34 +281,58 @@
     .tiles { grid-template-columns: 1fr; }
     .ai-panel .stack { grid-template-columns: 1fr; }
   }
+  /* Zweisprachig: Browsersprache entscheidet, Schalter oben rechts merkt sich die Wahl */
+  html[lang="de"] .en, html[lang="en"] .de { display: none !important; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .lang { display: inline-flex; border: 1px solid var(--navy-line); border-radius: 999px; overflow: hidden; }
+  .lang button { font: inherit; font-size: 12px; font-weight: 600; border: 0; background: none; color: var(--on-navy-muted); padding: 4px 10px; cursor: pointer; }
+  .lang button.on { background: var(--on-navy); color: var(--navy); }
 </style>
+<script>
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem("sh1ftw-lang"); } catch (e) {}
+    var pref = saved || ((navigator.languages && navigator.languages[0]) || navigator.language || "en");
+    document.documentElement.lang = /^de/i.test(pref) ? "de" : "en";
+  })();
+</script>
 </head>
 <body>
 
 <nav>
   <div class="wrap nav-inner">
     <a class="brand" href="#top"><img src="images/icon.png" alt="" /><span>FLODE</span></a>
-    <div class="nav-links">
-      <a href="#native">How it works</a>
-      <a href="#ai">AI</a>
-      <a href="#features">Features</a>
-      <a href="#install">Install</a>
-      <a class="gh" href="https://github.com/SH1FT-W/flode">GitHub</a>
+    <div class="nav-right">
+      <div class="nav-links">
+        <a href="#native"><span class="en">How it works</span><span class="de">So funktioniert's</span></a>
+        <a href="#ai"><span class="en">AI</span><span class="de">KI</span></a>
+        <a href="#features"><span class="en">Features</span><span class="de">Funktionen</span></a>
+        <a href="#install"><span class="en">Install</span><span class="de">Installieren</span></a>
+        <a class="gh" href="https://github.com/SH1FT-W/flode">GitHub</a>
+      </div>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-l="de">DE</button><button type="button" data-l="en">EN</button>
+      </div>
     </div>
   </div>
 </nav>
 
 <header class="hero" id="top">
   <div class="wrap">
-    <div class="badge"><b class="version-tag">v3.0</b> Now built entirely from Home Assistant's own parts</div>
-    <h1>See your <em>automations</em>.</h1>
-    <p class="hero-sub">
+    <div class="badge"><b class="version-tag">v3.0</b> <span class="en">Now built entirely from Home Assistant's own parts</span><span class="de">Jetzt komplett aus Home Assistants eigenen Bausteinen</span></div>
+    <h1 class="en">See your <em>automations</em>.</h1>
+    <h1 class="de">Sieh deine <em>Automationen</em>.</h1>
+    <p class="hero-sub en">
       FLODE shows <strong>Home Assistant automations and scripts as a flow</strong> you can read, test and understand —
       edited with Home Assistant's own editors, saved as plain Home Assistant YAML. No server, no lock-in.
     </p>
+    <p class="hero-sub de">
+      FLODE zeigt <strong>Home-Assistant-Automationen und -Skripte als Ablauf</strong>, den du lesen, testen und verstehen kannst.
+      Bearbeitet mit den Editoren von Home Assistant, gespeichert als ganz normales Home-Assistant-YAML. Kein Server, keine Abhängigkeit.
+    </p>
     <div class="cta">
-      <a class="btn primary" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration">Install via HACS</a>
-      <a class="btn ghost" href="https://github.com/SH1FT-W/flode">View on GitHub</a>
+      <a class="btn primary" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration"><span class="en">Install via HACS</span><span class="de">Über HACS installieren</span></a>
+      <a class="btn ghost" href="https://github.com/SH1FT-W/flode"><span class="en">View on GitHub</span><span class="de">Auf GitHub ansehen</span></a>
     </div>
     <div class="stage">
       <div class="stage-frame">
@@ -316,8 +340,8 @@
              alt="FLODE inside Home Assistant: a flow with two triggers, a condition and actions; the selected If-then block is edited with Home Assistant's own editor on the right." />
       </div>
       <div class="theme-switch" role="group" aria-label="Screenshot theme">
-        <button type="button" data-theme-shot="dark" aria-pressed="true">Dark</button>
-        <button type="button" data-theme-shot="light" aria-pressed="false">Light</button>
+        <button type="button" data-theme-shot="dark" aria-pressed="true"><span class="en">Dark</span><span class="de">Dunkel</span></button>
+        <button type="button" data-theme-shot="light" aria-pressed="false"><span class="en">Light</span><span class="de">Hell</span></button>
       </div>
     </div>
   </div>
@@ -326,21 +350,26 @@
 <section class="band" id="native">
   <div class="wrap native-grid">
     <div>
-      <p class="kicker">Made of Home Assistant</p>
-      <h2>Nothing new to learn. It's the editor you already know.</h2>
-      <p class="lede">Every trigger, condition and action opens in Home Assistant's own editor — the same forms, pickers and dialogs as in Settings. FLODE adds the canvas, so you see how it all connects.</p>
+      <p class="kicker"><span class="en">Made of Home Assistant</span><span class="de">Aus Home Assistant gebaut</span></p>
+      <h2 class="en">Nothing new to learn. It's the editor you already know.</h2>
+      <h2 class="de">Nichts Neues zu lernen. Es ist der Editor, den du schon kennst.</h2>
+      <p class="lede en">Every trigger, condition and action opens in Home Assistant's own editor — the same forms, pickers and dialogs as in Settings. FLODE adds the canvas, so you see how it all connects.</p>
+      <p class="lede de">Jeder Auslöser, jede Bedingung und jede Aktion öffnet sich im Editor von Home Assistant, mit denselben Formularen, Auswahlfeldern und Dialogen wie unter Einstellungen. FLODE ergänzt die Arbeitsfläche, damit du siehst, wie alles zusammenhängt.</p>
       <div class="points">
         <div class="point">
           <div class="ic"><span style="background: var(--trigger)"></span></div>
-          <div><h3>Home Assistant's editors, dialogs and menus</h3><p>Adding steps, renaming, area, labels, mode, saving — all Home Assistant's own. If-then, Choose and Repeat stay single blocks.</p></div>
+          <div class="en"><h3>Home Assistant's editors, dialogs and menus</h3><p>Adding steps, renaming, area, labels, mode, saving — all Home Assistant's own. If-then, Choose and Repeat stay single blocks.</p></div>
+          <div class="de"><h3>Editoren, Dialoge und Menüs von Home Assistant</h3><p>Schritte hinzufügen, umbenennen, Bereich, Labels, Modus, speichern: alles von Home Assistant selbst. Wenn-dann, Auswählen und Wiederholen bleiben einzelne Blöcke.</p></div>
         </div>
         <div class="point">
           <div class="ic"><span style="background: var(--condition)"></span></div>
-          <div><h3>Your language, your theme</h3><p>FLODE follows your Home Assistant profile, light or dark, on desktop and phone.</p></div>
+          <div class="en"><h3>Your language, your theme</h3><p>FLODE follows your Home Assistant profile, light or dark, on desktop and phone.</p></div>
+          <div class="de"><h3>Deine Sprache, dein Design</h3><p>FLODE folgt deinem Home-Assistant-Profil, hell oder dunkel, am Rechner und auf dem Handy.</p></div>
         </div>
         <div class="point">
           <div class="ic"><span style="background: var(--action)"></span></div>
-          <div><h3>Plain YAML, both ways</h3><p>Open any existing automation, change it visually, save it back. It stays editable in Home Assistant's own editor.</p></div>
+          <div class="en"><h3>Plain YAML, both ways</h3><p>Open any existing automation, change it visually, save it back. It stays editable in Home Assistant's own editor.</p></div>
+          <div class="de"><h3>Normales YAML, in beide Richtungen</h3><p>Öffne eine beliebige vorhandene Automation, ändere sie grafisch und speichere sie zurück. Sie bleibt im Editor von Home Assistant bearbeitbar.</p></div>
         </div>
       </div>
     </div>
@@ -353,17 +382,21 @@
 
 <section class="band dark" id="runs">
   <div class="wrap">
-    <p class="kicker">Runs &amp; relations</p>
-    <h2>Know what happened — and why.</h2>
-    <p class="lede">Real runs are drawn right onto the flow, next to Home Assistant's own timeline. And one view shows how all your automations and scripts affect each other.</p>
+    <p class="kicker"><span class="en">Runs &amp; relations</span><span class="de">Ausführungen &amp; Zusammenhänge</span></p>
+    <h2 class="en">Know what happened — and why.</h2>
+    <h2 class="de">Wisse, was passiert ist. Und warum.</h2>
+    <p class="lede en">Real runs are drawn right onto the flow, next to Home Assistant's own timeline. And one view shows how all your automations and scripts affect each other.</p>
+    <p class="lede de">Echte Ausführungen werden direkt in den Ablauf gezeichnet, neben der Zeitleiste von Home Assistant. Und eine Ansicht zeigt, wie sich all deine Automationen und Skripte gegenseitig beeinflussen.</p>
     <div class="split">
       <figure>
         <div class="shot"><img data-shot="flode-runs" src="images/flode-runs-dark.png" width="2000" height="1233" loading="lazy" alt="A real run of an automation: Home Assistant's trace timeline on the right, the steps that ran highlighted on the canvas." /></div>
-        <figcaption><strong>Runs.</strong> Pick a run, see its path, open any step's details. Run any step and everything after it for real with <em>Run from here</em>.</figcaption>
+        <figcaption class="en"><strong>Runs.</strong> Pick a run, see its path, open any step's details. Run any step and everything after it for real with <em>Run from here</em>.</figcaption>
+        <figcaption class="de"><strong>Ausführungen.</strong> Wähle eine Ausführung, sieh ihren Weg und öffne die Details jedes Schritts. Mit <em>Ab hier ausführen</em> läuft ein Schritt samt allem danach wirklich.</figcaption>
       </figure>
       <figure>
         <div class="shot"><img data-shot="flode-relations" src="images/flode-relations-dark.png" width="2000" height="1233" loading="lazy" alt="Relations view: possible conflicts, self-triggering automations, chains, and what controls a light." /></div>
-        <figcaption><strong>Relations.</strong> Conflicting automations, ones that trigger themselves, chains, missing entities — and <em>where is this used?</em> for any entity.</figcaption>
+        <figcaption class="en"><strong>Relations.</strong> Conflicting automations, ones that trigger themselves, chains, missing entities — and <em>where is this used?</em> for any entity.</figcaption>
+        <figcaption class="de"><strong>Zusammenhänge.</strong> Automationen, die sich widersprechen oder selbst auslösen, Ketten, fehlende Entitäten und <em>Wo wird das verwendet?</em> für jede Entität.</figcaption>
       </figure>
     </div>
   </div>
@@ -373,34 +406,48 @@
   <div class="wrap">
     <div class="ai-head">
       <div>
-        <p class="kicker">AI help</p>
-        <h2>Stuck? Ask.</h2>
-        <p class="lede">FLODE can use the AI you've set up in Home Assistant to explain runs, find mistakes and draft new automations.</p>
+        <p class="kicker"><span class="en">AI help</span><span class="de">KI-Hilfe</span></p>
+        <h2 class="en">Stuck? Ask.</h2>
+        <h2 class="de">Hängst du fest? Frag.</h2>
+        <p class="lede en">FLODE can use the AI you've set up in Home Assistant to explain runs, find mistakes and draft new automations.</p>
+        <p class="lede de">FLODE kann die KI nutzen, die du in Home Assistant eingerichtet hast, um Ausführungen zu erklären, Fehler zu finden und neue Automationen zu entwerfen.</p>
       </div>
-      <div class="optional">
+      <div class="optional en">
         <b>Optional</b>
         Only appears when you've chosen an AI task in Home Assistant (Anthropic, OpenAI, Google, Ollama …). No extra key, no extra service — without one, FLODE works exactly the same.
+      </div>
+      <div class="optional de">
+        <b>Optional</b>
+        Erscheint nur, wenn du in Home Assistant eine KI-Aufgabe gewählt hast (Anthropic, OpenAI, Google, Ollama …). Kein zusätzlicher Schlüssel, kein zusätzlicher Dienst. Ohne KI funktioniert FLODE genauso.
       </div>
     </div>
 
     <div class="ai-tabs" role="tablist" aria-label="AI features">
-      <button role="tab" id="tab-explain" aria-controls="panel-explain" aria-selected="true">Explain a run</button>
-      <button role="tab" id="tab-assist" aria-controls="panel-assist" aria-selected="false">Assistant</button>
-      <button role="tab" id="tab-create" aria-controls="panel-create" aria-selected="false">Create with AI</button>
+      <button role="tab" id="tab-explain" aria-controls="panel-explain" aria-selected="true"><span class="en">Explain a run</span><span class="de">Ausführung erklären</span></button>
+      <button role="tab" id="tab-assist" aria-controls="panel-assist" aria-selected="false"><span class="en">Assistant</span><span class="de">Assistent</span></button>
+      <button role="tab" id="tab-create" aria-controls="panel-create" aria-selected="false"><span class="en">Create with AI</span><span class="de">Mit KI erstellen</span></button>
     </div>
 
     <div class="ai-panel" role="tabpanel" id="panel-explain" aria-labelledby="tab-explain">
       <div class="shot"><img data-shot="flode-ai-explain" src="images/flode-ai-explain-dark.png" width="2000" height="1233" loading="lazy" alt="The AI explains why a run failed: brightness 150 % is above the allowed 100 %." /></div>
-      <div class="text">
+      <div class="text en">
         <h3>Why did it fail?</h3>
         <p>One click on a run and the AI explains it in plain words — which condition held, which step broke and how to fix it.</p>
+      </div>
+      <div class="text de">
+        <h3>Warum ist es schiefgegangen?</h3>
+        <p>Ein Klick auf eine Ausführung und die KI erklärt sie in einfachen Worten: welche Bedingung erfüllt war, welcher Schritt fehlschlug und wie du es behebst.</p>
       </div>
     </div>
     <div class="ai-panel" role="tabpanel" id="panel-assist" aria-labelledby="tab-assist" hidden>
       <div class="shot"><img data-shot="flode-ai-assistant" src="images/flode-ai-assistant-dark.png" width="2000" height="1233" loading="lazy" alt="The AI assistant lists problems it found in the open flow." /></div>
-      <div class="text">
+      <div class="text en">
         <h3>A second pair of eyes</h3>
         <p>Ask about the open flow, let it find mistakes or suggest a better version. Changes are shown first and applied as one step you can undo.</p>
+      </div>
+      <div class="text de">
+        <h3>Ein zweites Paar Augen</h3>
+        <p>Stell Fragen zum offenen Ablauf, lass Fehler suchen oder eine bessere Fassung vorschlagen. Änderungen siehst du zuerst, übernommen werden sie als ein Schritt, den du rückgängig machen kannst.</p>
       </div>
     </div>
     <div class="ai-panel" role="tabpanel" id="panel-create" aria-labelledby="tab-create" hidden>
@@ -408,9 +455,13 @@
         <div class="shot"><img data-shot="flode-ai-create" src="images/flode-ai-create-dark.png" width="2000" height="1233" loading="lazy" alt="Create with AI: describing an automation in plain words." /></div>
         <div class="shot"><img data-shot="flode-ai-draft" src="images/flode-ai-draft-dark.png" width="2000" height="1233" loading="lazy" alt="The draft the AI built from the description, not yet saved." /></div>
       </div>
-      <div class="text">
+      <div class="text en">
         <h3>From a sentence to a flow</h3>
         <p>Describe what should happen. FLODE builds a draft from your real entities, checks it — and nothing is saved until you save.</p>
+      </div>
+      <div class="text de">
+        <h3>Vom Satz zum Ablauf</h3>
+        <p>Beschreib, was passieren soll. FLODE baut einen Entwurf aus deinen echten Entitäten und prüft ihn. Gespeichert wird erst, wenn du speicherst.</p>
       </div>
     </div>
   </div>
@@ -418,32 +469,43 @@
 
 <section class="band" id="features">
   <div class="wrap">
-    <p class="kicker">Everything else</p>
-    <h2>Small things that add up.</h2>
+    <p class="kicker"><span class="en">Everything else</span><span class="de">Alles andere</span></p>
+    <h2 class="en">Small things that add up.</h2>
+    <h2 class="de">Kleinigkeiten, die sich summieren.</h2>
     <div class="tiles">
-      <div class="tile"><h3>Scripts, too</h3><p>With fields, a run button that asks for them, and <em>Run from here</em> for any step.</p></div>
-      <div class="tile"><h3>Template workshop</h3><p>Jinja rendered live by Home Assistant — with the result type, what it reacts to and the variables of a real run. <kbd>⌘J</kbd></p></div>
-      <div class="tile"><h3>Commands &amp; shortcuts</h3><p>Everything in one search <kbd>⌘K</kbd>, right-click menus, copy, paste, duplicate, and an overview on <kbd>?</kbd>.</p></div>
-      <div class="tile"><h3>Tabs &amp; minimap</h3><p>Several flows open at once, each with its own undo; a minimap for big ones; tidy up in one click.</p></div>
-      <div class="tile"><h3>Import, export, merge</h3><p>Paste YAML, save as copy, FLODE files, and merge several automations into one.</p></div>
-      <div class="tile"><h3>Careful with your data</h3><p>Warns when it can't read part of an automation. HA blocks stay blocks, and saving keeps what Home Assistant wrote.</p></div>
+      <div class="tile en"><h3>Scripts, too</h3><p>With fields, a run button that asks for them, and <em>Run from here</em> for any step.</p></div>
+      <div class="tile de"><h3>Auch Skripte</h3><p>Mit Feldern, einem Ausführen-Knopf, der danach fragt, und <em>Ab hier ausführen</em> für jeden Schritt.</p></div>
+      <div class="tile en"><h3>Template workshop</h3><p>Jinja rendered live by Home Assistant — with the result type, what it reacts to and the variables of a real run. <kbd>⌘J</kbd></p></div>
+      <div class="tile de"><h3>Template-Werkstatt</h3><p>Jinja, live von Home Assistant gerendert. Mit Ergebnistyp, worauf es reagiert, und den Variablen einer echten Ausführung. <kbd>⌘J</kbd></p></div>
+      <div class="tile en"><h3>Commands &amp; shortcuts</h3><p>Everything in one search <kbd>⌘K</kbd>, right-click menus, copy, paste, duplicate, and an overview on <kbd>?</kbd>.</p></div>
+      <div class="tile de"><h3>Befehle &amp; Tastenkürzel</h3><p>Alles in einer Suche <kbd>⌘K</kbd>, Rechtsklick-Menüs, kopieren, einfügen, duplizieren und eine Übersicht unter <kbd>?</kbd>.</p></div>
+      <div class="tile en"><h3>Tabs &amp; minimap</h3><p>Several flows open at once, each with its own undo; a minimap for big ones; tidy up in one click.</p></div>
+      <div class="tile de"><h3>Tabs &amp; Minikarte</h3><p>Mehrere Abläufe gleichzeitig offen, jeder mit eigenem Rückgängig. Eine Minikarte für große Abläufe, aufräumen mit einem Klick.</p></div>
+      <div class="tile en"><h3>Import, export, merge</h3><p>Paste YAML, save as copy, FLODE files, and merge several automations into one.</p></div>
+      <div class="tile de"><h3>Importieren, exportieren, zusammenführen</h3><p>YAML einfügen, als Kopie speichern, FLODE-Dateien und mehrere Automationen zu einer zusammenführen.</p></div>
+      <div class="tile en"><h3>Careful with your data</h3><p>Warns when it can't read part of an automation. HA blocks stay blocks, and saving keeps what Home Assistant wrote.</p></div>
+      <div class="tile de"><h3>Sorgsam mit deinen Daten</h3><p>Warnt, wenn ein Teil einer Automation nicht lesbar ist. HA-Blöcke bleiben Blöcke, und beim Speichern bleibt erhalten, was Home Assistant geschrieben hat.</p></div>
     </div>
     <div class="showcase">
       <figure>
         <div class="shot"><img data-shot="flode-templates" src="images/flode-templates-dark.png" width="2000" height="1233" loading="lazy" alt="Template workshop with a live-rendered result." /></div>
-        <figcaption><strong>Template workshop.</strong> Try Jinja before it goes into an automation.</figcaption>
+        <figcaption class="en"><strong>Template workshop.</strong> Try Jinja before it goes into an automation.</figcaption>
+        <figcaption class="de"><strong>Template-Werkstatt.</strong> Probier Jinja aus, bevor es in eine Automation kommt.</figcaption>
       </figure>
       <figure>
         <div class="shot"><img data-shot="flode-context-menu" src="images/flode-context-menu-dark.png" width="2000" height="1233" loading="lazy" alt="Right-click menu on a card with copy, duplicate, disable, run from here, disconnect and delete." /></div>
-        <figcaption><strong>Right-click.</strong> The common actions right where you work, with their shortcuts.</figcaption>
+        <figcaption class="en"><strong>Right-click.</strong> The common actions right where you work, with their shortcuts.</figcaption>
+        <figcaption class="de"><strong>Rechtsklick.</strong> Die häufigsten Aktionen genau da, wo du arbeitest, mit ihren Tastenkürzeln.</figcaption>
       </figure>
     </div>
     <div class="phone-row">
       <div class="phone"><img data-shot="flode-phone" src="images/flode-phone-dark.png" width="550" height="1100" loading="lazy" alt="FLODE on a phone: two-row header and the selected block as a bottom sheet." /></div>
       <div>
-        <p class="kicker">On the go</p>
-        <h2>Fix it from the couch.</h2>
-        <p class="lede">On a phone the tools move into a swipeable strip and the editor slides up as a sheet — the card you're editing stays in view above it.</p>
+        <p class="kicker"><span class="en">On the go</span><span class="de">Unterwegs</span></p>
+        <h2 class="en">Fix it from the couch.</h2>
+        <h2 class="de">Reparier es vom Sofa aus.</h2>
+        <p class="lede en">On a phone the tools move into a swipeable strip and the editor slides up as a sheet — the card you're editing stays in view above it.</p>
+        <p class="lede de">Auf dem Handy wandern die Werkzeuge in eine wischbare Leiste und der Editor gleitet als Blatt von unten herein. Die Karte, die du bearbeitest, bleibt darüber sichtbar.</p>
       </div>
     </div>
   </div>
@@ -452,17 +514,22 @@
 <section class="band dark" id="yaml">
   <div class="wrap yaml-grid">
     <div>
-      <p class="kicker">Under the hood</p>
-      <h2>Your automations stay yours.</h2>
-      <p class="lede">What you build is ordinary Home Assistant YAML, stored by Home Assistant. Uninstall FLODE tomorrow and every automation keeps working.</p>
+      <p class="kicker"><span class="en">Under the hood</span><span class="de">Unter der Haube</span></p>
+      <h2 class="en">Your automations stay yours.</h2>
+      <h2 class="de">Deine Automationen bleiben deine.</h2>
+      <p class="lede en">What you build is ordinary Home Assistant YAML, stored by Home Assistant. Uninstall FLODE tomorrow and every automation keeps working.</p>
+      <p class="lede de">Was du baust, ist ganz normales Home-Assistant-YAML, gespeichert von Home Assistant. Deinstallierst du FLODE morgen, läuft jede Automation weiter.</p>
       <div class="facts">
-        <div><b>No server, no account</b><span>FLODE is a panel inside Home Assistant and talks only to your Home Assistant.</span></div>
-        <div><b>Round-trips your YAML</b><span>Tested against real installations: open, save, and the automation comes back the same.</span></div>
-        <div><b>Open source</b><span>Apache 2.0, based on C.A.F.E. by Federico Zivolo.</span></div>
+        <div class="en"><b>No server, no account</b><span>FLODE is a panel inside Home Assistant and talks only to your Home Assistant.</span></div>
+        <div class="de"><b>Kein Server, kein Konto</b><span>FLODE ist ein Panel in Home Assistant und spricht nur mit deinem Home Assistant.</span></div>
+        <div class="en"><b>Round-trips your YAML</b><span>Tested against real installations: open, save, and the automation comes back the same.</span></div>
+        <div class="de"><b>Dein YAML bleibt, wie es ist</b><span>Getestet mit echten Installationen: öffnen, speichern, und die Automation kommt unverändert zurück.</span></div>
+        <div class="en"><b>Open source</b><span>Apache 2.0, based on C.A.F.E. by Federico Zivolo.</span></div>
+        <div class="de"><b>Open Source</b><span>Apache 2.0, basiert auf C.A.F.E. von Federico Zivolo.</span></div>
       </div>
     </div>
     <div class="code">
-      <div class="file">automations.yaml — saved by FLODE</div>
+      <div class="file"><span class="en">automations.yaml — saved by FLODE</span><span class="de">automations.yaml, gespeichert von FLODE</span></div>
 <pre><span class="k">alias</span>: <span class="s">Abendlicht Schlafzimmer</span>
 <span class="k">triggers</span>:
   - <span class="k">trigger</span>: <span class="v">sun</span>
@@ -493,15 +560,22 @@
 
 <section class="band" id="install">
   <div class="wrap install">
-    <p class="kicker">Install</p>
-    <h2>Up and running in five minutes.</h2>
-    <ol class="steps">
+    <p class="kicker"><span class="en">Install</span><span class="de">Installieren</span></p>
+    <h2 class="en">Up and running in five minutes.</h2>
+    <h2 class="de">In fünf Minuten startklar.</h2>
+    <ol class="steps en">
       <li><span class="n">1</span><span>HACS → search for <strong>FLODE</strong> → Download.</span></li>
       <li><span class="n">2</span><span>Restart Home Assistant.</span></li>
       <li><span class="n">3</span><span>Settings → Devices &amp; services → Add integration → <strong>FLODE</strong>. It appears in the sidebar.</span></li>
     </ol>
-    <p class="req">Needs <strong>Home Assistant 2026.3</strong> or newer and an admin account. By hand: unzip <code>flode.zip</code> from the <a href="https://github.com/SH1FT-W/flode/releases">releases</a> into <code>config/custom_components/flode/</code>.</p>
-    <a class="btn primary" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration">Open in HACS</a>
+    <ol class="steps de">
+      <li><span class="n">1</span><span>HACS → nach <strong>FLODE</strong> suchen → Herunterladen.</span></li>
+      <li><span class="n">2</span><span>Home Assistant neu starten.</span></li>
+      <li><span class="n">3</span><span>Einstellungen → Geräte &amp; Dienste → Integration hinzufügen → <strong>FLODE</strong>. Es erscheint in der Seitenleiste.</span></li>
+    </ol>
+    <p class="req en">Needs <strong>Home Assistant 2026.3</strong> or newer and an admin account. By hand: unzip <code>flode.zip</code> from the <a href="https://github.com/SH1FT-W/flode/releases">releases</a> into <code>config/custom_components/flode/</code>.</p>
+    <p class="req de">Braucht <strong>Home Assistant 2026.3</strong> oder neuer und ein Admin-Konto. Von Hand: <code>flode.zip</code> aus den <a href="https://github.com/SH1FT-W/flode/releases">Releases</a> nach <code>config/custom_components/flode/</code> entpacken.</p>
+    <a class="btn primary" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration"><span class="en">Open in HACS</span><span class="de">In HACS öffnen</span></a>
   </div>
 </section>
 
@@ -512,10 +586,10 @@
       <a href="https://github.com/SH1FT-W/flode">GitHub</a>
       <a href="https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md">Changelog</a>
       <a href="https://github.com/SH1FT-W/flode/issues">Issues</a>
-      <a href="https://github.com/SH1FT-W/flode/blob/main/CONTRIBUTING.md">Contribute</a>
-      <a href="https://github.com/FezVrasta/cafe-hass">C.A.F.E. (original)</a>
+      <a href="https://github.com/SH1FT-W/flode/blob/main/CONTRIBUTING.md"><span class="en">Contribute</span><span class="de">Mitmachen</span></a>
+      <a href="https://github.com/FezVrasta/cafe-hass"><span class="en">C.A.F.E. (original)</span><span class="de">C.A.F.E. (Original)</span></a>
     </div>
-    <span>Apache 2.0 · Built with Claude (Anthropic)</span>
+    <span><span class="en">Apache 2.0 · Built with Claude (Anthropic)</span><span class="de">Apache 2.0 · Gebaut mit Claude (Anthropic)</span></span>
   </div>
 </footer>
 
@@ -548,6 +622,23 @@
       });
     });
   });
+
+  // Language: DE / EN switch, the choice is shared by all sh1ft-w.github.io pages.
+  (function () {
+    var titles = { en: "FLODE – Flow editor inside Home Assistant", de: "FLODE – Ablauf-Editor in Home Assistant" };
+    function apply(l) {
+      document.documentElement.lang = l;
+      document.title = titles[l];
+      document.querySelectorAll(".lang button").forEach(function (b) { b.classList.toggle("on", b.dataset.l === l); });
+    }
+    document.querySelectorAll(".lang button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        try { localStorage.setItem("sh1ftw-lang", b.dataset.l); } catch (e) {}
+        apply(b.dataset.l);
+      });
+    });
+    apply(document.documentElement.lang);
+  })();
 </script>
 </body>
 </html>
