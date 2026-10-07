@@ -24,10 +24,8 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:card-text-outline', title: 'new310CardsTitle', text: 'new310CardsText' },
-  { icon: 'mdi:alert-circle-outline', title: 'new310IssuesTitle', text: 'new310IssuesText' },
-  { icon: 'mdi:magnify-minus-outline', title: 'new310ZoomTitle', text: 'new310ZoomText' },
-  { icon: 'mdi:ray-start-arrow', title: 'new310TriggerTitle', text: 'new310TriggerText' },
+  { icon: 'mdi:ray-start-arrow', title: 'new311TriggerTitle', text: 'new311TriggerText' },
+  { icon: 'mdi:home-assistant', title: 'new311HaTitle', text: 'new311HaText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

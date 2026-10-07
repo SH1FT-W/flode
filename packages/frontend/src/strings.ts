@@ -277,18 +277,12 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new310CardsTitle: 'Karten wie in Home Assistant',
-    new310CardsText:
-      'Jede Karte zeigt jetzt Home Assistants eigenes Symbol – das Gerät mit seinem Zustand oder den Auslöser, die Bedingung, den Dienst. Lange Namen werden in der Mitte gekürzt, damit „über 10 W“ sichtbar bleibt, und Felder heißen wie in Home Assistant („Helligkeit: 40 %“).',
-    new310IssuesTitle: 'Fehler sofort sehen',
-    new310IssuesText:
-      'Ruft ein Schritt einen Dienst auf, den es nicht gibt, oder nutzt er eine Entität, die fehlt, wird die Karte rot umrandet und die Linie dorthin rot – schon vor dem ersten Lauf.',
-    new310ZoomTitle: 'Lesbar beim Herauszoomen',
-    new310ZoomText:
-      'Weit herausgezoomt zeigen die Karten nur noch Symbol, Titel und was passiert – in großer Schrift. Ganz weit draußen bleibt das Symbol. Zahlen und Uhrzeiten folgen deinem Home-Assistant-Profil.',
-    new310TriggerTitle: '„Ausgelöst durch“ für Home Assistant 2026.10',
-    new310TriggerText:
-      'Die Bedingung zeigt jetzt alle Auslöser deiner Automation. Wähle einfach die passenden aus – fehlende Auslöser-IDs vergibt FLODE dabei selbst, und doppelte IDs lassen sich mit einem Klick beheben.',
+    new311TriggerTitle: '„Ausgelöst durch“ auch ohne ID',
+    new311TriggerText:
+      'Eine von Hand geschriebene Bedingung ohne id-Zeile ließ sich in FLODE nicht bearbeiten, das Anhaken eines Auslösers tat nichts. Jetzt klappt es wie in Home Assistant 2026.10: Auslöser anhaken, fertig. Abhaken räumt die ID wieder weg.',
+    new311HaTitle: 'Bereit für Home Assistant 2026.10',
+    new311HaText:
+      'FLODE ist gegen die fertige Version 2026.10 geprüft. In den Läufen zeigen die Schritt-Details jetzt die verwendeten Auslöser als Chips, so wie in Home Assistants eigener Ablaufansicht.',
   },
   en: {
     title: 'FLODE',
@@ -561,18 +555,12 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new310CardsTitle: 'Cards like in Home Assistant',
-    new310CardsText:
-      'Every card now shows Home Assistant\'s own icon — the device with its state, or the trigger, condition or action. Long names are shortened in the middle so "above 10 W" stays visible, and fields are named as in Home Assistant ("Brightness: 40 %").',
-    new310IssuesTitle: 'See mistakes right away',
-    new310IssuesText:
-      'If a step calls an action that does not exist or uses an entity that is missing, its card gets a red border and the line into it turns red — before it ever runs.',
-    new310ZoomTitle: 'Readable when zoomed out',
-    new310ZoomText:
-      'Zoomed far out, cards show just icon, title and what happens, in large type. Even further out, the icon stays. Numbers and times follow your Home Assistant profile.',
-    new310TriggerTitle: '"Triggered by" for Home Assistant 2026.10',
-    new310TriggerText:
-      "The condition now lists all of your automation's triggers. Just pick the ones you want — FLODE gives them a trigger ID if they have none, and shared IDs are fixed with one click.",
+    new311TriggerTitle: '"Triggered by" also without an ID',
+    new311TriggerText:
+      'A hand-written condition without an id line could not be edited in FLODE, picking a trigger did nothing. It now works as in Home Assistant 2026.10: tick the trigger, done. Unticking removes the ID again.',
+    new311HaTitle: 'Ready for Home Assistant 2026.10',
+    new311HaText:
+      "FLODE is checked against the final 2026.10. In the runs view, the step details now show the referenced triggers as chips, as in Home Assistant's own trace view.",
   },
 } as const;
 

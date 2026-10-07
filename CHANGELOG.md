@@ -4,6 +4,18 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.1.1] — 2026-10-07 — Ready for Home Assistant 2026.10
+
+A bug-fix release for Home Assistant 2026.10. Everything from 3.0.0 below still applies.
+
+### Fixed
+- **"Triggered by" condition without an ID**: a condition written by hand in YAML as just `condition: trigger` (no `id` line) could not be edited in FLODE. Picking a trigger did nothing. Home Assistant 2026.10 accepts such a condition in its own editor, and FLODE now does the same: the pick is stored on the condition, the trigger gets its ID, and unticking removes both again.
+
+### Changed
+- **Checked against the final Home Assistant 2026.10**: the step details in the runs view now show the referenced triggers as chips, as in Home Assistant's own trace view. No change was needed for that; it comes with Home Assistant's own component.
+
+---
+
 ## [3.1.0] — 2026-10-01 — Clearer cards
 
 Everything from 3.0.0 below still applies.

@@ -57,6 +57,16 @@ describe('mapTriggerConditions', () => {
     const result = mapTriggerConditions(data, (c) => ({ ...c, id: 'b' })) as typeof data;
     expect(result._raw.id).toBe('b');
   });
+
+  it('finds trigger conditions without an ID, nested or wrapped under _raw', () => {
+    const nested = { if: [{ condition: 'trigger' }], then: [] };
+    const result = mapTriggerConditions(nested, (c) => ({ ...c, id: 'b' })) as typeof nested;
+    expect(result.if[0]).toEqual({ condition: 'trigger', id: 'b' });
+    const wrapped = { condition: 'trigger', _raw: { condition: 'trigger' } };
+    const mapped = mapTriggerConditions(wrapped, (c) => ({ ...c, id: 'b' })) as typeof wrapped;
+    expect(mapped._raw).toEqual({ condition: 'trigger', id: 'b' });
+    expect('id' in mapped).toBe(false);
+  });
 });
 
 describe('selectTriggerIds', () => {
@@ -195,6 +205,31 @@ describe('trigger IDs read by automation variables', () => {
       templates: [{ room: "{{ 'kueche' if trigger.id == 'motion' else 'bad' }}" }],
     };
     expect(makeDuplicateTriggerIdsUnique(flow)).toBe(flow);
+  });
+});
+
+describe('selectTriggerIds on a condition without an ID', () => {
+  it('stores the pick like HA 2026.10 does for a condition that omits its ID', () => {
+    const condition = { condition: 'trigger' };
+    const flow = {
+      triggers: [{ trigger: 'state', entity_id: 'binary_sensor.a' }],
+      steps: [condition],
+    };
+    const options = getTriggerIdOptions(flow.triggers);
+    const result = selectTriggerIds(flow, options, condition, [options[0].id]);
+    expect(result.steps[0]).toEqual({ condition: 'trigger', id: [options[0].id] });
+    expect(result.triggers[0]).toMatchObject({ id: options[0].id });
+  });
+
+  it('leaves such a condition alone when cleaning up and splitting IDs', () => {
+    const flow = {
+      triggers: [{ trigger: 'state', id: 'x' }, { trigger: 'sun', id: 'x' }],
+      steps: [{ condition: 'trigger' }],
+    };
+    expect(cleanupUnusedGeneratedTriggerIds(flow)).toBe(flow);
+    const split = makeDuplicateTriggerIdsUnique(flow);
+    expect(split.steps[0]).toBe(flow.steps[0]);
+    expect(split.triggers.map((t) => 'id' in (t as object))).toEqual([false, false]);
   });
 });
 

@@ -132,8 +132,14 @@ function withoutId(trigger: Step): Step {
   return rest;
 }
 
+/**
+ * A trigger condition — with or without an `id` (HA's editor holds one
+ * without before the first pick, and pasted YAML may omit it). A card's data
+ * that only wraps the real condition under `_raw` is not one itself.
+ */
 function isTriggerCondition(value: Step): boolean {
-  return value.condition === 'trigger' && 'id' in value;
+  if (value.condition !== 'trigger') return false;
+  return 'id' in value || !isPlainObject(value._raw);
 }
 
 /**
