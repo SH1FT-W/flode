@@ -223,7 +223,10 @@ describe('selectTriggerIds on a condition without an ID', () => {
 
   it('leaves such a condition alone when cleaning up and splitting IDs', () => {
     const flow = {
-      triggers: [{ trigger: 'state', id: 'x' }, { trigger: 'sun', id: 'x' }],
+      triggers: [
+        { trigger: 'state', id: 'x' },
+        { trigger: 'sun', id: 'x' },
+      ],
       steps: [{ condition: 'trigger' }],
     };
     expect(cleanupUnusedGeneratedTriggerIds(flow)).toBe(flow);
