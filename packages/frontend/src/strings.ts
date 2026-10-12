@@ -277,12 +277,12 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new311TriggerTitle: '„Ausgelöst durch“ auch ohne ID',
-    new311TriggerText:
-      'Eine von Hand geschriebene Bedingung ohne id-Zeile ließ sich in FLODE nicht bearbeiten, das Anhaken eines Auslösers tat nichts. Jetzt klappt es wie in Home Assistant 2026.10: Auslöser anhaken, fertig. Abhaken räumt die ID wieder weg.',
-    new311HaTitle: 'Bereit für Home Assistant 2026.10',
-    new311HaText:
-      'FLODE ist gegen die fertige Version 2026.10 geprüft. In den Läufen zeigen die Schritt-Details jetzt die verwendeten Auslöser als Chips, so wie in Home Assistants eigener Ablaufansicht.',
+    new312ChooseTitle: 'Templates in „Auswählen“',
+    new312ChooseText:
+      'Steckt in einem Zweig von „Auswählen“ oder „Wenn-dann“ eine Aktion mit Template, zeigt jetzt nur diese eine Aktion YAML. Der Rest des Blocks bleibt als Formular bearbeitbar, wie in Home Assistants eigenem Editor.',
+    new312TitleTitle: '„Flode“ in der Seitenleiste',
+    new312TitleText:
+      'Der Eintrag in der Home-Assistant-Seitenleiste heißt jetzt „Flode“ statt „FLODE“.',
   },
   en: {
     title: 'FLODE',
@@ -555,12 +555,12 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new311TriggerTitle: '"Triggered by" also without an ID',
-    new311TriggerText:
-      'A hand-written condition without an id line could not be edited in FLODE, picking a trigger did nothing. It now works as in Home Assistant 2026.10: tick the trigger, done. Unticking removes the ID again.',
-    new311HaTitle: 'Ready for Home Assistant 2026.10',
-    new311HaText:
-      "FLODE is checked against the final 2026.10. In the runs view, the step details now show the referenced triggers as chips, as in Home Assistant's own trace view.",
+    new312ChooseTitle: 'Templates inside "Choose"',
+    new312ChooseText:
+      'When an action with a template sits in a branch of "Choose" or "If-then", only that action shows YAML now. The rest of the block stays editable as a form, as in Home Assistant\'s own editor.',
+    new312TitleTitle: '"Flode" in the sidebar',
+    new312TitleText:
+      'The entry in the Home Assistant sidebar is now called "Flode" instead of "FLODE".',
   },
 } as const;
 

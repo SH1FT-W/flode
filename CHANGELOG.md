@@ -4,6 +4,18 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.1.2] — 2026-10-12 — Templates inside blocks
+
+A bug-fix release. Everything from 3.0.0 below still applies.
+
+### Fixed
+- **A template inside "Choose" no longer turns the whole block into YAML** ([#27](https://github.com/SH1FT-W/flode/issues/27)): an action with a template in its `action:` line, inside a branch or the default actions of a `choose` (or another block), switched the complete block in the sidebar to YAML. Now only that one action shows YAML with Home Assistant's hint, and the rest of the block stays a form, as in Home Assistant's own editor.
+
+### Changed
+- **"Flode" in the sidebar**: the panel's entry in the Home Assistant sidebar is now written "Flode" instead of "FLODE".
+
+---
+
 ## [3.1.1] — 2026-10-07 — Ready for Home Assistant 2026.10
 
 A bug-fix release for Home Assistant 2026.10. Everything from 3.0.0 below still applies.

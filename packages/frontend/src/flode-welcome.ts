@@ -24,8 +24,8 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:ray-start-arrow', title: 'new311TriggerTitle', text: 'new311TriggerText' },
-  { icon: 'mdi:home-assistant', title: 'new311HaTitle', text: 'new311HaText' },
+  { icon: 'mdi:code-braces', title: 'new312ChooseTitle', text: 'new312ChooseText' },
+  { icon: 'mdi:dock-left', title: 'new312TitleTitle', text: 'new312TitleText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';
