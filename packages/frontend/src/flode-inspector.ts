@@ -36,6 +36,19 @@ export interface NodesChange {
  */
 const NARROW_BELOW = 440;
 
+/** HA's step rows (`ha-automation-action-row` …) — each one switches its own step to YAML. */
+const STEP_ROW = /^HA-AUTOMATION-[A-Z]+-ROW$/;
+
+/** HA's "no form for this" came from a step nested in the card (a `choose` branch …), not the card itself. */
+function fromNestedStep(event: Event): boolean {
+  const path = event.composedPath();
+  const editor = event.currentTarget;
+  const end = editor ? path.indexOf(editor) : -1;
+  return path
+    .slice(0, end === -1 ? path.length : end)
+    .some((el) => el instanceof HTMLElement && STEP_ROW.test(el.tagName));
+}
+
 export class FlodeInspector extends LitElement {
   static properties = {
     hass: { attribute: false },
@@ -282,9 +295,11 @@ export class FlodeInspector extends LitElement {
     const ui = hasUiEditor(kind, step);
     const yaml = this.yamlMode || !ui;
     const onChange = (e: CustomEvent<{ value: unknown }>) => this.onStepChanged(node, kind, e);
-    // HA asks for YAML when the step has something its form can't show.
+    // HA asks for YAML when the step has something its form can't show. A nested
+    // step's row already shows just that step as YAML, like HA's own editor.
     const onUiUnavailable = (e: Event) => {
       e.stopPropagation();
+      if (fromNestedStep(e)) return;
       this.yamlMode = true;
     };
     switch (kind) {
