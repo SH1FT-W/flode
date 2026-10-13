@@ -24,9 +24,9 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:source-branch', title: 'new320BranchesTitle', text: 'new320BranchesText' },
-  { icon: 'mdi:cursor-default-click-outline', title: 'new320EditTitle', text: 'new320EditText' },
-  { icon: 'mdi:map-marker-path', title: 'new320RunTitle', text: 'new320RunText' },
+  { icon: 'mdi:file-tree-outline', title: 'new321NestedTitle', text: 'new321NestedText' },
+  { icon: 'mdi:cursor-move', title: 'new321MoveTitle', text: 'new321MoveText' },
+  { icon: 'mdi:vector-polyline', title: 'new321LinesTitle', text: 'new321LinesText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

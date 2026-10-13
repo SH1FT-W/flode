@@ -4,6 +4,19 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.2.1] — 2026-10-13 — Nested branches
+
+Everything from 3.0.0 below still applies.
+
+### Added
+- **Nested branches on the canvas** ([#27](https://github.com/SH1FT-W/flode/issues/27)): a "Choose" or "If-then" inside a branch of another block now gets its own named outputs and cards too, across any number of levels. "+", delete and the runs view work inside nested branches as well.
+- **Move branch cards**: cards inside a branch can now be dragged one by one; a nested block takes its own branches along. The position is kept in FLODE's layout metadata, the saved actions stay a plain Home Assistant block. "Tidy up" puts all branch cards back in place.
+
+### Changed
+- **Cleaner lines for branches**: each branch now runs straight in its own lane up to the end of the block and only then turns to the next step. An empty "Default" or "Else" gets its own lane too, so lines no longer run behind the cards of other branches.
+
+---
+
 ## [3.2.0] — 2026-10-13 — Branches on the canvas
 
 Everything from 3.0.0 below still applies.

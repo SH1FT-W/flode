@@ -283,15 +283,15 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new320BranchesTitle: 'Zweige im Ablauf sichtbar',
-    new320BranchesText:
-      '„Auswählen“ und „Wenn-dann“ zeigen ihre Optionen jetzt direkt auf der Zeichenfläche: ein Ausgang pro Option, die Schritte jedes Zweigs als eigene Karten, danach laufen die Zweige wieder zusammen. Gespeichert wird weiter ein ganz normaler Home-Assistant-Block.',
-    new320EditTitle: 'Zweige direkt bearbeiten',
-    new320EditText:
-      'Ein Klick auf eine Karte im Zweig öffnet genau diesen Schritt. Mit „+“ am Zweig fügst du dort einen Schritt hinzu, auch für „Standard“ oder „Sonst“.',
-    new320RunTitle: 'Welcher Weg lief',
-    new320RunText:
-      'In den Abläufen ist der Zweig markiert, den die Automation tatsächlich genommen hat. Die anderen bleiben blass.',
+    new321NestedTitle: 'Verschachtelte Zweige',
+    new321NestedText:
+      'Steckt ein „Auswählen“ oder „Wenn-dann“ in einem Zweig, bekommt es jetzt ebenfalls eigene Ausgänge und Karten, auch über mehrere Ebenen.',
+    new321MoveTitle: 'Zweig-Karten verschieben',
+    new321MoveText:
+      'Karten in einem Zweig lassen sich jetzt einzeln verschieben. Die Position wird mitgespeichert, „Aufräumen“ setzt sie zurück.',
+    new321LinesTitle: 'Saubere Linien',
+    new321LinesText:
+      'Jeder Zweig läuft in seiner eigenen Spur bis zum Ende des Blocks. Linien kreuzen keine fremden Karten mehr.',
   },
   en: {
     title: 'FLODE',
@@ -570,15 +570,15 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new320BranchesTitle: 'Branches on the canvas',
-    new320BranchesText:
-      '"Choose" and "If-then" now show their options right on the canvas: one output per option, the steps of each branch as their own cards, and the branches meeting again afterwards. What gets saved is still a plain Home Assistant block.',
-    new320EditTitle: 'Edit branches in place',
-    new320EditText:
-      'Clicking a card in a branch opens exactly that step. The "+" on a branch adds a step there, also for "Default" or "Else".',
-    new320RunTitle: 'Which way a run went',
-    new320RunText:
-      'In the runs view the branch the automation actually took is marked. The others stay faded.',
+    new321NestedTitle: 'Nested branches',
+    new321NestedText:
+      'A "Choose" or "If-then" inside a branch now gets its own outputs and cards as well, across several levels.',
+    new321MoveTitle: 'Move branch cards',
+    new321MoveText:
+      'Cards in a branch can now be moved one by one. Their position is saved, and "Tidy up" puts them back.',
+    new321LinesTitle: 'Cleaner lines',
+    new321LinesText:
+      'Each branch runs in its own lane up to the end of the block. Lines no longer cut through other cards.',
   },
 } as const;
 
