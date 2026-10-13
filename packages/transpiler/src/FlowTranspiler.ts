@@ -1,8 +1,9 @@
-import type { FlowGraph } from '@flode/shared';
+import { type FlodeMetadata, FlodeMetadataSchema, type FlowGraph } from '@flode/shared';
 import { dump as yamlDump } from 'js-yaml';
 import { analyzeTopology, type TopologyAnalysis } from './analyzer/topology';
 import { type ValidationResult, validateFlowGraph } from './analyzer/validator';
 import { type ParseResult, YamlParser, type YamlParserOptions } from './parser/YamlParser';
+import { flodeMetadata } from './save-config';
 import type { HAYamlOutput, TranspilerStrategy } from './strategies/base';
 import { NativeStrategy } from './strategies/native';
 import { StateMachineStrategy } from './strategies/state-machine';
@@ -227,36 +228,10 @@ export class FlowTranspiler {
     this.strategies.unshift(strategy); // Add at beginning for priority
   }
 
-  /**
-   * Generate FLODE metadata for position persistence
-   *
-   * Note: We only store node positions in metadata. Node data and edges are already
-   * encoded in the YAML structure itself:
-   * - Node data is in each choose block's sequence
-   * - Edges are in the variables transitions (current_node assignments)
-   * - Node IDs are in the choose block conditions
-   */
-  private generateCafeMetadata(
-    flow: FlowGraph,
-    strategy: TranspilerStrategy
-  ): Record<string, unknown> {
-    const nodePositions: Record<string, { x: number; y: number }> = {};
-
-    // Extract node positions
-    for (const node of flow.nodes) {
-      nodePositions[node.id] = {
-        x: node.position.x,
-        y: node.position.y,
-      };
-    }
-
-    return {
-      version: 1,
-      nodes: nodePositions,
-      graph_id: flow.id,
-      graph_version: flow.version,
-      strategy: strategy.name,
-    };
+  /** FLODE's layout metadata for `flow`, written by `strategy`. */
+  private generateCafeMetadata(flow: FlowGraph, strategy: TranspilerStrategy): FlodeMetadata {
+    const name = FlodeMetadataSchema.shape.strategy.safeParse(strategy.name).data ?? 'native';
+    return flodeMetadata(flow, name);
   }
 }
 

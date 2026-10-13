@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@flode/shared';
+import type { FlodeMetadata, FlowGraph } from '@flode/shared';
 import type { FlowTranspiler } from './FlowTranspiler';
 
 /** Name and description the saved automation gets. */
@@ -12,6 +12,24 @@ export interface AutomationSaveResult {
   /** The config to POST to `config/automation/config/<id>`. */
   config?: Record<string, unknown>;
   errors?: string[];
+}
+
+/** `_flode_metadata`: the layout (node positions, moved branch steps) and the graph's id. */
+export function flodeMetadata(
+  graph: FlowGraph,
+  strategy: FlodeMetadata['strategy']
+): FlodeMetadata {
+  const offsets = graph.branchOffsets ?? {};
+  return {
+    version: 1,
+    nodes: Object.fromEntries(
+      graph.nodes.map((node) => [node.id, { x: node.position.x, y: node.position.y }])
+    ),
+    ...(Object.keys(offsets).length > 0 ? { branch_offsets: offsets } : {}),
+    graph_id: graph.id,
+    graph_version: graph.version,
+    strategy,
+  };
 }
 
 /**
@@ -39,15 +57,7 @@ export function buildAutomationSaveConfig(
       ...automation,
       variables: {
         ...(automation.variables || {}),
-        _flode_metadata: {
-          version: 1,
-          strategy: 'native' as const,
-          nodes: Object.fromEntries(
-            graph.nodes.map((node) => [node.id, { x: node.position.x, y: node.position.y }])
-          ),
-          graph_id: graph.id,
-          graph_version: 1,
-        },
+        _flode_metadata: flodeMetadata(graph, 'native'),
       },
     },
   };

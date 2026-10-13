@@ -20,6 +20,7 @@ import {
   cachedBranchView,
   cardShape,
   connectionSource,
+  moveBranchCard,
   removeBranchStep,
 } from './branch-view';
 import { defineElement } from './define-element';
@@ -55,6 +56,25 @@ import { isNarrow } from './viewport';
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 1.6;
+/** A line through `points`, left to right: a curve between each pair (straight where they are level). */
+function linePath(points: readonly { x: number; y: number }[]): string {
+  return points
+    .slice(1)
+    .map((to, i) => {
+      const from = points[i] ?? to;
+      const [path] = getBezierPath({
+        sourceX: from.x,
+        sourceY: from.y,
+        sourcePosition: Position.Right,
+        targetX: to.x,
+        targetY: to.y,
+        targetPosition: Position.Left,
+      });
+      return path;
+    })
+    .join(' ');
+}
+
 /** Pointer travel (px) below which a press on a node counts as a click, not a drag. */
 const CLICK_DISTANCE = 4;
 const GRID = 20;
@@ -473,7 +493,7 @@ export class FlodeCanvas extends LitElement {
     if (event.button !== 0) return;
     event.stopPropagation();
     capturePointer(event);
-    // Moves happen on the stored position; branch cards sit where their block puts them.
+    // Moves happen on the stored position; branch cards (no node of their own) on the drawn one.
     const stored = this.graph.nodes.find((n) => n.id === node.id);
     this.drag = {
       id: node.id,
@@ -490,16 +510,18 @@ export class FlodeCanvas extends LitElement {
     const dx = event.clientX - drag.startClient.x;
     const dy = event.clientY - drag.startClient.y;
     if (!drag.moved && Math.hypot(dx, dy) < CLICK_DISTANCE) return;
-    if (this.view.cards.has(drag.id)) return;
     const zoom = this.viewport.zoom;
     this.drag = { ...drag, moved: true };
     // Live preview without emitting on every frame; the graph is committed on release.
-    this.graph = moveNode(
-      this.graph,
-      drag.id,
-      drag.startPos.x + dx / zoom,
-      drag.startPos.y + dy / zoom
-    );
+    this.graph = this.moved(drag.id, drag.startPos.x + dx / zoom, drag.startPos.y + dy / zoom);
+  }
+
+  /** The graph with card `id` at `x`/`y` — a branch card keeps where it was moved to as its offset. */
+  private moved(id: string, x: number, y: number): FlowGraph {
+    const view = this.view;
+    return view.cards.has(id)
+      ? moveBranchCard(this.graph, view, id, { x, y })
+      : moveNode(this.graph, id, x, y);
   }
 
   private onNodePointerUp(event: PointerEvent): void {
@@ -510,9 +532,10 @@ export class FlodeCanvas extends LitElement {
       this.emitSelect(drag.id);
       return;
     }
-    const node = this.graph.nodes.find((n) => n.id === drag.id);
-    if (node)
-      this.emitGraph(moveNode(this.graph, drag.id, snap(node.position.x), snap(node.position.y)));
+    const node = this.view.cards.has(drag.id)
+      ? this.drawnNode(drag.id)
+      : this.graph.nodes.find((n) => n.id === drag.id);
+    if (node) this.emitGraph(this.moved(drag.id, snap(node.position.x), snap(node.position.y)));
   }
 
   /** The browser took the pointer away (system gesture, lost capture …): the drag changes nothing. */
@@ -521,7 +544,7 @@ export class FlodeCanvas extends LitElement {
     if (!drag || drag.pointerId !== event.pointerId) return;
     this.drag = null;
     // Back to where the model has it — the preview was never committed.
-    if (drag.moved) this.graph = moveNode(this.graph, drag.id, drag.startPos.x, drag.startPos.y);
+    if (drag.moved) this.graph = this.moved(drag.id, drag.startPos.x, drag.startPos.y);
   }
 
   // ---- connecting --------------------------------------------------------
@@ -644,17 +667,10 @@ export class FlodeCanvas extends LitElement {
     const from = this.drawnHandle(source, 'source', edge.sourceHandle ?? null);
     const to = this.drawnHandle(target, 'target');
     // Lines into and between a branch's steps aren't connections of their own.
-    const { cards, edgeOrigin } = this.view;
+    const { cards, edgeOrigin, via } = this.view;
     const selectable =
       edgeOrigin.has(edge.id) || (!cards.has(edge.source) && !cards.has(edge.target));
-    const [path] = getBezierPath({
-      sourceX: from.x,
-      sourceY: from.y,
-      sourcePosition: Position.Right,
-      targetX: to.x,
-      targetY: to.y,
-      targetPosition: Position.Left,
-    });
+    const path = linePath([from, ...(via.get(edge.id) ?? []), to]);
     const selected = this.selectedEdgeId === edge.id;
     const isNo = edge.sourceHandle === 'false';
     const isLoop = edge.type === 'loop-back';
@@ -677,14 +693,7 @@ export class FlodeCanvas extends LitElement {
     const source = c ? this.drawnNode(c.source) : undefined;
     if (!c || !source) return nothing;
     const from = this.drawnHandle(source, 'source', c.sourceHandle);
-    const [path] = getBezierPath({
-      sourceX: from.x,
-      sourceY: from.y,
-      sourcePosition: Position.Right,
-      targetX: c.cursor.x,
-      targetY: c.cursor.y,
-      targetPosition: Position.Left,
-    });
+    const path = linePath([from, c.cursor]);
     return svg`<path class="edge-line preview" d=${path}></path>`;
   }
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MaxExceededSchema } from './base';
+import { MaxExceededSchema, PositionSchema } from './base';
 import { type TargetIds, TargetIdsSchema } from './ha-entities';
 
 /**
@@ -305,6 +305,8 @@ export const FlodeMetadataSchema = z.object({
   graph_id: z.string(),
   graph_version: z.number(),
   strategy: z.enum(['native', 'state-machine']),
+  /** How far the user moved steps inside a `choose` / `if` branch from where FLODE draws them (`FlowGraph.branchOffsets`). */
+  branch_offsets: z.record(z.string(), PositionSchema).optional(),
 });
 export type FlodeMetadata = z.infer<typeof FlodeMetadataSchema>;
 

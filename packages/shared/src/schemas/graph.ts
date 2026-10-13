@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AutomationModeSchema, MaxExceededSchema } from './base';
+import { AutomationModeSchema, MaxExceededSchema, PositionSchema } from './base';
 import { EdgeSchema } from './edges';
 import { NodeSchema } from './nodes';
 
@@ -112,6 +112,12 @@ export const FlowGraphSchema = z.object({
    * Workspace metadata for merged automations
    */
   workspace: FlowWorkspaceSchema.optional(),
+  /**
+   * Steps inside a `choose` / `if` branch are no nodes of their own — the
+   * canvas draws them from the block. What the user moved them by, per
+   * branch card id (`<block>::else.1`), relative to where they'd be drawn.
+   */
+  branchOffsets: z.record(z.string(), PositionSchema).optional(),
 });
 export type FlowGraph = z.infer<typeof FlowGraphSchema>;
 

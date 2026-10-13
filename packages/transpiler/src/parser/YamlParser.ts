@@ -409,6 +409,7 @@ export class YamlParser {
 
       // Step 7: Apply positions from metadata or generate heuristic layout
       let nodesWithPositions: FlowNode[];
+      let savedLayout = false;
       // Saved positions only fit if they cover every node — with `keepBlocks`
       // a flow saved by the React UI has other nodes (its branches became blocks).
       const metadataCoversNodes =
@@ -423,9 +424,8 @@ export class YamlParser {
             e.type === 'choose-chain' &&
             (nodePositionMap.get(e.target) ?? 0) < (nodePositionMap.get(e.source) ?? 0) - 100
         );
-        nodesWithPositions = hasBackwardsChooseChain
-          ? await applyHeuristicLayout(nodes, edges)
-          : metaNodes;
+        savedLayout = !hasBackwardsChooseChain;
+        nodesWithPositions = savedLayout ? metaNodes : await applyHeuristicLayout(nodes, edges);
       } else {
         // Use async heuristic layout if metadata is missing
         nodesWithPositions = await applyHeuristicLayout(nodes, edges);
@@ -459,6 +459,8 @@ export class YamlParser {
         edges,
         metadata: metadataBlock,
         version: 1 as const,
+        // Moved branch steps belong to the saved layout — gone when it is recomputed.
+        branchOffsets: savedLayout ? metadata?.branch_offsets : undefined,
         // Preserve user-defined variables for round-trip
         userVariables: Object.keys(userVariables).length > 0 ? userVariables : undefined,
         userTriggerVariables:

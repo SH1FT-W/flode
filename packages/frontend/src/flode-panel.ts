@@ -32,6 +32,7 @@ import {
   removeBranchStep,
   setBranchStep,
   storedPosition,
+  withoutStaleOffsets,
 } from './branch-view';
 import { defineElement } from './define-element';
 import type { AddAt, CanvasMenuDetail, FlodeCanvas } from './flode-canvas';
@@ -192,7 +193,7 @@ function isTyping(event: KeyboardEvent): boolean {
     );
 }
 
-/** The import layout (ELK, from the transpiler) over the visible cards — "Aufräumen". */
+/** The import layout (ELK, from the transpiler) over the visible cards, branch steps back in place — "Aufräumen". */
 async function layoutGraph(graph: FlowGraph): Promise<FlowGraph> {
   const { applyHeuristicLayout } = await loadTranspiler();
   const size = { width: NODE_WIDTH, height: NODE_HEIGHT };
@@ -203,8 +204,10 @@ async function layoutGraph(graph: FlowGraph): Promise<FlowGraph> {
     Object.fromEntries(shown.nodes.map((node) => [node.id, size]))
   );
   const positions = new Map(laidOut.map((node) => [node.id, node.position]));
+  // Moved branch steps go back into their lanes too.
+  const { branchOffsets: _moved, ...rest } = graph;
   return {
-    ...graph,
+    ...rest,
     nodes: graph.nodes.map((node) => ({
       ...node,
       position: positions.get(node.id) ?? node.position,
@@ -1116,10 +1119,12 @@ export class FlodePanel extends LitElement {
           saveState,
         }));
       }
+      // Offsets of steps no longer in their branch aren't saved.
+      const graph = withoutStaleOffsets(current.graph);
       const result =
         kind === 'script'
-          ? transpileScript(transpiler, current.graph)
-          : buildAutomationSaveConfig(transpiler, current.graph, {
+          ? transpileScript(transpiler, graph)
+          : buildAutomationSaveConfig(transpiler, graph, {
               alias: current.graph.name,
               description: current.graph.description ?? '',
             });
@@ -1587,7 +1592,7 @@ export class FlodePanel extends LitElement {
   /** "Auswählen › Option 1 · Schritt 2" — where an open branch card sits. */
   private branchContext(view: BranchView, id: string | null): string | undefined {
     const card = id ? view.cards.get(id) : undefined;
-    const block = card ? view.graph.nodes.find((n) => n.id === card.blockId) : undefined;
+    const block = card ? view.graph.nodes.find((n) => n.id === card.parentId) : undefined;
     if (!card || !block) return undefined;
     return t(this.language, 'branchContext')
       .replace('{block}', nodeTitle(block, this.hass))
