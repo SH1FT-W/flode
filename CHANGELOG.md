@@ -1,12 +1,10 @@
 # Changelog
 
-All notable changes to FLODE are documented here.
+All notable changes to FLODE are documented here. Every 3.x release builds on 3.0.0, so each entry only lists what changed in it.
 
 ---
 
 ## [3.2.1] — 2026-10-13 — Nested branches
-
-Everything from 3.0.0 below still applies.
 
 ### Added
 - **Nested branches on the canvas** ([#27](https://github.com/SH1FT-W/flode/issues/27)): a "Choose" or "If-then" inside a branch of another block now gets its own named outputs and cards too, across any number of levels. "+", delete and the runs view work inside nested branches as well.
@@ -19,8 +17,6 @@ Everything from 3.0.0 below still applies.
 
 ## [3.2.0] — 2026-10-13 — Branches on the canvas
 
-Everything from 3.0.0 below still applies.
-
 ### Added
 - **Branches of "Choose" and "If-then" on the canvas** ([#27](https://github.com/SH1FT-W/flode/issues/27)): the block card now has one named output per option (plus "Default"), or "Then" and "Else". The steps of each branch are drawn as their own cards, and all branches meet again at the step after the block. Nothing changes in the YAML: the block is still saved as a plain Home Assistant `choose` / `if`.
 - **Edit branch steps in place**: clicking a card in a branch opens Home Assistant's editor for that step; the sidebar shows where it sits ("Choose › Option 1 · step 2"). Delete removes it from its branch. The "+" on a branch adds a step there; on an empty "Default" or "Else" it creates that branch.
@@ -30,7 +26,7 @@ Everything from 3.0.0 below still applies.
 
 ## [3.1.2] — 2026-10-12 — Templates inside blocks
 
-A bug-fix release. Everything from 3.0.0 below still applies.
+A bug-fix release.
 
 ### Fixed
 - **A template inside "Choose" no longer turns the whole block into YAML** ([#27](https://github.com/SH1FT-W/flode/issues/27)): an action with a template in its `action:` line, inside a branch or the default actions of a `choose` (or another block), switched the complete block in the sidebar to YAML. Now only that one action shows YAML with Home Assistant's hint, and the rest of the block stays a form, as in Home Assistant's own editor.
@@ -42,7 +38,7 @@ A bug-fix release. Everything from 3.0.0 below still applies.
 
 ## [3.1.1] — 2026-10-07 — Ready for Home Assistant 2026.10
 
-A bug-fix release for Home Assistant 2026.10. Everything from 3.0.0 below still applies.
+A bug-fix release for Home Assistant 2026.10.
 
 ### Fixed
 - **"Triggered by" condition without an ID**: a condition written by hand in YAML as just `condition: trigger` (no `id` line) could not be edited in FLODE. Picking a trigger did nothing. Home Assistant 2026.10 accepts such a condition in its own editor, and FLODE now does the same: the pick is stored on the condition, the trigger gets its ID, and unticking removes both again.
@@ -53,8 +49,6 @@ A bug-fix release for Home Assistant 2026.10. Everything from 3.0.0 below still 
 ---
 
 ## [3.1.0] — 2026-10-01 — Clearer cards
-
-Everything from 3.0.0 below still applies.
 
 ### Added
 - **Home Assistant's icons on the cards** — the entity's own icon with its live state when a step is about one entity, otherwise HA's icon for the trigger, condition or action (as in Settings → Automations). Also in the inspector header.
@@ -75,7 +69,7 @@ Everything from 3.0.0 below still applies.
 
 ## [3.0.8] — 2026-09-30 — Nothing gets lost when saving
 
-A bug-fix release. Everything from 3.0.0 below still applies. From this release on, tags and releases are just the number (`3.0.8`, no "v").
+A bug-fix release. From this release on, tags and releases are just the number (`3.0.8`, no "v").
 
 ### Fixed
 - **Conditions FLODE doesn't model are kept as written** — e.g. `weekday: mon`, a sun offset like `{minutes: -30}` or a numeric state were saved as an always-false template, so the automation stopped running. They're now saved exactly as written.
@@ -102,8 +96,6 @@ A bug-fix release. Everything from 3.0.0 below still applies. From this release 
 
 ## [3.0.7] — 2026-09-28 — Clean scrolling and a progress dialog
 
-Everything from 3.0.0 below still applies.
-
 ### Fixed
 - **Two scroll bars on the start page** — Home Assistant sized its table to the whole window, but FLODE's own header sits above it, so the page scrolled as well as the list and the two got in each other's way. Now only the list scrolls, with or without the filter pane.
 
@@ -117,7 +109,7 @@ Everything from 3.0.0 below still applies.
 
 ## [3.0.6] — 2026-09-27 — Sidebar rows stay open
 
-A bug-fix release. Everything from 3.0.0 below still applies.
+A bug-fix release.
 
 ### Fixed
 - **Expanded rows collapsed by themselves** — in the sidebar editor, a condition or action opened inside an if-then or choose block closed again after a moment, whenever Home Assistant reported a state change. It now stays open until you close it (#24).
@@ -126,8 +118,6 @@ A bug-fix release. Everything from 3.0.0 below still applies.
 ---
 
 ## [3.0.5] — 2026-09-26 — Home Assistant's table on the start page
-
-Everything from 3.0.0 below still applies.
 
 ### Changed
 - **Start page list is Home Assistant's own table** — the automation and script lists now use the same table as *Settings → Automations & Scenes*: filters (areas, devices, entities, labels, categories, blueprints), grouping, sorting, search, labels, the on/off switch, multi-select with bulk actions and the ⋮ menu per row. Filters and sorting are shared with Home Assistant's page. Clicking a row still opens the flow in FLODE. If a Home Assistant version can't provide the table, FLODE falls back to its own cards.
@@ -144,7 +134,7 @@ Everything from 3.0.0 below still applies.
 
 ## [3.0.2] — 2026-09-26 — Works over plain http and without sidebar
 
-A bug-fix release. Everything from 3.0.0 below still applies.
+A bug-fix release.
 
 ### Fixed
 - **Home Assistant opened via `http://<ip>:8123`** — the browser only offers the ID generator FLODE used over HTTPS or on `localhost`. Over plain http, *Create with AI* closed its dialog after the AI had finished and showed the overview instead of the draft; *New*, *Duplicate*, *Save as copy* and merging automations failed the same way. FLODE now falls back to an ID generator that works everywhere.
@@ -154,7 +144,7 @@ A bug-fix release. Everything from 3.0.0 below still applies.
 
 ## [3.0.1] — 2026-09-26 — Security updates
 
-A maintenance release with no new features — it only updates dependencies with known security issues. Everything from 3.0.0 below still applies.
+A maintenance release with no new features — it only updates dependencies with known security issues.
 
 ### Security
 All 15 open security alerts are fixed:
