@@ -6,9 +6,9 @@ import {
   branchView,
   connectionSource,
   insertBranchStep,
+  moveBranchCard,
   removeBranchStep,
   setBranchStep,
-  moveBranchCard,
   storedPosition,
   withoutStaleOffsets,
 } from '../branch-view';
