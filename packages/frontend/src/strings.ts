@@ -283,12 +283,15 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new312ChooseTitle: 'Templates in „Auswählen“',
-    new312ChooseText:
-      'Steckt in einem Zweig von „Auswählen“ oder „Wenn-dann“ eine Aktion mit Template, zeigt jetzt nur diese eine Aktion YAML. Der Rest des Blocks bleibt als Formular bearbeitbar, wie in Home Assistants eigenem Editor.',
-    new312TitleTitle: '„Flode“ in der Seitenleiste',
-    new312TitleText:
-      'Der Eintrag in der Home-Assistant-Seitenleiste heißt jetzt „Flode“ statt „FLODE“.',
+    new320BranchesTitle: 'Zweige im Ablauf sichtbar',
+    new320BranchesText:
+      '„Auswählen“ und „Wenn-dann“ zeigen ihre Optionen jetzt direkt auf der Zeichenfläche: ein Ausgang pro Option, die Schritte jedes Zweigs als eigene Karten, danach laufen die Zweige wieder zusammen. Gespeichert wird weiter ein ganz normaler Home-Assistant-Block.',
+    new320EditTitle: 'Zweige direkt bearbeiten',
+    new320EditText:
+      'Ein Klick auf eine Karte im Zweig öffnet genau diesen Schritt. Mit „+“ am Zweig fügst du dort einen Schritt hinzu, auch für „Standard“ oder „Sonst“.',
+    new320RunTitle: 'Welcher Weg lief',
+    new320RunText:
+      'In den Abläufen ist der Zweig markiert, den die Automation tatsächlich genommen hat. Die anderen bleiben blass.',
   },
   en: {
     title: 'FLODE',
@@ -567,12 +570,15 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new312ChooseTitle: 'Templates inside "Choose"',
-    new312ChooseText:
-      'When an action with a template sits in a branch of "Choose" or "If-then", only that action shows YAML now. The rest of the block stays editable as a form, as in Home Assistant\'s own editor.',
-    new312TitleTitle: '"Flode" in the sidebar',
-    new312TitleText:
-      'The entry in the Home Assistant sidebar is now called "Flode" instead of "FLODE".',
+    new320BranchesTitle: 'Branches on the canvas',
+    new320BranchesText:
+      '"Choose" and "If-then" now show their options right on the canvas: one output per option, the steps of each branch as their own cards, and the branches meeting again afterwards. What gets saved is still a plain Home Assistant block.',
+    new320EditTitle: 'Edit branches in place',
+    new320EditText:
+      'Clicking a card in a branch opens exactly that step. The "+" on a branch adds a step there, also for "Default" or "Else".',
+    new320RunTitle: 'Which way a run went',
+    new320RunText:
+      'In the runs view the branch the automation actually took is marked. The others stay faded.',
   },
 } as const;
 

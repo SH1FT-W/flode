@@ -24,8 +24,9 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:code-braces', title: 'new312ChooseTitle', text: 'new312ChooseText' },
-  { icon: 'mdi:dock-left', title: 'new312TitleTitle', text: 'new312TitleText' },
+  { icon: 'mdi:source-branch', title: 'new320BranchesTitle', text: 'new320BranchesText' },
+  { icon: 'mdi:cursor-default-click-outline', title: 'new320EditTitle', text: 'new320EditText' },
+  { icon: 'mdi:map-marker-path', title: 'new320RunTitle', text: 'new320RunText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

@@ -4,6 +4,17 @@ All notable changes to FLODE are documented here.
 
 ---
 
+## [3.2.0] — 2026-10-13 — Branches on the canvas
+
+Everything from 3.0.0 below still applies.
+
+### Added
+- **Branches of "Choose" and "If-then" on the canvas** ([#27](https://github.com/SH1FT-W/flode/issues/27)): the block card now has one named output per option (plus "Default"), or "Then" and "Else". The steps of each branch are drawn as their own cards, and all branches meet again at the step after the block. Nothing changes in the YAML: the block is still saved as a plain Home Assistant `choose` / `if`.
+- **Edit branch steps in place**: clicking a card in a branch opens Home Assistant's editor for that step; the sidebar shows where it sits ("Choose › Option 1 · step 2"). Delete removes it from its branch. The "+" on a branch adds a step there; on an empty "Default" or "Else" it creates that branch.
+- **Runs show the branch taken**: in the runs view the steps of the branch that ran are marked, the other branches stay faded.
+
+---
+
 ## [3.1.2] — 2026-10-12 — Templates inside blocks
 
 A bug-fix release. Everything from 3.0.0 below still applies.
