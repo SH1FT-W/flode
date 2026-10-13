@@ -53,6 +53,8 @@ export class FlodeInspector extends LitElement {
   static properties = {
     hass: { attribute: false },
     node: { attribute: false },
+    /** Where a step inside a choose / if sits ("Auswählen › Option 1 · Schritt 2"). */
+    context: { attribute: false },
     /** All cards of the flow — the triggers HA's "Triggered by" form lists. */
     nodes: { attribute: false },
     /** The automation's `variables` / `trigger_variables` — templates in there may read `trigger.id`. */
@@ -67,6 +69,7 @@ export class FlodeInspector extends LitElement {
 
   declare hass: HomeAssistant | undefined;
   declare node: FlowNode | null;
+  declare context: string | undefined;
   declare nodes: readonly FlowNode[];
   declare flowVariables: readonly unknown[];
   declare error: string | null;
@@ -170,11 +173,17 @@ export class FlodeInspector extends LitElement {
     return options;
   }
 
+  /** The flow's cards, plus the open one when it is a step inside a choose / if. */
+  private cards(): readonly FlowNode[] {
+    const open = this.node;
+    return open && !this.nodes.includes(open) ? [...this.nodes, open] : this.nodes;
+  }
+
   /** The flow's trigger cards and all other cards — the open one as the step HA's editor holds. */
   private triggerIdFlow(): TriggerIdFlow {
     const triggers: unknown[] = [];
     const steps: unknown[] = [];
-    for (const node of this.nodes) {
+    for (const node of this.cards()) {
       if (node.type === 'trigger') triggers.push(node.data);
       else steps.push(node === this.node ? this.stepOf(node) : node.data);
     }
@@ -187,7 +196,7 @@ export class FlodeInspector extends LitElement {
     const change: NodesChange = { data: [] };
     let triggerIndex = 0;
     let stepIndex = 0;
-    for (const node of this.nodes) {
+    for (const node of this.cards()) {
       const isTrigger = node.type === 'trigger';
       const index = isTrigger ? triggerIndex++ : stepIndex++;
       const was = isTrigger ? before.triggers[index] : before.steps[index];
@@ -367,7 +376,7 @@ export class FlodeInspector extends LitElement {
         <span class="icon">${nodeIconTemplate(node, summarize(node, this.hass), this.hass)}</span>
         <div class="titles">
           <span class="type">${nodeTitle(node, this.hass)}</span>
-          <span class="id">${node.id}</span>
+          <span class="id">${this.context ?? node.id}</span>
         </div>
         ${
           this.editorsReady && !isScriptStart(node.data)
@@ -383,7 +392,8 @@ export class FlodeInspector extends LitElement {
             : nothing
         }
         ${
-          isScriptStart(node.data)
+          // Run from here starts at a card of the flow, not inside a block.
+          isScriptStart(node.data) || this.context
             ? nothing
             : html`<ha-icon-button
                 .label=${t(language, 'runFrom')}

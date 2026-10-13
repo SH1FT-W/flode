@@ -4,6 +4,7 @@ import {
   type FlowNode,
   isPlainObject,
   isScriptStart,
+  NodeSchema,
   SCRIPT_START_TRIGGER,
 } from '@flode/shared';
 import { dump as yamlDump } from 'js-yaml';
@@ -22,6 +23,16 @@ import './flode-shortcuts';
 import './flode-ha-list';
 import './flode-progress';
 import { chooseAiTask, keepAiTask, mergeAutomationGraphs, randomId } from '@flode/ui-core';
+import {
+  type BranchView,
+  branchInsertAt,
+  branchLabelText,
+  cachedBranchView,
+  insertBranchStep,
+  removeBranchStep,
+  setBranchStep,
+  storedPosition,
+} from './branch-view';
 import { defineElement } from './define-element';
 import type { AddAt, CanvasMenuDetail, FlodeCanvas } from './flode-canvas';
 import { type FlodeHaList, HA_LIST_TAGS } from './flode-ha-list';
@@ -36,6 +47,7 @@ import {
   disconnectNode,
   ensureScriptEntry,
   freePosition,
+  moveNode,
   NODE_HEIGHT,
   NODE_WIDTH,
   removeNode,
@@ -70,11 +82,11 @@ import {
   usesBlueprint,
   waitForAutomationEntity,
 } from './ha';
-import { type StepEdit, type StepKind, stepToNode } from './ha-step';
+import { nodeToStep, type StepEdit, type StepKind, stepToNode } from './ha-step';
 import { mapT } from './i18n';
 import { InFlight } from './in-flight';
 import { LOGBOOK_POLL_MS, type ManualRun } from './manual-runs';
-import { NODE_META, summarize, typeLabel } from './node-meta';
+import { NODE_META, nodeTitle, summarize, typeLabel } from './node-meta';
 import { copyToClipboard, notify } from './notify';
 import { labelWithHint, matchShortcut, type ShortcutId, shortcutHint } from './shortcuts';
 import { t } from './strings';
@@ -1503,9 +1515,19 @@ export class FlodePanel extends LitElement {
       ? event.detail.value.at(-1)
       : undefined;
     if (!flow || !isPlainObject(added)) return;
-    const { type, data } = stepToNode(kind, added);
     const at = this.pendingAdd;
     this.pendingAdd = null;
+    // "+" on a branch of a choose / if: the step goes into that branch.
+    const branch = at?.source
+      ? branchInsertAt(cachedBranchView(flow.graph), at.source, at.sourceHandle)
+      : null;
+    if (branch) {
+      const inserted = insertBranchStep(flow.graph, branch, added);
+      this.commit(inserted.graph);
+      this.selectedId = inserted.id;
+      return;
+    }
+    const { type, data } = stepToNode(kind, added);
     const source = at?.source ? flow.graph.nodes.find((n) => n.id === at.source) : undefined;
     // Where it was asked for (right-click, dropped connection); after a card one column
     // to its right; otherwise where the user is looking.
@@ -1521,11 +1543,15 @@ export class FlodePanel extends LitElement {
       undefined,
       data
     );
-    this.commit(
+    const connected =
       at?.source && source
         ? connect(graph, { source: at.source, sourceHandle: at.sourceHandle ?? null, target: id })
-        : graph
-    );
+        : graph;
+    // A card after an expanded block is drawn further right — store it so it appears where it was dropped.
+    const placed = at?.position
+      ? storedPosition(cachedBranchView(connected), id, at.position)
+      : undefined;
+    this.commit(placed ? moveNode(connected, id, placed.x, placed.y) : connected);
     this.selectedId = id;
   }
 
@@ -1534,7 +1560,39 @@ export class FlodePanel extends LitElement {
   }
 
   private onDataChange(event: CustomEvent<NodeDataEdit>): void {
+    const node = this.selectedBranchNode();
+    // A branch card's fallback editor edits its card data — written back as its HA step.
+    if (node && node.id === event.detail.id) {
+      const edited = NodeSchema.safeParse({ ...node, data: event.detail.data });
+      if (edited.success) {
+        this.applyEdits([], { id: node.id, kind: 'action', step: nodeToStep(edited.data) });
+      }
+      return;
+    }
     this.applyEdits([event.detail]);
+  }
+
+  /** The branch card `id` stands for (a step inside a choose / if), if it is one. */
+  private branchCard(id: string | null) {
+    const flow = this.flow;
+    return flow && id ? cachedBranchView(flow.graph).cards.get(id) : undefined;
+  }
+
+  private selectedBranchNode(): FlowNode | undefined {
+    const flow = this.flow;
+    if (!flow || !this.branchCard(this.selectedId)) return undefined;
+    return cachedBranchView(flow.graph).graph.nodes.find((n) => n.id === this.selectedId);
+  }
+
+  /** "Auswählen › Option 1 · Schritt 2" — where an open branch card sits. */
+  private branchContext(view: BranchView, id: string | null): string | undefined {
+    const card = id ? view.cards.get(id) : undefined;
+    const block = card ? view.graph.nodes.find((n) => n.id === card.blockId) : undefined;
+    if (!card || !block) return undefined;
+    return t(this.language, 'branchContext')
+      .replace('{block}', nodeTitle(block, this.hass))
+      .replace('{branch}', branchLabelText(this.language, card.branch.label))
+      .replace('{n}', String(card.index + 1));
   }
 
   /** Card data edits plus the open card's HA step, committed as one undo step. */
@@ -1548,7 +1606,13 @@ export class FlodePanel extends LitElement {
       graph = result.graph;
       error ??= result.error;
     }
-    if (step && !error) {
+    const card = step ? this.branchCard(step.id) : undefined;
+    if (step && card && !error) {
+      // HA's step goes into its branch as it is — the block keeps HA's format.
+      const result = setBranchStep(graph, card, step.step);
+      graph = result.graph;
+      error = result.error;
+    } else if (step && !error) {
       const previous = graph.nodes.find((n) => n.id === step.id);
       const { type, data: stepData } = stepToNode(step.kind, step.step, previous);
       const result = setNodeStep(graph, step.id, type, stepData);
@@ -1562,7 +1626,10 @@ export class FlodePanel extends LitElement {
   private onDelete(event: CustomEvent<{ id: string }>): void {
     const flow = this.flow;
     if (!flow) return;
-    this.commit(removeNode(flow.graph, event.detail.id));
+    const card = this.branchCard(event.detail.id);
+    this.commit(
+      card ? removeBranchStep(flow.graph, card) : removeNode(flow.graph, event.detail.id)
+    );
     this.selectedId = null;
   }
 
@@ -1990,7 +2057,9 @@ export class FlodePanel extends LitElement {
 
   private renderEditor(flow: OpenFlow) {
     const language = this.language;
-    const selected = flow.graph.nodes.find((n) => n.id === this.selectedId) ?? null;
+    // Branch cards (steps inside a choose / if) can be opened like any card.
+    const view = cachedBranchView(flow.graph);
+    const selected = view.graph.nodes.find((n) => n.id === this.selectedId) ?? null;
     return html`
       <div class="editor">
         <header class="toolbar">
@@ -2261,6 +2330,7 @@ export class FlodePanel extends LitElement {
               style=${this.inspectorWidth ? `--inspector-width: ${this.inspectorWidth}px` : ''}
               .hass=${this.hass}
               .node=${selected}
+              .context=${this.branchContext(view, this.selectedId)}
               .nodes=${this.flow?.graph.nodes ?? []}
               .flowVariables=${[this.flow?.graph.userVariables, this.flow?.graph.userTriggerVariables]}
               .error=${this.inspectorError}

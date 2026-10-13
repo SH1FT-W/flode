@@ -14,6 +14,14 @@ import {
   XYPanZoom,
 } from '@xyflow/system';
 import { css, html, LitElement, nothing, type PropertyValues, svg } from 'lit';
+import {
+  type BranchView,
+  branchLabelText,
+  cachedBranchView,
+  cardShape,
+  connectionSource,
+  removeBranchStep,
+} from './branch-view';
 import { defineElement } from './define-element';
 import {
   connect,
@@ -28,7 +36,6 @@ import {
   removeEdge,
   removeNode,
   scriptEntryIds,
-  sourceHandles,
   unionBounds,
   visibleGraph,
 } from './flow-model';
@@ -197,6 +204,24 @@ export class FlodeCanvas extends LitElement {
     return this.renderRoot.querySelector('.pane');
   }
 
+  /** The flow as drawn: `choose` / `if` blocks with their branches (see branch-view). */
+  private get view(): BranchView {
+    return cachedBranchView(this.graph);
+  }
+
+  /** The cards on screen, at their drawn positions (a script's start is hidden). */
+  private shownGraph(): FlowGraph {
+    return visibleGraph(this.view.graph);
+  }
+
+  private drawnNode(id: string): FlowNode | undefined {
+    return this.view.graph.nodes.find((n) => n.id === id);
+  }
+
+  private drawnHandle(node: FlowNode, side: 'source' | 'target', handle: string | null = null) {
+    return handlePosition(node, side, handle, cardShape(this.view, node));
+  }
+
   protected firstUpdated(): void {
     if (this.pane) this.resizeObserver.observe(this.pane);
     this.initPanZoom();
@@ -328,7 +353,7 @@ export class FlodeCanvas extends LitElement {
           x=${node.position.x}
           y=${node.position.y}
           width=${NODE_WIDTH}
-          height=${NODE_HEIGHT}
+          height=${cardShape(this.view, node).height}
           rx=${12}
           stroke-width=${3 * scale}
           fill=${NODE_META[node.type].color}
@@ -358,7 +383,7 @@ export class FlodeCanvas extends LitElement {
     const { width, height } = pane.getBoundingClientRect();
     if (width === 0 || height === 0) return;
     const viewport = getViewportForBounds(
-      graphBounds(visibleGraph(this.graph)),
+      graphBounds(this.shownGraph()),
       width,
       height,
       // Phones: a long flow would shrink to unreadable — stay readable and pan instead.
@@ -371,7 +396,7 @@ export class FlodeCanvas extends LitElement {
 
   /** Phones: the bottom sheet covers the lower part — move the card into the upper part. */
   revealNode(id: string): void {
-    const node = this.graph?.nodes.find((n) => n.id === id);
+    const node = this.graph ? this.drawnNode(id) : undefined;
     const { width, height } = this.paneSize;
     if (!node || !this.panZoom || width === 0) return;
     const zoom = Math.max(this.viewport.zoom, 0.8);
@@ -448,11 +473,13 @@ export class FlodeCanvas extends LitElement {
     if (event.button !== 0) return;
     event.stopPropagation();
     capturePointer(event);
+    // Moves happen on the stored position; branch cards sit where their block puts them.
+    const stored = this.graph.nodes.find((n) => n.id === node.id);
     this.drag = {
       id: node.id,
       pointerId: event.pointerId,
       startClient: { x: event.clientX, y: event.clientY },
-      startPos: { ...node.position },
+      startPos: { ...(stored ?? node).position },
       moved: false,
     };
   }
@@ -463,6 +490,7 @@ export class FlodeCanvas extends LitElement {
     const dx = event.clientX - drag.startClient.x;
     const dy = event.clientY - drag.startClient.y;
     if (!drag.moved && Math.hypot(dx, dy) < CLICK_DISTANCE) return;
+    if (this.view.cards.has(drag.id)) return;
     const zoom = this.viewport.zoom;
     this.drag = { ...drag, moved: true };
     // Live preview without emitting on every frame; the graph is committed on release.
@@ -525,12 +553,12 @@ export class FlodeCanvas extends LitElement {
   /** Node under a flow-space point (connections can be dropped anywhere on a card). */
   private nodeAt(point: { x: number; y: number }): FlowNode | undefined {
     // Later cards render on top — hit-test them first.
-    return visibleGraph(this.graph).nodes.findLast(
+    return this.shownGraph().nodes.findLast(
       (n) =>
         point.x >= n.position.x &&
         point.x <= n.position.x + NODE_WIDTH &&
         point.y >= n.position.y &&
-        point.y <= n.position.y + NODE_HEIGHT
+        point.y <= n.position.y + cardShape(this.view, n).height
     );
   }
 
@@ -540,22 +568,18 @@ export class FlodeCanvas extends LitElement {
     this.connecting = null;
     const drop = this.toFlow(event.clientX, event.clientY);
     const target = this.nodeAt(drop);
+    // From a branch: the connection continues after the whole block.
+    const from = connectionSource(this.view, connecting.source, connecting.sourceHandle);
     if (!target) {
       // Dropped on empty canvas: add a card there, connected.
       if (Math.hypot(drop.x - connecting.start.x, drop.y - connecting.start.y) > DROP_DISTANCE) {
-        this.emitAddAt({
-          source: connecting.source,
-          sourceHandle: connecting.sourceHandle,
-          position: { x: drop.x, y: drop.y - NODE_HEIGHT / 2 },
-        });
+        this.emitAddAt({ ...from, position: { x: drop.x, y: drop.y - NODE_HEIGHT / 2 } });
       }
       return;
     }
-    const request = {
-      source: connecting.source,
-      sourceHandle: connecting.sourceHandle,
-      target: target.id,
-    };
+    // Steps inside a branch are added with its "+", not connected into.
+    if (this.view.cards.has(target.id)) return;
+    const request = { ...from, target: target.id };
     if (connectionError(this.graph, request) === null) this.emitGraph(connect(this.graph, request));
   }
 
@@ -565,9 +589,14 @@ export class FlodeCanvas extends LitElement {
     if (event.key !== 'Delete' && event.key !== 'Backspace') return;
     // HA listens for single-key shortcuts on window; keep editing keys to ourselves.
     event.stopPropagation();
+    const branchCard = this.selectedId ? this.view.cards.get(this.selectedId) : undefined;
     if (this.selectedEdgeId) {
-      this.emitGraph(removeEdge(this.graph, this.selectedEdgeId));
+      const stored = this.view.edgeOrigin.get(this.selectedEdgeId) ?? this.selectedEdgeId;
+      this.emitGraph(removeEdge(this.graph, stored));
       this.selectedEdgeId = null;
+    } else if (branchCard) {
+      this.emitGraph(removeBranchStep(this.graph, branchCard));
+      this.emitSelect(null);
     } else if (this.selectedId) {
       const node = this.graph.nodes.find((n) => n.id === this.selectedId);
       // Every script needs its start card.
@@ -609,11 +638,15 @@ export class FlodeCanvas extends LitElement {
   private issues = new Map<string, StepIssue[]>();
 
   private renderEdge(edge: FlowEdge) {
-    const source = this.graph.nodes.find((n) => n.id === edge.source);
-    const target = this.graph.nodes.find((n) => n.id === edge.target);
+    const source = this.drawnNode(edge.source);
+    const target = this.drawnNode(edge.target);
     if (!source || !target) return nothing;
-    const from = handlePosition(source, 'source', edge.sourceHandle ?? null);
-    const to = handlePosition(target, 'target');
+    const from = this.drawnHandle(source, 'source', edge.sourceHandle ?? null);
+    const to = this.drawnHandle(target, 'target');
+    // Lines into and between a branch's steps aren't connections of their own.
+    const { cards, edgeOrigin } = this.view;
+    const selectable =
+      edgeOrigin.has(edge.id) || (!cards.has(edge.source) && !cards.has(edge.target));
     const [path] = getBezierPath({
       sourceX: from.x,
       sourceY: from.y,
@@ -631,6 +664,7 @@ export class FlodeCanvas extends LitElement {
         <path class="edge-hit" d=${path}
           @click=${(e: Event) => {
             e.stopPropagation();
+            if (!selectable) return;
             this.selectedEdgeId = edge.id;
             this.dispatchEvent(new CustomEvent('select', { detail: { id: null } }));
           }}></path>
@@ -640,9 +674,9 @@ export class FlodeCanvas extends LitElement {
 
   private renderConnectionPreview() {
     const c = this.connecting;
-    const source = c ? this.graph.nodes.find((n) => n.id === c.source) : undefined;
+    const source = c ? this.drawnNode(c.source) : undefined;
     if (!c || !source) return nothing;
-    const from = handlePosition(source, 'source', c.sourceHandle);
+    const from = this.drawnHandle(source, 'source', c.sourceHandle);
     const [path] = getBezierPath({
       sourceX: from.x,
       sourceY: from.y,
@@ -664,7 +698,10 @@ export class FlodeCanvas extends LitElement {
   private renderNode(node: FlowNode, isEntry = false) {
     const meta = NODE_META[node.type];
     const language = this.hass?.language ?? 'en';
-    const handles = sourceHandles(node.type);
+    const { handles, height } = cardShape(this.view, node);
+    const branches = this.view.branches.get(node.id);
+    const inBranch = !!branches || this.view.cards.has(node.id);
+    const addLabel = inBranch ? t(language, 'addInBranch') : addNextLabel(language);
     const selected = this.selectedId === node.id;
     const summary = summarize(node, this.hass);
     const issues = issueLines(this.issues.get(node.id) ?? [], language);
@@ -672,8 +709,8 @@ export class FlodeCanvas extends LitElement {
     const off = 'enabled' in node.data && node.data.enabled === false;
     return html`
       <div
-        class="node nopan ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${this.runClass(node.id)}"
-        style="transform: translate(${node.position.x}px, ${node.position.y}px); --node-color: ${meta.color}"
+        class="node nopan ${branches ? 'branching' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${this.runClass(node.id)}"
+        style="transform: translate(${node.position.x}px, ${node.position.y}px); height: ${height}px; --node-color: ${meta.color}"
         data-node-id=${node.id}
         title=${[
           nodeTypeLine(node, summary, language),
@@ -688,7 +725,7 @@ export class FlodeCanvas extends LitElement {
         @pointerup=${(e: PointerEvent) => this.onNodePointerUp(e)}
         @pointercancel=${(e: PointerEvent) => this.onNodePointerCancel(e)}
         @lostpointercapture=${(e: PointerEvent) => this.onNodePointerCancel(e)}
-        @contextmenu=${(e: MouseEvent) => this.onContextMenu(e, node)}
+        @contextmenu=${(e: MouseEvent) => this.onContextMenu(e, this.view.cards.has(node.id) ? null : node)}
       >
         ${off ? html`<span class="off-badge"><ha-icon icon="mdi:cancel"></ha-icon>${t(language, 'disabledGroup')}</span>` : nothing}
         ${isEntry ? html`<span class="entry"><ha-icon icon="mdi:play"></ha-icon>${t(language, 'entry')}</span>` : nothing}
@@ -699,12 +736,16 @@ export class FlodeCanvas extends LitElement {
           ${summary.detail ? html`<span class="detail">${summary.detail}</span>` : nothing}
         </span>
         ${hasTargetHandle(node.type) ? html`<span class="handle target"></span>` : nothing}
-        ${handles.map(
-          (handle, index) => html`
+        ${handles.map((handle, index) => {
+          const top = (height / (handles.length + 1)) * (index + 1);
+          const branch = branches?.[index];
+          const name = branch ? branchLabelText(language, branch.label) : '';
+          return html`
+            ${branch ? html`<span class="port ${branch.label.kind}" style="top: ${top}px" title=${name}>${name}</span>` : nothing}
             <span
-              class="handle source ${handle ?? ''}"
-              style="top: ${(NODE_HEIGHT / (handles.length + 1)) * (index + 1)}px"
-              title=${handle === 'true' ? 'Ja' : handle === 'false' ? 'Nein' : ''}
+              class="handle source ${handle ?? ''} ${branch ? 'branch' : ''}"
+              style="top: ${top}px"
+              title=${branch ? name : handle === 'true' ? 'Ja' : handle === 'false' ? 'Nein' : ''}
               @pointerdown=${(e: PointerEvent) => this.onHandlePointerDown(e, node, handle)}
               @pointermove=${(e: PointerEvent) => this.onHandlePointerMove(e)}
               @pointerup=${(e: PointerEvent) => this.onHandlePointerUp(e)}
@@ -713,9 +754,9 @@ export class FlodeCanvas extends LitElement {
             ></span>
             <button
               class="add-next"
-              style="top: ${(NODE_HEIGHT / (handles.length + 1)) * (index + 1)}px"
-              title=${addNextLabel(language)}
-              aria-label=${addNextLabel(language)}
+              style="top: ${top}px"
+              title=${addLabel}
+              aria-label=${addLabel}
               @pointerdown=${(e: PointerEvent) => e.stopPropagation()}
               @click=${(e: MouseEvent) => {
                 e.stopPropagation();
@@ -724,8 +765,8 @@ export class FlodeCanvas extends LitElement {
             >
               <ha-icon icon="mdi:plus"></ha-icon>
             </button>
-          `
-        )}
+          `;
+        })}
       </div>
     `;
   }
@@ -733,7 +774,7 @@ export class FlodeCanvas extends LitElement {
   render() {
     const { x, y, zoom } = this.viewport;
     // A script's start node stays in the graph (transpiler) but isn't shown.
-    const shown = this.graph ? visibleGraph(this.graph) : undefined;
+    const shown = this.graph ? this.shownGraph() : undefined;
     const entries = this.graph ? scriptEntryIds(this.graph) : new Set<string>();
     const edges = shown?.edges.filter(isDrawnEdge) ?? [];
     const created = this.createdEntities();
@@ -1131,6 +1172,27 @@ export class FlodeCanvas extends LitElement {
     .add-next:hover {
       color: var(--primary-color);
       border-color: var(--primary-color);
+    }
+    /* An expanded choose / if: one named output per branch (#27). */
+    .node.branching .text {
+      padding-right: 72px;
+    }
+    .port {
+      position: absolute;
+      right: 12px;
+      max-width: 80px;
+      transform: translateY(-50%);
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--secondary-text-color);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+    .handle.branch {
+      border-color: var(--node-color);
     }
     .handle.true {
       border-color: var(--success-color, #43a047);

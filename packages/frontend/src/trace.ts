@@ -1,5 +1,6 @@
 import { type FlowGraph, isPlainObject } from '@flode/shared';
 import { createTracePathResolver } from '@flode/ui-core';
+import { branchCardForPath, cachedBranchView } from './branch-view';
 import type { FlowKind } from './ha';
 
 /**
@@ -33,28 +34,44 @@ function flowPath(kind: FlowKind, path: string): string {
   return kind === 'script' ? path.replace(/^sequence\//, 'action/') : path;
 }
 
-/** Which card each recorded step belongs to — steps inside a HA block mark the block. */
-export function runMarks(graph: FlowGraph, kind: FlowKind, trace: HaTrace): Map<string, RunMark> {
+/**
+ * Every card a trace path belongs to: the card itself, and for a step in a
+ * branch of a choose / if also that step's branch card.
+ */
+function cardsForPath(graph: FlowGraph, kind: FlowKind) {
   const resolve = createTracePathResolver(graph.nodes, graph.edges);
+  const view = cachedBranchView(graph);
+  return (path: string): string[] => {
+    const flow = flowPath(kind, path);
+    const id = resolve(flow);
+    const card = branchCardForPath(view, flow, resolve);
+    return [id, card].filter((c): c is string => c !== undefined);
+  };
+}
+
+/** Which card each recorded step belongs to — steps inside a HA block mark the block (and their branch card). */
+export function runMarks(graph: FlowGraph, kind: FlowKind, trace: HaTrace): Map<string, RunMark> {
+  const cards = cardsForPath(graph, kind);
   const marks = new Map<string, RunMark>();
   const rank: Record<RunMark, number> = { done: 0, failed: 1, error: 2 };
   for (const [path, steps] of Object.entries(trace.trace)) {
-    const id = resolve(flowPath(kind, path));
-    if (!id) continue;
     const mark: RunMark = steps.some((s) => s.error || s.result?.error)
       ? 'error'
       : steps.some((s) => s.result?.result === false) && !path.includes('/', path.indexOf('/') + 1)
         ? 'failed'
         : 'done';
-    const previous = marks.get(id);
-    if (!previous || rank[mark] > rank[previous]) marks.set(id, mark);
+    for (const id of cards(path)) {
+      const previous = marks.get(id);
+      if (!previous || rank[mark] > rank[previous]) marks.set(id, mark);
+    }
   }
   return marks;
 }
 
 /** The card a trace path belongs to (for the timeline's selected step). */
 export function nodeForPath(graph: FlowGraph, kind: FlowKind, path: string): string | undefined {
-  return createTracePathResolver(graph.nodes, graph.edges)(flowPath(kind, path));
+  // The step's own branch card when it has one, else its block.
+  return cardsForPath(graph, kind)(path).at(-1);
 }
 
 const ROOT_KEYS: Record<string, readonly string[]> = {

@@ -211,12 +211,17 @@ export function unionBounds(a: Bounds, b: Bounds): Bounds {
 export function handlePosition(
   node: FlowNode,
   side: 'source' | 'target',
-  handle: string | null = null
+  handle: string | null = null,
+  /** A card's own outputs and height when they differ from its type's (expanded HA blocks). */
+  shape: { handles: readonly (string | null)[]; height: number } = {
+    handles: sourceHandles(node.type),
+    height: NODE_HEIGHT,
+  }
 ): { x: number; y: number } {
-  if (side === 'target') return { x: node.position.x, y: node.position.y + NODE_HEIGHT / 2 };
-  const handles = sourceHandles(node.type);
+  const { handles, height } = shape;
+  if (side === 'target') return { x: node.position.x, y: node.position.y + height / 2 };
   const index = Math.max(0, handles.indexOf(handle));
-  const step = NODE_HEIGHT / (handles.length + 1);
+  const step = height / (handles.length + 1);
   return { x: node.position.x + NODE_WIDTH, y: node.position.y + step * (index + 1) };
 }
 
