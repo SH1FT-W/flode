@@ -1,6 +1,6 @@
 import type { FlowEdge, FlowGraph, FlowNode } from '@flode/shared';
 import { isScriptStart, isTargetedPlatform } from '@flode/shared';
-import { createdEntityIds, type StepIssue } from '@flode/ui-core';
+import { createdEntityIds, type NodeSummary, type StepIssue } from '@flode/ui-core';
 import {
   getBezierPath,
   getViewportForBounds,
@@ -41,6 +41,7 @@ import {
   visibleGraph,
 } from './flow-model';
 import type { HomeAssistant } from './ha';
+import { HaDescriptions } from './ha-describe';
 import { HA_ICON_ELEMENTS, nodeIconTemplate } from './node-icon';
 import {
   issueLines,
@@ -53,6 +54,15 @@ import {
 import { t } from './strings';
 import type { RunMark } from './trace';
 import { isNarrow } from './viewport';
+
+/**
+ * A card's detail line: everything stays visible and may wrap anywhere, but a
+ * number never parts from its unit ("80 %", "2 Sekunden") and the dot between
+ * two parts ends a line instead of starting the next one.
+ */
+function detailText(detail: string): string {
+  return detail.replace(/(\d) /g, '$1\u00a0').replaceAll(' · ', '\u00a0· ');
+}
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 1.6;
@@ -173,6 +183,7 @@ export class FlodeCanvas extends LitElement {
     runMarks: { attribute: false },
     activeRunNode: { attribute: false },
     minimap: { type: Boolean },
+    haText: { type: Boolean },
     viewport: { state: true },
     paneSize: { state: true },
     drag: { state: true },
@@ -190,11 +201,14 @@ export class FlodeCanvas extends LitElement {
   declare viewport: Viewport;
   /** Overview in the corner. */
   declare minimap: boolean;
+  /** Card text as HA's own editor words it, instead of FLODE's sentences. */
+  declare haText: boolean;
   declare paneSize: { width: number; height: number };
   declare drag: DragState | null;
   declare connecting: ConnectState | null;
   declare selectedEdgeId: string | null;
 
+  private readonly haDescriptions = new HaDescriptions(() => this.requestUpdate());
   private panZoom: PanZoomInstance | null = null;
   private minimapControl: XYMinimapInstance | null = null;
   /** Flow units per minimap pixel — XYMinimap needs it for dragging. */
@@ -704,6 +718,12 @@ export class FlodeCanvas extends LitElement {
     return `${mark ? `run-${mark}` : 'run-skipped'} ${this.activeRunNode === id ? 'run-active' : ''}`;
   }
 
+  /** The card's text: FLODE's sentence, or HA's own wording when the user picked that. */
+  private cardSummary(node: FlowNode, fullNames = false): NodeSummary {
+    const own = summarize(node, this.hass, fullNames);
+    return this.haText ? this.haDescriptions.summary(node, this.hass, own) : own;
+  }
+
   private renderNode(node: FlowNode, isEntry = false) {
     const meta = NODE_META[node.type];
     const language = this.hass?.language ?? 'en';
@@ -712,7 +732,7 @@ export class FlodeCanvas extends LitElement {
     const inBranch = !!branches || this.view.cards.has(node.id);
     const addLabel = inBranch ? t(language, 'addInBranch') : addNextLabel(language);
     const selected = this.selectedId === node.id;
-    const summary = summarize(node, this.hass);
+    const summary = this.cardSummary(node);
     const issues = issueLines(this.issues.get(node.id) ?? [], language);
     // HA's `enabled: false` — the step stays in the flow but is skipped.
     const off = 'enabled' in node.data && node.data.enabled === false;
@@ -723,7 +743,7 @@ export class FlodeCanvas extends LitElement {
         data-node-id=${node.id}
         title=${[
           nodeTypeLine(node, summary, language),
-          summarize(node, this.hass, true).title,
+          this.cardSummary(node, true).title,
           summary.detail,
           ...issues,
         ]
@@ -742,7 +762,7 @@ export class FlodeCanvas extends LitElement {
         <span class="text">
           <span class="type">${nodeEyebrow(node, summary, language)}</span>
           <span class="title">${summary.title}</span>
-          ${summary.detail ? html`<span class="detail">${summary.detail}</span>` : nothing}
+          ${summary.detail ? html`<span class="detail">${detailText(summary.detail)}</span>` : nothing}
         </span>
         ${hasTargetHandle(node.type) ? html`<span class="handle target"></span>` : nothing}
         ${handles.map((handle, index) => {
@@ -1046,7 +1066,6 @@ export class FlodeCanvas extends LitElement {
       font-size: 20px;
       line-height: 1.15;
       overflow-wrap: break-word;
-      hyphens: auto;
     }
     .far .node .detail {
       font-size: 16px;
@@ -1079,6 +1098,8 @@ export class FlodeCanvas extends LitElement {
       -webkit-box-orient: vertical;
       overflow: hidden;
       overflow-wrap: anywhere;
+      /* Two even lines instead of one word left alone on the second. */
+      text-wrap: balance;
     }
     .detail {
       font-size: 12px;

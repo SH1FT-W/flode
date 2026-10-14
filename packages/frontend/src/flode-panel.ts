@@ -118,6 +118,7 @@ function readInspectorWidth(): number | null {
 
 const AI_SETUP_HIDDEN_KEY = 'flode3.aiSetupHidden';
 const MINIMAP_KEY = 'flode3.minimap';
+const HA_CARD_TEXT_KEY = 'flode3.haCardText';
 
 function readFlag(key: string): boolean {
   try {
@@ -250,6 +251,7 @@ export class FlodePanel extends LitElement {
     paletteOpen: { state: true },
     shortcutsOpen: { state: true },
     minimapVisible: { state: true },
+    haCardText: { state: true },
     yamlViewOpen: { state: true },
     canvasMenu: { state: true },
     templatesOpen: { state: true },
@@ -297,6 +299,8 @@ export class FlodePanel extends LitElement {
   declare paletteOpen: boolean;
   declare shortcutsOpen: boolean;
   declare minimapVisible: boolean;
+  /** Cards worded like HA's own editor (per browser); FLODE's sentences otherwise. */
+  declare haCardText: boolean;
   declare yamlViewOpen: boolean;
   /** Right-click menu on the canvas (null = closed). */
   declare canvasMenu: CanvasMenuDetail | null;
@@ -347,6 +351,7 @@ export class FlodePanel extends LitElement {
     this.paletteOpen = false;
     this.shortcutsOpen = false;
     this.minimapVisible = readFlag(MINIMAP_KEY);
+    this.haCardText = readFlag(HA_CARD_TEXT_KEY);
     this.yamlViewOpen = false;
     this.canvasMenu = null;
     this.templatesOpen = false;
@@ -775,6 +780,9 @@ export class FlodePanel extends LitElement {
       command('tidy', t(language, 'tidy'), 'mdi:auto-fix', () => void this.tidy());
       command('fit', t(language, 'fit'), 'mdi:fit-to-screen-outline', () => this.canvas?.fitView());
       command('minimap', t(language, 'minimap'), 'mdi:map-outline', () => this.toggleMinimap());
+      command('haCardText', t(language, 'haCardText'), 'mdi:home-assistant', () =>
+        this.toggleHaCardText()
+      );
       const selected = this.selectedCard();
       if (selected) {
         command('duplicate', t(language, 'duplicateCard'), 'mdi:content-duplicate', () =>
@@ -1752,6 +1760,11 @@ export class FlodePanel extends LitElement {
     writeFlag(MINIMAP_KEY, this.minimapVisible);
   }
 
+  private toggleHaCardText(): void {
+    this.haCardText = !this.haCardText;
+    writeFlag(HA_CARD_TEXT_KEY, this.haCardText);
+  }
+
   /** The selected card — never the hidden script start. */
   private selectedCard(): FlowNode | null {
     const node = this.flow?.graph.nodes.find((n) => n.id === this.selectedId);
@@ -2147,6 +2160,13 @@ export class FlodePanel extends LitElement {
               >
                 <ha-icon icon="mdi:map-outline"></ha-icon>
               </ha-icon-button>
+              <ha-icon-button
+                class=${this.haCardText ? 'active' : ''}
+                .label=${t(language, 'haCardText')}
+                @click=${() => this.toggleHaCardText()}
+              >
+                <ha-icon icon="mdi:home-assistant"></ha-icon>
+              </ha-icon-button>
             </div>
             <span class="tool-sep"></span>
             <div class="tool-group">
@@ -2257,6 +2277,7 @@ export class FlodePanel extends LitElement {
           <flode-canvas
             .graph=${flow.graph}
             .minimap=${this.minimapVisible}
+            .haText=${this.haCardText}
             .hass=${this.hass}
             .selectedId=${this.selectedId}
             .runMarks=${this.debugOpen ? this.runMarks : null}
