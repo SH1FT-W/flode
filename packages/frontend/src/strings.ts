@@ -284,15 +284,12 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new321NestedTitle: 'Verschachtelte Zweige',
-    new321NestedText:
-      'Steckt ein „Auswählen“ oder „Wenn-dann“ in einem Zweig, bekommt es jetzt ebenfalls eigene Ausgänge und Karten, auch über mehrere Ebenen.',
-    new321MoveTitle: 'Zweig-Karten verschieben',
-    new321MoveText:
-      'Karten in einem Zweig lassen sich jetzt einzeln verschieben. Die Position wird mitgespeichert, „Aufräumen“ setzt sie zurück.',
-    new321LinesTitle: 'Saubere Linien',
-    new321LinesText:
-      'Jeder Zweig läuft in seiner eigenen Spur bis zum Ende des Blocks. Linien kreuzen keine fremden Karten mehr.',
+    new322CardTextTitle: 'Kartentext wie Home Assistant',
+    new322CardTextText:
+      'Der neue Schalter mit dem Home-Assistant-Symbol in der Werkzeugleiste zeigt auf den Karten den Wortlaut aus Home Assistants eigenem Editor. Standard bleiben die FLODE-Sätze.',
+    new322WrapTitle: 'Ruhigere Umbrüche',
+    new322WrapText:
+      'Titel verteilen sich auf zwei gleich lange Zeilen, Zahl und Einheit bleiben zusammen, und herausgezoomt wird nicht mehr mitten im Wort getrennt.',
   },
   en: {
     title: 'FLODE',
@@ -572,15 +569,12 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new321NestedTitle: 'Nested branches',
-    new321NestedText:
-      'A "Choose" or "If-then" inside a branch now gets its own outputs and cards as well, across several levels.',
-    new321MoveTitle: 'Move branch cards',
-    new321MoveText:
-      'Cards in a branch can now be moved one by one. Their position is saved, and "Tidy up" puts them back.',
-    new321LinesTitle: 'Cleaner lines',
-    new321LinesText:
-      'Each branch runs in its own lane up to the end of the block. Lines no longer cut through other cards.',
+    new322CardTextTitle: 'Card text like Home Assistant',
+    new322CardTextText:
+      "The new toggle with the Home Assistant icon in the toolbar shows the wording of Home Assistant's own editor on the cards. FLODE's sentences stay the default.",
+    new322WrapTitle: 'Calmer line breaks',
+    new322WrapText:
+      'Titles split into two even lines, a number stays with its unit, and zoomed out, words are no longer hyphenated.',
   },
 } as const;
 

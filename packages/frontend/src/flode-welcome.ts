@@ -24,9 +24,8 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:file-tree-outline', title: 'new321NestedTitle', text: 'new321NestedText' },
-  { icon: 'mdi:cursor-move', title: 'new321MoveTitle', text: 'new321MoveText' },
-  { icon: 'mdi:vector-polyline', title: 'new321LinesTitle', text: 'new321LinesText' },
+  { icon: 'mdi:home-assistant', title: 'new322CardTextTitle', text: 'new322CardTextText' },
+  { icon: 'mdi:format-text-wrapping-wrap', title: 'new322WrapTitle', text: 'new322WrapText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

@@ -4,6 +4,16 @@ All notable changes to FLODE are documented here. Every 3.x release builds on 3.
 
 ---
 
+## [3.2.2] — 2026-10-14 — Card text like Home Assistant
+
+### Added
+- **Card text like Home Assistant** ([#26](https://github.com/SH1FT-W/flode/issues/26)): a new toggle in the toolbar (and in the command palette) shows each card in the wording of Home Assistant's own automation editor, with the step's targets below. The text is read from Home Assistant itself, so it always matches the installed version. FLODE's own sentences stay the default; the choice is kept per browser.
+
+### Changed
+- **Calmer line breaks on cards**: titles split into two even lines instead of leaving a single word on the second one, a number stays together with its unit in the detail line, and zoomed out, words are no longer hyphenated.
+
+---
+
 ## [3.2.1] — 2026-10-13 — Nested branches
 
 ### Added
