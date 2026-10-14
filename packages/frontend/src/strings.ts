@@ -284,12 +284,12 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new322CardTextTitle: 'Kartentext wie Home Assistant',
-    new322CardTextText:
-      'Der neue Schalter mit dem Home-Assistant-Symbol in der Werkzeugleiste zeigt auf den Karten den Wortlaut aus Home Assistants eigenem Editor. Standard bleiben die FLODE-Sätze.',
-    new322WrapTitle: 'Ruhigere Umbrüche',
-    new322WrapText:
-      'Titel verteilen sich auf zwei gleich lange Zeilen, Zahl und Einheit bleiben zusammen, und herausgezoomt wird nicht mehr mitten im Wort getrennt.',
+    new323CardTextTitle: 'Kartentext wie Home Assistant, ohne Fehler',
+    new323CardTextText:
+      'Mit dem Home-Assistant-Kartentext landen keine Fehlermeldungen mehr in der Browser-Konsole. Die Texte selbst bleiben gleich.',
+    new323NameTitle: 'Name bleibt lesbar',
+    new323NameText:
+      'In schmaleren Fenstern weicht in der Kopfzeile zuerst „Letzter Lauf“, der Name der Automation bleibt sichtbar.',
   },
   en: {
     title: 'FLODE',
@@ -569,12 +569,12 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new322CardTextTitle: 'Card text like Home Assistant',
-    new322CardTextText:
-      "The new toggle with the Home Assistant icon in the toolbar shows the wording of Home Assistant's own editor on the cards. FLODE's sentences stay the default.",
-    new322WrapTitle: 'Calmer line breaks',
-    new322WrapText:
-      'Titles split into two even lines, a number stays with its unit, and zoomed out, words are no longer hyphenated.',
+    new323CardTextTitle: 'Card text like Home Assistant, without errors',
+    new323CardTextText:
+      'With the Home Assistant card text, no more error messages end up in the browser console. The texts themselves stay the same.',
+    new323NameTitle: 'Name stays readable',
+    new323NameText:
+      'In narrower windows, "Last run" in the header gives way first, so the automation\'s name stays visible.',
   },
 } as const;
 

@@ -4,6 +4,16 @@ All notable changes to FLODE are documented here. Every 3.x release builds on 3.
 
 ---
 
+## [3.2.3] — 2026-10-14 — Fixes for the card text
+
+A bug-fix release.
+
+### Fixed
+- **Card text like Home Assistant without console errors**: with the toggle on, the browser console no longer fills with errors. The hidden Home Assistant rows FLODE reads the text from now get Home Assistant's data like its own editor does. The card texts themselves don't change.
+- **The flow's name stays readable in the editor header**: on narrower windows, "Last run" next to the name gives way first instead of squeezing the name down to its first letter.
+
+---
+
 ## [3.2.2] — 2026-10-14 — Card text like Home Assistant
 
 ### Added
