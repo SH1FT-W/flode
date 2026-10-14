@@ -42,15 +42,23 @@ for (const dir of SOURCES) {
   }
 }
 // HA creates the entities a moment after the config is saved (longer right after a restart).
+// On Docker for Mac, HA's reload sometimes catches automations.yaml mid-write and skips
+// one — such an automation is saved again.
 let missing = seeded;
-const deadline = Date.now() + 90000;
-while (Date.now() < deadline) {
-  const names = new Set(
-    (await rest('GET', 'states')).map((state) => state.attributes.friendly_name)
-  );
-  missing = seeded.filter((flow) => !names.has(flow.name));
-  if (missing.length === 0) break;
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+for (let round = 0; round < 3 && missing.length > 0; round++) {
+  if (round > 0) {
+    for (const flow of missing)
+      await rest('POST', `config/automation/config/${flow.id}`, { ...flow.config, id: flow.id });
+  }
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    const names = new Set(
+      (await rest('GET', 'states')).map((state) => state.attributes.friendly_name)
+    );
+    missing = seeded.filter((flow) => !names.has(flow.name));
+    if (missing.length === 0) break;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
 }
 if (missing.length > 0) {
   console.log(`✗ HA has no entity for: ${missing.map((flow) => flow.name).join(', ')}`);
