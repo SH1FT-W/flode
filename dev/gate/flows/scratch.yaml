@@ -1,0 +1,27 @@
+# The gate edits this one (duplicate, delete, undo, save) — never a fixture.
+description: Gate scratch flow for editing checks
+mode: single
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "on"
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.kitchen_lights
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: sun.sun
+            state: below_horizon
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: light.ceiling_lights
+    default:
+      - action: light.turn_off
+        target:
+          entity_id: light.ceiling_lights
+  - action: light.turn_off
+    target:
+      entity_id: light.kitchen_lights

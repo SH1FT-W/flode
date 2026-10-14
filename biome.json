@@ -142,7 +142,13 @@
     }
   ],
   "files": {
-    "includes": ["packages/**/*.ts", "packages/**/*.tsx", "packages/**/*.js", "packages/**/*.jsx"],
+    "includes": [
+      "packages/**/*.ts",
+      "packages/**/*.tsx",
+      "packages/**/*.js",
+      "packages/**/*.jsx",
+      "dev/**/*.mjs"
+    ],
     "ignoreUnknown": true
   },
   "vcs": {

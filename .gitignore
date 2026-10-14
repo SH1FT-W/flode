@@ -42,3 +42,6 @@ custom_components/flode/www/
 # Python
 __pycache__/
 *.pyc
+
+# Release gate (results, screenshots, logs)
+.gate/

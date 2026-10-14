@@ -1,0 +1,23 @@
+# Real demo entities, so both card texts (FLODE / like HA) have names to show.
+description: Gate check for both card texts
+mode: restart
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "on"
+conditions:
+  - condition: numeric_state
+    entity_id: sensor.outside_temperature
+    below: 30
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.entrance_color_white_lights
+    data:
+      brightness_pct: 80
+      transition: 2
+  - delay:
+      minutes: 2
+  - action: light.turn_off
+    target:
+      entity_id: light.entrance_color_white_lights

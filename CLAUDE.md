@@ -63,6 +63,7 @@ yarn build:ha     # Build + copy to custom_components
 yarn test         # Run tests
 yarn typecheck    # Type checking
 yarn lint:biome   # Linting
+dev/gate/gate.sh  # Release gate: browser checks against the Docker test HA (before every release)
 ```
 
 # Development Guidelines
@@ -136,6 +137,8 @@ To cut a new release, follow these steps:
 **Important:** Before tagging and releasing, always bump the version in `custom_components/flode/manifest.json` to match the new release version.
 
 **All information for the release (version number and release notes) must be automatically derived from the git commit history since the last release.**
+
+**Release gate (mandatory):** after the release commit (version bump, "What's new", changelog) and before tagging or pushing, run `dev/gate/gate.sh` (see `dev/gate/README.md`). Release only if `.gate/gate-<commit>.json` says `"counts_for_release": true` for exactly that commit. If the visual step reports differences, show `.gate/visual/report.html` to the user first. After the release is out, run `dev/gate/gate.sh --baseline` so the next release is compared with this one.
 
 - The version number should be determined based on semantic versioning and recent changes.
 - The release notes should be compiled from user-facing changes in the commit history (new features, bug fixes, breaking changes), without requiring user input.
