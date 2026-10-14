@@ -53,7 +53,11 @@ async function cardsClip(page) {
 }
 
 async function shoot(engine) {
-  const { browser, page } = await openBrowser(engine, { width: 2200, height: 1000, scale: 2 });
+  const { browser, page, errors } = await openBrowser(engine, {
+    width: 2200,
+    height: 1000,
+    scale: 2,
+  });
   const files = [];
   try {
     await gotoPanel(page);
@@ -65,11 +69,18 @@ async function shoot(engine) {
           await page.waitForTimeout(1500);
         }
         const file = `${flow.id.replace(/^flode_gate_/, '')}-${engine}-${mode}.png`;
-        await page.screenshot({ path: path.join(CURRENT_DIR, file), clip: await cardsClip(page) });
+        const clip = await cardsClip(page);
+        // No cards = not a picture of FLODE (e.g. HA's loading screen) — never compare or keep it.
+        if (!clip) {
+          result.fail(`${engine} · ${flow.name} [${mode}]: no cards to photograph`);
+          continue;
+        }
+        await page.screenshot({ path: path.join(CURRENT_DIR, file), clip });
         files.push(file);
       }
       await page.getByRole('button', { name: await label(page, 'haCardText') }).click();
     }
+    for (const error of errors) result.fail(`${engine}: ${error}`);
   } finally {
     await browser.close();
   }
@@ -117,7 +128,10 @@ for (const file of fs.readdirSync(VISUAL_DIR).filter((name) => name.startsWith('
   fs.rmSync(path.join(VISUAL_DIR, file));
 const files = (await Promise.all(ENGINES.map(shoot))).flat();
 
-if (makeBaseline) {
+if (makeBaseline && result.failed()) {
+  result.note('baseline NOT stored: the pictures are not reliable');
+  result.finish();
+} else if (makeBaseline) {
   fs.rmSync(BASELINE_DIR, { recursive: true, force: true });
   fs.cpSync(CURRENT_DIR, BASELINE_DIR, { recursive: true });
   const version = JSON.parse(

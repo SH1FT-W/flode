@@ -265,6 +265,9 @@ export function report(step) {
       failures.push(message);
       console.log(`  ✗ ${message}`);
     },
+    failed() {
+      return failures.length > 0;
+    },
     note(message) {
       notes.push(message);
       console.log(`  · ${message}`);
