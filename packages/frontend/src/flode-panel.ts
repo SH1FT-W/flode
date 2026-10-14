@@ -2438,7 +2438,7 @@ export class FlodePanel extends LitElement {
       this.debugOpen = true;
       this.assistOpen = false;
     }}>
-      <ha-icon icon="mdi:history"></ha-icon>${t(this.language, 'lastRun')}: ${when}
+      <ha-icon icon="mdi:history"></ha-icon><span>${t(this.language, 'lastRun')}: ${when}</span>
     </button>`;
   }
 
@@ -2828,11 +2828,14 @@ export class FlodePanel extends LitElement {
     .name {
       flex: 1;
       min-width: 0;
+      overflow: hidden;
       display: flex;
       align-items: baseline;
       gap: 10px;
     }
     .flow-name {
+      /* The name keeps its room: when the toolbar gets tight, "Letzter Lauf" gives way first. */
+      flex: 0 1 auto;
       min-width: 0;
       padding: 0;
       border: 0;
@@ -2923,6 +2926,9 @@ export class FlodePanel extends LitElement {
     }
     .last-run {
       display: flex;
+      flex: 0 1000 auto;
+      min-width: 0;
+      overflow: hidden;
       align-items: center;
       gap: 4px;
       padding: 2px 8px;
@@ -2938,6 +2944,10 @@ export class FlodePanel extends LitElement {
     }
     .last-run:hover {
       color: var(--primary-text-color);
+    }
+    .last-run span {
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .tool-group {
       display: flex;

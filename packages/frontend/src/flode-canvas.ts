@@ -208,7 +208,10 @@ export class FlodeCanvas extends LitElement {
   declare connecting: ConnectState | null;
   declare selectedEdgeId: string | null;
 
-  private readonly haDescriptions = new HaDescriptions(() => this.requestUpdate());
+  private readonly haDescriptions = new HaDescriptions(
+    () => this.requestUpdate(),
+    () => (this.isConnected ? this.renderRoot : null)
+  );
   private panZoom: PanZoomInstance | null = null;
   private minimapControl: XYMinimapInstance | null = null;
   /** Flow units per minimap pixel — XYMinimap needs it for dragging. */

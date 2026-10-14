@@ -62,8 +62,15 @@ export class HaDescriptions {
   private language?: string;
   private entities?: HomeAssistant['entities'];
 
-  /** `onReady` runs once a batch of texts came in — the canvas re-renders then. */
-  constructor(private readonly onReady: () => void) {}
+  /**
+   * `onReady` runs once a batch of texts came in — the canvas re-renders then.
+   * `host` is where the hidden rows go: inside HA's page, so they get HA's
+   * states, translations and registries like every row of HA's own editor.
+   */
+  constructor(
+    private readonly onReady: () => void,
+    private readonly host: () => ParentNode | null
+  ) {}
 
   /**
    * The card as HA's row shows it: HA's text, its targets below. FLODE's own
@@ -110,7 +117,8 @@ export class HaDescriptions {
     box.inert = true;
     box.style.cssText =
       'position: fixed; left: -10000px; top: 0; width: 600px; visibility: hidden; pointer-events: none';
-    const known = ready ? batch.filter(({ kind }) => customElements.get(rowTag(kind))) : [];
+    const host = this.host();
+    const known = ready && host ? batch.filter(({ kind }) => customElements.get(rowTag(kind))) : [];
     const rows = known.map(({ kind, step }) => {
       const row = document.createElement(rowTag(kind));
       Reflect.set(row, 'hass', hass);
@@ -118,7 +126,7 @@ export class HaDescriptions {
       box.append(row);
       return row;
     });
-    document.body.append(box);
+    host?.append(box);
     try {
       await Promise.all(rows.map(updateCompleteOf));
       rows.forEach((row, index) => {
