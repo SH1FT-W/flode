@@ -100,7 +100,10 @@ export async function openBrowser(engine, { width = 1500, height = 900, scale = 
         }
         return found;
       };
+      // Controlled by HA's service worker from the start: then HA won't reload this page.
+      const controlledAtStart = Boolean(navigator.serviceWorker?.controller);
       window.flodeGate = {
+        controlledAtStart,
         panel: () => all(document, (el) => el.tagName === 'FLODE-PANEL')[0] ?? null,
         cards: () => all(document, (el) => el.classList?.contains('node') && el.dataset.nodeId),
       };
@@ -110,7 +113,20 @@ export async function openBrowser(engine, { width = 1500, height = 900, scale = 
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
+  const recent = [];
+  page.gateRecent = recent;
+  page.on('websocket', (socket) => {
+    socket.on('framereceived', (frame) => {
+      const text = String(frame.payload);
+      if (/state_changed|"c":|"a":|"type":"result"/.test(text)) return;
+      recent.push(`ws: ${text.slice(0, 140)}`);
+      if (recent.length > 4) recent.shift();
+    });
+    socket.on('close', () => recent.push('ws: closed'));
+  });
   page.on('console', (message) => {
+    recent.push(`${message.type()}: ${message.text().slice(0, 120)}`);
+    if (recent.length > 4) recent.shift();
     if (message.type() !== 'error') return;
     const text = message.text();
     // Source maps of HA's own bundles (dev tools only) are never served.
@@ -118,11 +134,13 @@ export async function openBrowser(engine, { width = 1500, height = 900, scale = 
     errors.push(`console: ${text.slice(0, 300)}`);
   });
   // A reload nobody asked for (after the first load) is a failure, with when it happened.
-  let loads = 0;
+  page.gateLoads = 0;
   page.on('load', () => {
-    loads += 1;
-    if (loads > 1 && !page.gateNavigating)
-      errors.push(`page reloaded unexpectedly (${page.url()})`);
+    page.gateLoads += 1;
+    if (!page.gateNavigating)
+      errors.push(
+        `page reloaded unexpectedly (${page.url()}, ${((Date.now() - (page.gateReadyAt ?? 0)) / 1000).toFixed(1)} s after warm-up; before it: ${recent.join(' | ') || 'nothing in the console'})`
+      );
   });
   await warmUp(page);
   return { browser, context, page, errors, version };
@@ -166,12 +184,18 @@ export async function waitForPanel(page, fn, arg, timeout = 10000) {
 async function warmUp(page) {
   page.gateNavigating = true;
   await page.goto(`${HA_URL}/flode`);
-  await page
-    .waitForFunction(() => navigator.serviceWorker?.controller, null, { timeout: 15000 })
-    .catch(() => undefined);
-  await page.waitForLoadState('load');
-  await page.waitForTimeout(500);
+  // HA reloads the page as soon as its service worker takes over (`controllerchange`,
+  // 1–12 s after the first load). A page that was controlled from its start stays put.
+  const end = Date.now() + 30000;
+  while (Date.now() < end) {
+    const settled = await page
+      .evaluate(() => document.readyState === 'complete' && window.flodeGate?.controlledAtStart)
+      .catch(() => false);
+    if (settled) break;
+    await page.waitForTimeout(200);
+  }
   page.gateNavigating = false;
+  page.gateReadyAt = Date.now();
 }
 
 /** FLODE's panel, ready. Loads it only if the page isn't on it (a reload cuts off HA's downloads). */

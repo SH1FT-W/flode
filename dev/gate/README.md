@@ -51,8 +51,10 @@ go to `.gate/shots/`, logs to `.gate/logs/`.
 
 ## Notes for writing checks
 
-- A fresh browser installs HA's service worker on its first visit and HA then reloads
-  the page once; `openBrowser` lets that happen before any check starts watching.
+- A fresh browser installs HA's service worker on its first visit, and HA reloads the
+  page as soon as the worker takes over (`controllerchange`, 1–12 s later). `openBrowser`
+  waits for a page that was controlled from its start; an unexpected reload after that
+  fails the check, with the last console and WebSocket messages before it.
 - Don't navigate between checks without need: a reload cuts off HA's downloads, which
   WebKit reports as errors. `gotoPanel` only loads the page when it isn't on FLODE yet.
 - A flow that HA changes while it's open in FLODE is reloaded by FLODE (correctly) —
