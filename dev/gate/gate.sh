@@ -104,7 +104,8 @@ EOF
 echo
 if [ $OK = true ]; then
   echo "✓ gate green · $COMMIT · $(( $(date +%s) - STARTED )) s$([ $COUNTS = true ] || echo ' · does not count for a release (partial run or uncommitted changes)')"
-  grep -q '"review": \[\]' "$OUT/step-visual.json" 2>/dev/null || [ ! -f "$OUT/step-visual.json" ] || echo "  look at the picture differences: .gate/visual/report.html"
+  node -e 'const r = require(process.argv[1]).review; process.exit(r && r.length ? 0 : 1)' "$OUT/step-visual.json" 2>/dev/null \
+    && echo "  look at the picture differences: .gate/visual/report.html"
   exit 0
 fi
 echo "✗ gate red · $COMMIT · see .gate/logs/"
