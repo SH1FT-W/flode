@@ -1,6 +1,7 @@
 import type { FlowGraph } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
 import {
+  acrossPoints,
   addNode,
   connect,
   connectionError,
@@ -268,5 +269,37 @@ describe('duplicating a card', () => {
     const { graph, id } = duplicateNode(chain, chain.nodes[0]!, { x: 0, y: 300 });
     expect(graph.edges.filter((e) => e.source === id).map((e) => e.target)).toEqual(['c']);
     expect(graph.edges.filter((e) => e.source === 't').map((e) => e.target)).toEqual(['c']);
+  });
+});
+
+describe('lines left to right (#31)', () => {
+  it('leaves out a lane bend where a moved branch step now starts', () => {
+    const from = { x: 680, y: 258 };
+    const lane = { x: 780, y: 258 };
+    const to = { x: 780, y: 306 };
+    expect(acrossPoints([from, lane, to])).toEqual([from, to]);
+  });
+
+  it('leaves out the lane when the step was moved back before its branch output', () => {
+    const from = { x: 280, y: 437 };
+    const lane = { x: 410, y: 375 };
+    const to = { x: 185, y: 141 };
+    expect(acrossPoints([from, lane, to])).toEqual([from, to]);
+  });
+
+  it('keeps bends well before the target and those of a loop back', () => {
+    const forward = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 300, y: 40 },
+    ];
+    expect(acrossPoints(forward)).toEqual(forward);
+    const loop = [
+      { x: 500, y: 0 },
+      { x: 520, y: 120 },
+      { x: 80, y: 120 },
+      { x: 100, y: 0 },
+    ];
+    expect(acrossPoints(loop, true)).toEqual(loop);
   });
 });

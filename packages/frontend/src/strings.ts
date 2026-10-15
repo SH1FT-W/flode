@@ -342,18 +342,15 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new340VerticalTitle: 'Flows von oben nach unten',
-    new340VerticalText:
-      'Jeder Flow läuft auf Wunsch senkrecht: Der Pfeil neben „Aufräumen“ dreht ihn, und eine Einstellung öffnet alle Flows gleich senkrecht. Ideal für lange Automationen mit vielen Zweigen.',
-    new340BetweenTitle: 'Dazwischen oder parallel',
-    new340BetweenText:
-      'Ein „+“ auf einer Linie, an der schon etwas hängt, fragt jetzt: dazwischen einfügen oder parallel hinzufügen. Am Auslöser auch als Bedingung.',
-    new340BlockTitle: 'Weiter nach Wenn-dann und Auswählen',
-    new340BlockText:
-      'Hinter einem Wenn-dann oder Auswählen am Ende gibt es ein „+“ für den nächsten Schritt nach allen Zweigen. Viele Auslöser stehen senkrecht in Reihen.',
-    new340TouchTitle: 'Handy und Tablet',
-    new340TouchText:
-      '„+“ lassen sich besser treffen, das Tablet öffnet Flows lesbar, und nach dem Aufräumen gibt es einen Knopf „Rückgängig“.',
+    new341MenuTitle: 'Rechtsklick in Zweigen',
+    new341MenuText:
+      'Auch Schritte in einem Wenn-dann oder Auswählen haben jetzt ihr Kartenmenü: kopieren, duplizieren, deaktivieren, löschen.',
+    new341DragTitle: 'Ruhigeres Verschieben',
+    new341DragText:
+      'Karten springen beim Ziehen nicht mehr zurück, wenn die Automation gerade läuft. Linien laufen weich in verschobene Schritte, der Pfeil zeigt gerade hinein.',
+    new341EndTitle: 'Aufgeräumtes Ende',
+    new341EndText:
+      'Nach einem Block am Ende des Flows stehen keine gestrichelten Linien und kein zusätzliches „+“ mehr. Jeder Schritt hat sein eigenes „+“.',
   },
   en: {
     title: 'FLODE',
@@ -690,18 +687,15 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new340VerticalTitle: 'Flows top to bottom',
-    new340VerticalText:
-      'Any flow can run top to bottom: the arrow next to "Tidy up" turns it, and a setting opens all flows that way. Made for long automations with many branches.',
-    new340BetweenTitle: 'In between or in parallel',
-    new340BetweenText:
-      'A "+" on a line that already leads on now asks: insert in between or add in parallel. On a trigger also as a condition.',
-    new340BlockTitle: 'Go on after if and choose',
-    new340BlockText:
-      'An if or choose block at the end gets a "+" for the next step after all its branches. Many triggers stand in rows when the flow runs top to bottom.',
-    new340TouchTitle: 'Phone and tablet',
-    new340TouchText:
-      '"+" buttons are easier to hit, tablets open flows readable, and tidying up shows an "Undo" button.',
+    new341MenuTitle: 'Right-click in branches',
+    new341MenuText:
+      'Steps inside an if or choose block now have their card menu too: copy, duplicate, disable, delete.',
+    new341DragTitle: 'Smoother dragging',
+    new341DragText:
+      'Cards no longer jump back while dragged when the automation runs. Lines curve into moved steps and the arrow points straight in.',
+    new341EndTitle: 'A tidier end',
+    new341EndText:
+      'A block at the end of a flow no longer shows dashed lines and an extra "+". Every step has its own "+".',
   },
 } as const;
 

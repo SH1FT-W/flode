@@ -36,6 +36,7 @@ import { fitViewport } from './fit';
 import {
   ADD_BELOW,
   ADD_BUTTON,
+  acrossPoints,
   type Bounds,
   cardAtInput,
   connect,
@@ -91,10 +92,10 @@ const MAX_ZOOM = 1.6;
  * A line through `points` along the flow (left to right, or top to bottom):
  * a curve between each pair (straight where they are level).
  */
-function linePath(points: readonly Point[], axis: Axis, merge = false): string {
+function linePath(points: readonly Point[], axis: Axis, merge = false, loop = false): string {
   const down = axis.direction === 'down';
   // Top to bottom a lane may end where the line does: a curve of no length would turn the arrow sideways.
-  const shaped = down ? downPoints(points, merge) : points;
+  const shaped = down ? downPoints(points, merge) : acrossPoints(points, loop);
   const drawn = down
     ? shaped.filter((p, i) => i === 0 || p.x !== shaped[i - 1]?.x || p.y !== shaped[i - 1]?.y)
     : shaped;
@@ -136,6 +137,8 @@ interface DragState {
   startClient: { x: number; y: number };
   startPos: { x: number; y: number };
   moved: boolean;
+  /** Where the card is shown while dragged, and the graph showing it there. */
+  preview?: { x: number; y: number; graph: FlowGraph };
 }
 
 interface ConnectState {
@@ -361,10 +364,14 @@ export class FlodeCanvas extends LitElement {
     );
   }
 
-  /** The "+" after each block of `graph` that nothing follows yet. */
+  /**
+   * The "+" where a nested block's branches meet and the flow runs on. A block
+   * nothing follows gets none: a step after it is connected from a branch's
+   * last card, as before 3.4 — beside the cards' own "+" it read as one more of them (#31).
+   */
   private shownTails(graph: FlowGraph): [string, BlockTail][] {
     const ids = new Set(graph.nodes.map((n) => n.id));
-    return [...this.view.tails].filter(([id]) => ids.has(id));
+    return [...this.view.tails].filter(([id, tail]) => tail.through && ids.has(id));
   }
 
   private drawnNode(id: string): FlowNode | undefined {
@@ -440,6 +447,16 @@ export class FlodeCanvas extends LitElement {
     this.minimapControl = null;
     this.panZoom?.destroy();
     this.panZoom = null;
+  }
+
+  protected willUpdate(changed: PropertyValues<this>): void {
+    // The panel hands its graph in again on every render (HA's state updates, a
+    // run of this automation …): a card being dragged stays where the pointer has it (#31).
+    const preview = this.drag?.preview;
+    if (changed.has('graph') && this.drag && preview && this.graph !== preview.graph) {
+      this.graph = this.moved(this.drag.id, preview.x, preview.y);
+      this.drag = { ...this.drag, preview: { ...preview, graph: this.graph } };
+    }
   }
 
   protected updated(changed: PropertyValues<this>): void {
@@ -702,9 +719,11 @@ export class FlodeCanvas extends LitElement {
     const dy = event.clientY - drag.startClient.y;
     if (!drag.moved && Math.hypot(dx, dy) < CLICK_DISTANCE) return;
     const zoom = this.viewport.zoom;
-    this.drag = { ...drag, moved: true };
+    const x = drag.startPos.x + dx / zoom;
+    const y = drag.startPos.y + dy / zoom;
     // Live preview without emitting on every frame; the graph is committed on release.
-    this.graph = this.moved(drag.id, drag.startPos.x + dx / zoom, drag.startPos.y + dy / zoom);
+    this.graph = this.moved(drag.id, x, y);
+    this.drag = { ...drag, moved: true, preview: { x, y, graph: this.graph } };
   }
 
   /** The graph with card `id` at `x`/`y` — a branch card keeps where it was moved to as its offset. */
@@ -888,10 +907,10 @@ export class FlodeCanvas extends LitElement {
     const selectable =
       edgeOrigin.has(edge.id) || (!cards.has(edge.source) && !cards.has(edge.target));
     const bends = via.get(edge.id) ?? this.detourOf(edge.id, from, to, [source.id, target.id]);
-    const path = linePath([from, ...bends, to], this.view.axis, merge);
+    const isLoop = edge.type === 'loop-back';
+    const path = linePath([from, ...bends, to], this.view.axis, merge, isLoop);
     const selected = this.selectedEdgeId === edge.id;
     const isNo = edge.sourceHandle === 'false';
-    const isLoop = edge.type === 'loop-back';
     const faulty = (this.issues.get(edge.target)?.length ?? 0) > 0;
     return svg`
       <g class="edge ${selected ? 'selected' : ''} ${isNo ? 'no' : ''} ${isLoop ? 'loop' : ''} ${faulty ? 'faulty' : ''}">
@@ -906,17 +925,14 @@ export class FlodeCanvas extends LitElement {
       </g>`;
   }
 
-  /**
-   * Lines from a block's branch ends to its "+": dashed when nothing follows the
-   * block yet, real ones when the flow runs on through it.
-   */
+  /** Lines from a nested block's branch ends to the "+" the flow runs on through. */
   private renderTailLines(tail: BlockTail) {
     return tail.exits.map((exit) => {
       const source = this.drawnNode(exit.source);
       if (!source) return nothing;
       const from = exit.start ?? this.drawnHandle(source, 'source', exit.sourceHandle ?? null);
       const path = linePath([from, ...exit.via, tail.at], this.view.axis);
-      return svg`<path class="edge-line ${tail.through ? '' : 'tail'}" d=${path}></path>`;
+      return svg`<path class="edge-line" d=${path}></path>`;
     });
   }
 
@@ -1037,7 +1053,7 @@ export class FlodeCanvas extends LitElement {
         @pointerup=${(e: PointerEvent) => this.onNodePointerUp(e)}
         @pointercancel=${(e: PointerEvent) => this.onNodePointerCancel(e)}
         @lostpointercapture=${(e: PointerEvent) => this.onNodePointerCancel(e)}
-        @contextmenu=${(e: MouseEvent) => this.onContextMenu(e, this.view.cards.has(node.id) ? null : node)}
+        @contextmenu=${(e: MouseEvent) => this.onContextMenu(e, node)}
       >
         ${off ? html`<span class="off-badge"><ha-icon icon="mdi:cancel"></ha-icon>${t(language, 'disabledGroup')}</span>` : nothing}
         ${isEntry ? html`<span class="entry"><ha-icon icon="mdi:play"></ha-icon>${t(language, 'entry')}</span>` : nothing}
@@ -1231,9 +1247,6 @@ export class FlodeCanvas extends LitElement {
       stroke: var(--primary-color);
       stroke-width: 2.4px;
       opacity: 1;
-    }
-    .edge-line.tail {
-      stroke-dasharray: 4 3;
     }
     .edge-line.preview {
       stroke: var(--primary-color);

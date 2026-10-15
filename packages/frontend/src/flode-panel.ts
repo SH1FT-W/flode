@@ -67,6 +67,7 @@ import {
   toggleNodeEnabled,
   updateNodeData,
   visibleGraph,
+  withEnabledToggled,
 } from './flow-model';
 import { flowYaml } from './flow-yaml';
 import {
@@ -876,7 +877,12 @@ export class FlodePanel extends LitElement {
     const menu = this.canvasMenu;
     if (!menu) return nothing;
     const language = this.language;
-    const node = flow.graph.nodes.find((n) => n.id === menu.nodeId);
+    // A step inside a choose / if branch gets the card's menu too (#30) — minus
+    // what only a card of the flow has (its connections, run from here).
+    const branchCard = this.branchCard(menu.nodeId);
+    const node = branchCard
+      ? cachedBranchView(flow.graph).graph.nodes.find((n) => n.id === menu.nodeId)
+      : flow.graph.nodes.find((n) => n.id === menu.nodeId);
     const hinted = (id: ShortcutId, icon: string, label: string, run: () => void): MenuItem => ({
       id,
       icon,
@@ -899,17 +905,18 @@ export class FlodePanel extends LitElement {
           off ? 'mdi:toggle-switch-outline' : 'mdi:toggle-switch-off-outline',
           t(language, off ? 'enableCard' : 'disableCard'),
           () => this.toggleCard(node)
-        ),
-        'divider',
-        {
+        )
+      );
+      if (!branchCard) {
+        entries.push('divider', {
           id: 'runFrom',
           icon: 'mdi:play-circle-outline',
           label: t(language, 'runFrom'),
           run: () => {
             this.runFromId = node.id;
           },
-        }
-      );
+        });
+      }
       if (flow.graph.edges.some((e) => e.source === node.id || e.target === node.id)) {
         entries.push({
           id: 'disconnect',
@@ -920,10 +927,9 @@ export class FlodePanel extends LitElement {
       }
       entries.push(
         'divider',
-        hinted('delete', 'mdi:delete-outline', t(language, 'delete'), () => {
-          this.commit(removeNode(flow.graph, node.id));
-          this.selectedId = null;
-        })
+        hinted('delete', 'mdi:delete-outline', t(language, 'delete'), () =>
+          this.removeCard(node.id)
+        )
       );
     } else if (menu.after) {
       entries.push(...this.addAfterEntries(flow, menu.after));
@@ -2263,12 +2269,15 @@ export class FlodePanel extends LitElement {
   }
 
   private onDelete(event: CustomEvent<{ id: string }>): void {
+    this.removeCard(event.detail.id);
+  }
+
+  /** Removes a card of the flow or a step from its branch. */
+  private removeCard(id: string): void {
     const flow = this.flow;
     if (!flow) return;
-    const card = this.branchCard(event.detail.id);
-    this.commit(
-      card ? removeBranchStep(flow.graph, card) : removeNode(flow.graph, event.detail.id)
-    );
+    const card = this.branchCard(id);
+    this.commit(card ? removeBranchStep(flow.graph, card) : removeNode(flow.graph, id));
     this.selectedId = null;
   }
 
@@ -2326,7 +2335,6 @@ export class FlodePanel extends LitElement {
   }
 
   private shortcutAction(id: ShortcutId): (() => void) | null {
-    const selected = this.selectedCard();
     switch (id) {
       case 'palette':
         return () => {
@@ -2370,8 +2378,10 @@ export class FlodePanel extends LitElement {
         const card = this.selectedAnyCard();
         return card ? () => this.duplicateCard(card) : null;
       }
-      case 'toggleEnabled':
-        return selected ? () => this.toggleCard(selected) : null;
+      case 'toggleEnabled': {
+        const card = this.selectedAnyCard();
+        return card ? () => this.toggleCard(card) : null;
+      }
       case 'tidy':
         return () => void this.tidy();
       case 'fit':
@@ -2542,9 +2552,17 @@ export class FlodePanel extends LitElement {
     return true;
   }
 
+  /** Enables / disables a card of the flow or a step in its branch (HA's `enabled: false`). */
   private toggleCard(node: FlowNode): void {
     const flow = this.flow;
-    if (flow) this.commit(toggleNodeEnabled(flow.graph, node.id));
+    if (!flow) return;
+    const card = this.branchCard(node.id);
+    if (!card) {
+      this.commit(toggleNodeEnabled(flow.graph, node.id));
+      return;
+    }
+    const result = setBranchStep(flow.graph, card, withEnabledToggled(nodeToStep(node)));
+    if (!result.error) this.commit(result.graph);
   }
 
   /**

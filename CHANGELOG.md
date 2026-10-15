@@ -4,6 +4,20 @@ All notable changes to FLODE are documented here. Every 3.x release builds on 3.
 
 ---
 
+## [3.4.1] — 2026-10-15 — Branch steps, dragging, block ends
+
+Fixes reported by Bart ([#30](https://github.com/SH1FT-W/flode/issues/30), [#31](https://github.com/SH1FT-W/flode/issues/31)).
+
+### Fixed
+- **Right-click on a step inside a branch** ([#30](https://github.com/SH1FT-W/flode/issues/30)) opens its card menu (copy, duplicate, enable/disable, delete) instead of the canvas menu. The disable shortcut works on these steps too.
+- **Dragging a card** ([#31](https://github.com/SH1FT-W/flode/issues/31)) no longer makes it jump back for a moment when Home Assistant sends an update, for example while the automation runs.
+- **Lines into a moved branch step** ([#31](https://github.com/SH1FT-W/flode/issues/31)) curve straight into it: no hook down to the input, no detour to its old place, and the arrow points into the card.
+
+### Changed
+- **The end of a block** that nothing follows ([#31](https://github.com/SH1FT-W/flode/issues/31)) no longer shows dashed lines and an extra "+". A step after the whole block is connected from a branch's last card, as before 3.4.0.
+
+---
+
 ## [3.4.0] — 2026-10-15 — Top to bottom flows, insert in between
 
 Flows can now run top to bottom ([#29](https://github.com/SH1FT-W/flode/issues/29)), the "+" asks where a new step goes, and blocks at the end of a flow can be continued. Tested in four review rounds on desktop, phone and tablet.

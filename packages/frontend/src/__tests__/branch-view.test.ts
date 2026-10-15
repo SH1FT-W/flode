@@ -12,8 +12,9 @@ import {
   storedPosition,
   withoutStaleOffsets,
 } from '../branch-view';
-import { NODE_WIDTH } from '../flow-model';
+import { NODE_WIDTH, withEnabledToggled } from '../flow-model';
 import { flowYaml } from '../flow-yaml';
+import { nodeToStep } from '../ha-step';
 import { type HaTrace, nodeForPath, runMarks } from '../trace';
 
 /** The automation from #27, plus a step after the choose. */
@@ -117,6 +118,26 @@ describe('branch view (#27)', () => {
     expect(yaml).toContain('- action: light.turn_on');
     expect(yaml).toContain('default:');
     expect(yaml).not.toContain('script.turn_on');
+  });
+
+  it('disables and re-enables a branch step from its menu (#30)', async () => {
+    const graph = flow();
+    const view = branchView(graph);
+    const ref = view.cards.get(option);
+    const card = view.graph.nodes.find((n) => n.id === option);
+    if (!ref || !card) throw new Error('no card');
+    const off = setBranchStep(graph, ref, withEnabledToggled(nodeToStep(card)));
+    expect(off.error).toBeNull();
+    const offView = branchView(off.graph);
+    expect(offView.graph.nodes.find((n) => n.id === option)?.data).toMatchObject({
+      enabled: false,
+    });
+    expect(await flowYaml(off.graph, 'automation')).toContain('enabled: false');
+    const offRef = offView.cards.get(option);
+    const offCard = offView.graph.nodes.find((n) => n.id === option);
+    if (!offRef || !offCard) throw new Error('no card');
+    const on = setBranchStep(off.graph, offRef, withEnabledToggled(nodeToStep(offCard)));
+    expect(await flowYaml(on.graph, 'automation')).not.toContain('enabled');
   });
 
   it('adds steps with a branch’s "+" and drops an emptied default', () => {

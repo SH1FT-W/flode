@@ -271,10 +271,13 @@ export function disconnectNode(graph: FlowGraph, id: string): FlowGraph {
 export function toggleNodeEnabled(graph: FlowGraph, id: string): FlowGraph {
   const node = graph.nodes.find((n) => n.id === id);
   if (!node) return graph;
-  const data: Record<string, unknown> = { ...node.data };
-  if (data.enabled === false) delete data.enabled;
-  else data.enabled = false;
-  return updateNodeData(graph, id, data).graph;
+  return updateNodeData(graph, id, withEnabledToggled(node.data)).graph;
+}
+
+/** HA's `enabled: false` switched: added to an active step, dropped from a disabled one. */
+export function withEnabledToggled(data: Record<string, unknown>): Record<string, unknown> {
+  const { enabled, ...rest } = data;
+  return enabled === false ? rest : { ...rest, enabled: false };
 }
 
 /**
@@ -672,6 +675,26 @@ export function detour(
     { x: lane, y: top },
     ...(leave > bottom ? [{ x: lane, y: leave }] : []),
   ];
+}
+
+/** Left to right: room a line keeps before a card's input to turn into it (#31). */
+const INTO_LEFT = 24;
+
+/**
+ * Left to right: bends at or past a card's input are left out (a branch lane
+ * ending where its moved step now is) — the line would end in a curve of no
+ * length or run on past the card and back to it (#31). A loop back bends
+ * past its target on purpose.
+ */
+export function acrossPoints(
+  points: readonly { x: number; y: number }[],
+  loop = false
+): { x: number; y: number }[] {
+  const from = points[0];
+  const to = points.at(-1);
+  if (!from || !to || points.length < 3 || loop) return [...points];
+  const middle = points.slice(1, -1).filter((p) => p.x <= to.x - INTO_LEFT);
+  return [from, ...middle, to];
 }
 
 /**
