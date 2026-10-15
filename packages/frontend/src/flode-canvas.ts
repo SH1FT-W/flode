@@ -1,5 +1,12 @@
-import type { FlowEdge, FlowGraph, FlowNode } from '@flode/shared';
-import { isScriptStart, isTargetedPlatform } from '@flode/shared';
+import {
+  type Axis,
+  type FlowEdge,
+  type FlowGraph,
+  type FlowNode,
+  flowAxis,
+  isScriptStart,
+  isTargetedPlatform,
+} from '@flode/shared';
 import { createdEntityIds, type NodeSummary, type StepIssue } from '@flode/ui-core';
 import {
   getBezierPath,
@@ -14,26 +21,38 @@ import {
 } from '@xyflow/system';
 import { css, html, LitElement, nothing, type PropertyValues, svg } from 'lit';
 import {
+  type BlockTail,
   type BranchView,
   branchLabelText,
   cachedBranchView,
   cardShape,
   connectionSource,
   moveBranchCard,
+  type Point,
   removeBranchStep,
 } from './branch-view';
 import { defineElement } from './define-element';
 import { fitViewport } from './fit';
 import {
+  ADD_BELOW,
+  ADD_BUTTON,
+  type Bounds,
+  cardAtInput,
   connect,
   connectionError,
+  detour,
+  downPoints,
   graphBounds,
+  HANDLE_OUTSIDE,
   handlePosition,
   hasTargetHandle,
   isDrawnEdge,
   moveNode,
   NODE_HEIGHT,
   NODE_WIDTH,
+  outgoing,
+  outputOffsets,
+  PORT_ROW,
   removeEdge,
   removeNode,
   scriptEntryIds,
@@ -54,7 +73,7 @@ import {
 import type { CardIssue } from './save-errors';
 import { t } from './strings';
 import type { RunMark } from './trace';
-import { isNarrow } from './viewport';
+import { isNarrow, isTouch } from './viewport';
 
 /**
  * A card's detail line: everything stays visible and may wrap anywhere, but a
@@ -67,24 +86,45 @@ function detailText(detail: string): string {
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 1.6;
-/** A line through `points`, left to right: a curve between each pair (straight where they are level). */
-function linePath(points: readonly { x: number; y: number }[]): string {
-  return points
+
+/**
+ * A line through `points` along the flow (left to right, or top to bottom):
+ * a curve between each pair (straight where they are level).
+ */
+function linePath(points: readonly Point[], axis: Axis, merge = false): string {
+  const down = axis.direction === 'down';
+  // Top to bottom a lane may end where the line does: a curve of no length would turn the arrow sideways.
+  const shaped = down ? downPoints(points, merge) : points;
+  const drawn = down
+    ? shaped.filter((p, i) => i === 0 || p.x !== shaped[i - 1]?.x || p.y !== shaped[i - 1]?.y)
+    : shaped;
+  return drawn
     .slice(1)
     .map((to, i) => {
-      const from = points[i] ?? to;
+      const from = drawn[i] ?? to;
       const [path] = getBezierPath({
         sourceX: from.x,
         sourceY: from.y,
-        sourcePosition: Position.Right,
+        sourcePosition: down ? Position.Bottom : Position.Right,
         targetX: to.x,
         targetY: to.y,
-        targetPosition: Position.Left,
+        targetPosition: down ? Position.Top : Position.Left,
       });
       return path;
     })
     .join(' ');
 }
+
+/** Per picture of a flow: the bends of its lines round cards in their way (see `detourOf`). */
+const detours = new WeakMap<BranchView, Map<string, Point[]>>();
+
+/** Half a "+" (centre to edge). */
+const ADD_RADIUS = ADD_BUTTON / 2;
+
+/** From this many outputs on, top to bottom, an option's name is just its number. */
+const CROWDED_OUTPUTS = 4;
+/** Room an output's number takes (two digits), with a little gap. */
+const NUMBER_WIDTH = 16;
 
 /** Pointer travel (px) below which a press on a node counts as a click, not a drag. */
 const CLICK_DISTANCE = 4;
@@ -112,6 +152,8 @@ export interface AddAt {
   source?: string;
   sourceHandle?: string | null;
   position?: { x: number; y: number };
+  /** Between the output and what already follows it, instead of beside that. */
+  between?: boolean;
 }
 
 /** Right-click on a card (nodeId) or on the empty canvas (null). */
@@ -135,6 +177,15 @@ function capturePointer(event: PointerEvent): void {
   event.preventDefault();
   if (event.currentTarget instanceof Element)
     event.currentTarget.setPointerCapture(event.pointerId);
+}
+
+/** The middle of a flow's first row of cards (top to bottom: its triggers). */
+function firstRowMiddle(nodes: readonly FlowNode[]): number {
+  const top = Math.min(...nodes.map((n) => n.position.y));
+  const row = nodes.filter((n) => n.position.y < top + NODE_HEIGHT / 2);
+  const left = Math.min(...row.map((n) => n.position.x));
+  const right = Math.max(...row.map((n) => n.position.x + NODE_WIDTH));
+  return (left + right) / 2;
 }
 
 function addNextLabel(language: string, node: FlowNode): string {
@@ -274,12 +325,54 @@ export class FlodeCanvas extends LitElement {
     return visibleGraph(this.view.graph);
   }
 
+  /**
+   * The box around `graph`'s cards. Top to bottom, cards with named outputs
+   * are taller (#29); left to right it stays as it always was.
+   */
+  private bounds(graph: FlowGraph): Bounds {
+    const down = this.view.axis.direction === 'down';
+    const cards = down
+      ? graphBounds(graph, (node) => cardShape(this.view, node).height)
+      : graphBounds(graph);
+    const ids = new Set(graph.nodes.map((n) => n.id));
+    // A block's "+" for what follows it lies past its cards, and so may the bends of
+    // the lines to it (an empty branch's lane); top to bottom also a line's bend
+    // (a branch's lane, a way round cards).
+    const points = [
+      ...this.shownTails(graph).flatMap(([, tail]) => [
+        tail.at,
+        ...tail.exits.flatMap((exit) => exit.via),
+      ]),
+      ...(down
+        ? graph.edges
+            .filter((e) => ids.has(e.source) && ids.has(e.target))
+            .flatMap((e) => this.view.via.get(e.id) ?? [])
+        : []),
+    ];
+    return points.reduce<Bounds>(
+      (box, p) =>
+        unionBounds(box, {
+          x: p.x - ADD_RADIUS,
+          y: p.y - ADD_RADIUS,
+          width: ADD_RADIUS * 2,
+          height: ADD_RADIUS * 2,
+        }),
+      cards
+    );
+  }
+
+  /** The "+" after each block of `graph` that nothing follows yet. */
+  private shownTails(graph: FlowGraph): [string, BlockTail][] {
+    const ids = new Set(graph.nodes.map((n) => n.id));
+    return [...this.view.tails].filter(([id]) => ids.has(id));
+  }
+
   private drawnNode(id: string): FlowNode | undefined {
     return this.view.graph.nodes.find((n) => n.id === id);
   }
 
   private drawnHandle(node: FlowNode, side: 'source' | 'target', handle: string | null = null) {
-    return handlePosition(node, side, handle, cardShape(this.view, node));
+    return handlePosition(node, side, handle, cardShape(this.view, node), this.view.axis);
   }
 
   protected firstUpdated(): void {
@@ -314,6 +407,8 @@ export class FlodeCanvas extends LitElement {
       onDraggingChange: () => undefined,
       onPanZoom: (_event, viewport) => {
         this.viewport = viewport;
+        // A menu opened at a "+" would stay where the "+" was.
+        this.dispatchEvent(new CustomEvent('view-move'));
       },
     });
     this.panZoom.update({
@@ -351,6 +446,8 @@ export class FlodeCanvas extends LitElement {
     // A different flow was loaded (not just edited): frame it.
     const previous = changed.get('graph');
     if (previous && previous.id !== this.graph.id) this.fitView(false);
+    // Turned the other way (also by undo): the old view no longer fits (#29).
+    else if (previous && flowAxis(previous).direction !== this.view.axis.direction) this.fitView();
     this.syncMinimap(changed.has('paneSize') || changed.has('minimap'));
   }
 
@@ -391,7 +488,7 @@ export class FlodeCanvas extends LitElement {
     if (!this.minimap || !shown || paneWidth === 0) return nothing;
     const { x, y, zoom } = this.viewport;
     const view = { x: -x / zoom, y: -y / zoom, width: paneWidth / zoom, height: paneHeight / zoom };
-    const box = shown.nodes.length > 0 ? unionBounds(graphBounds(shown), view) : view;
+    const box = shown.nodes.length > 0 ? unionBounds(this.bounds(shown), view) : view;
     const scale = Math.max(box.width / MINIMAP_WIDTH, box.height / MINIMAP_HEIGHT);
     this.minimapScale = scale;
     const offset = 5 * scale;
@@ -444,15 +541,19 @@ export class FlodeCanvas extends LitElement {
     if (width === 0 || height === 0) return;
     const shown = this.shownGraph();
     const picked = only ? shown.nodes.filter((node) => only.has(node.id)) : [];
-    const bounds = graphBounds(picked.length > 0 ? { ...shown, nodes: picked } : shown);
-    const narrow = isNarrow();
+    const bounds = this.bounds(picked.length > 0 ? { ...shown, nodes: picked } : shown);
+    // Phones and tablets: a long flow would shrink to unreadable — stay readable,
+    // start at the trigger and pan.
+    const readable = isNarrow() || isTouch();
+    const down = this.view.axis.direction === 'down';
     const viewport = fitViewport(bounds, {
       width,
       height,
-      // Phones: a long flow would shrink to unreadable — stay readable, start at the trigger and pan.
-      minZoom: narrow ? NARROW_MIN_FIT_ZOOM : MIN_ZOOM,
+      minZoom: readable ? NARROW_MIN_FIT_ZOOM : MIN_ZOOM,
       covered,
-      startLeft: narrow,
+      startLeft: readable && !down,
+      startTop: down,
+      ...(readable && down ? { startX: firstRowMiddle(shown.nodes) } : {}),
     });
     void this.panZoom.setViewport(viewport, { duration: animate ? 250 : 0 });
   }
@@ -516,11 +617,19 @@ export class FlodeCanvas extends LitElement {
     this.dispatchEvent(new CustomEvent<AddAt>('add-next', { detail }));
   }
 
-  /** A card's "+": after a trigger first a choice — condition or action — then HA's dialog. */
+  /**
+   * A card's "+": after a trigger first a choice — condition or action —, on an
+   * output that already leads on a choice between in between and in parallel;
+   * then HA's dialog.
+   */
   private onAddNextClick(event: MouseEvent, node: FlowNode, handle: string | null): void {
-    event.stopPropagation();
     const after: AddAt = { source: node.id, sourceHandle: handle };
-    if (node.type !== 'trigger' || !(event.currentTarget instanceof Element)) {
+    const choice =
+      node.type === 'trigger' ||
+      (!this.view.cards.has(node.id) &&
+        !this.view.branches.has(node.id) &&
+        outgoing(this.graph, node.id, handle).length > 0);
+    if (!choice || !(event.currentTarget instanceof Element)) {
       this.emitAddAt(after);
       return;
     }
@@ -572,6 +681,9 @@ export class FlodeCanvas extends LitElement {
     // (taking it over would leave that card's preview position behind).
     if (this.drag) return;
     capturePointer(event);
+    // Delete / Backspace act on the picked card: the keys go to the canvas, not to
+    // whatever had them before (a toolbar button).
+    this.pane?.focus({ preventScroll: true });
     // Moves happen on the stored position; branch cards (no node of their own) on the drawn one.
     const stored = this.graph.nodes.find((n) => n.id === node.id);
     this.drag = {
@@ -675,7 +787,9 @@ export class FlodeCanvas extends LitElement {
     if (!target) {
       // Dropped on empty canvas: add a card there, connected.
       if (Math.hypot(drop.x - connecting.start.x, drop.y - connecting.start.y) > DROP_DISTANCE) {
-        this.emitAddAt({ ...from, position: { x: drop.x, y: drop.y - NODE_HEIGHT / 2 } });
+        const { axis } = this.view;
+        const position = cardAtInput(axis, drop);
+        this.emitAddAt({ ...from, position });
       }
       return;
     }
@@ -739,17 +853,42 @@ export class FlodeCanvas extends LitElement {
   /** Per node: what would make it fail (unknown service, missing entity) — red border and red incoming line. */
   private issues = new Map<string, StepIssue[]>();
 
-  private renderEdge(edge: FlowEdge) {
+  /** A line's way round cards in its way — worked out once per picture, not on every pan or zoom. */
+  private detourOf(id: string, from: Point, to: Point, ends: readonly string[]): Point[] {
+    const view = this.view;
+    let known = detours.get(view);
+    if (!known) {
+      known = new Map();
+      detours.set(view, known);
+    }
+    const cached = known.get(id);
+    if (cached) return cached;
+    const bends = detour(
+      view.axis,
+      from,
+      to,
+      view.graph.nodes,
+      new Set(ends),
+      (n) => cardShape(view, n).height
+    );
+    known.set(id, bends);
+    return bends;
+  }
+
+  /** `merge`: other lines lead into the same card (top to bottom they join just above it). */
+  private renderEdge(edge: FlowEdge, merge: boolean) {
     const source = this.drawnNode(edge.source);
     const target = this.drawnNode(edge.target);
     if (!source || !target) return nothing;
-    const from = this.drawnHandle(source, 'source', edge.sourceHandle ?? null);
+    const { cards, edgeOrigin, via, start } = this.view;
+    const from =
+      start.get(edge.id) ?? this.drawnHandle(source, 'source', edge.sourceHandle ?? null);
     const to = this.drawnHandle(target, 'target');
     // Lines into and between a branch's steps aren't connections of their own.
-    const { cards, edgeOrigin, via } = this.view;
     const selectable =
       edgeOrigin.has(edge.id) || (!cards.has(edge.source) && !cards.has(edge.target));
-    const path = linePath([from, ...(via.get(edge.id) ?? []), to]);
+    const bends = via.get(edge.id) ?? this.detourOf(edge.id, from, to, [source.id, target.id]);
+    const path = linePath([from, ...bends, to], this.view.axis, merge);
     const selected = this.selectedEdgeId === edge.id;
     const isNo = edge.sourceHandle === 'false';
     const isLoop = edge.type === 'loop-back';
@@ -767,12 +906,56 @@ export class FlodeCanvas extends LitElement {
       </g>`;
   }
 
+  /**
+   * Lines from a block's branch ends to its "+": dashed when nothing follows the
+   * block yet, real ones when the flow runs on through it.
+   */
+  private renderTailLines(tail: BlockTail) {
+    return tail.exits.map((exit) => {
+      const source = this.drawnNode(exit.source);
+      if (!source) return nothing;
+      const from = exit.start ?? this.drawnHandle(source, 'source', exit.sourceHandle ?? null);
+      const path = linePath([from, ...exit.via, tail.at], this.view.axis);
+      return svg`<path class="edge-line ${tail.through ? '' : 'tail'}" d=${path}></path>`;
+    });
+  }
+
+  /** "+" after a whole block (#29): the new step follows every branch, its card where the "+" is. */
+  private renderTail(blockId: string, tail: BlockTail) {
+    const { axis } = this.view;
+    // The new card's input where the "+" was.
+    const position = cardAtInput(axis, tail.at);
+    return this.renderAdd(
+      t(this.hass?.language ?? 'en', 'addNext'),
+      'tail',
+      `transform: translate(${tail.at.x}px, ${tail.at.y}px)`,
+      () => this.emitAddAt({ source: blockId, sourceHandle: null, position })
+    );
+  }
+
+  /** A "+" that adds a step: after a card's output, or after a whole block. */
+  private renderAdd(label: string, kind: string, style: string, add: (e: MouseEvent) => void) {
+    return html`<button
+      class="add-next ${kind}"
+      style=${style}
+      title=${label}
+      aria-label=${label}
+      @pointerdown=${(e: PointerEvent) => e.stopPropagation()}
+      @click=${(e: MouseEvent) => {
+        e.stopPropagation();
+        add(e);
+      }}
+    >
+      <ha-icon icon="mdi:plus"></ha-icon>
+    </button>`;
+  }
+
   private renderConnectionPreview() {
     const c = this.connecting;
     const source = c ? this.drawnNode(c.source) : undefined;
     if (!c || !source) return nothing;
     const from = this.drawnHandle(source, 'source', c.sourceHandle);
-    const path = linePath([from, c.cursor]);
+    const path = linePath([from, c.cursor], this.view.axis);
     return svg`<path class="edge-line preview" d=${path}></path>`;
   }
 
@@ -789,10 +972,42 @@ export class FlodeCanvas extends LitElement {
     return this.haText ? this.haDescriptions.summary(node, this.hass, own) : own;
   }
 
+  /**
+   * Where output `index` of `count` sits on a card `height` tall (and its
+   * name): spread down the right edge, or along the bottom edge when the
+   * flow runs top to bottom — its name then above it, as wide as its share
+   * (`crowded`: its neighbours show only a number, so it may take some of theirs).
+   */
+  private outputPlace(
+    height: number,
+    handles: readonly (string | null)[],
+    index: number,
+    crowded: boolean
+  ): { at: string; label: string } {
+    const { axis } = this.view;
+    const offsets = outputOffsets(axis, handles, axis.breadth({ width: NODE_WIDTH, height }));
+    const at = offsets[index] ?? 0;
+    if (axis.direction === 'down') {
+      // A name as wide as the room to its neighbours (the card's edges count double).
+      const before = index === 0 ? at * 2 : at - (offsets[index - 1] ?? 0);
+      const after =
+        index === offsets.length - 1 ? (NODE_WIDTH - at) * 2 : (offsets[index + 1] ?? 0) - at;
+      const room = Math.max(
+        0,
+        crowded ? Math.min(before, after) * 2 - NUMBER_WIDTH : Math.min(before, after) - 4
+      );
+      return { at: `left: ${at}px`, label: `left: ${at}px; max-width: ${room}px` };
+    }
+    return { at: `top: ${at}px`, label: `top: ${at}px` };
+  }
+
   private renderNode(node: FlowNode, isEntry = false) {
     const meta = NODE_META[node.type];
     const language = this.hass?.language ?? 'en';
     const { handles, height } = cardShape(this.view, node);
+    // Top to bottom, many outputs share the card's width: an option's name shrinks to its number.
+    const down = this.view.axis.direction === 'down';
+    const crowded = down && handles.length >= CROWDED_OUTPUTS;
     const branches = this.view.branches.get(node.id);
     const inBranch = !!branches || this.view.cards.has(node.id);
     const addLabel = inBranch ? t(language, 'addInBranch') : addNextLabel(language, node);
@@ -834,16 +1049,22 @@ export class FlodeCanvas extends LitElement {
         </span>
         ${hasTargetHandle(node.type) ? html`<span class="handle target"></span>` : nothing}
         ${handles.map((handle, index) => {
-          const top = (height / (handles.length + 1)) * (index + 1);
           const branch = branches?.[index];
           const name = branch
             ? branchLabelText(language, branch.label)
             : outputLabel(language, handle);
+          // Top to bottom a named option shows just its name ("Morgens"); crowded, its number.
+          const alias = branch?.label.kind === 'option' ? branch.label.alias : undefined;
+          const shown =
+            branch && crowded
+              ? branchLabelText(language, branch.label, true)
+              : (down && alias) || name;
+          const place = this.outputPlace(height, handles, index, crowded);
           return html`
-            ${name ? html`<span class="port ${branch?.label.kind ?? handle ?? ''}" style="top: ${top}px" title=${name}>${name}</span>` : nothing}
+            ${name ? html`<span class="port ${branch?.label.kind ?? handle ?? ''}" style=${place.label} title=${name}>${shown}</span>` : nothing}
             <span
               class="handle source ${handle ?? ''} ${branch ? 'branch' : ''}"
-              style="top: ${top}px"
+              style=${place.at}
               title=${name}
               @pointerdown=${(e: PointerEvent) => this.onHandlePointerDown(e, node, handle)}
               @pointermove=${(e: PointerEvent) => this.onHandlePointerMove(e)}
@@ -851,16 +1072,7 @@ export class FlodeCanvas extends LitElement {
               @pointercancel=${(e: PointerEvent) => this.onHandlePointerCancel(e)}
               @lostpointercapture=${(e: PointerEvent) => this.onHandlePointerCancel(e)}
             ></span>
-            <button
-              class="add-next"
-              style="top: ${top}px"
-              title=${addLabel}
-              aria-label=${addLabel}
-              @pointerdown=${(e: PointerEvent) => e.stopPropagation()}
-              @click=${(e: MouseEvent) => this.onAddNextClick(e, node, handle)}
-            >
-              <ha-icon icon="mdi:plus"></ha-icon>
-            </button>
+            ${this.renderAdd(addLabel, '', place.at, (e) => this.onAddNextClick(e, node, handle))}
           `;
         })}
       </div>
@@ -873,6 +1085,11 @@ export class FlodeCanvas extends LitElement {
     const shown = this.graph ? this.shownGraph() : undefined;
     const entries = this.graph ? scriptEntryIds(this.graph) : new Set<string>();
     const edges = shown?.edges.filter(isDrawnEdge) ?? [];
+    const tails = shown ? this.shownTails(shown) : [];
+    const incoming = new Map<string, number>();
+    // Lines that meet at a card (a loop back to it doesn't count).
+    for (const edge of edges.filter((e) => e.type !== 'loop-back'))
+      incoming.set(edge.target, (incoming.get(edge.target) ?? 0) + 1);
     const created = this.createdEntities();
     this.issues = new Map(
       (shown?.nodes ?? []).map((node) => [node.id, nodeIssues(node, this.hass, created)])
@@ -887,7 +1104,7 @@ export class FlodeCanvas extends LitElement {
         @contextmenu=${(e: MouseEvent) => this.onContextMenu(e, null)}
       >
         <div
-          class="viewport ${zoomClass(zoom)}"
+          class="viewport ${zoomClass(zoom)} ${this.view.axis.direction === 'down' ? 'down' : ''}"
           style="transform: translate(${x}px, ${y}px) scale(${zoom}); --zoom: ${zoom}"
         >
           <svg class="edges">
@@ -899,9 +1116,11 @@ export class FlodeCanvas extends LitElement {
                 <path d="M 0 0 L 10 5 L 0 10 z" class="arrow faulty"></path>
               </marker>
             </defs>
-            ${edges.map((edge) => this.renderEdge(edge))} ${this.renderConnectionPreview()}
+            ${edges.map((edge) => this.renderEdge(edge, (incoming.get(edge.target) ?? 0) > 1))} ${tails.map(([, tail]) => this.renderTailLines(tail))}
+            ${this.renderConnectionPreview()}
           </svg>
           ${shown?.nodes.map((node) => this.renderNode(node, entries.has(node.id)))}
+          ${tails.map(([id, tail]) => this.renderTail(id, tail))}
         </div>
         ${
           shown && shown.nodes.length === 0
@@ -918,6 +1137,8 @@ export class FlodeCanvas extends LitElement {
       display: block;
       position: relative;
       overflow: hidden;
+      /* Never scrolled to show a focused "+" (Chromium does, for one HA's dialog hands focus back to). */
+      overflow: clip;
     }
     .minimap {
       position: absolute;
@@ -1010,6 +1231,9 @@ export class FlodeCanvas extends LitElement {
       stroke: var(--primary-color);
       stroke-width: 2.4px;
       opacity: 1;
+    }
+    .edge-line.tail {
+      stroke-dasharray: 4 3;
     }
     .edge-line.preview {
       stroke: var(--primary-color);
@@ -1251,9 +1475,9 @@ export class FlodeCanvas extends LitElement {
     .add-next {
       position: absolute;
       right: -40px;
-      width: 22px;
-      height: 22px;
-      margin-top: -11px;
+      width: ${ADD_BUTTON}px;
+      height: ${ADD_BUTTON}px;
+      margin-top: -${ADD_RADIUS}px;
       padding: 0;
       display: grid;
       place-items: center;
@@ -1297,7 +1521,12 @@ export class FlodeCanvas extends LitElement {
         --hit: min(44px / var(--zoom, 1), 80px);
         opacity: 1;
         /* Its hit area starts where the output's ends. */
-        right: calc(-11px - min(22px / var(--zoom, 1), 30px) - min(22px / var(--zoom, 1), 40px));
+        right: calc(-${ADD_RADIUS}px - min(22px / var(--zoom, 1), 30px) - min(22px / var(--zoom, 1), 40px));
+      }
+      /* Outputs one above the other: each "+" keeps to its own, not over its neighbour's. */
+      .node.two-way .add-next::before,
+      .node.branching .add-next::before {
+        height: min(var(--hit), 24px);
       }
     }
     /* An expanded choose / if: one named output per branch (#27). */
@@ -1335,6 +1564,80 @@ export class FlodeCanvas extends LitElement {
     }
     .port.false {
       color: color-mix(in srgb, var(--error-color, #db4437) 70%, var(--primary-text-color));
+    }
+    /* Top to bottom (#29): in at the top, out along the bottom edge, the
+       outputs' names in a row just above them. */
+    .down .handle {
+      margin-top: 0;
+      margin-left: -6px;
+    }
+    /* On the card's edge, half outside. */
+    .down .handle.target {
+      left: 50%;
+      top: -${HANDLE_OUTSIDE}px;
+    }
+    .down .handle.source {
+      right: auto;
+      bottom: -${HANDLE_OUTSIDE}px;
+    }
+    /* The "+" sits on the line below its output: opaque, only its colours muted. */
+    .down .add-next {
+      right: auto;
+      bottom: -${ADD_BELOW}px;
+      margin-top: 0;
+      margin-left: -${ADD_RADIUS}px;
+      opacity: 1;
+      color: color-mix(in srgb, var(--secondary-text-color) 80%, transparent);
+      border-color: var(--divider-color);
+    }
+    .down .add-next:hover {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    /* Zoomed far out the names grow with the rest of the card's text. */
+    .down.far .port {
+      font-size: 13px;
+    }
+    @media (pointer: coarse) {
+      /* Top to bottom the "+" stays on its line, its hit area around it: drawn after
+         the output, it wins where the two meet, and it ends before the next card. */
+      .down .add-next {
+        --hit: min(44px / var(--zoom, 1), 50px);
+      }
+      /* Outputs side by side: as wide as the room to the neighbour's "+". */
+      .down .node.two-way .add-next::before,
+      .down .node.branching .add-next::before {
+        height: var(--hit);
+        width: min(var(--hit), 40px);
+      }
+    }
+    /* The "+" after a whole block sits on its own in the flow, not on a card. */
+    .viewport .add-next.tail:hover {
+      opacity: 1;
+    }
+    .viewport .add-next.tail {
+      left: 0;
+      top: 0;
+      right: auto;
+      bottom: auto;
+      margin: -${ADD_RADIUS}px 0 0 -${ADD_RADIUS}px;
+    }
+    /* The input and output sit on the top and bottom edge: room for at most three lines of text. */
+    .down .node .detail {
+      -webkit-line-clamp: 1;
+    }
+    .down .node.branching .text,
+    .down .node.two-way .text {
+      padding-right: 0;
+      margin-bottom: ${PORT_ROW}px;
+    }
+    .down .port {
+      right: auto;
+      bottom: 8px;
+      transform: translateX(-50%);
+      text-align: center;
+      /* A short name shows its full one on hover (pressing it still takes the card). */
+      pointer-events: auto;
     }
   `;
 }

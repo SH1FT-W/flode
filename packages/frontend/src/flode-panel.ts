@@ -1,7 +1,9 @@
 import {
+  type FlowDirection,
   type FlowGraph,
   FlowMetadataSchema,
   type FlowNode,
+  flowAxis,
   isPlainObject,
   isScriptStart,
   NodeSchema,
@@ -29,6 +31,7 @@ import {
   branchInsertAt,
   branchLabelText,
   cachedBranchView,
+  cardShape,
   drawnBox,
   insertBranchStep,
   removeBranchStep,
@@ -52,9 +55,12 @@ import {
   duplicateNode,
   ensureScriptEntry,
   freePosition,
+  insertBetween,
   moveNode,
   NODE_HEIGHT,
   NODE_WIDTH,
+  nextPosition,
+  outgoing,
   removeNode,
   scriptStartId,
   setNodeStep,
@@ -112,7 +118,7 @@ import {
   type ShortcutId,
   shortcutHint,
 } from './shortcuts';
-import { t } from './strings';
+import { type StringKey, t } from './strings';
 import {
   continuesStep,
   type EditorTab,
@@ -126,7 +132,7 @@ import {
   writeTabs,
 } from './tabs';
 import type { RunMark } from './trace';
-import { isNarrow, SHEET_SHARE } from './viewport';
+import { isNarrow, isTouch, SHEET_SHARE } from './viewport';
 
 const INSPECTOR_WIDTH_KEY = 'flode3.inspectorWidth';
 const INSPECTOR_MIN = 300;
@@ -144,6 +150,12 @@ function readInspectorWidth(): number | null {
 const AI_SETUP_HIDDEN_KEY = 'flode3.aiSetupHidden';
 const MINIMAP_KEY = 'flode3.minimap';
 const HA_CARD_TEXT_KEY = 'flode3.haCardText';
+/** Flows without a saved direction open top to bottom (#29). */
+const VERTICAL_KEY = 'flode3.vertical';
+const DIRECTION_ICON: Record<FlowDirection, string> = {
+  right: 'mdi:arrow-right',
+  down: 'mdi:arrow-down',
+};
 
 function readFlag(key: string): boolean {
   try {
@@ -232,26 +244,65 @@ function isTyping(event: KeyboardEvent): boolean {
     );
 }
 
-/** The import layout (ELK, from the transpiler) over the visible cards, branch steps back in place — "Aufräumen". */
-async function layoutGraph(graph: FlowGraph): Promise<FlowGraph> {
+/**
+ * The import layout (ELK, from the transpiler) over the visible cards, branch
+ * steps back in place — "Aufräumen". Runs the way the flow does, or the way
+ * it is turned to (`turnTo`, #29).
+ */
+async function layoutGraph(graph: FlowGraph, turnTo?: FlowDirection): Promise<FlowGraph> {
   const { applyHeuristicLayout } = await loadTranspiler();
-  const size = { width: NODE_WIDTH, height: NODE_HEIGHT };
+  // Moved branch steps go back into their lanes too.
+  const { branchOffsets: _moved, ...rest } = graph;
+  // Turned on purpose, the direction is kept — left to right too, so a flow
+  // arranged so stays so when flows open top to bottom by default.
+  const turned: FlowGraph = turnTo ? { ...rest, direction: turnTo } : rest;
+  const axis = flowAxis(turned);
+  const view = cachedBranchView(turned);
   const shown = visibleGraph(graph);
+  // An expanded block takes the room of all its branches across the flow (they
+  // spread around it), so nothing beside it lands on them; along the flow the
+  // branch view moves what follows anyway.
+  const boxes = new Map(
+    shown.nodes.map((node) => {
+      const card = {
+        width: NODE_WIDTH,
+        height: axis.direction === 'down' ? cardShape(view, node).height : NODE_HEIGHT,
+      };
+      const box = drawnBox(view, node.id);
+      const before = axis.cross(node.position) - box.crossStart;
+      const breadth = Math.max(axis.breadth(card), box.crossEnd - box.crossStart);
+      return [node.id, { size: axis.at(axis.length(card), breadth), before }];
+    })
+  );
   const laidOut = await applyHeuristicLayout(
     shown.nodes,
     shown.edges,
-    Object.fromEntries(shown.nodes.map((node) => [node.id, size]))
+    Object.fromEntries([...boxes].map(([id, { size }]) => [id, { width: size.x, height: size.y }])),
+    axis.direction
   );
-  const positions = new Map(laidOut.map((node) => [node.id, node.position]));
-  // Moved branch steps go back into their lanes too.
-  const { branchOffsets: _moved, ...rest } = graph;
+  // ELK places the boxes; each card sits in its own where its branches leave room.
+  const positions = new Map(
+    laidOut.map((node) => {
+      const before = boxes.get(node.id)?.before ?? 0;
+      return [node.id, axis.at(axis.main(node.position), axis.cross(node.position) + before)];
+    })
+  );
   return {
-    ...rest,
+    ...turned,
     nodes: graph.nodes.map((node) => ({
       ...node,
       position: positions.get(node.id) ?? node.position,
     })),
   };
+}
+
+/**
+ * Phones: the tool strip scrolls sideways — `more` / `less` say there is more
+ * of it to the right / left, which fades that edge (see `.tools` styles).
+ */
+function markScrollable(strip: HTMLElement): void {
+  strip.classList.toggle('less', strip.scrollLeft > 1);
+  strip.classList.toggle('more', strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1);
 }
 
 /** The name a new automation / script starts with ("New automation", "Neues Skript" …). */
@@ -291,6 +342,7 @@ export class FlodePanel extends LitElement {
     shortcutsOpen: { state: true },
     minimapVisible: { state: true },
     haCardText: { state: true },
+    verticalDefault: { state: true },
     yamlViewOpen: { state: true },
     canvasMenu: { state: true },
     templatesOpen: { state: true },
@@ -343,6 +395,8 @@ export class FlodePanel extends LitElement {
   declare minimapVisible: boolean;
   /** Cards worded like HA's own editor (per browser); FLODE's sentences otherwise. */
   declare haCardText: boolean;
+  /** Flows without a saved direction open top to bottom (#29). */
+  declare verticalDefault: boolean;
   declare yamlViewOpen: boolean;
   /** Right-click menu on the canvas (null = closed). */
   declare canvasMenu: CanvasMenuDetail | null;
@@ -404,6 +458,7 @@ export class FlodePanel extends LitElement {
     this.shortcutsOpen = false;
     this.minimapVisible = readFlag(MINIMAP_KEY);
     this.haCardText = readFlag(HA_CARD_TEXT_KEY);
+    this.verticalDefault = readFlag(VERTICAL_KEY);
     this.yamlViewOpen = false;
     this.canvasMenu = null;
     this.templatesOpen = false;
@@ -512,6 +567,27 @@ export class FlodePanel extends LitElement {
   }
 
   /**
+   * "Done – ⌘Z to undo" once `before` was changed; on a touch screen without the
+   * shortcut, with an undo button instead.
+   */
+  private notifyUndoable(before: FlowGraph, done: StringKey, withShortcut: StringKey): void {
+    // Not taken (a blueprint flow says so itself): nothing to undo.
+    if (!this.flow || this.flow.graph === before) return;
+    if (!isTouch()) {
+      this.notify(t(this.language, withShortcut));
+      return;
+    }
+    // Only while that change is still the last one (not after further edits or in another tab).
+    const changed = this.flow?.graph;
+    notify(this, t(this.language, done), {
+      text: t(this.language, 'undo'),
+      action: () => {
+        if (changed && this.flow?.graph === changed) this.undo();
+      },
+    });
+  }
+
+  /**
    * Runs the confirmed "run from here" with HA's `execute_script` and lists it
    * under "Runs" (HA keeps no trace for it), then reads what HA's logbook
    * recorded for its context.
@@ -572,9 +648,10 @@ export class FlodePanel extends LitElement {
   // ---- import / export / copy / merge ------------------------------------------
 
   /** An imported flow (pasted YAML, FLODE file) opens as a new, unsaved draft. */
-  private openImported(flow: ImportedFlow): void {
+  private async openImported(flow: ImportedFlow): Promise<void> {
     const name = flow.graph.name || newFlowName(this.language, flow.kind);
     this.yamlImportOpen = false;
+    const graph = await this.inDefaultDirection(flow.graph);
     this.openTab({
       item: {
         kind: flow.kind,
@@ -584,7 +661,7 @@ export class FlodePanel extends LitElement {
         enabled: true,
         lastTriggered: null,
       },
-      graph: { ...flow.graph, id: randomId(), name },
+      graph: { ...graph, id: randomId(), name },
       isNew: true,
       registryEntry: null,
     });
@@ -594,7 +671,7 @@ export class FlodePanel extends LitElement {
   private async importJson(): Promise<void> {
     try {
       const flow = await pickFlowJson();
-      if (flow) this.openImported(flow);
+      if (flow) await this.openImported(flow);
     } catch (error) {
       this.notify(`${t(this.language, 'ioImportFailed')} ${errorMessage(error)}`);
     }
@@ -648,7 +725,10 @@ export class FlodePanel extends LitElement {
       }
       // Laid out as one flow right away — not the source automations side by side.
       const { graph: mergedGraph, warnings } = mergeAutomations(sources);
-      const merged = await layoutGraph(mergedGraph);
+      // Laid out once, the way flows open.
+      const merged = this.verticalDefault
+        ? await this.inDefaultDirection(mergedGraph)
+        : await layoutGraph(mergedGraph);
       const name = t(this.language, 'mergeName').replace(
         '{names}',
         items.map((item) => item.name).join(' + ')
@@ -710,6 +790,71 @@ export class FlodePanel extends LitElement {
             </ha-dropdown-item>`
       )}
     </ha-dropdown>`;
+  }
+
+  /**
+   * "Waagerecht / Senkrecht anordnen": the flow laid out running `direction`
+   * (#29) — ticked when `current` already runs so.
+   */
+  private directionEntry(direction: FlowDirection, current?: FlowDirection): MenuItem {
+    const down = direction === 'down';
+    return {
+      id: down ? 'tidyDown' : 'tidyRight',
+      icon: direction === current ? 'mdi:check' : DIRECTION_ICON[direction],
+      label: t(this.language, down ? 'tidyDown' : 'tidyRight'),
+      run: () => void this.tidy(direction),
+    };
+  }
+
+  /** Lay the flow out either way, and which way flows open. */
+  private directionEntries(current: FlowDirection): MenuEntry[] {
+    return [
+      this.directionEntry('right', current),
+      this.directionEntry('down', current),
+      'divider',
+      this.verticalDefaultEntry(),
+    ];
+  }
+
+  /** "Flows immer senkrecht öffnen", ticked while on. */
+  private verticalDefaultEntry(): MenuItem {
+    return {
+      id: 'verticalDefault',
+      icon: this.verticalDefault ? 'mdi:checkbox-marked-outline' : 'mdi:checkbox-blank-outline',
+      label: t(this.language, 'verticalDefault'),
+      run: () => this.toggleVerticalDefault(),
+    };
+  }
+
+  /**
+   * "Aufräumen" the way the flow runs, and turning it the other way (#29) —
+   * in the right-click menu.
+   */
+  private tidyEntries(flow: OpenFlow): MenuItem[] {
+    const hint = shortcutHint('tidy');
+    return [
+      {
+        id: 'tidy',
+        icon: 'mdi:auto-fix',
+        label: t(this.language, 'tidy'),
+        run: () => void this.tidy(),
+        ...(hint ? { hint } : {}),
+      },
+      this.directionEntry(flowAxis(flow.graph).direction === 'down' ? 'right' : 'down'),
+    ];
+  }
+
+  /** The toolbar's direction menu (#29): lay the flow out either way, and which way flows open. */
+  private renderDirectionMenu(flow: OpenFlow) {
+    const direction = flowAxis(flow.graph).direction;
+    const label = t(this.language, direction === 'down' ? 'directionDown' : 'directionRight');
+    return this.renderMenu(
+      this.directionEntries(direction),
+      html`<ha-icon-button slot="trigger" .label=${label}>
+        <ha-icon icon=${DIRECTION_ICON[direction]}></ha-icon>
+      </ha-icon-button>`,
+      { placement: 'bottom-start' }
+    );
   }
 
   /**
@@ -781,16 +926,7 @@ export class FlodePanel extends LitElement {
         })
       );
     } else if (menu.after) {
-      // A trigger's "+": what can follow a trigger, connected to it.
-      const after = menu.after;
-      for (const kind of ['condition', 'action'] as const) {
-        entries.push({
-          id: `add-${kind}`,
-          icon: NODE_META[kind].icon,
-          label: typeLabel(kind, language),
-          run: () => void this.openAddDialog(kind, after),
-        });
-      }
+      entries.push(...this.addAfterEntries(flow, menu.after));
     } else {
       const copied = this.copiedNode;
       if (copied) {
@@ -818,7 +954,7 @@ export class FlodePanel extends LitElement {
         hinted('fit', 'mdi:fit-to-screen-outline', t(language, 'fit'), () =>
           this.canvas?.fitView()
         ),
-        hinted('tidy', 'mdi:auto-fix', t(language, 'tidy'), () => void this.tidy())
+        ...this.tidyEntries(flow)
       );
     }
     return this.renderMenu(
@@ -836,6 +972,53 @@ export class FlodePanel extends LitElement {
         },
       }
     );
+  }
+
+  /**
+   * A card's "+" with a choice: after a trigger what can follow it; on an output
+   * that already leads on, in between or beside what follows.
+   */
+  private addAfterEntries(flow: OpenFlow, after: AddAt): MenuEntry[] {
+    const language = this.language;
+    const source = flow.graph.nodes.find((n) => n.id === after.source);
+    const leadsOn =
+      !!source && outgoing(flow.graph, source.id, after.sourceHandle ?? null).length > 0;
+    const add = (id: string, icon: string, label: string, kind: StepKind, at: AddAt): MenuItem => ({
+      id,
+      icon,
+      label,
+      run: () => void this.openAddDialog(kind, at),
+    });
+    const between = { ...after, between: true };
+    if (source?.type === 'trigger' && !leadsOn) {
+      return (['condition', 'action'] as const).map((kind) =>
+        add(`add-${kind}`, NODE_META[kind].icon, typeLabel(kind, language), kind, after)
+      );
+    }
+    if (source?.type === 'trigger') {
+      // After a trigger that already leads on: a condition belongs in between, beside it makes no sense.
+      return [
+        add(
+          'insert-condition',
+          NODE_META.condition.icon,
+          t(language, 'insertConditionBetween'),
+          'condition',
+          between
+        ),
+        add(
+          'insert-action',
+          NODE_META.action.icon,
+          t(language, 'insertActionBetween'),
+          'action',
+          between
+        ),
+        add('add-parallel', 'mdi:call-split', t(language, 'addParallel'), 'action', after),
+      ];
+    }
+    return [
+      add('insert-between', 'mdi:source-commit', t(language, 'insertBetween'), 'action', between),
+      add('add-parallel', 'mdi:call-split', t(language, 'addParallel'), 'action', after),
+    ];
   }
 
   private runFromLabel(): string {
@@ -877,6 +1060,9 @@ export class FlodePanel extends LitElement {
       if (this.future.length > 0)
         command('redo', t(language, 'redo'), 'mdi:redo', () => this.redo());
       command('tidy', t(language, 'tidy'), 'mdi:auto-fix', () => void this.tidy());
+      for (const item of [this.directionEntry('right'), this.directionEntry('down')]) {
+        command(item.id, item.label, item.icon, item.run);
+      }
       command('fit', t(language, 'fit'), 'mdi:fit-to-screen-outline', () => this.canvas?.fitView());
       command('minimap', t(language, 'minimap'), 'mdi:map-outline', () => this.toggleMinimap());
       command('haCardText', t(language, 'haCardText'), 'mdi:home-assistant', () =>
@@ -975,6 +1161,9 @@ export class FlodePanel extends LitElement {
       command('ai', t(language, 'aiButton'), 'mdi:creation', () => {
         this.aiOpen = true;
       });
+    // Also on the start page: it decides how flows open.
+    const vertical = this.verticalDefaultEntry();
+    command(vertical.id, vertical.label, vertical.icon, vertical.run);
     if (hass) {
       for (const item of [...listFlows(hass, 'automation'), ...listFlows(hass, 'script')]) {
         entries.push({
@@ -996,22 +1185,50 @@ export class FlodePanel extends LitElement {
    * saved. Name, description, mode and variables only change when the reply's
    * YAML wrote them (`present`: its top-level keys).
    */
-  private onAssistApply(event: CustomEvent<{ graph: FlowGraph; present?: string[] }>): void {
+  private async onAssistApply(
+    event: CustomEvent<{ graph: FlowGraph; present?: string[] }>
+  ): Promise<void> {
     const { graph: proposal, present } = event.detail;
     const flow = this.flow;
-    if (!flow) return;
-    this.commit(applyProposal(flow.graph, proposal, present && new Set(present)));
+    if (flow) await this.applyAssist(flow.graph.id, proposal, present && new Set(present));
+  }
+
+  /** Puts the assistant's proposal into the flow `graphId`, onto whatever it is by then. */
+  private async applyAssist(
+    graphId: string,
+    proposal: FlowGraph,
+    present: Set<string> | undefined
+  ): Promise<void> {
+    const flow = this.flow;
+    if (!flow || flow.graph.id !== graphId) {
+      this.notify(t(this.language, 'assistNotApplied'));
+      return;
+    }
+    const applied = applyProposal(flow.graph, proposal, present);
+    // The proposal comes laid out left to right — a flow running top to bottom stays so
+    // (should laying out fail, the change still goes in, just as it came).
+    const laidOut =
+      flowAxis(flow.graph).direction === 'down'
+        ? await layoutGraph(applied).catch(() => applied)
+        : applied;
+    // Changed while laying out (an edit, undo): apply it to that instead of undoing it.
+    if (this.flow !== flow) {
+      await this.applyAssist(graphId, proposal, present);
+      return;
+    }
+    this.commit(laidOut);
     this.selectedId = null;
     void this.updateComplete.then(() => this.canvas?.fitView());
-    this.notify(t(this.language, 'assistAppliedToast'));
+    this.notifyUndoable(flow.graph, 'assistAppliedDone', 'assistAppliedToast');
   }
 
   /** A draft from "Build with AI" opens as a new, unsaved tab. */
-  private onAiDraft(
+  private async onAiDraft(
     event: CustomEvent<{ graph: FlowGraph; unknownEntityIds: string[]; kind: FlowKind }>
-  ): void {
-    const { graph, unknownEntityIds, kind } = event.detail;
+  ): Promise<void> {
+    const { unknownEntityIds, kind } = event.detail;
     this.aiOpen = false;
+    const graph = await this.inDefaultDirection(event.detail.graph);
     const name = graph.name || newFlowName(this.language, kind);
     this.openTab({
       item: {
@@ -1120,6 +1337,8 @@ export class FlodePanel extends LitElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.toolsSize.disconnect();
+    this.watchedTools = null;
     window.removeEventListener('keydown', this.onWindowKeyDown, true);
     window.removeEventListener('pagehide', this.onPageHide);
     window.removeEventListener('focus', this.onWindowFocus);
@@ -1128,6 +1347,8 @@ export class FlodePanel extends LitElement {
   }
 
   protected willUpdate(changed: PropertyValues<this>): void {
+    // A menu at a card or "+" belongs to the flow as it was (an edit, undo, another tab).
+    if (changed.has('flow') && changed.get('flow') !== undefined) this.canvasMenu = null;
     if (changed.has('hass') && this.hass) {
       loadSummaryTranslations(this.hass);
       // First `hass` after a reload: refresh the restored active tab.
@@ -1149,7 +1370,27 @@ export class FlodePanel extends LitElement {
     this.haList = ready && HA_LIST_TAGS.every((tag) => customElements.get(tag) !== undefined);
   }
 
+  /** The tool strip and its buttons as they grow (HA's buttons take their size late). */
+  private toolsSize = new ResizeObserver(() => {
+    if (this.watchedTools) markScrollable(this.watchedTools);
+  });
+  private watchedTools: HTMLElement | null = null;
+
+  private watchTools(): void {
+    const tools = this.renderRoot.querySelector<HTMLElement>('.tools');
+    if (tools === this.watchedTools) {
+      if (tools) markScrollable(tools);
+      return;
+    }
+    this.toolsSize.disconnect();
+    this.watchedTools = tools;
+    if (!tools) return;
+    this.toolsSize.observe(tools);
+    for (const child of tools.children) this.toolsSize.observe(child);
+  }
+
   protected updated(changed: PropertyValues<this>): void {
+    this.watchTools();
     // ⌘B / "+": the keyboard goes into the menu (↑↓, Enter, Esc).
     if (changed.has('addOpen') && this.addOpen) this.addMenuButtons()[0]?.focus();
     if (changed.has('selectedId') && this.selectedId && isNarrow()) {
@@ -1211,11 +1452,12 @@ export class FlodePanel extends LitElement {
     if (!result.success || !result.graph) throw new Error(result.errors?.join('\n') ?? 'parse');
     report(t(language, 'progressRegistry'), 0.8);
     const registryEntry = await getRegistryEntry(hass, item.entityId);
+    const graph = await this.inDefaultDirection(result.graph);
     report(t(language, 'progressOpen'), 1);
     return {
       item,
       graph: {
-        ...result.graph,
+        ...graph,
         name: item.name,
         description: typeof config.description === 'string' ? config.description : '',
       },
@@ -1554,6 +1796,7 @@ export class FlodePanel extends LitElement {
         version: 1,
         metadata: kind === 'script' ? { mode: 'single', kind: 'script' } : { mode: 'single' },
         description: '',
+        ...(this.verticalDefault ? { direction: 'down' as const } : {}),
       },
       isNew: true,
       registryEntry: null,
@@ -1895,12 +2138,12 @@ export class FlodePanel extends LitElement {
       (!at && kind !== 'trigger'
         ? flow.graph.nodes.find((n) => n.id === this.selectedId)
         : undefined);
-    // Where it was asked for (right-click, dropped connection); after a card one column
-    // to its right; otherwise where the user is looking.
+    // Where it was asked for (right-click, dropped connection); after a card one step
+    // further along the flow; otherwise where the user is looking.
     const wanted =
       at?.position ??
       (beside
-        ? { x: beside.position.x + NODE_WIDTH + 120, y: beside.position.y }
+        ? nextPosition(flow.graph, beside.position)
         : (this.canvas?.visibleCenter() ?? { x: 0, y: 0 }));
     const { graph, id } = addNode(
       flow.graph,
@@ -1909,6 +2152,11 @@ export class FlodePanel extends LitElement {
       undefined,
       data
     );
+    if (at?.between && source) {
+      this.commit(insertBetween(graph, source.id, at.sourceHandle ?? null, id));
+      this.selectNewCard(id);
+      return;
+    }
     const connected =
       at?.source && source
         ? connect(graph, { source: at.source, sourceHandle: at.sourceHandle ?? null, target: id })
@@ -2028,6 +2276,12 @@ export class FlodePanel extends LitElement {
   private onWindowKeyDown = (event: KeyboardEvent): void => {
     if (!this.isConnected) return;
     const shortcut = matchShortcut(event);
+    if (event.key === 'Escape' && this.canvasMenu) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this.canvasMenu = null;
+      return;
+    }
     if (!shortcut) {
       this.closeSideOnEscape(event);
       return;
@@ -2205,6 +2459,21 @@ export class FlodePanel extends LitElement {
     writeFlag(HA_CARD_TEXT_KEY, this.haCardText);
   }
 
+  private toggleVerticalDefault(): void {
+    this.verticalDefault = !this.verticalDefault;
+    writeFlag(VERTICAL_KEY, this.verticalDefault);
+  }
+
+  /**
+   * A flow as it opens: one without a saved direction is laid out top to
+   * bottom when that is the default (#29) — left to right it stays as saved.
+   */
+  private async inDefaultDirection(graph: FlowGraph): Promise<FlowGraph> {
+    if (graph.direction || !this.verticalDefault) return graph;
+    if (visibleGraph(graph).nodes.length === 0) return { ...graph, direction: 'down' };
+    return layoutGraph(graph, 'down');
+  }
+
   /** The selected card — never the hidden script start. */
   private selectedCard(): FlowNode | null {
     const node = this.flow?.graph.nodes.find((n) => n.id === this.selectedId);
@@ -2231,7 +2500,11 @@ export class FlodePanel extends LitElement {
     }
     // The copy draws the same branches: its box starts below the original's.
     const box = drawnBox(view, node.id);
-    const drawn = freePosition(view.graph, { x: box.x, y: box.bottom + 40 + box.y - box.top });
+    const { axis } = view;
+    const drawn = freePosition(
+      view.graph,
+      axis.at(axis.main(box), box.crossEnd + 40 + axis.cross(box) - box.crossStart)
+    );
     const { graph, id } = duplicateNode(flow.graph, node, drawn);
     if (graph === flow.graph) return;
     const placed = storedPosition(cachedBranchView(graph), id, drawn);
@@ -2276,14 +2549,16 @@ export class FlodePanel extends LitElement {
 
   /**
    * "Aufräumen": re-runs the import layout (ELK, from the transpiler) on the
-   * current flow — one undo step, then frames everything.
+   * current flow — one undo step, then frames everything. Runs the way the
+   * flow does, or turned to `direction` (#29).
    */
-  private async tidy(): Promise<void> {
+  private async tidy(direction?: FlowDirection): Promise<void> {
     const flow = this.flow;
-    if (!flow || visibleGraph(flow.graph).nodes.length < 2) return;
+    // Tidying needs two cards; turning the flow works with any.
+    if (!flow || (!direction && visibleGraph(flow.graph).nodes.length < 2)) return;
     let tidied: FlowGraph;
     try {
-      tidied = await layoutGraph(flow.graph);
+      tidied = await layoutGraph(flow.graph, direction);
     } catch (error) {
       this.notify(`${t(this.language, 'tidy')}: ${errorMessage(error)}`);
       return;
@@ -2294,7 +2569,7 @@ export class FlodePanel extends LitElement {
     await this.updateComplete;
     this.canvas?.fitView();
     // HA's own toast (the same event HA's panels use for "Saved" etc.).
-    this.notify(t(this.language, 'tidied'));
+    this.notifyUndoable(flow.graph, 'tidiedDone', 'tidied');
   }
 
   // ---- render ----------------------------------------------------------------
@@ -2390,6 +2665,9 @@ export class FlodePanel extends LitElement {
           this.shortcutsOpen = true;
         },
       },
+      // Also here: on a phone there is no ⌘K, and it decides how flows open (#29).
+      'divider',
+      this.verticalDefaultEntry(),
     ];
   }
 
@@ -2590,7 +2868,9 @@ export class FlodePanel extends LitElement {
             ${this.renderLastRun(flow)}
           </div>
           <div class="dialog-host" hidden></div>
-          <div class="tools">
+          <div class="tools" @scroll=${(e: Event) => {
+            if (e.currentTarget instanceof HTMLElement) markScrollable(e.currentTarget);
+          }}>
             <div class="tool-group">
               <div class="add">
                 <ha-icon-button .label=${labelWithHint(t(language, 'add'), 'add')} @click=${() => {
@@ -2643,6 +2923,7 @@ export class FlodePanel extends LitElement {
               >
                 <ha-icon icon="mdi:auto-fix"></ha-icon>
               </ha-icon-button>
+              ${this.renderDirectionMenu(flow)}
               <ha-icon-button
                 class="minimap-toggle ${this.minimapVisible ? 'active' : ''}"
                 .label=${labelWithHint(t(language, 'minimap'), 'minimap')}
@@ -2757,6 +3038,10 @@ export class FlodePanel extends LitElement {
                   this.shortcutsOpen = true;
                 },
               },
+              // On a phone the toolbar's direction button is out of sight (#29).
+              ...(isNarrow()
+                ? ['divider' as const, ...this.directionEntries(flowAxis(flow.graph).direction)]
+                : []),
             ])}
           </div>
         </header>
@@ -2776,6 +3061,9 @@ export class FlodePanel extends LitElement {
             .saveIssue=${this.saveProblem?.issue ?? null}
             @graph-change=${(e: CustomEvent<{ graph: FlowGraph }>) => this.commit(e.detail.graph)}
             @add-next=${this.onAddNext}
+            @view-move=${() => {
+              this.canvasMenu = null;
+            }}
             @canvas-menu=${(e: CustomEvent<CanvasMenuDetail>) => {
               this.canvasMenu = e.detail;
             }}
@@ -3016,7 +3304,7 @@ export class FlodePanel extends LitElement {
         @closed=${() => {
           this.yamlImportOpen = false;
         }}
-        @imported=${(e: CustomEvent<ImportedFlow>) => this.openImported(e.detail)}
+        @imported=${(e: CustomEvent<ImportedFlow>) => void this.openImported(e.detail)}
       ></flode-yaml-import>
       <flode-runfrom
         .hass=${this.hass}
@@ -3699,6 +3987,25 @@ export class FlodePanel extends LitElement {
       }
       .tools::-webkit-scrollbar {
         display: none;
+      }
+      /* More buttons past an edge: that edge fades out. */
+      .tools.more,
+      .tools.less {
+        --fade-left: 0px;
+        --fade-right: 0px;
+        mask-image: linear-gradient(
+          to right,
+          transparent,
+          #000 var(--fade-left),
+          #000 calc(100% - var(--fade-right)),
+          transparent
+        );
+      }
+      .tools.less {
+        --fade-left: 48px;
+      }
+      .tools.more {
+        --fade-right: 48px;
       }
       .tool-label,
       .status,

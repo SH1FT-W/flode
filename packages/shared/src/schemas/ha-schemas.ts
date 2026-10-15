@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MaxExceededSchema, PositionSchema } from './base';
+import { FlowDirectionSchema, MaxExceededSchema, PositionSchema } from './base';
 import { type TargetIds, TargetIdsSchema } from './ha-entities';
 
 /**
@@ -308,6 +308,11 @@ export const FlodeMetadataSchema = z.object({
   strategy: z.enum(['native', 'state-machine']),
   /** How far the user moved steps inside a `choose` / `if` branch from where FLODE draws them (`FlowGraph.branchOffsets`). */
   branch_offsets: z.record(z.string(), PositionSchema).optional(),
+  /**
+   * Which way the flow was laid out (`FlowGraph.direction`); none = left to
+   * right. An unknown value is dropped, not the whole layout.
+   */
+  direction: FlowDirectionSchema.optional().catch(undefined),
 });
 export type FlodeMetadata = z.infer<typeof FlodeMetadataSchema>;
 
@@ -420,6 +425,13 @@ export const HADelaySchema = z.looseObject({
   delay: z.union([z.string(), DurationMappingSchema]),
 });
 export type HADelay = z.infer<typeof HADelaySchema>;
+
+/** A delay as FLODE keeps it: HA reads a bare number as seconds. */
+export function delayValue(delay: number): { seconds: number };
+export function delayValue(delay: unknown): unknown;
+export function delayValue(delay: unknown): unknown {
+  return typeof delay === 'number' ? { seconds: delay } : delay;
+}
 
 /**
  * Zod schema for Home Assistant wait action (wait_template or wait_for_trigger).

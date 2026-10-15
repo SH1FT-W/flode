@@ -316,6 +316,7 @@ export class FlodeInspector extends LitElement {
     const ui = hasUiEditor(kind, step, descriptions);
     const description = platformDescription(kind, step, descriptions);
     const yaml = this.yamlMode || !ui;
+    // In a sidebar HA's editors report their YAML field as `yaml-changed`, the form as `value-changed`.
     const onChange = (e: CustomEvent<{ value: unknown }>) => this.onStepChanged(node, kind, e);
     // HA asks for YAML when the step has something its form can't show. A nested
     // step's row already shows just that step as YAML, like HA's own editor.
@@ -334,6 +335,7 @@ export class FlodeInspector extends LitElement {
           .uiSupported=${ui}
           .inSidebar=${true}
           @value-changed=${onChange}
+          @yaml-changed=${onChange}
           @ui-mode-not-available=${onUiUnavailable}
         ></ha-automation-trigger-editor>`;
       case 'condition':
@@ -346,6 +348,7 @@ export class FlodeInspector extends LitElement {
           .uiSupported=${ui}
           .inSidebar=${true}
           @value-changed=${onChange}
+          @yaml-changed=${onChange}
           @ui-mode-not-available=${onUiUnavailable}
         ></ha-automation-condition-editor>`;
       default:
@@ -357,6 +360,7 @@ export class FlodeInspector extends LitElement {
           .uiSupported=${ui}
           .inSidebar=${true}
           @value-changed=${onChange}
+          @yaml-changed=${onChange}
           @ui-mode-not-available=${onUiUnavailable}
         ></ha-automation-action-editor>`;
     }

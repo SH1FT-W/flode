@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { AutomationModeSchema, MaxExceededSchema, PositionSchema } from './base';
+import {
+  AutomationModeSchema,
+  FlowDirectionSchema,
+  MaxExceededSchema,
+  PositionSchema,
+} from './base';
 import { EdgeSchema } from './edges';
 import { NodeSchema } from './nodes';
 
@@ -118,6 +123,8 @@ export const FlowGraphSchema = z.object({
    * branch card id (`<block>::else.1`), relative to where they'd be drawn.
    */
   branchOffsets: z.record(z.string(), PositionSchema).optional(),
+  /** Which way the cards were laid out; none = left to right. An unknown value counts as none. */
+  direction: FlowDirectionSchema.optional().catch(undefined),
 });
 export type FlowGraph = z.infer<typeof FlowGraphSchema>;
 

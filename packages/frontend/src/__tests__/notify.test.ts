@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { copyToClipboard } from '../notify';
+import { copyToClipboard, notify } from '../notify';
 
 function toasts(): { target: EventTarget; messages: string[] } {
   const target = new EventTarget();
@@ -40,5 +40,32 @@ describe('copyToClipboard', () => {
     await copyToClipboard(missing.target, () => 'a: 1', 'Kopiert');
     expect(missing.messages).toHaveLength(1);
     expect(missing.messages[0]).not.toBe('Kopiert');
+  });
+});
+
+describe('notify', () => {
+  it("hands HA's toast a button only when there is one", () => {
+    const target = new EventTarget();
+    const details: unknown[] = [];
+    target.addEventListener('hass-notification', (event) => {
+      if (event instanceof CustomEvent) details.push(event.detail);
+    });
+    let undone = 0;
+    notify(target, 'Aufgeräumt', { text: 'Rückgängig', action: () => undone++ });
+    notify(target, 'Gespeichert');
+    expect(details[1]).toEqual({ message: 'Gespeichert' });
+    const first = details[0];
+    expect(first).toMatchObject({ message: 'Aufgeräumt', action: { text: 'Rückgängig' } });
+    if (first && typeof first === 'object' && 'action' in first) {
+      const { action } = first;
+      if (
+        action &&
+        typeof action === 'object' &&
+        'action' in action &&
+        typeof action.action === 'function'
+      )
+        action.action();
+    }
+    expect(undone).toBe(1);
   });
 });

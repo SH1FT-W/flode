@@ -5,5 +5,12 @@ export function isNarrow(): boolean {
   return window.matchMedia(NARROW_QUERY).matches;
 }
 
+/** Touch screens (no keyboard to hint ⌘Z at) — same query as the CSS. */
+const TOUCH_QUERY = '(pointer: coarse)';
+
+export function isTouch(): boolean {
+  return window.matchMedia(TOUCH_QUERY).matches;
+}
+
 /** Share of the pane's height the phone bottom sheet covers (`.side.open`: 58 % + its margin). */
 export const SHEET_SHARE = 0.6;

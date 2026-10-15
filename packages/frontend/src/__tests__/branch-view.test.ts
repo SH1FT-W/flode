@@ -210,19 +210,23 @@ describe('branch view (#27)', () => {
     expect(nodes.get('n')?.position.x).toBeGreaterThan(
       nodes.get(branchCardId('b', ['else', 1, 'choose', 1, 'sequence', 1]))?.position.x ?? 0
     );
-    // Every inner branch ends at `n` — the empty default straight from its output.
-    const intoN = view.graph.edges
-      .filter((e) => e.target === 'n')
-      .map((e) => [e.source, e.sourceHandle]);
-    expect(intoN).toEqual(
+    // The inner branches meet at the inner block's "+" (the empty default straight
+    // from its output); from there one line goes on to `n`.
+    const innerTail = view.tails.get(inner);
+    expect(innerTail?.through).toBe(true);
+    expect(innerTail?.exits.map((e) => [e.source, e.sourceHandle])).toEqual(
       expect.arrayContaining([
-        [branchCardId('b', ['then', 0]), undefined],
         [innerFirst, undefined],
         [branchCardId('b', ['else', 1, 'choose', 1, 'sequence', 1]), undefined],
         [inner, 'b2'],
       ])
     );
-    expect(intoN).toHaveLength(4);
+    const intoN = view.graph.edges.filter((e) => e.target === 'n');
+    expect(intoN.map((e) => [e.source, e.sourceHandle])).toEqual([
+      [branchCardId('b', ['then', 0]), undefined],
+      [inner, undefined],
+    ]);
+    expect(view.start.get(intoN[1]?.id ?? '')).toEqual(innerTail?.at);
     expect(new Set(view.edgeOrigin.values())).toEqual(new Set(['e2']));
   });
 

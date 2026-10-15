@@ -183,6 +183,8 @@ const STRINGS = {
     assistApply: 'Änderung übernehmen',
     assistApplied: 'Übernommen',
     assistAppliedToast: 'Änderung übernommen – ⌘Z macht sie rückgängig',
+    assistAppliedDone: 'Änderung übernommen',
+    assistNotApplied: 'Nicht übernommen: Ein anderer Flow ist jetzt offen.',
     assistNoTriggers: 'Der Vorschlag hat keine Auslöser – er würde alle Auslöser löschen.',
     assistStale:
       'Der Ablauf wurde seit der Frage geändert – übernehmen ersetzt diese Änderungen durch den Vorschlag.',
@@ -257,6 +259,10 @@ const STRINGS = {
     branchThen: 'Dann',
     branchElse: 'Sonst',
     addInBranch: 'Aktion in diesem Zweig hinzufügen',
+    insertBetween: 'Dazwischen einfügen',
+    insertConditionBetween: 'Bedingung dazwischen einfügen',
+    insertActionBetween: 'Aktion dazwischen einfügen',
+    addParallel: 'Parallel hinzufügen',
     branchContext: '{block} › {branch} · Schritt {n}',
     fields: 'Felder',
     emptyHint: 'Womit soll die Automation starten?',
@@ -271,6 +277,12 @@ const STRINGS = {
     closeTab: 'Tab schließen',
     tidy: 'Aufräumen',
     tidied: 'Aufgeräumt – ⌘Z macht es rückgängig',
+    tidiedDone: 'Aufgeräumt',
+    tidyRight: 'Waagerecht anordnen',
+    tidyDown: 'Senkrecht anordnen',
+    verticalDefault: 'Flows standardmäßig senkrecht öffnen',
+    directionRight: 'Richtung: waagerecht',
+    directionDown: 'Richtung: senkrecht',
     mode: 'Modus',
     mode_single: 'Einzeln',
     mode_restart: 'Neustart',
@@ -330,18 +342,18 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new330ErrorsTitle: 'Fehler zeigen auf die Karte',
-    new330ErrorsText:
-      'Lehnt Home Assistant das Speichern ab, sagt FLODE auf Deutsch, was fehlt, markiert die betroffene Karte rot und springt auf Wunsch hin.',
-    new330EditingTitle: 'Schneller bauen',
-    new330EditingText:
-      'Duplizieren setzt die Kopie verbunden direkt dahinter, Kopieren und Einfügen geht auch in Zweigen, und das „+“ am Auslöser bietet gleich Bedingung oder Aktion an.',
-    new330BlueprintTitle: 'Blueprints ansehen',
-    new330BlueprintText:
-      'Automationen aus einem Blueprint öffnen jetzt als Ablauf zum Lesen. Auch Automationen ohne Auslöser lassen sich öffnen.',
-    new330TouchTitle: 'Besser auf Handy und Tablet',
-    new330TouchText:
-      'Größere Knöpfe zum Antippen, der Ablauf bleibt über dem unteren Blatt sichtbar, und „Ab hier ausführen“ nimmt die Daten des letzten Auslösers mit.',
+    new340VerticalTitle: 'Flows von oben nach unten',
+    new340VerticalText:
+      'Jeder Flow läuft auf Wunsch senkrecht: Der Pfeil neben „Aufräumen“ dreht ihn, und eine Einstellung öffnet alle Flows gleich senkrecht. Ideal für lange Automationen mit vielen Zweigen.',
+    new340BetweenTitle: 'Dazwischen oder parallel',
+    new340BetweenText:
+      'Ein „+“ auf einer Linie, an der schon etwas hängt, fragt jetzt: dazwischen einfügen oder parallel hinzufügen. Am Auslöser auch als Bedingung.',
+    new340BlockTitle: 'Weiter nach Wenn-dann und Auswählen',
+    new340BlockText:
+      'Hinter einem Wenn-dann oder Auswählen am Ende gibt es ein „+“ für den nächsten Schritt nach allen Zweigen. Viele Auslöser stehen senkrecht in Reihen.',
+    new340TouchTitle: 'Handy und Tablet',
+    new340TouchText:
+      '„+“ lassen sich besser treffen, das Tablet öffnet Flows lesbar, und nach dem Aufräumen gibt es einen Knopf „Rückgängig“.',
   },
   en: {
     title: 'FLODE',
@@ -521,6 +533,8 @@ const STRINGS = {
     assistApply: 'Apply change',
     assistApplied: 'Applied',
     assistAppliedToast: 'Change applied – ⌘Z to undo',
+    assistAppliedDone: 'Change applied',
+    assistNotApplied: 'Not applied: another flow is open now.',
     assistNoTriggers: 'The proposal has no triggers – it would delete all triggers.',
     assistStale:
       'The flow changed since you asked – applying replaces those changes with the proposal.',
@@ -593,6 +607,10 @@ const STRINGS = {
     branchThen: 'Then',
     branchElse: 'Else',
     addInBranch: 'Add action to this branch',
+    insertBetween: 'Insert in between',
+    insertConditionBetween: 'Insert condition in between',
+    insertActionBetween: 'Insert action in between',
+    addParallel: 'Add in parallel',
     branchContext: '{block} › {branch} · step {n}',
     fields: 'Fields',
     emptyHint: 'What should start the automation?',
@@ -607,6 +625,12 @@ const STRINGS = {
     closeTab: 'Close tab',
     tidy: 'Tidy up',
     tidied: 'Tidied up – ⌘Z to undo',
+    tidiedDone: 'Tidied up',
+    tidyRight: 'Arrange left to right',
+    tidyDown: 'Arrange top to bottom',
+    verticalDefault: 'Open flows top to bottom by default',
+    directionRight: 'Direction: left to right',
+    directionDown: 'Direction: top to bottom',
     mode: 'Mode',
     mode_single: 'Single',
     mode_restart: 'Restart',
@@ -666,18 +690,18 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new330ErrorsTitle: 'Errors point to the card',
-    new330ErrorsText:
-      'When Home Assistant refuses to save, FLODE says in plain words what is missing, marks the card red and takes you there.',
-    new330EditingTitle: 'Build faster',
-    new330EditingText:
-      'Duplicate puts a connected copy right behind the card, copy and paste work inside branches too, and the "+" on a trigger offers condition or action right away.',
-    new330BlueprintTitle: 'See blueprints',
-    new330BlueprintText:
-      'Automations made from a blueprint now open as a flow to read. Automations without a trigger open as well.',
-    new330TouchTitle: 'Better on phone and tablet',
-    new330TouchText:
-      'Bigger buttons to tap, the flow stays visible above the bottom sheet, and "Run from here" takes the data of the last trigger along.',
+    new340VerticalTitle: 'Flows top to bottom',
+    new340VerticalText:
+      'Any flow can run top to bottom: the arrow next to "Tidy up" turns it, and a setting opens all flows that way. Made for long automations with many branches.',
+    new340BetweenTitle: 'In between or in parallel',
+    new340BetweenText:
+      'A "+" on a line that already leads on now asks: insert in between or add in parallel. On a trigger also as a condition.',
+    new340BlockTitle: 'Go on after if and choose',
+    new340BlockText:
+      'An if or choose block at the end gets a "+" for the next step after all its branches. Many triggers stand in rows when the flow runs top to bottom.',
+    new340TouchTitle: 'Phone and tablet',
+    new340TouchText:
+      '"+" buttons are easier to hit, tablets open flows readable, and tidying up shows an "Undo" button.',
   },
 } as const;
 

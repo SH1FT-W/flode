@@ -8,6 +8,7 @@ import {
   ensureScriptEntry,
   graphBounds,
   handlePosition,
+  insertBetween,
   moveNode,
   NODE_HEIGHT,
   NODE_TYPES,
@@ -41,6 +42,73 @@ const base: FlowGraph = {
 };
 
 describe('flow-model', () => {
+  it('inserts a card between an output and what follows it, moving the rest on', () => {
+    const chain = connect(base, { source: 'c', sourceHandle: 'true', target: 'a' });
+    const added = addNode(chain, 'action', { x: 0, y: 400 }, 'n').graph;
+    const graph = insertBetween(added, 'c', 'true', 'n');
+    expect(graph.edges.map((e) => [e.source, e.sourceHandle ?? null, e.target])).toEqual([
+      ['t', null, 'c'],
+      ['c', 'true', 'n'],
+      ['n', null, 'a'],
+    ]);
+    const at = (id: string) => graph.nodes.find((n) => n.id === id)?.position;
+    expect(at('n')).toEqual({ x: 600, y: 0 });
+    expect(at('a')).toEqual({ x: 600 + NODE_WIDTH + 120, y: 0 });
+    expect(at('c')).toEqual({ x: 300, y: 0 });
+    // Nothing follows the other output: the card just goes after it.
+    expect(insertBetween(added, 'c', 'false', 'n').edges.at(-1)).toMatchObject({
+      source: 'c',
+      sourceHandle: 'false',
+      target: 'n',
+    });
+  });
+
+  it('puts a step inserted after a trigger after every trigger leading to the same step', () => {
+    const second = addNode(base, 'trigger', { x: 0, y: 200 }, 't2').graph;
+    const both = connect(second, { source: 't2', sourceHandle: null, target: 'c' });
+    const added = addNode(both, 'condition', { x: 0, y: 400 }, 'n').graph;
+    const graph = insertBetween(added, 't', null, 'n');
+    expect(graph.edges.map((e) => [e.source, e.sourceHandle ?? null, e.target])).toEqual([
+      ['t', null, 'n'],
+      ['t2', null, 'n'],
+      ['n', 'true', 'c'],
+    ]);
+  });
+
+  it('leads on through a new condition by its yes', () => {
+    const chain = connect(base, { source: 'c', sourceHandle: 'true', target: 'a' });
+    const added = addNode(chain, 'condition', { x: 0, y: 400 }, 'n').graph;
+    const graph = insertBetween(added, 'c', 'true', 'n');
+    expect(graph.edges.at(-1)).toMatchObject({ source: 'n', sourceHandle: 'true', target: 'a' });
+  });
+
+  it('puts a card inserted into a loop back after the source, not onto the earlier card', () => {
+    const early = addNode(base, 'action', { x: 0, y: 200 }, 't2').graph;
+    const withEarly = connect(early, { source: 'c', sourceHandle: 'false', target: 't2' });
+    const added = addNode(withEarly, 'action', { x: 0, y: 600 }, 'n').graph;
+    const graph = insertBetween(added, 'c', 'false', 'n');
+    const at = (id: string) => graph.nodes.find((n) => n.id === id)?.position;
+    expect(at('t2')).toEqual({ x: 0, y: 200 });
+    expect(at('n')).not.toEqual(at('t2'));
+    expect(at('n')?.x).toBeGreaterThan(300);
+  });
+
+  it('inserts top to bottom one row further down, leaving a loop back in place', () => {
+    const down: FlowGraph = { ...base, direction: 'down' };
+    const looped = connect(connect(down, { source: 'c', sourceHandle: 'true', target: 'a' }), {
+      source: 'a',
+      sourceHandle: null,
+      target: 'c',
+    });
+    const placed = moveNode(moveNode(looped, 'c', 0, 200), 'a', 0, 400);
+    const added = addNode(placed, 'delay', { x: 500, y: 0 }, 'n').graph;
+    const graph = insertBetween(added, 'c', 'true', 'n');
+    const at = (id: string) => graph.nodes.find((n) => n.id === id)?.position;
+    expect(at('n')).toEqual({ x: 0, y: 400 });
+    expect(at('a')).toEqual({ x: 0, y: 400 + NODE_HEIGHT + 80 });
+    expect(at('c')).toEqual({ x: 0, y: 200 });
+  });
+
   it('adds every node type with schema-valid defaults', () => {
     let graph = base;
     for (const type of NODE_TYPES)

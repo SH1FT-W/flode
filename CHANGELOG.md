@@ -4,6 +4,30 @@ All notable changes to FLODE are documented here. Every 3.x release builds on 3.
 
 ---
 
+## [3.4.0] — 2026-10-15 — Top to bottom flows, insert in between
+
+Flows can now run top to bottom ([#29](https://github.com/SH1FT-W/flode/issues/29)), the "+" asks where a new step goes, and blocks at the end of a flow can be continued. Tested in four review rounds on desktop, phone and tablet.
+
+### Added
+- **Top to bottom flows** ([#29](https://github.com/SH1FT-W/flode/issues/29)): every flow runs left to right or top to bottom. The arrow next to "Tidy up" turns it (on a phone in the ⋮ menu), the direction is saved with the flow, and the setting "Open flows top to bottom by default" opens every flow that way. Branches, outputs, lines and the "+" buttons follow the direction.
+- **In between or in parallel**: a "+" on an output that already leads on asks whether the new step goes in between or in parallel. On a trigger it offers a condition or an action in between; with several triggers the step comes after all triggers leading there.
+- **"+" after a block**: an if or choose block at the end of the flow (or of a branch) gets a "+" for the next step after all its branches.
+- **Many triggers** stand in rows of four when the flow runs top to bottom, their lines meet above the first step.
+
+### Changed
+- **Tidy up** keeps room for expanded blocks, so branches no longer land on cards beside them. Top to bottom, Yes always stays left of No.
+- **Phone and tablet**: "+" buttons are easier to hit and never take the neighbouring output, a tablet opens flows at a readable zoom, a tall flow starts at its triggers, tidying up shows an "Undo" button, and the toolbar fades at its edge when it scrolls.
+- **Menus at a card or "+"** close with Esc, when zooming or panning, and when the flow changes.
+- **Output names** top to bottom show an option's alias, or its number when there are many.
+
+### Fixed
+- **Editing a card as YAML in the side panel** is no longer lost.
+- **Delete** removes the picked card even after a toolbar button was clicked.
+- **A delay given as a plain number** (`delay: 3`) is shown as "3 seconds" in branches too.
+- **An assistant change** made while the flow changed is applied to the current flow instead of being dropped.
+
+---
+
 ## [3.3.0] — 2026-10-15 — Clearer errors, faster building, blueprints
 
 After a full check-up and three rounds of user testing: many fixes, clearer save errors, smoother editing and better touch support.

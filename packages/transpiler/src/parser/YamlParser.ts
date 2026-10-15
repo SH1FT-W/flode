@@ -16,11 +16,13 @@ import type {
   WaitNode,
 } from '@flode/shared';
 import {
+  axisOf,
   CafeMetadataSchema,
   CONDITION_STEP_KEY,
   createRawConditionData,
   createRawStepData,
   createShorthandConditionData,
+  delayValue,
   FlowGraphMetadataSchema,
   FlowGraphSchema,
   HAConditionSchema,
@@ -479,19 +481,27 @@ export class YamlParser {
         metadata !== null && nodes.every((node) => node.id in metadata.nodes);
       if (hadMetadata && metadata && (!this.options.keepBlocks || metadataCoversNodes)) {
         const metaNodes = this.applyMetadataPositions(nodes, metadata);
-        // Validate layout: if any choose-chain edge goes right-to-left, the saved
+        // Validate layout: if any choose-chain edge runs against the flow, the saved
         // positions are stale/manually rearranged in a confusing way — recompute.
-        const nodePositionMap = new Map(metaNodes.map((n) => [n.id, n.position.x]));
+        const along = axisOf(metadata.direction);
+        const nodePositionMap = new Map(metaNodes.map((n) => [n.id, along.main(n.position)]));
         const hasBackwardsChooseChain = edges.some(
           (e) =>
             e.type === 'choose-chain' &&
             (nodePositionMap.get(e.target) ?? 0) < (nodePositionMap.get(e.source) ?? 0) - 100
         );
         savedLayout = !hasBackwardsChooseChain;
-        nodesWithPositions = savedLayout ? metaNodes : await applyHeuristicLayout(nodes, edges);
+        nodesWithPositions = savedLayout
+          ? metaNodes
+          : await applyHeuristicLayout(nodes, edges, undefined, metadata.direction);
       } else {
         // Use async heuristic layout if metadata is missing
-        nodesWithPositions = await applyHeuristicLayout(nodes, edges);
+        nodesWithPositions = await applyHeuristicLayout(
+          nodes,
+          edges,
+          undefined,
+          metadata?.direction
+        );
       }
 
       // Step 8: Build FlowGraph object
@@ -524,6 +534,8 @@ export class YamlParser {
         version: 1 as const,
         // Moved branch steps belong to the saved layout — gone when it is recomputed.
         branchOffsets: savedLayout ? metadata?.branch_offsets : undefined,
+        // The way the flow runs outlives a recomputed layout (it was laid out that way again).
+        ...(metadata?.direction ? { direction: metadata.direction } : {}),
         // Preserve user-defined variables for round-trip
         userVariables: Object.keys(userVariables).length > 0 ? userVariables : undefined,
         userTriggerVariables:
@@ -1866,7 +1878,7 @@ export class YamlParser {
         const nodeId = getNextNodeId('delay');
         const act = action as Record<string, unknown>;
         // Use spread pattern to preserve unknown properties from custom integrations
-        const { alias, delay: delayValue, enabled, ...extraProps } = act;
+        const { alias, delay: rawDelay, enabled, ...extraProps } = act;
         const delayNode: DelayNode = {
           id: nodeId,
           type: 'delay',
@@ -1875,13 +1887,12 @@ export class YamlParser {
             ...extraProps, // Preserve extra properties
             alias: typeof alias === 'string' ? alias : undefined,
             delay:
-              typeof delayValue === 'string'
-                ? delayValue
-                : // HA reads a bare number as seconds.
-                  typeof delayValue === 'number'
-                  ? { seconds: delayValue }
-                  : typeof delayValue === 'object' && delayValue !== null
-                    ? (delayValue as {
+              typeof rawDelay === 'string'
+                ? rawDelay
+                : typeof rawDelay === 'number'
+                  ? delayValue(rawDelay)
+                  : typeof rawDelay === 'object' && rawDelay !== null
+                    ? (rawDelay as {
                         hours?: number;
                         minutes?: number;
                         seconds?: number;

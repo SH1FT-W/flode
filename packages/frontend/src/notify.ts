@@ -1,9 +1,19 @@
 import { errorMessage } from './ha';
 
+/** A button in the toast (HA's own `action`). */
+export interface ToastAction {
+  text: string;
+  action: () => void;
+}
+
 /** HA's toast at the bottom of the page — from any FLODE element. */
-export function notify(from: EventTarget, message: string): void {
+export function notify(from: EventTarget, message: string, action?: ToastAction): void {
   from.dispatchEvent(
-    new CustomEvent('hass-notification', { detail: { message }, bubbles: true, composed: true })
+    new CustomEvent('hass-notification', {
+      detail: action ? { message, action } : { message },
+      bubbles: true,
+      composed: true,
+    })
   );
 }
 

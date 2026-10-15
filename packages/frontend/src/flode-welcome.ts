@@ -24,10 +24,10 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:alert-circle-outline', title: 'new330ErrorsTitle', text: 'new330ErrorsText' },
-  { icon: 'mdi:content-duplicate', title: 'new330EditingTitle', text: 'new330EditingText' },
-  { icon: 'mdi:file-document-outline', title: 'new330BlueprintTitle', text: 'new330BlueprintText' },
-  { icon: 'mdi:cellphone', title: 'new330TouchTitle', text: 'new330TouchText' },
+  { icon: 'mdi:arrow-down', title: 'new340VerticalTitle', text: 'new340VerticalText' },
+  { icon: 'mdi:source-commit', title: 'new340BetweenTitle', text: 'new340BetweenText' },
+  { icon: 'mdi:plus-circle-outline', title: 'new340BlockTitle', text: 'new340BlockText' },
+  { icon: 'mdi:cellphone', title: 'new340TouchTitle', text: 'new340TouchText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

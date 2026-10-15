@@ -54,6 +54,13 @@ describe('ha-step', () => {
     );
   });
 
+  it('reads a delay given as a bare number as seconds, as HA does', () => {
+    expect(stepToNode('action', { delay: 3 })).toEqual({
+      type: 'delay',
+      data: { delay: { seconds: 3 } },
+    });
+  });
+
   it('keeps steps without a dedicated node verbatim', () => {
     const choose = { choose: [], default: [] };
     const result = stepToNode('action', choose);

@@ -27,6 +27,13 @@ export const PositionSchema = z.object({
 export type Position = z.infer<typeof PositionSchema>;
 
 /**
+ * Which way a flow runs on the canvas: left to right (the default) or top to
+ * bottom (#29).
+ */
+export const FlowDirectionSchema = z.enum(['right', 'down']);
+export type FlowDirection = z.infer<typeof FlowDirectionSchema>;
+
+/**
  * Handle configuration for node connections
  */
 export const HandleSchema = z.object({

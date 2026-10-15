@@ -6,6 +6,8 @@ export {
   AutomationModeSchema,
   type EntityId,
   EntityIdSchema,
+  type FlowDirection,
+  FlowDirectionSchema,
   type Handle,
   HandleSchema,
   MAX_EXCEEDED_LEVELS,
@@ -52,6 +54,7 @@ export {
 export {
   type CafeMetadata,
   CafeMetadataSchema,
+  delayValue,
   type FlodeMetadata,
   FlodeMetadataSchema,
   type FlowGraphMetadata,

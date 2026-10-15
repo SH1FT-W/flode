@@ -26,6 +26,7 @@ export function flodeMetadata(
       graph.nodes.map((node) => [node.id, { x: node.position.x, y: node.position.y }])
     ),
     ...(Object.keys(offsets).length > 0 ? { branch_offsets: offsets } : {}),
+    ...(graph.direction ? { direction: graph.direction } : {}),
     graph_id: graph.id,
     graph_version: graph.version,
     strategy,

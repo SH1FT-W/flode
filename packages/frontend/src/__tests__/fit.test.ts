@@ -18,6 +18,18 @@ describe('fitViewport', () => {
     expect(viewport.x + wide.x * viewport.zoom).toBe(24);
   });
 
+  it('starts a too tall flow running top to bottom at its top on phones (#29)', () => {
+    const tall = { x: 0, y: 100, width: 300, height: 3000 };
+    const viewport = fitViewport(tall, { width: 390, height: 600, minZoom: 0.55, startTop: true });
+    expect(viewport.zoom).toBe(0.55);
+    expect(viewport.y + tall.y * viewport.zoom).toBe(24);
+  });
+
+  it('puts the first row of a too wide flow running top to bottom in the middle on phones (#29)', () => {
+    const viewport = fitViewport(wide, { width: 390, height: 600, minZoom: 0.55, startX: 900 });
+    expect(viewport.x + 900 * viewport.zoom).toBe(195);
+  });
+
   it('keeps a flow that fits centred, also on phones', () => {
     const phone = { width: 390, height: 600, minZoom: 0.55 };
     expect(fitViewport(small, { ...phone, startLeft: true })).toEqual(fitViewport(small, phone));
