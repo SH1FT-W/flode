@@ -1,25 +1,9 @@
-import type {
-  ActionNode,
-  ConditionNode,
-  DelayNode,
-  FlowGraph,
-  FlowNode,
-  SetVariablesNode,
-  TriggerNode,
-  WaitNode,
-} from '@flode/shared';
-import {
-  buildRawCondition,
-  buildRawStepAction,
-  getShorthandCondition,
-  hasTimeout,
-  isDeviceAction,
-  mapOneOrMany,
-  SHORTHAND_CONDITION_KEY,
-} from '@flode/shared';
+import type { ConditionNode, FlowGraph, FlowNode, TriggerNode } from '@flode/shared';
+import { getShorthandCondition, isConditionStep } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { findBackEdges } from '../analyzer/topology';
 import { BaseStrategy, buildAutomationSettings, type HAYamlOutput } from './base';
+import { buildCondition, buildConditionWithAlias, buildNodeStep, buildTrigger } from './steps';
 
 /**
  * Describes a detected repeat pattern in the flow graph
@@ -48,19 +32,6 @@ interface RepeatPattern {
  * Native strategy for simple tree-shaped automations
  * Generates standard nested Home Assistant YAML with choose blocks
  */
-/** State/event trigger keys where `null` means something in HA (`to: null` = state changes only, no attribute changes). */
-const MEANINGFUL_NULL_KEYS = new Set(['from', 'to', 'not_from', 'not_to']);
-
-/** A trigger without empty form leftovers — keeps the `null`s HA gives a meaning to. */
-function cleanTrigger(data: object): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(data).filter(
-      ([key, value]) =>
-        value !== undefined && value !== '' && (value !== null || MEANINGFUL_NULL_KEYS.has(key))
-    )
-  );
-}
-
 export class NativeStrategy extends BaseStrategy {
   readonly name = 'native';
   readonly description = 'Generates nested HA YAML for simple tree-shaped automations';
@@ -131,16 +102,7 @@ export class NativeStrategy extends BaseStrategy {
     let actions: unknown[];
     if (rootConditions) {
       // Leading conditions promoted to root - build actions from continuation point(s)
-      // If there are multiple starting points (fan-out), build sequences from all of them
-      if (actionsStartNodeIds.length > 0) {
-        actions = actionsStartNodeIds.flatMap((nodeId) =>
-          this.buildSequenceFromNode(flow, nodeId, new Set(promotedVisited!))
-        );
-      } else {
-        actions = [];
-      }
-    } else if (uniqueFirstActions.length === 1) {
-      actions = this.buildSequenceFromNode(flow, uniqueFirstActions[0], new Set());
+      actions = this.buildBranches(flow, actionsStartNodeIds, promotedVisited ?? new Set());
     } else if (uniqueFirstActions.length > 1) {
       // Check if this is an OR pattern: all first actions are conditions
       // whose true/false paths converge to the same target
@@ -148,7 +110,7 @@ export class NativeStrategy extends BaseStrategy {
 
       if (orPattern) {
         // Build OR condition block
-        const orConditions = orPattern.conditions.map((c) => this.buildCondition(c));
+        const orConditions = orPattern.conditions.map((c) => buildCondition(c));
         const visited = new Set(orPattern.conditions.map((c) => c.id));
 
         const thenSequence = this.buildSequenceFromNode(flow, orPattern.convergenceNode, visited);
@@ -157,42 +119,20 @@ export class NativeStrategy extends BaseStrategy {
           {
             if: [{ condition: 'or', conditions: orConditions }],
             then: thenSequence,
-            else: orPattern.isFromFalsePaths ? [] : [], // OR conditions from true paths have empty else
+            else: [],
           },
         ];
+      } else if (uniqueFirstActions.every((nodeId) => this.isTriggerIdCondition(flow, nodeId))) {
+        // Each branch is an exclusive trigger-id route: sequential `if:` blocks, not a parallel block.
+        actions = uniqueFirstActions.flatMap((nodeId) =>
+          this.buildSequenceFromNode(flow, nodeId, new Set())
+        );
       } else {
-        // Check if all first-action nodes are `condition: trigger` nodes.
-        // In that case, each branch is an exclusive trigger-id route and should
-        // be emitted as sequential `if:` blocks, not a parallel block.
-        const allAreTriggerConditions = uniqueFirstActions.every((nodeId) => {
-          const node = flow.nodes.find((n) => n.id === nodeId);
-          return (
-            node?.type === 'condition' &&
-            (node.data as Record<string, unknown>)?.condition === 'trigger'
-          );
-        });
-
-        if (allAreTriggerConditions) {
-          // Emit each as a sequential if block
-          actions = uniqueFirstActions.flatMap((nodeId) =>
-            this.buildSequenceFromNode(flow, nodeId, new Set())
-          );
-        } else {
-          // Multiple paths from triggers - use parallel
-          const parallelBranches = uniqueFirstActions.map((nodeId) =>
-            this.buildSequenceFromNode(flow, nodeId, new Set())
-          );
-          // Flatten single-action branches to avoid double-nesting (- - service:)
-          const flattenedBranches = parallelBranches
-            .filter((branch) => branch.length > 0)
-            .map((branch) => (branch.length === 1 ? branch[0] : branch));
-          actions = [
-            {
-              parallel: flattenedBranches,
-            },
-          ];
-        }
+        // Multiple paths from triggers - run them in parallel
+        actions = this.buildBranches(flow, uniqueFirstActions, new Set());
       }
+    } else if (uniqueFirstActions.length === 1) {
+      actions = this.buildSequenceFromNode(flow, uniqueFirstActions[0], new Set());
     } else {
       actions = [];
       warnings.push('No actions found after trigger nodes');
@@ -217,6 +157,60 @@ export class NativeStrategy extends BaseStrategy {
       warnings,
       strategy: this.name,
     };
+  }
+
+  /** True for a `condition: trigger` node — a trigger-id route. */
+  private isTriggerIdCondition(flow: FlowGraph, nodeId: string): boolean {
+    const node = this.getNode(flow, nodeId);
+    return node?.type === 'condition' && node.data.condition === 'trigger';
+  }
+
+  /**
+   * The steps for several successors of one node: they run in parallel, and
+   * where they meet again the flow continues once — the same whether they
+   * follow a trigger, a condition or an action.
+   */
+  private buildBranches(flow: FlowGraph, startIds: string[], visited: Set<string>): unknown[] {
+    const starts = [...new Set(startIds)];
+    if (starts.length <= 1) {
+      return starts.flatMap((id) => this.buildSequenceFromNode(flow, id, new Set(visited)));
+    }
+    const merge = this.findConvergencePoint(flow, starts);
+    const branches = starts
+      .map((id) =>
+        merge
+          ? this.buildSequenceUntilNode(flow, id, merge, new Set(visited))
+          : this.buildSequenceFromNode(flow, id, new Set(visited))
+      )
+      .filter((branch) => branch.length > 0);
+    // Flatten single-action branches to avoid double-nesting (- - service:)
+    const flattened = branches.map((branch) => (branch.length === 1 ? branch[0] : branch));
+    const steps: unknown[] =
+      branches.length > 1 ? [{ parallel: flattened }] : (branches[0] ?? []).slice();
+    if (merge) {
+      steps.push(...this.buildSequenceFromNode(flow, merge, new Set(visited)));
+    }
+    return steps;
+  }
+
+  /**
+   * A condition node that came in as a plain step of the actions and still
+   * has no "else" path — written back as that step, not as an `if`.
+   */
+  private isPlainConditionStep(flow: FlowGraph, node: ConditionNode): boolean {
+    return (
+      isConditionStep(node.data) &&
+      !this.getOutgoingEdges(flow, node.id).some(
+        (e) => e.sourceHandle === 'false' && !this.backEdgeIds.has(e.id)
+      )
+    );
+  }
+
+  /** Targets of a node's forward "true" (or unlabelled) edges. */
+  private getTrueTargets(flow: FlowGraph, nodeId: string): string[] {
+    return this.getOutgoingEdges(flow, nodeId)
+      .filter((e) => e.sourceHandle !== 'false' && !this.backEdgeIds.has(e.id))
+      .map((e) => e.target);
   }
 
   /**
@@ -479,7 +473,9 @@ export class NativeStrategy extends BaseStrategy {
       const bodyNode = this.getNode(flow, bodyNodeId);
       if (!bodyNode) continue;
 
-      if (bodyNode.type === 'condition') {
+      if (bodyNode.type === 'condition' && this.isPlainConditionStep(flow, bodyNode)) {
+        bodySequence.push(buildConditionWithAlias(bodyNode));
+      } else if (bodyNode.type === 'condition') {
         // Check if this condition has branching within the loop body
         const outgoing = flow.edges.filter(
           (e) => e.source === bodyNodeId && !this.backEdgeIds.has(e.id)
@@ -490,7 +486,7 @@ export class NativeStrategy extends BaseStrategy {
         if (truePath || falsePath) {
           // Build as if/then/else within the loop body
           const condAction: Record<string, unknown> = {
-            if: [this.buildCondition(bodyNode as ConditionNode)],
+            if: [buildCondition(bodyNode as ConditionNode)],
             then: [],
             else: [],
           };
@@ -503,7 +499,7 @@ export class NativeStrategy extends BaseStrategy {
           bodySequence.push(condAction);
         } else {
           // Inline condition guard
-          bodySequence.push(this.buildCondition(bodyNode as ConditionNode));
+          bodySequence.push(buildCondition(bodyNode as ConditionNode));
         }
       } else {
         const action = this.buildNodeAction(bodyNode);
@@ -521,7 +517,7 @@ export class NativeStrategy extends BaseStrategy {
       const whileConditions = pattern.conditionNodeIds.map((id) => {
         const node = this.getNode(flow, id) as ConditionNode;
         if (!alias && node?.data?.alias) alias = node.data.alias;
-        return this.buildCondition(node);
+        return buildCondition(node);
       });
 
       const result: Record<string, unknown> = {
@@ -537,7 +533,7 @@ export class NativeStrategy extends BaseStrategy {
     if (pattern.type === 'until') {
       const untilConditions = pattern.conditionNodeIds.map((id) => {
         const node = this.getNode(flow, id) as ConditionNode;
-        return this.buildCondition(node);
+        return buildCondition(node);
       });
 
       const result: Record<string, unknown> = {
@@ -606,9 +602,7 @@ export class NativeStrategy extends BaseStrategy {
    * Extract trigger configurations from trigger nodes
    */
   private extractTriggers(flow: FlowGraph): unknown[] {
-    return flow.nodes
-      .filter((n): n is TriggerNode => n.type === 'trigger')
-      .map((node) => this.buildTrigger(node));
+    return flow.nodes.filter((n): n is TriggerNode => n.type === 'trigger').map(buildTrigger);
   }
 
   /**
@@ -695,6 +689,8 @@ export class NativeStrategy extends BaseStrategy {
     while (currentId) {
       const node = this.getNode(flow, currentId);
       if (node?.type !== 'condition') break;
+      // A condition step of the actions stays there
+      if (isConditionStep(node.data)) break;
 
       // Don't promote conditions that are part of a repeat pattern
       if (this.repeatPatterns.has(currentId) || this.repeatInternalNodeIds.has(currentId)) break;
@@ -746,23 +742,7 @@ export class NativeStrategy extends BaseStrategy {
    * Jinja shorthand string it was written as.
    */
   private buildRootCondition(node: ConditionNode): unknown {
-    return getShorthandCondition(node.data) ?? this.buildConditionWithAlias(node);
-  }
-
-  /** A condition with its alias — as a root condition or a condition step. */
-  private buildConditionWithAlias(node: ConditionNode): Record<string, unknown> {
-    const condition = this.buildCondition(node);
-    if (node.data.alias) {
-      condition.alias = node.data.alias;
-    }
-    return condition;
-  }
-
-  /**
-   * Build a single trigger configuration
-   */
-  private buildTrigger(node: TriggerNode): Record<string, unknown> {
-    return cleanTrigger(node.data);
+    return getShorthandCondition(node.data) ?? buildConditionWithAlias(node);
   }
 
   /**
@@ -831,7 +811,7 @@ export class NativeStrategy extends BaseStrategy {
 
     if (orTrueSources.length > 1) {
       // Multiple conditions' TRUE paths converge here - build OR block
-      const orConditions = orTrueSources.map((c) => this.buildCondition(c));
+      const orConditions = orTrueSources.map((c) => buildCondition(c));
       // Mark these conditions as visited
       for (const c of orTrueSources) {
         visited.add(c.id);
@@ -864,7 +844,7 @@ export class NativeStrategy extends BaseStrategy {
     if (orFalseSources.length > 1) {
       // Multiple conditions' FALSE paths converge here - build OR block (negated logic)
       // When false paths converge, it means "if NOT cond1 AND NOT cond2" which is equivalent to "if NOT (cond1 OR cond2)"
-      const orConditions = orFalseSources.map((c) => this.buildCondition(c));
+      const orConditions = orFalseSources.map((c) => buildCondition(c));
       // Mark these conditions as visited
       for (const c of orFalseSources) {
         visited.add(c.id);
@@ -921,7 +901,10 @@ export class NativeStrategy extends BaseStrategy {
     // Get outgoing edges (excluding repeat back-edges)
     const outgoing = this.getOutgoingEdges(flow, nodeId).filter((e) => !this.backEdgeIds.has(e.id));
 
-    if (node.type === 'condition') {
+    if (node.type === 'condition' && this.isPlainConditionStep(flow, node)) {
+      sequence.push(buildConditionWithAlias(node));
+      sequence.push(...this.buildBranches(flow, this.getTrueTargets(flow, node.id), visited));
+    } else if (node.type === 'condition') {
       // Detect choose chain: condition's FALSE path leads to another unvisited condition node
       const falsePathEdges = this.getOutgoingEdges(flow, node.id).filter(
         (e) => e.sourceHandle === 'false' && !this.backEdgeIds.has(e.id)
@@ -929,7 +912,9 @@ export class NativeStrategy extends BaseStrategy {
       const firstFalseTarget =
         falsePathEdges.length === 1 ? this.getNode(flow, falsePathEdges[0].target) : null;
       const isChooseChain =
-        firstFalseTarget?.type === 'condition' && !visited.has(firstFalseTarget.id);
+        firstFalseTarget?.type === 'condition' &&
+        !visited.has(firstFalseTarget.id) &&
+        !isConditionStep(firstFalseTarget.data);
 
       if (isChooseChain) {
         // ===== Choose Block Logic =====
@@ -949,7 +934,7 @@ export class NativeStrategy extends BaseStrategy {
           let thenNodeIds: string[] = [];
 
           while (innerNode?.type === 'condition') {
-            branchConditions.push(this.buildCondition(innerNode as ConditionNode));
+            branchConditions.push(buildCondition(innerNode as ConditionNode));
 
             const truePaths = this.getOutgoingEdges(flow, innerNode.id).filter(
               (e) => e.sourceHandle === 'true' && !this.backEdgeIds.has(e.id)
@@ -965,6 +950,7 @@ export class NativeStrategy extends BaseStrategy {
 
             if (
               trueTarget?.type === 'condition' &&
+              !isConditionStep(trueTarget.data) &&
               !visited.has(trueTarget.id) &&
               !this.repeatPatterns.has(trueTarget.id) &&
               !this.repeatInternalNodeIds.has(trueTarget.id)
@@ -999,7 +985,11 @@ export class NativeStrategy extends BaseStrategy {
 
           const nextFalseNode = this.getNode(flow, choiceFalse[0].target);
 
-          if (nextFalseNode?.type === 'condition' && !visited.has(nextFalseNode.id)) {
+          if (
+            nextFalseNode?.type === 'condition' &&
+            !visited.has(nextFalseNode.id) &&
+            !isConditionStep(nextFalseNode.data)
+          ) {
             currentChoiceNode = nextFalseNode;
           } else {
             defaultStartId = choiceFalse[0].target;
@@ -1060,7 +1050,7 @@ export class NativeStrategy extends BaseStrategy {
         elseNodeIds = originalElsePaths.map((edge) => edge.target);
 
         while (currentNode?.type === 'condition') {
-          conditions.push(this.buildCondition(currentNode as ConditionNode));
+          conditions.push(buildCondition(currentNode as ConditionNode));
           chainNodes.push(currentNode as ConditionNode);
 
           const truePaths = this.getOutgoingEdges(flow, currentNode.id).filter(
@@ -1081,6 +1071,7 @@ export class NativeStrategy extends BaseStrategy {
 
           if (
             nextNode?.type === 'condition' &&
+            !isConditionStep(nextNode.data) &&
             !visited.has(nextNode.id) &&
             !this.repeatPatterns.has(nextNode.id) &&
             !this.repeatInternalNodeIds.has(nextNode.id)
@@ -1109,7 +1100,7 @@ export class NativeStrategy extends BaseStrategy {
         if (thenNodeIds.length === 0 && elseNodeIds.length === 0) {
           // The chain ends the flow (a guard as the last step): nothing to
           // branch into, so write the conditions as the plain steps they are.
-          sequence.push(...chainNodes.map((chainNode) => this.buildConditionWithAlias(chainNode)));
+          sequence.push(...chainNodes.map((chainNode) => buildConditionWithAlias(chainNode)));
           return sequence;
         }
 
@@ -1140,16 +1131,8 @@ export class NativeStrategy extends BaseStrategy {
           sequence.push(ifAction);
           sequence.push(...this.buildSequenceFromNode(flow, convergencePoint, new Set(visited)));
         } else {
-          if (thenNodeIds.length > 0) {
-            ifAction.then = thenNodeIds.flatMap((id) =>
-              this.buildSequenceFromNode(flow, id, new Set(visited))
-            );
-          }
-          if (elseNodeIds.length > 0) {
-            ifAction.else = elseNodeIds.flatMap((id) =>
-              this.buildSequenceFromNode(flow, id, new Set(visited))
-            );
-          }
+          ifAction.then = this.buildBranches(flow, thenNodeIds, visited);
+          ifAction.else = this.buildBranches(flow, elseNodeIds, visited);
           sequence.push(ifAction);
         }
       }
@@ -1160,53 +1143,13 @@ export class NativeStrategy extends BaseStrategy {
         sequence.push(action);
       }
 
-      if (outgoing.length === 1) {
-        // Single outgoing edge - continue the sequence
-        const nextActions = this.buildSequenceFromNode(flow, outgoing[0].target, new Set(visited));
-        sequence.push(...nextActions);
-      } else if (outgoing.length > 1) {
-        // Multiple outgoing edges (parallel paths)
-        const convergencePoint = this.findConvergencePoint(
+      sequence.push(
+        ...this.buildBranches(
           flow,
-          outgoing.map((e) => e.target)
-        );
-
-        if (convergencePoint) {
-          const parallelActions = outgoing.map((edge) =>
-            this.buildSequenceUntilNode(flow, edge.target, convergencePoint, new Set(visited))
-          );
-          const filteredBranches = parallelActions.filter((a) => a.length > 0);
-          if (filteredBranches.length > 0) {
-            // Flatten single-action branches to avoid double-nesting (- - service:)
-            const flattenedBranches = filteredBranches.map((branch) =>
-              branch.length === 1 ? branch[0] : branch
-            );
-            sequence.push({
-              parallel: flattenedBranches,
-            });
-          }
-          const afterParallel = this.buildSequenceFromNode(
-            flow,
-            convergencePoint,
-            new Set(visited)
-          );
-          sequence.push(...afterParallel);
-        } else {
-          const parallelActions = outgoing.map((edge) =>
-            this.buildSequenceFromNode(flow, edge.target, new Set(visited))
-          );
-          const filteredBranches = parallelActions.filter((a) => a.length > 0);
-          if (filteredBranches.length > 0) {
-            // Flatten single-action branches to avoid double-nesting (- - service:)
-            const flattenedBranches = filteredBranches.map((branch) =>
-              branch.length === 1 ? branch[0] : branch
-            );
-            sequence.push({
-              parallel: flattenedBranches,
-            });
-          }
-        }
-      }
+          outgoing.map((e) => e.target),
+          visited
+        )
+      );
     }
 
     return sequence;
@@ -1313,6 +1256,15 @@ export class NativeStrategy extends BaseStrategy {
       return [];
     }
 
+    if (node.type === 'condition' && this.isPlainConditionStep(flow, node)) {
+      return [
+        buildConditionWithAlias(node),
+        ...this.getTrueTargets(flow, nodeId).flatMap((target) =>
+          this.buildSequenceUntilNode(flow, target, stopNodeId, new Set(visited))
+        ),
+      ];
+    }
+
     const sequence: unknown[] = [];
 
     // Build the current node's action
@@ -1379,323 +1331,18 @@ export class NativeStrategy extends BaseStrategy {
    * Build action configuration for a single node
    */
   private buildNodeAction(node: FlowNode): Record<string, unknown> | null {
-    switch (node.type) {
-      case 'trigger':
-        return null; // Triggers are handled separately
-
-      case 'condition':
-        return this.buildConditionChoose(node);
-
-      case 'action':
-        return this.buildActionCall(node);
-
-      case 'delay':
-        return this.buildDelay(node);
-
-      case 'wait':
-        return this.buildWait(node);
-
-      case 'set_variables':
-        return this.buildSetVariables(node);
-
-      default:
-        return null;
-    }
+    return node.type === 'condition' ? this.buildConditionChoose(node) : buildNodeStep(node);
   }
 
   /**
-   * Build a choose block for a condition node
+   * Build an if/then/else block for a condition node (then/else filled by the caller)
    */
   private buildConditionChoose(node: ConditionNode): Record<string, unknown> {
-    // Build the full condition including any nested conditions
-    const condition = this.buildCondition(node);
-
-    const choose: Record<string, unknown> = {
+    return {
       alias: node.data.alias,
-      if: [condition],
-      then: [], // Will be filled by the caller
-      else: [], // Will be filled by the caller
+      if: [buildCondition(node)],
+      then: [],
+      else: [],
     };
-
-    // Note: 'id' for trigger conditions belongs inside the condition object, not at the if/then/else level
-    // The id is already included via buildCondition's ...rest spread
-
-    return choose;
-  }
-
-  /**
-   * Map a single condition object (used for individual conditions in an array)
-   */
-  private mapSingleCondition(data: Record<string, unknown>): Record<string, unknown> {
-    const { condition, conditions, alias, template, ...rest } = data;
-    const out: Record<string, unknown> = {
-      condition: condition,
-      ...rest,
-    };
-    // For template conditions, ensure value_template is set from template if needed
-    if (condition === 'template' && !rest.value_template && template) {
-      out.value_template = template;
-    }
-    // Recursively map nested group conditions
-    if (Array.isArray(conditions) && conditions.length > 0) {
-      out.conditions = (conditions as Record<string, unknown>[])
-        .map((c) => this.mapSingleCondition(c))
-        .filter(
-          (c) => c && (!Array.isArray(c.conditions) || (c.conditions as unknown[]).length > 0)
-        );
-    }
-    return Object.fromEntries(Object.entries(out).filter(([, v]) => v !== undefined && v !== ''));
-  }
-
-  /**
-   * Build condition configuration
-   */
-  private buildCondition(node: ConditionNode): Record<string, unknown> {
-    // Pass-through condition (kept verbatim at import) — write it back unchanged
-    const rawCondition = buildRawCondition(node.data);
-    if (rawCondition) return rawCondition;
-    // Helper to recursively map condition to condition
-    function mapCondition(data: Record<string, unknown>): Record<string, unknown> {
-      if (!data || typeof data !== 'object') return data;
-      // Destructure and exclude internal FLODE fields and legacy 'template' key
-      const {
-        condition,
-        conditions,
-        alias,
-        template,
-        _chooseCase,
-        _chooseCaseTotal,
-        [SHORTHAND_CONDITION_KEY]: _shorthand,
-        ...rest
-      } = data;
-      const out: Record<string, unknown> = {
-        condition: condition,
-        ...rest,
-      };
-      // For template conditions, ensure value_template is set from template if needed
-      if (condition === 'template' && !rest.value_template && template) {
-        out.value_template = template;
-      }
-      // Recursively map nested group conditions
-      if (Array.isArray(conditions) && conditions.length > 0) {
-        out.conditions = conditions
-          .map(mapCondition)
-          .filter((c) => c && (!Array.isArray(c.conditions) || c.conditions.length > 0));
-      }
-      // Normalize id: ["x"] → "x" — HA API sometimes returns trigger condition ids as single-element arrays
-      if (Array.isArray(out.id) && (out.id as unknown[]).length === 1) {
-        out.id = (out.id as unknown[])[0];
-      }
-      return Object.fromEntries(Object.entries(out).filter(([, v]) => v !== undefined && v !== ''));
-    }
-    return mapCondition(node.data);
-  }
-
-  /**
-   * Build service call action or device action
-   */
-  private buildActionCall(node: ActionNode): Record<string, unknown> {
-    // Pass-through step (kept verbatim at import) — write it back unchanged
-    const rawStep = buildRawStepAction(node.data);
-    if (rawStep) return rawStep;
-
-    // Check if this is a device action (needs special format)
-    if (isDeviceAction(node.data.data)) {
-      const deviceData = node.data.data;
-      const action: Record<string, unknown> = {
-        device_id: deviceData.device_id,
-        domain: deviceData.domain,
-        type: deviceData.type,
-      };
-
-      if (node.data.alias) {
-        action.alias = node.data.alias;
-      }
-
-      // Add entity_id if present
-      if (deviceData.entity_id) {
-        action.entity_id = deviceData.entity_id;
-      }
-
-      // Add subtype if present
-      if (deviceData.subtype) {
-        action.subtype = deviceData.subtype;
-      }
-
-      // Add any additional parameters (like 'option' for select)
-      const knownFields = ['type', 'device_id', 'domain', 'entity_id', 'subtype'];
-      for (const [key, value] of Object.entries(deviceData)) {
-        if (!knownFields.includes(key) && value !== undefined) {
-          action[key] = value;
-        }
-      }
-
-      if (node.data.enabled === false) {
-        action.enabled = false;
-      }
-
-      return action;
-    }
-
-    // Check if this is a fallback repeat action (opaque repeat block)
-    if (node.data.repeat) {
-      const repeatData = node.data.repeat;
-      const action: Record<string, unknown> = {
-        repeat: {
-          ...(repeatData.count !== undefined ? { count: repeatData.count } : {}),
-          ...(repeatData.while ? { while: repeatData.while } : {}),
-          ...(repeatData.until ? { until: repeatData.until } : {}),
-          sequence: repeatData.sequence ?? [],
-        },
-      };
-      if (node.data.alias) action.alias = node.data.alias;
-      if (node.data.enabled === false) action.enabled = false;
-      return action;
-    }
-
-    // Check if this is a fire event action
-    if (typeof node.data.event === 'string' && node.data.event.trim() !== '') {
-      const action: Record<string, unknown> = { event: node.data.event };
-      if (node.data.alias) action.alias = node.data.alias;
-      if (node.data.event_data && Object.keys(node.data.event_data).length > 0) {
-        action.event_data = node.data.event_data;
-      }
-      if (node.data.enabled === false) action.enabled = false;
-      return action;
-    }
-
-    // Check if this is a stop action
-    if ('stop' in node.data) {
-      const action: Record<string, unknown> = { stop: node.data.stop ?? '' };
-      if (node.data.alias) action.alias = node.data.alias;
-      if (node.data.error === true) action.error = true;
-      if (node.data.enabled === false) action.enabled = false;
-      return action;
-    }
-
-    // Standard service call format — output as 'action:' (HA 2024.8+ preferred key)
-    const {
-      alias,
-      service,
-      action: _originalActionKey, // excluded from extraProps
-      id: _id, // excluded from extraProps — HA doesn't support id on action steps, see below
-      target,
-      data,
-      data_template,
-      response_variable,
-      continue_on_error,
-      enabled,
-      repeat: _repeat,
-      ...extraProps
-    } = node.data;
-    const action: Record<string, unknown> = {
-      ...extraProps,
-      alias,
-      action: service, // use 'action:' key (replaces legacy 'service:')
-    };
-
-    // `id` is intentionally dropped here (not just excluded from
-    // extraProps) — HA's SERVICE_SCHEMA (and the other action-type schemas
-    // below) don't support a per-step `id:` at all; only triggers do. Real
-    // HA rejects it outright ("extra keys not allowed"), it's not just
-    // ignored, so this can't be preserved even for round-trip fidelity.
-
-    if (target) {
-      action.target = target;
-    }
-
-    if (data && Object.keys(data as object).length > 0) {
-      action.data = data;
-    }
-
-    if (data_template) {
-      action.data_template = data_template;
-    }
-
-    if (response_variable) {
-      action.response_variable = response_variable;
-    }
-
-    if (continue_on_error) {
-      action.continue_on_error = continue_on_error;
-    }
-
-    if (enabled === false) {
-      action.enabled = false;
-    }
-
-    return action;
-  }
-
-  /**
-   * Build delay action
-   */
-  private buildDelay(node: DelayNode): Record<string, unknown> {
-    // Use spread pattern to preserve unknown properties from custom integrations.
-    // `id` is dropped — HA's action-step schemas don't support it, only triggers do.
-    const { alias, delay: delayValue, id: _id, ...extraProps } = node.data;
-    const delay: Record<string, unknown> = {
-      ...extraProps, // Preserve extra properties
-      alias,
-      delay: delayValue,
-    };
-
-    return delay;
-  }
-
-  /**
-   * Build wait action
-   */
-  private buildWait(node: WaitNode): Record<string, unknown> {
-    // Use spread pattern to preserve unknown properties from custom integrations.
-    // `id` is dropped — HA's action-step schemas don't support it, only triggers do.
-    const {
-      alias,
-      id: _id,
-      wait_template,
-      wait_for_trigger,
-      timeout,
-      continue_on_timeout,
-      ...extraProps
-    } = node.data;
-    const wait: Record<string, unknown> = {
-      ...extraProps, // Preserve extra properties
-      alias,
-    };
-
-    if (wait_template) {
-      wait.wait_template = wait_template;
-    } else if (wait_for_trigger) {
-      wait.wait_for_trigger = mapOneOrMany(wait_for_trigger, cleanTrigger);
-    }
-
-    if (hasTimeout(timeout)) {
-      wait.timeout = timeout;
-    }
-
-    if (continue_on_timeout !== undefined) {
-      wait.continue_on_timeout = continue_on_timeout;
-    }
-
-    return wait;
-  }
-
-  /**
-   * Build set variables action
-   */
-  private buildSetVariables(node: SetVariablesNode): Record<string, unknown> {
-    // Use spread pattern to preserve unknown properties from custom integrations.
-    // `id` is dropped — HA's action-step schemas don't support it, only triggers do.
-    const { alias, id: _id, variables, ...extraProps } = node.data;
-    const setVars: Record<string, unknown> = {
-      ...extraProps, // Preserve extra properties
-      variables,
-    };
-
-    if (alias) {
-      setVars.alias = alias;
-    }
-
-    return setVars;
   }
 }

@@ -50,11 +50,8 @@ describe('panel round trip keeps what HA accepts', () => {
       actions: [{ action: 'light.turn_on' }, guard, { action: 'light.turn_off' }],
     });
     expectExact(saved.conditions, conditions);
-    // A guard in the middle of the actions is written as `if` (as for any guard).
-    expectExact(saved.actions, [
-      { action: 'light.turn_on' },
-      { alias: 'Odd guard', if: [guard], then: [{ action: 'light.turn_off' }], else: [] },
-    ]);
+    // A guard in the middle of the actions stays the plain step it was.
+    expectExact(saved.actions, [{ action: 'light.turn_on' }, guard, { action: 'light.turn_off' }]);
   });
 
   it('checks a verbatim condition natively in a state machine (A1)', async () => {

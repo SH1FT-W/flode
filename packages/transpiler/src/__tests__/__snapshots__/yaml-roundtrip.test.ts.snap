@@ -373,14 +373,28 @@ actions:
                 - condition: template
                   value_template: "{{ current_node == \\"condition_test_1_158\\" }}"
               sequence:
-                - variables:
-                    current_node: "{% if trigger.payload == 1 %}condition_test_2_159{% else %}END{% endif %}"
+                - if:
+                    - condition: template
+                      value_template: "{{ trigger.payload == 1 }}"
+                  then:
+                    - variables:
+                        current_node: condition_test_2_159
+                  else:
+                    - variables:
+                        current_node: END
             - conditions:
                 - condition: template
                   value_template: "{{ current_node == \\"condition_test_2_159\\" }}"
               sequence:
-                - variables:
-                    current_node: "{% if target_light is not none %}wait_test_3_160{% else %}END{% endif %}"
+                - if:
+                    - condition: template
+                      value_template: "{{ target_light is not none }}"
+                  then:
+                    - variables:
+                        current_node: wait_test_3_160
+                  else:
+                    - variables:
+                        current_node: END
             - conditions:
                 - condition: template
                   value_template: "{{ current_node == \\"wait_test_3_160\\" }}"
@@ -393,8 +407,15 @@ actions:
                 - condition: template
                   value_template: "{{ current_node == \\"condition_test_4_161\\" }}"
               sequence:
-                - variables:
-                    current_node: "{% if is_state(target_light, 'on') %}action_test_5_162{% else %}END{% endif %}"
+                - if:
+                    - condition: template
+                      value_template: "{{ is_state(target_light, 'on') }}"
+                  then:
+                    - variables:
+                        current_node: action_test_5_162
+                  else:
+                    - variables:
+                        current_node: END
             - conditions:
                 - condition: template
                   value_template: "{{ current_node == \\"action_test_5_162\\" }}"
@@ -458,8 +479,15 @@ actions:
                 - condition: template
                   value_template: "{{ current_node == \\"condition_test_11_168\\" }}"
               sequence:
-                - variables:
-                    current_node: "{% if is_state(target_light, 'on') and (color_after_1 == color_before) %}action_test_12_169{% else %}set_variables_test_14_171{% endif %}"
+                - if:
+                    - condition: template
+                      value_template: "{{ is_state(target_light, 'on') and (color_after_1 == color_before) }}"
+                  then:
+                    - variables:
+                        current_node: action_test_12_169
+                  else:
+                    - variables:
+                        current_node: set_variables_test_14_171
             - conditions:
                 - condition: template
                   value_template: "{{ current_node == \\"action_test_12_169\\" }}"
@@ -495,8 +523,15 @@ actions:
                 - condition: template
                   value_template: "{{ current_node == \\"condition_test_15_172\\" }}"
               sequence:
-                - variables:
-                    current_node: "{% if is_state(target_light, 'on') and (color_after_2 == color_before) %}action_test_16_173{% else %}END{% endif %}"
+                - if:
+                    - condition: template
+                      value_template: "{{ is_state(target_light, 'on') and (color_after_2 == color_before) }}"
+                  then:
+                    - variables:
+                        current_node: action_test_16_173
+                  else:
+                    - variables:
+                        current_node: END
             - conditions:
                 - condition: template
                   value_template: "{{ current_node == \\"action_test_16_173\\" }}"
@@ -2007,11 +2042,10 @@ triggers:
   - trigger: state
     entity_id: binary_sensor.motion_sensor
     to: "on"
-conditions:
+actions:
   - condition: state
     entity_id: input_boolean.enabled
     state: "on"
-actions:
   - stop: Not enabled
 mode: single
 variables:

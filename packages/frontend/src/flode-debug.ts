@@ -1,5 +1,10 @@
 import type { FlowGraph } from '@flode/shared';
-import { buildExplainInstructions, generateWithAiTask, readableAiError } from '@flode/ui-core';
+import {
+  buildExplainInstructions,
+  generateWithAiTask,
+  readableAiError,
+  safeAiMarkdown,
+} from '@flode/ui-core';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { defineElement } from './define-element';
 import {
@@ -17,9 +22,11 @@ import type { ManualRun } from './manual-runs';
 import { t } from './strings';
 import {
   configAtPath,
+  graphShape,
   type HaTrace,
   nodeForPath,
   type RunMark,
+  runFitsGraph,
   runMarks,
   runVariables,
 } from './trace';
@@ -80,6 +87,7 @@ export class FlodeDebug extends LitElement {
     selectedPath: { state: true },
     viewerReady: { state: true },
     message: { state: true },
+    shape: { state: true },
   };
 
   declare hass: HomeAssistant | undefined;
@@ -102,6 +110,8 @@ export class FlodeDebug extends LitElement {
   declare selectedPath: string | null;
   declare viewerReady: boolean;
   declare message: string | null;
+  /** The open flow's layout (`graphShape`): `undefined` while it is being worked out. */
+  declare shape: string | null | undefined;
 
   constructor() {
     super();
@@ -118,6 +128,7 @@ export class FlodeDebug extends LitElement {
     this.selectedPath = null;
     this.viewerReady = false;
     this.message = null;
+    this.shape = undefined;
   }
 
   private get language(): string {
@@ -141,6 +152,7 @@ export class FlodeDebug extends LitElement {
     ) {
       this.manualId = this.manualRuns[0].id;
     }
+    if (changed.has('graph') || changed.has('item')) void this.updateShape();
     // Only real changes re-mark the canvas: the panel hands over a fresh
     // array on every render, and new marks re-render the panel — no loop.
     const manualKey = this.manualRuns.map((run) => `${run.id}:${run.status}`).join('|');
@@ -151,6 +163,7 @@ export class FlodeDebug extends LitElement {
         changed.has('graph') ||
         changed.has('selectedPath') ||
         changed.has('manualId') ||
+        changed.has('shape') ||
         manualChanged) &&
       this.hasUpdated
     ) {
@@ -179,12 +192,27 @@ export class FlodeDebug extends LitElement {
       return;
     }
     const { trace, graph, item } = this;
-    const marks = trace && graph && item ? runMarks(graph, item.kind, trace) : null;
+    // A run of an older version would light up the wrong cards.
+    const fits = trace && graph && item && this.runFits(trace) ? trace : null;
+    const marks = fits && graph && item ? runMarks(graph, item.kind, fits) : null;
     const active =
-      trace && graph && item && this.selectedPath
+      fits && graph && item && this.selectedPath
         ? (nodeForPath(graph, item.kind, this.selectedPath) ?? null)
         : null;
     this.dispatchEvent(new CustomEvent('run-marks', { detail: { marks, active } }));
+  }
+
+  /** Works out the open flow's layout — runs are compared against it. */
+  private async updateShape(): Promise<void> {
+    const { graph, item } = this;
+    if (!graph || !item) return;
+    const shape = await graphShape(graph, item.kind);
+    if (this.graph === graph) this.shape = shape;
+  }
+
+  /** Whether the run fits the open flow; not known yet counts as fitting (no flicker). */
+  private runFits(trace: HaTrace): boolean {
+    return this.shape === undefined || runFitsGraph(trace, this.shape);
   }
 
   async loadRuns(): Promise<void> {
@@ -267,7 +295,7 @@ export class FlodeDebug extends LitElement {
           ? html`<p class="hint running"><ha-spinner size="small"></ha-spinner>${t(language, 'aiExplaining')}</p>`
           : nothing
       }
-      ${this.explanation ? html`<ha-markdown class="explanation" .content=${this.explanation}></ha-markdown>` : nothing}
+      ${this.explanation ? html`<ha-markdown class="explanation" .content=${safeAiMarkdown(this.explanation)}></ha-markdown>` : nothing}
     `;
   }
 
@@ -361,6 +389,11 @@ export class FlodeDebug extends LitElement {
             ? html`<p class="hint">${t(language, 'noRuns')}</p>`
             : html`<div class="runs">${this.runs.map((run) => this.renderRun(run))}</div>
                 <p class="hint">${t(language, 'runsHint')}</p>`
+      }
+      ${
+        !manual && trace && !this.runFits(trace)
+          ? html`<ha-alert alert-type="info">${t(language, 'runOutdated')}</ha-alert>`
+          : nothing
       }
       ${manual ? this.renderManualDetails(manual) : this.renderExplain()}
       ${

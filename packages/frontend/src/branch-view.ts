@@ -587,6 +587,27 @@ export function connectionSource(
     : { source, sourceHandle: handle };
 }
 
+/**
+ * The drawn box of flow card `id` with all its branches (a block takes more
+ * room than one card, its first branch may sit above it).
+ */
+export function drawnBox(
+  view: BranchView,
+  id: string
+): { x: number; y: number; top: number; bottom: number } {
+  const own = view.graph.nodes.filter((n) => n.id === id || view.cards.get(n.id)?.blockId === id);
+  const head = own.find((n) => n.id === id);
+  return {
+    x: head?.position.x ?? 0,
+    y: head?.position.y ?? 0,
+    top: Math.min(head?.position.y ?? 0, ...own.map((n) => n.position.y)),
+    bottom: Math.max(
+      head?.position.y ?? 0,
+      ...own.map((n) => n.position.y + cardShape(view, n).height)
+    ),
+  };
+}
+
 /** A stored position for a card that should appear at `drawn`. */
 export function storedPosition(
   view: BranchView,

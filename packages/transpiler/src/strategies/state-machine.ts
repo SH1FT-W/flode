@@ -1,25 +1,7 @@
-import type {
-  ActionNode,
-  ConditionNode,
-  DelayNode,
-  FlowEdge,
-  FlowGraph,
-  FlowNode,
-  SetVariablesNode,
-  TriggerNode,
-  WaitNode,
-} from '@flode/shared';
-import {
-  buildRawCondition,
-  buildRawStepAction,
-  getRawStep,
-  hasTimeout,
-  isDeviceAction,
-  isPlainObject,
-  mapOneOrMany,
-} from '@flode/shared';
+import type { ConditionNode, FlowEdge, FlowGraph, FlowNode, TriggerNode } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { BaseStrategy, buildAutomationSettings, type HAYamlOutput } from './base';
+import { buildCondition, buildNodeStep, buildTrigger } from './steps';
 
 /**
  * Outcome of planning a fan-out: either the set of branch nodes whose standalone
@@ -47,46 +29,6 @@ type FanOutPlan = { ok: true; owned: Set<string>; reachable: Set<string> } | Fan
  * - Converging paths (multiple paths merging)
  * - Complex state machines
  */
-/** Condition fields HA's native condition schema understands (see buildNativeCondition). */
-const NATIVE_CONDITION_KEYS = new Set([
-  'entity_id',
-  'state',
-  'above',
-  'below',
-  'attribute',
-  'value_template',
-  'after',
-  'before',
-  'after_offset',
-  'before_offset',
-  'zone',
-  'weekday',
-  'for',
-  'id',
-]);
-
-/**
- * A condition node's data as a native HA condition — the relevant fields,
- * empty values dropped, nested and/or/not conditions converted recursively.
- * `template` (FLODE's nested-condition alias) is written as `value_template`.
- */
-function toNativeCondition(source: object): Record<string, unknown> {
-  const condition: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(source)) {
-    const target = key === 'template' ? 'value_template' : key;
-    if (key === 'condition') {
-      condition.condition = value;
-    } else if (key === 'conditions') {
-      if (Array.isArray(value) && value.length > 0) {
-        condition.conditions = value.filter(isPlainObject).map(toNativeCondition);
-      }
-    } else if (NATIVE_CONDITION_KEYS.has(target) && value !== undefined && value !== '') {
-      condition[target] = value;
-    }
-  }
-  return condition;
-}
-
 export class StateMachineStrategy extends BaseStrategy {
   readonly name = 'state-machine';
   readonly description =
@@ -254,7 +196,10 @@ export class StateMachineStrategy extends BaseStrategy {
 
     // Build choose blocks for each non-trigger node not already inlined in a parallel branch
     const nodeBlocks = flow.nodes
-      .filter((n) => n.type !== 'trigger' && !parallelConsumedNodeIds.has(n.id))
+      .filter(
+        (n): n is Exclude<FlowNode, TriggerNode> =>
+          n.type !== 'trigger' && !parallelConsumedNodeIds.has(n.id)
+      )
       .map((node) => this.generateNodeBlock(flow, node, fanOutPlans, conditionHandleTargets));
 
     // Combine parallel entry blocks and remaining node blocks
@@ -274,7 +219,11 @@ export class StateMachineStrategy extends BaseStrategy {
     // Generate the initial node expression
     // If all triggers lead to the same node, use that directly
     // Otherwise, use a Jinja2 template to route based on trigger.idx
-    const entryNodeExpr = this.generateEntryNodeExpression(triggerRouting, approvedTriggerFanOut);
+    const entryNodeExpr = this.generateEntryNodeExpression(
+      triggerNodes.length,
+      triggerRouting,
+      approvedTriggerFanOut
+    );
 
     // Build the action sequence for the state machine
     // In HA automations, actions are a flat list - we use:
@@ -392,13 +341,20 @@ export class StateMachineStrategy extends BaseStrategy {
    * Otherwise, return a Jinja2 template that routes based on trigger.idx
    */
   private generateEntryNodeExpression(
+    triggerCount: number,
     triggerRouting: Map<number, string[]>,
     approvedTriggerFanOut: Map<number, string[]>
   ): string {
-    // Convert to effective entry points (handling parallel branches)
+    // Convert to effective entry points (handling parallel branches). A trigger
+    // without a connection ends the run at once — it must not fall through to
+    // another trigger's path.
     const effectiveEntries = new Map<number, string>();
-    for (const [idx, targets] of triggerRouting) {
-      effectiveEntries.set(idx, this.getEffectiveEntryPoint(idx, targets, approvedTriggerFanOut));
+    for (let idx = 0; idx < triggerCount; idx++) {
+      const targets = triggerRouting.get(idx);
+      effectiveEntries.set(
+        idx,
+        targets ? this.getEffectiveEntryPoint(idx, targets, approvedTriggerFanOut) : 'END'
+      );
     }
 
     const uniqueTargets = new Set(effectiveEntries.values());
@@ -770,54 +726,24 @@ export class StateMachineStrategy extends BaseStrategy {
     visited.add(nodeId);
     const edges = this.getOutgoingEdges(flow, node.id);
 
-    switch (node.type) {
-      case 'action': {
-        const actionCall = this.buildActionCall(node as ActionNode);
-        return [actionCall, ...this.continueInlineBranch(flow, node.id, edges, visited)];
-      }
-
-      case 'condition': {
-        const trueEdge = edges.find((e) => e.sourceHandle === 'true');
-        const falseEdge = edges.find((e) => e.sourceHandle === 'false');
-        const trueTarget = trueEdge?.target ?? 'END';
-        const falseTarget = falseEdge?.target ?? 'END';
-
-        const condition = this.buildNativeCondition(node as ConditionNode);
-        // Each branch gets its own visited copy so independent paths don't block each other
-        const thenActions = this.generateInlineBranch(flow, trueTarget, new Set(visited));
-        const elseActions = this.generateInlineBranch(flow, falseTarget, new Set(visited));
-
-        const ifBlock: Record<string, unknown> = {
-          alias: (node as ConditionNode).data.alias,
-          if: [condition],
+    if (node.type === 'condition') {
+      const trueTarget = edges.find((e) => e.sourceHandle === 'true')?.target ?? 'END';
+      const falseTarget = edges.find((e) => e.sourceHandle === 'false')?.target ?? 'END';
+      // Each branch gets its own visited copy so independent paths don't block each other
+      const thenActions = this.generateInlineBranch(flow, trueTarget, new Set(visited));
+      const elseActions = this.generateInlineBranch(flow, falseTarget, new Set(visited));
+      return [
+        {
+          alias: node.data.alias,
+          if: [buildCondition(node)],
           then: thenActions,
-        };
-        if (elseActions.length > 0) {
-          ifBlock.else = elseActions;
-        }
-        return [ifBlock];
-      }
-
-      case 'delay': {
-        const delayAction = this.buildDelayAction(node as DelayNode);
-        return [delayAction, ...this.continueInlineBranch(flow, node.id, edges, visited)];
-      }
-
-      case 'wait': {
-        const waitAction = this.buildWaitAction(node as WaitNode);
-        return [waitAction, ...this.continueInlineBranch(flow, node.id, edges, visited)];
-      }
-
-      case 'set_variables': {
-        const setVarsAction = this.buildSetVariablesAction(node as SetVariablesNode);
-        return [setVarsAction, ...this.continueInlineBranch(flow, node.id, edges, visited)];
-      }
-
-      default: {
-        // Unknown node type — skip it and continue to the next node
-        return this.continueInlineBranch(flow, node.id, edges, visited);
-      }
+          ...(elseActions.length > 0 ? { else: elseActions } : {}),
+        },
+      ];
     }
+
+    const step = buildNodeStep(node);
+    return [...(step ? [step] : []), ...this.continueInlineBranch(flow, node.id, edges, visited)];
   }
 
   /**
@@ -842,648 +768,59 @@ export class StateMachineStrategy extends BaseStrategy {
     return this.generateInlineBranch(flow, targets[0] ?? edges[0]?.target ?? 'END', visited);
   }
 
-  /**
-   * Extract triggers from trigger nodes
-   */
+  /** The automation's triggers. */
   private extractTriggers(flow: FlowGraph): unknown[] {
-    return flow.nodes
-      .filter((n): n is TriggerNode => n.type === 'trigger')
-      .map((node) => {
-        const trigger: Record<string, unknown> = { ...node.data };
-
-        return Object.fromEntries(
-          Object.entries(trigger).filter(([, v]) => v !== undefined && v !== '' && v !== null)
-        );
-      });
+    return flow.nodes.filter((n): n is TriggerNode => n.type === 'trigger').map(buildTrigger);
   }
 
   /**
-   * Generate a choose block for a single node
+   * Generate the dispatcher entry for a single node: its step, then where the
+   * machine goes next.
    */
   private generateNodeBlock(
     flow: FlowGraph,
-    node: FlowNode,
+    node: Exclude<FlowNode, TriggerNode>,
     fanOutPlans: Map<string, string[]>,
     conditionHandleTargets: Map<string, string>
   ): Record<string, unknown> {
-    const outgoingEdges = this.getOutgoingEdges(flow, node.id);
-
-    switch (node.type) {
-      case 'condition':
-        return this.generateConditionBlock(node, outgoingEdges, conditionHandleTargets);
-      case 'action':
-        return this.generateActionBlock(flow, node, outgoingEdges, fanOutPlans);
-      case 'delay':
-        return this.generateDelayBlock(flow, node, outgoingEdges, fanOutPlans);
-      case 'wait':
-        return this.generateWaitBlock(flow, node, outgoingEdges, fanOutPlans);
-      case 'set_variables':
-        return this.generateSetVariablesBlock(flow, node, outgoingEdges, fanOutPlans);
-      default:
-        return this.generatePassthroughBlock(flow, node, outgoingEdges, fanOutPlans);
-    }
-  }
-
-  /**
-   * Generate block for action node
-   * Executes the service call then moves to the next node
-   */
-  private generateActionBlock(
-    flow: FlowGraph,
-    node: ActionNode,
-    edges: FlowEdge[],
-    fanOutPlans: Map<string, string[]>
-  ): Record<string, unknown> {
-    const currentNodeId = node.id;
-    const actionCall = this.buildActionCall(node);
-
+    const edges = this.getOutgoingEdges(flow, node.id);
+    const step = node.type === 'condition' ? null : buildNodeStep(node);
+    const sequence =
+      node.type === 'condition'
+        ? [this.buildConditionTransition(node, edges, conditionHandleTargets)]
+        : [...(step ? [step] : []), ...this.buildTransitionTail(flow, node.id, edges, fanOutPlans)];
     return {
       conditions: [
         {
           condition: 'template',
-          value_template: `{{ current_node == "${currentNodeId}" }}`,
+          value_template: `{{ current_node == "${node.id}" }}`,
         },
       ],
-      sequence: [actionCall, ...this.buildTransitionTail(flow, node.id, edges, fanOutPlans)],
+      sequence,
     };
   }
 
   /**
-   * Build service call action or device action
+   * A condition node's step: HA checks the condition itself — exactly as
+   * written, the same as in a native automation — and the machine moves to
+   * the node on the matching branch.
    */
-  private buildActionCall(node: ActionNode): Record<string, unknown> {
-    // Pass-through step (kept verbatim at import) — write it back unchanged
-    const rawStep = buildRawStepAction(node.data);
-    if (rawStep) return rawStep;
-
-    // Check if this is a device action (needs special format)
-    if (isDeviceAction(node.data.data)) {
-      const deviceData = node.data.data;
-      const action: Record<string, unknown> = {
-        device_id: deviceData.device_id,
-        domain: deviceData.domain,
-        type: deviceData.type,
-      };
-
-      if (node.data.alias) {
-        action.alias = node.data.alias;
-      }
-
-      // Add entity_id if present
-      if (deviceData.entity_id) {
-        action.entity_id = deviceData.entity_id;
-      }
-
-      // Add subtype if present
-      if (deviceData.subtype) {
-        action.subtype = deviceData.subtype;
-      }
-
-      // Add any additional parameters (like 'option' for select)
-      const knownFields = ['type', 'device_id', 'domain', 'entity_id', 'subtype'];
-      for (const [key, value] of Object.entries(deviceData)) {
-        if (!knownFields.includes(key) && value !== undefined) {
-          action[key] = value;
-        }
-      }
-
-      if (node.data.enabled === false) {
-        action.enabled = false;
-      }
-
-      return action;
-    }
-
-    // Check if this is a fallback repeat action (opaque repeat block)
-    if (node.data.repeat) {
-      const repeatData = node.data.repeat;
-      const actionCall: Record<string, unknown> = {
-        repeat: {
-          ...(repeatData.count !== undefined ? { count: repeatData.count } : {}),
-          ...(repeatData.while ? { while: repeatData.while } : {}),
-          ...(repeatData.until ? { until: repeatData.until } : {}),
-          sequence: repeatData.sequence ?? [],
-        },
-      };
-      if (node.data.alias) actionCall.alias = node.data.alias;
-      if (node.data.enabled === false) actionCall.enabled = false;
-      return actionCall;
-    }
-
-    // Check if this is a fire event action
-    if (typeof node.data.event === 'string' && node.data.event.trim() !== '') {
-      const actionCall: Record<string, unknown> = { event: node.data.event };
-      if (node.data.alias) actionCall.alias = node.data.alias;
-      if (node.data.event_data && Object.keys(node.data.event_data).length > 0) {
-        actionCall.event_data = node.data.event_data;
-      }
-      if (node.data.enabled === false) actionCall.enabled = false;
-      return actionCall;
-    }
-
-    // Standard service call format — output as 'action:' (HA 2024.8+ preferred key)
-    const {
-      alias,
-      service,
-      action: _originalActionKey,
-      id,
-      target,
-      data,
-      data_template,
-      response_variable,
-      continue_on_error,
-      enabled,
-      repeat: _repeat,
-      ...extraProps
-    } = node.data;
-    const actionCall: Record<string, unknown> = {
-      ...extraProps,
-      alias,
-      action: service,
-    };
-
-    if (id) {
-      actionCall.id = id;
-    }
-
-    if (target) {
-      actionCall.target = target;
-    }
-
-    if (data) {
-      actionCall.data = data;
-    }
-
-    if (data_template) {
-      actionCall.data_template = data_template;
-    }
-
-    if (response_variable) {
-      actionCall.response_variable = response_variable;
-    }
-
-    if (continue_on_error) {
-      actionCall.continue_on_error = continue_on_error;
-    }
-
-    if (enabled === false) {
-      actionCall.enabled = false;
-    }
-
-    return actionCall;
-  }
-
-  /**
-   * Generate block for condition node
-   * Evaluates the condition and sets current_node based on result
-   */
-  private generateConditionBlock(
+  private buildConditionTransition(
     node: ConditionNode,
     edges: FlowEdge[],
     conditionHandleTargets: Map<string, string>
   ): Record<string, unknown> {
-    const trueEdge = edges.find((e) => e.sourceHandle === 'true');
-    const falseEdge = edges.find((e) => e.sourceHandle === 'false');
-
     // A handle leading to several nodes routes through a synthetic parallel entry
-    const trueTargetId = conditionHandleTargets.get(`${node.id}:true`) ?? trueEdge?.target ?? 'END';
-    const falseTargetId =
-      conditionHandleTargets.get(`${node.id}:false`) ?? falseEdge?.target ?? 'END';
-    const trueTarget = trueTargetId === 'END' ? 'END' : trueTargetId;
-    const falseTarget = falseTargetId === 'END' ? 'END' : falseTargetId;
-    const currentNodeId = node.id;
-
-    // Check if this is a complex template that can't be inlined into {% if %}
-    const needsNativeCondition = this.needsNativeConditionCheck(node);
-
-    if (needsNativeCondition) {
-      // Use native HA condition check instead of Jinja2 {% if %}
-      // This handles templates with {% set %} and other complex Jinja2
-      const condition = this.buildNativeCondition(node);
-
-      return {
-        conditions: [
-          {
-            condition: 'template',
-            value_template: `{{ current_node == "${currentNodeId}" }}`,
-          },
-        ],
-        sequence: [
-          {
-            alias: node.data.alias,
-            if: [condition],
-            then: [
-              {
-                variables: {
-                  current_node: trueTarget,
-                },
-              },
-            ],
-            else: [
-              {
-                variables: {
-                  current_node: falseTarget,
-                },
-              },
-            ],
-          },
-        ],
-      };
-    }
-
-    // Generate Jinja2 template for condition evaluation (simple case)
-    const conditionTemplate = this.buildConditionTemplate(node);
-
+    const target = (handle: 'true' | 'false'): string =>
+      conditionHandleTargets.get(`${node.id}:${handle}`) ??
+      edges.find((e) => e.sourceHandle === handle)?.target ??
+      'END';
     return {
-      conditions: [
-        {
-          condition: 'template',
-          value_template: `{{ current_node == "${currentNodeId}" }}`,
-        },
-      ],
-      sequence: [
-        {
-          alias: node.data.alias,
-          variables: {
-            current_node: `{% if ${conditionTemplate} %}${trueTarget}{% else %}${falseTarget}{% endif %}`,
-          },
-        },
-      ],
+      alias: node.data.alias,
+      if: [buildCondition(node)],
+      then: [{ variables: { current_node: target('true') } }],
+      else: [{ variables: { current_node: target('false') } }],
     };
-  }
-
-  /**
-   * Check if a condition node needs native HA condition check instead of Jinja2 {% if %}
-   */
-  private needsNativeConditionCheck(node: ConditionNode): boolean {
-    const data = node.data;
-
-    // A pass-through condition has no Jinja translation — HA checks it as written
-    if (getRawStep(data)) {
-      return true;
-    }
-
-    // A duration ("on for 10 minutes") has no Jinja equivalent in
-    // buildConditionTemplate — inlining would silently drop it and make the
-    // condition true the moment the state changes (upstream C.A.F.E. #247).
-    if (data.for !== undefined || data.conditions?.some((c) => c.for !== undefined)) {
-      return true;
-    }
-
-    // Template conditions with {% %} statements need native check
-    if (data.condition === 'template') {
-      const template = data.value_template || '';
-      if (template.includes('{%')) {
-        return true;
-      }
-    }
-
-    // Nested conditions (and/or/not) with complex templates
-    if (
-      (data.condition === 'and' || data.condition === 'or' || data.condition === 'not') &&
-      data.conditions
-    ) {
-      return data.conditions.some((c) => {
-        if (c.condition === 'template') {
-          const template = c.value_template || '';
-          return template.includes('{%');
-        }
-        return false;
-      });
-    }
-
-    return false;
-  }
-
-  /**
-   * Build native HA condition object for use in if/then/else
-   */
-  private buildNativeCondition(node: ConditionNode): Record<string, unknown> {
-    return buildRawCondition(node.data) ?? toNativeCondition(node.data);
-  }
-
-  /**
-   * Build a delay action from a delay node (without state-machine wrapper)
-   */
-  private buildDelayAction(node: DelayNode): Record<string, unknown> {
-    // Use spread pattern to preserve unknown properties from custom integrations
-    const { alias, delay, id, ...extraProps } = node.data;
-    const delayAction: Record<string, unknown> = {
-      ...extraProps, // Preserve extra properties
-      alias,
-      delay,
-    };
-
-    if (id) {
-      delayAction.id = id;
-    }
-
-    return delayAction;
-  }
-
-  /**
-   * Generate block for delay node
-   */
-  private generateDelayBlock(
-    flow: FlowGraph,
-    node: DelayNode,
-    edges: FlowEdge[],
-    fanOutPlans: Map<string, string[]>
-  ): Record<string, unknown> {
-    const currentNodeId = node.id;
-
-    return {
-      conditions: [
-        {
-          condition: 'template',
-          value_template: `{{ current_node == "${currentNodeId}" }}`,
-        },
-      ],
-      sequence: [
-        this.buildDelayAction(node),
-        ...this.buildTransitionTail(flow, node.id, edges, fanOutPlans),
-      ],
-    };
-  }
-
-  /**
-   * Build a wait action from a wait node (without state-machine wrapper)
-   */
-  private buildWaitAction(node: WaitNode): Record<string, unknown> {
-    // Use spread pattern to preserve unknown properties from custom integrations
-    const {
-      alias,
-      id,
-      wait_template,
-      wait_for_trigger,
-      timeout,
-      continue_on_timeout,
-      ...extraProps
-    } = node.data;
-    const waitAction: Record<string, unknown> = {
-      ...extraProps, // Preserve extra properties
-      alias,
-    };
-
-    if (id) {
-      waitAction.id = id;
-    }
-
-    if (wait_template) {
-      waitAction.wait_template = wait_template;
-    } else if (wait_for_trigger) {
-      waitAction.wait_for_trigger = mapOneOrMany(wait_for_trigger, (triggerData) => {
-        const { alias: _alias, ...rest } = triggerData;
-        const trigger: Record<string, unknown> = { ...rest };
-        return Object.fromEntries(
-          Object.entries(trigger).filter(([, v]) => v !== undefined && v !== '' && v !== null)
-        );
-      });
-    }
-
-    if (hasTimeout(timeout)) {
-      waitAction.timeout = timeout;
-    }
-
-    if (continue_on_timeout !== undefined) {
-      waitAction.continue_on_timeout = continue_on_timeout;
-    }
-
-    return waitAction;
-  }
-
-  /**
-   * Generate block for wait node
-   */
-  private generateWaitBlock(
-    flow: FlowGraph,
-    node: WaitNode,
-    edges: FlowEdge[],
-    fanOutPlans: Map<string, string[]>
-  ): Record<string, unknown> {
-    const currentNodeId = node.id;
-
-    return {
-      conditions: [
-        {
-          condition: 'template',
-          value_template: `{{ current_node == "${currentNodeId}" }}`,
-        },
-      ],
-      sequence: [
-        this.buildWaitAction(node),
-        ...this.buildTransitionTail(flow, node.id, edges, fanOutPlans),
-      ],
-    };
-  }
-
-  /**
-   * Build a set_variables action from a set_variables node (without state-machine wrapper)
-   */
-  private buildSetVariablesAction(node: SetVariablesNode): Record<string, unknown> {
-    // Use spread pattern to preserve unknown properties from custom integrations
-    const { alias, id, variables, ...extraProps } = node.data;
-    const setVarsAction: Record<string, unknown> = {
-      ...extraProps, // Preserve extra properties
-      variables,
-    };
-
-    if (alias) {
-      setVarsAction.alias = alias;
-    }
-
-    if (id) {
-      setVarsAction.id = id;
-    }
-
-    return setVarsAction;
-  }
-
-  /**
-   * Generate block for set_variables node
-   */
-  private generateSetVariablesBlock(
-    flow: FlowGraph,
-    node: SetVariablesNode,
-    edges: FlowEdge[],
-    fanOutPlans: Map<string, string[]>
-  ): Record<string, unknown> {
-    const currentNodeId = node.id;
-
-    return {
-      conditions: [
-        {
-          condition: 'template',
-          value_template: `{{ current_node == "${currentNodeId}" }}`,
-        },
-      ],
-      sequence: [
-        this.buildSetVariablesAction(node),
-        ...this.buildTransitionTail(flow, node.id, edges, fanOutPlans),
-      ],
-    };
-  }
-
-  /**
-   * Generate passthrough block for unknown node types
-   */
-  private generatePassthroughBlock(
-    flow: FlowGraph,
-    node: FlowNode,
-    edges: FlowEdge[],
-    fanOutPlans: Map<string, string[]>
-  ): Record<string, unknown> {
-    const currentNodeId = node.id;
-
-    return {
-      conditions: [
-        {
-          condition: 'template',
-          value_template: `{{ current_node == "${currentNodeId}" }}`,
-        },
-      ],
-      sequence: this.buildTransitionTail(flow, node.id, edges, fanOutPlans),
-    };
-  }
-
-  /**
-   * Build Jinja2 template for condition evaluation
-   */
-  private buildConditionTemplate(node: ConditionNode): string {
-    const data = node.data;
-
-    switch (data.condition) {
-      case 'state':
-        if (data.attribute) {
-          // Use state_attr for attribute checks
-          if (Array.isArray(data.state)) {
-            const states = data.state.map((s) => `'${s}'`).join(', ');
-            return `state_attr('${data.entity_id}', '${data.attribute}') in [${states}]`;
-          }
-          return `state_attr('${data.entity_id}', '${data.attribute}') == '${data.state}'`;
-        } else {
-          // Use states() for regular state checks
-          if (Array.isArray(data.state)) {
-            const states = data.state.map((s) => `'${s}'`).join(', ');
-            return `states('${data.entity_id}') in [${states}]`;
-          }
-          return `is_state('${data.entity_id}', '${data.state}')`;
-        }
-
-      case 'numeric_state':
-        return this.buildNumericCondition(data);
-
-      case 'template': {
-        // Strip outer {{ }} if present - check both template and value_template
-        // Note: Complex templates with {% %} are handled via needsNativeConditionCheck
-        // and won't use this method
-        let template = data.value_template || 'true';
-        if (template.startsWith('{{') && template.endsWith('}}')) {
-          template = template.slice(2, -2).trim();
-        }
-        return template;
-      }
-
-      case 'time':
-        return this.buildTimeCondition(data);
-
-      case 'sun':
-        return this.buildSunCondition(data);
-
-      case 'zone':
-        return `is_state('${data.entity_id}', '${data.zone}')`;
-
-      case 'and':
-        if (data.conditions && data.conditions.length > 0) {
-          return `(${data.conditions.map((c) => this.buildNestedCondition(c)).join(' and ')})`;
-        }
-        return 'true';
-
-      case 'or':
-        if (data.conditions && data.conditions.length > 0) {
-          return `(${data.conditions.map((c) => this.buildNestedCondition(c)).join(' or ')})`;
-        }
-        return 'false';
-
-      case 'not':
-        if (data.conditions && data.conditions.length > 0) {
-          return `not (${data.conditions.map((c) => this.buildNestedCondition(c)).join(' and ')})`;
-        }
-        return 'true';
-
-      default:
-        return 'true';
-    }
-  }
-
-  /**
-   * Build numeric state condition template
-   */
-  private buildNumericCondition(data: ConditionNode['data']): string {
-    const parts: string[] = [];
-    const valueExpr = data.value_template
-      ? `(${data.value_template})`
-      : data.attribute
-        ? `state_attr('${data.entity_id}', '${data.attribute}') | float`
-        : `states('${data.entity_id}') | float`;
-
-    if (data.above !== undefined) {
-      parts.push(`${valueExpr} > ${data.above}`);
-    }
-    if (data.below !== undefined) {
-      parts.push(`${valueExpr} < ${data.below}`);
-    }
-
-    return parts.length > 0 ? parts.join(' and ') : 'true';
-  }
-
-  /**
-   * Build time condition template
-   */
-  private buildTimeCondition(data: ConditionNode['data']): string {
-    const parts: string[] = [];
-
-    if (data.after) {
-      parts.push(`now().strftime('%H:%M:%S') >= '${data.after}'`);
-    }
-    if (data.before) {
-      parts.push(`now().strftime('%H:%M:%S') < '${data.before}'`);
-    }
-    const weekdays = data.weekday === undefined ? [] : [data.weekday].flat();
-    if (weekdays.length > 0) {
-      const days = weekdays.map((d) => `'${d}'`).join(', ');
-      parts.push(`now().strftime('%a').lower()[:3] in [${days}]`);
-    }
-
-    return parts.length > 0 ? parts.join(' and ') : 'true';
-  }
-
-  /**
-   * Build sun condition template
-   */
-  private buildSunCondition(data: ConditionNode['data']): string {
-    // Sun conditions check if current time is after sunrise/sunset
-    if (data.after === 'sunrise' || data.before === 'sunset') {
-      return `is_state('sun.sun', 'above_horizon')`;
-    }
-    if (data.after === 'sunset' || data.before === 'sunrise') {
-      return `is_state('sun.sun', 'below_horizon')`;
-    }
-    return 'true';
-  }
-
-  /**
-   * Build nested condition for and/or/not
-   */
-  private buildNestedCondition(condition: ConditionNode['data']): string {
-    // Recursively build the condition template
-    const mockNode: ConditionNode = {
-      id: 'nested',
-      type: 'condition',
-      position: { x: 0, y: 0 },
-      data: condition,
-    };
-    return this.buildConditionTemplate(mockNode);
   }
 
   /**

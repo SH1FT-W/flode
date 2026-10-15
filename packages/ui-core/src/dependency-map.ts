@@ -23,6 +23,8 @@ export interface DependencyItemInput {
   entityId: string;
   name: string;
   config: Record<string, unknown>;
+  /** `false` for a disabled automation — it can't contradict another one. */
+  enabled?: boolean;
 }
 
 export interface EntityReference {
@@ -81,9 +83,80 @@ export interface EntityReferenceUsage {
 }
 
 const ENTITY_ID = /^[a-z0-9_]+\.[a-z0-9_]+$/;
-/** Entity ids inside Jinja: `states('x.y')`, `is_state("x.y", …)`, `states.x.y`, `expand('x.y')` … */
+/**
+ * Entity ids inside Jinja: `states('x.y')`, `is_state("x.y", …)`, `states.x.y`,
+ * `expand('x.y')` … — a domain starts with a letter (never `'0.5'`).
+ */
 const TEMPLATE_ENTITY =
-  /(?:['"]([a-z0-9_]+\.[a-z0-9_]+)['"])|(?:states\.([a-z0-9_]+\.[a-z0-9_]+))/g;
+  /(?:['"]([a-z][a-z_]*\.[a-z0-9_]+)['"])|(?:states\.([a-z][a-z_]*\.[a-z0-9_]+))/g;
+
+/**
+ * Domains Home Assistant has entities in. A quoted `x.y` in a template is only
+ * taken for an entity with one of these — `'bild.jpg'` or `'example.com'` are
+ * not.
+ */
+const ENTITY_DOMAINS = new Set([
+  'ai_task',
+  'air_quality',
+  'alarm_control_panel',
+  'alert',
+  'assist_satellite',
+  'automation',
+  'binary_sensor',
+  'button',
+  'calendar',
+  'camera',
+  'climate',
+  'conversation',
+  'counter',
+  'cover',
+  'date',
+  'datetime',
+  'device_tracker',
+  'event',
+  'fan',
+  'geo_location',
+  'group',
+  'humidifier',
+  'image',
+  'image_processing',
+  'input_boolean',
+  'input_button',
+  'input_datetime',
+  'input_number',
+  'input_select',
+  'input_text',
+  'lawn_mower',
+  'light',
+  'lock',
+  'media_player',
+  'notify',
+  'number',
+  'person',
+  'plant',
+  'remote',
+  'scene',
+  'schedule',
+  'script',
+  'select',
+  'sensor',
+  'siren',
+  'stt',
+  'sun',
+  'switch',
+  'text',
+  'time',
+  'timer',
+  'todo',
+  'tts',
+  'update',
+  'vacuum',
+  'valve',
+  'wake_word',
+  'water_heater',
+  'weather',
+  'zone',
+]);
 
 /** Pairs of services that undo each other, per service name (domain-independent). */
 const OPPOSITES: readonly (readonly [string, string])[] = [
@@ -128,7 +201,8 @@ export function templateEntityIds(text: string): string[] {
   const found = new Set<string>();
   for (const match of text.matchAll(TEMPLATE_ENTITY)) {
     const id = match[1] ?? match[2];
-    if (id && !NON_ENTITY_DOMAINS.has(id.split('.')[0] ?? '')) found.add(id);
+    const domain = id?.split('.')[0] ?? '';
+    if (id && ENTITY_DOMAINS.has(domain) && !NON_ENTITY_DOMAINS.has(domain)) found.add(id);
   }
   return [...found];
 }
@@ -162,6 +236,11 @@ export function collectServices(value: unknown): string[] {
   return [...found];
 }
 
+/** A step, condition or trigger switched off with HA's `enabled: false` — it never runs. */
+function isDisabled(step: Record<string, unknown>): boolean {
+  return step.enabled === false;
+}
+
 /**
  * Collects all entity references of one config. `role` is the section the
  * walk is in; conditions nested inside actions (`if`, `choose`, `condition:`
@@ -188,7 +267,7 @@ export function collectReferences(config: Record<string, unknown>): EntityRefere
   };
 
   const walkTrigger = (trigger: unknown) => {
-    if (!isPlainObject(trigger)) return;
+    if (!isPlainObject(trigger) || isDisabled(trigger)) return;
     for (const entityId of entityIdsIn(trigger.entity_id)) add({ entityId, role: 'trigger' });
     if (isPlainObject(trigger.target)) {
       for (const entityId of entityIdsIn(trigger.target.entity_id)) {
@@ -205,7 +284,7 @@ export function collectReferences(config: Record<string, unknown>): EntityRefere
       walkTemplates(condition);
       return;
     }
-    if (!isPlainObject(condition)) return;
+    if (!isPlainObject(condition) || isDisabled(condition)) return;
     for (const entityId of entityIdsIn(condition.entity_id)) add({ entityId, role: 'condition' });
     if (isPlainObject(condition.target)) {
       for (const entityId of entityIdsIn(condition.target.entity_id)) {
@@ -222,7 +301,7 @@ export function collectReferences(config: Record<string, unknown>): EntityRefere
   };
 
   const walkAction = (step: unknown) => {
-    if (!isPlainObject(step)) return;
+    if (!isPlainObject(step) || isDisabled(step)) return;
     const service = stepService(step);
     if (service) {
       const targets = [
@@ -307,6 +386,7 @@ export function buildDependencyMap(
       entityId: input.entityId,
       name: input.name,
       references,
+      ...(input.enabled === undefined ? {} : { enabled: input.enabled }),
     };
     const reportedMissing = new Set<string>();
     for (const ref of references) {
@@ -359,6 +439,7 @@ export function buildDependencyMap(
         const a = actions[i];
         const b = actions[j];
         if (!a?.service || !b?.service || a.item === b.item) continue;
+        if (items[a.item]?.enabled === false || items[b.item]?.enabled === false) continue;
         if (!areOppositeServices(a.service, b.service)) continue;
         const key = [entityId, ...[a.item, b.item].sort()].join('|');
         if (conflictKeys.has(key)) continue;

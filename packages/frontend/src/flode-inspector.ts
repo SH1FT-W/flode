@@ -10,9 +10,17 @@ import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
 import { defineElement } from './define-element';
 import { ensureAutomationEditors, ensureHaSelector, type HomeAssistant } from './ha';
-import { hasUiEditor, nodeToStep, type StepEdit, type StepKind, stepKind } from './ha-step';
+import {
+  hasUiEditor,
+  nodeToStep,
+  platformDescription,
+  type StepEdit,
+  type StepKind,
+  stepKind,
+} from './ha-step';
 import { nodeIconTemplate } from './node-icon';
 import { NODE_META, nodeTitle, summarize } from './node-meta';
+import { PlatformDescriptionsController } from './platform-descriptions';
 import { t } from './strings';
 import { TriggerIdsContext } from './trigger-ids-context';
 
@@ -105,6 +113,9 @@ export class FlodeInspector extends LitElement {
       this.confirmDuplicateIds = true;
     },
   });
+
+  /** HA's descriptions of integration triggers/conditions — their forms need them. */
+  private platforms = new PlatformDescriptionsController(this, () => this.hass);
 
   private resizeObserver = new ResizeObserver(([entry]) => {
     const narrow = (entry?.contentRect.width ?? 0) < NARROW_BELOW;
@@ -301,7 +312,9 @@ export class FlodeInspector extends LitElement {
     if (isScriptStart(node.data)) return this.renderScriptFields(node);
     const kind = stepKind(node.type);
     const step = this.stepOf(node);
-    const ui = hasUiEditor(kind, step);
+    const descriptions = kind === 'action' ? {} : this.platforms.get(kind);
+    const ui = hasUiEditor(kind, step, descriptions);
+    const description = platformDescription(kind, step, descriptions);
     const yaml = this.yamlMode || !ui;
     const onChange = (e: CustomEvent<{ value: unknown }>) => this.onStepChanged(node, kind, e);
     // HA asks for YAML when the step has something its form can't show. A nested
@@ -316,6 +329,7 @@ export class FlodeInspector extends LitElement {
         return html`<ha-automation-trigger-editor
           .hass=${this.hass}
           .trigger=${step}
+          .description=${description}
           .yamlMode=${yaml}
           .uiSupported=${ui}
           .inSidebar=${true}
@@ -326,6 +340,7 @@ export class FlodeInspector extends LitElement {
         return html`<ha-automation-condition-editor
           .hass=${this.hass}
           .condition=${step}
+          .description=${description}
           .narrow=${this.narrow}
           .yamlMode=${yaml}
           .uiSupported=${ui}
@@ -371,12 +386,13 @@ export class FlodeInspector extends LitElement {
       </div>`;
     }
     const meta = NODE_META[node.type];
+    const summary = summarize(node, this.hass);
     return html`
       <div class="head" style="--node-color: ${meta.color}">
-        <span class="icon">${nodeIconTemplate(node, summarize(node, this.hass), this.hass)}</span>
+        <span class="icon">${nodeIconTemplate(node, summary, this.hass)}</span>
         <div class="titles">
           <span class="type">${nodeTitle(node, this.hass)}</span>
-          <span class="id">${this.context ?? node.id}</span>
+          <span class="subtitle">${this.context ?? summary.title}</span>
         </div>
         ${
           this.editorsReady && !isScriptStart(node.data)
@@ -476,9 +492,9 @@ export class FlodeInspector extends LitElement {
       font-weight: 600;
       font-size: 16px;
     }
-    .id {
-      font-family: var(--ha-font-family-code, monospace);
+    .subtitle {
       font-size: 12px;
+      white-space: nowrap;
       color: var(--secondary-text-color);
       overflow: hidden;
       text-overflow: ellipsis;

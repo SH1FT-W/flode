@@ -4,6 +4,42 @@ All notable changes to FLODE are documented here. Every 3.x release builds on 3.
 
 ---
 
+## [3.3.0] — 2026-10-15 — Clearer errors, faster building, blueprints
+
+After a full check-up and three rounds of user testing: many fixes, clearer save errors, smoother editing and better touch support.
+
+### Added
+- **Save errors point to the card**: when Home Assistant refuses to save, FLODE explains in plain words what is missing (in German or English), marks the card red and takes you there. Home Assistant's own message stays available below.
+- **Blueprint automations open read-only** (C.A.F.E. [#19](https://github.com/FezVrasta/cafe-hass/issues/19)): the flow is shown with the automation's inputs filled in, with a note and an "Open in HA" button. FLODE never changes or saves them.
+- **Automations without a trigger open** (C.A.F.E. [#248](https://github.com/FezVrasta/cafe-hass/issues/248)) and are saved back unchanged.
+- **"Run from here" takes the last trigger along**: steps that use `trigger.…` get the trigger data of the automation's last run. "Run from here" is also in the command palette (⌘K).
+- **Changed in Home Assistant meanwhile?** Before saving over a version that was changed in Home Assistant, FLODE asks whether to load that version or overwrite it. A saved tab picks up such changes when the window gets focus again.
+
+### Changed
+- **Duplicate (⌘D) connects the copy**: the copy goes right behind the card, and what followed now follows the copy. Blocks with branches are no longer covered by their copy.
+- **Copy, paste and duplicate work inside branches.**
+- **"+" on a trigger** offers condition or action, and the new card is connected to the trigger. Cards added from the toolbar land next to the selected card and are brought into view.
+- **Keyboard**: the block menu (⌘B), the template workshop (⌘J) and "Paste YAML" get the focus right away, ⌘↩ confirms, Esc closes the runs view. Typing in the template workshop no longer triggers Home Assistant shortcuts.
+- **Phone and tablet**: bigger touch targets for "+" and connectors, the flow stays visible above the bottom sheet (runs, assistant), long flows start at the trigger, the add menu is no longer cut off on an iPad.
+- **Accessibility**: condition outputs are labelled "Yes"/"No" (not only green/red), the toolbar focus ring uses the primary colour.
+- **No internal ids** in the inspector header and in messages, the card's name is shown instead.
+- **Typing in a card's form** is one undo step, not one per key.
+
+### Fixed
+- **New Home Assistant triggers and conditions** (like `motion.detected` or `sun.is_night`) show Home Assistant's form instead of only YAML.
+- **A new "Delay"** is saved as 0:00:00 instead of an empty value Home Assistant refuses.
+- **"Unsaved" goes away** when every change is undone.
+- **The error bar belongs to its tab** and no longer stays when switching tabs.
+- **Saving**: templated `data:`/`target:` are kept, flows with several triggers and their own conditions only run the fired trigger's steps, fan-out with a merge runs the merge step once, the state-machine way no longer loses steps, a new script is not saved twice, categories of scripts are set in the right place, a new webhook trigger gets its id.
+- **Merging automations**: same trigger ids and renamed variables no longer mix up the two flows, the banner heading fits the kind of warnings.
+- **Assistant**: taking over a draft keeps its name and mode.
+- **Runs**: the path through a condition's "No" output is shown correctly.
+- **Drafts** survive a crash with a second FLODE window open.
+- **Safari**: shortcuts no longer act behind Home Assistant's add dialog.
+- The release zip no longer contains source maps.
+
+---
+
 ## [3.2.3] — 2026-10-14 — Fixes for the card text
 
 A bug-fix release.

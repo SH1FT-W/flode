@@ -92,6 +92,14 @@ describe('templateEntityIds', () => {
       'sensor.lux',
     ]);
   });
+
+  it('ignores numbers, file names and host names in quotes', () => {
+    expect(
+      templateEntityIds(
+        "{{ '0.5' | float }} {{ 'bild.jpg' }} {{ 'example.com' }} {{ states.light.hall.state }}"
+      )
+    ).toEqual(['light.hall']);
+  });
 });
 
 describe('areOppositeServices', () => {
@@ -169,5 +177,22 @@ describe('buildDependencyMap', () => {
     expect(map.missing).toEqual([
       { item: 'automation.chain', entityId: 'light.renamed_away', role: 'action' },
     ]);
+  });
+});
+
+describe('buildDependencyMap: disabled', () => {
+  it('ignores disabled steps and disabled automations for conflicts', () => {
+    const turnOn = { action: 'light.turn_on', target: { entity_id: 'light.hall' } };
+    const turnOff = { action: 'light.turn_off', target: { entity_id: 'light.hall' } };
+    const map = buildDependencyMap(
+      [
+        automation('on', { actions: [turnOn] }),
+        automation('off_step_disabled', { actions: [{ ...turnOff, enabled: false }] }),
+        { ...automation('off_disabled', { actions: [turnOff] }), enabled: false },
+      ],
+      () => true
+    );
+    expect(map.conflicts).toEqual([]);
+    expect(map.items['automation.off_step_disabled']?.references).toEqual([]);
   });
 });

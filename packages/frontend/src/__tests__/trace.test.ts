@@ -1,6 +1,14 @@
 import type { FlowGraph } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
-import { configAtPath, type HaTrace, nodeForPath, runMarks, runVariables } from '../trace';
+import {
+  configAtPath,
+  graphShape,
+  type HaTrace,
+  nodeForPath,
+  runFitsGraph,
+  runMarks,
+  runVariables,
+} from '../trace';
 
 const graph: FlowGraph = {
   id: '00000000-0000-4000-8000-000000000003',
@@ -101,5 +109,20 @@ describe('run variables', () => {
     });
     expect(runVariables(run)).toEqual({ trigger: { id: '0' }, x: 1 });
     expect(runVariables(run, 'trigger/0')).toEqual({ trigger: { id: '0' } });
+  });
+});
+
+describe('runs of another version', () => {
+  it('fit only while the flow still has their layout', async () => {
+    const shape = await graphShape(graph, 'automation');
+    expect(shape).not.toBeNull();
+    const saved = {
+      triggers: [{ trigger: 'state', entity_id: 'light.other' }],
+      conditions: [{ condition: 'state', entity_id: 'sun.sun', state: 'above_horizon' }],
+      actions: [{ action: 'light.turn_off' }, { if: [], then: [{ delay: 2 }] }],
+    };
+    expect(runFitsGraph({ ...trace({}), config: saved }, shape)).toBe(true);
+    const older = { ...saved, actions: [{ if: [], then: [{ delay: 2 }] }] };
+    expect(runFitsGraph({ ...trace({}), config: older }, shape)).toBe(false);
   });
 });

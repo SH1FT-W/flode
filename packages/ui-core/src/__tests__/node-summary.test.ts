@@ -162,6 +162,13 @@ describe('humanizeDuration', () => {
     expect(humanizeDuration(undefined, t)).toBeUndefined();
     expect(humanizeDuration('', t)).toBeUndefined();
   });
+  it('shows templates inside a duration object instead of "0 seconds"', () => {
+    expect(humanizeDuration({ minutes: '{{ dauer }}' }, t)).toBe('{{ dauer }}');
+    expect(humanizeDuration({ minutes: '{{ states("input_number.dauer") }}' }, t)).toBe(
+      '{{ states("input_number.dau…'
+    );
+    expect(humanizeDuration({ minutes: '5' }, t)).toBe('5 Minuten');
+  });
 });
 
 describe('summarizeTrigger', () => {

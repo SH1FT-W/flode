@@ -7,14 +7,10 @@ import {
 } from '@flode/ui-core';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { defineElement } from './define-element';
-import {
-  type AutomationListItem,
-  errorMessage,
-  getTrace,
-  type HomeAssistant,
-  listTraces,
-} from './ha';
+import { focusFirstField } from './focus';
+import { type AutomationListItem, errorMessage, getLatestTrace, type HomeAssistant } from './ha';
 import { copyToClipboard, notify } from './notify';
+import { submitOnModEnter } from './shortcuts';
 import { t } from './strings';
 import { runVariables } from './trace';
 
@@ -140,9 +136,8 @@ export class FlodeTemplates extends LitElement {
     const { hass, item } = this;
     if (!hass || !item || this.lastRun) return;
     try {
-      const [latest] = await listTraces(hass, item.kind, item.configId);
-      if (!latest) return;
-      const trace = await getTrace(hass, item.kind, item.configId, latest.run_id);
+      const trace = await getLatestTrace(hass, item.kind, item.configId);
+      if (!trace) return;
       this.lastRun = runVariables(trace);
     } catch (error) {
       notify(this, `${t(hass.language, 'loadFailed')}: ${errorMessage(error)}`);
@@ -194,6 +189,11 @@ export class FlodeTemplates extends LitElement {
     }
   }
 
+  /** ⌘↩ is the workshop's OK. */
+  private readonly submitKey = submitOnModEnter(() =>
+    this.dispatchEvent(new CustomEvent('closed'))
+  );
+
   render() {
     const language = this.language;
     const sources: VariableSource[] = [
@@ -211,6 +211,8 @@ export class FlodeTemplates extends LitElement {
       .open=${this.open}
       .headerTitle=${t(language, 'tplTitle')}
       width="large"
+      @after-show=${() => focusFirstField(this.renderRoot)}
+      @keydown=${this.submitKey}
       @closed=${() => this.dispatchEvent(new CustomEvent('closed'))}
     >
       <p class="muted intro">${t(language, 'tplIntro')}</p>

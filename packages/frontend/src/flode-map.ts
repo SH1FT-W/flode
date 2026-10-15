@@ -11,6 +11,7 @@ import { css, html, LitElement, nothing, type TemplateResult } from 'lit';
 import { defineElement } from './define-element';
 import { type AutomationListItem, type HomeAssistant, listFlows, loadFlowConfig } from './ha';
 import { mapT, summaryContext } from './i18n';
+import { entityExists } from './node-meta';
 
 type IssueKind = 'conflicts' | 'selfTriggers' | 'missing' | 'chains';
 
@@ -45,6 +46,7 @@ async function loadInputs(hass: HomeAssistant): Promise<DependencyItemInput[]> {
             entityId: item.entityId,
             name: item.name,
             config,
+            enabled: item.enabled,
           });
         }
       } catch {
@@ -109,8 +111,8 @@ export class FlodeMap extends LitElement {
     this.loading = true;
     try {
       const inputs = await loadInputs(hass);
-      const states = this.hass?.states ?? hass.states;
-      const map = buildDependencyMap(inputs, (entityId) => states[entityId] !== undefined);
+      const current = this.hass ?? hass;
+      const map = buildDependencyMap(inputs, (entityId) => entityExists(current, entityId));
       cached = { map, loadedAt: new Date() };
       this.map = map;
       this.loadedAt = cached.loadedAt;
@@ -163,44 +165,47 @@ export class FlodeMap extends LitElement {
     </section>`;
   }
 
+  /** One row per finding of the picked kind. */
+  private issueRows(map: DependencyMap): TemplateResult[] {
+    switch (this.issue) {
+      case 'conflicts':
+        return map.conflicts.map(
+          (c) => html`<div class="row">
+            ${this.chip(c.entityId, { tone: 'warning' })}
+            <span class="break"></span>
+            ${this.chip(c.a.item, { note: this.serviceNote(c.a.service) })}
+            <ha-icon class="arrow warn" icon="mdi:swap-horizontal"></ha-icon>
+            ${this.chip(c.b.item, { note: this.serviceNote(c.b.service) })}
+          </div>`
+        );
+      case 'selfTriggers':
+        return map.selfTriggers.map(
+          (s) => html`<div class="row">
+            ${this.chip(s.item)}<ha-icon class="arrow warn" icon="mdi:repeat"></ha-icon>${this.chip(s.entityId)}
+          </div>`
+        );
+      case 'missing':
+        return map.missing.map(
+          (x) => html`<div class="row">
+            ${this.chip(x.item)}<ha-icon class="arrow" icon="mdi:arrow-right"></ha-icon>${this.chip(x.entityId, { tone: 'missing' })}
+            <span class="role">${this.m(`role.${x.role}`)}</span>
+          </div>`
+        );
+      default:
+        return map.chains.map(
+          (c) => html`<div class="row">
+            ${this.chip(c.from)}<ha-icon class="arrow" icon="mdi:arrow-right"></ha-icon>
+            ${c.via !== c.to ? html`${this.chip(c.via)}<ha-icon class="arrow" icon="mdi:arrow-right"></ha-icon>` : nothing}
+            ${this.chip(c.to)}
+          </div>`
+        );
+    }
+  }
+
   private renderIssueList() {
     const map = this.map;
     if (!map) return nothing;
-    const rows = (() => {
-      switch (this.issue) {
-        case 'conflicts':
-          return map.conflicts.map(
-            (c) => html`<div class="row">
-              ${this.chip(c.entityId, { tone: 'warning' })}
-              <span class="break"></span>
-              ${this.chip(c.a.item, { note: this.serviceNote(c.a.service) })}
-              <ha-icon class="arrow warn" icon="mdi:swap-horizontal"></ha-icon>
-              ${this.chip(c.b.item, { note: this.serviceNote(c.b.service) })}
-            </div>`
-          );
-        case 'selfTriggers':
-          return map.selfTriggers.map(
-            (s) => html`<div class="row">
-              ${this.chip(s.item)}<ha-icon class="arrow warn" icon="mdi:repeat"></ha-icon>${this.chip(s.entityId)}
-            </div>`
-          );
-        case 'missing':
-          return map.missing.map(
-            (x) => html`<div class="row">
-              ${this.chip(x.item)}<ha-icon class="arrow" icon="mdi:arrow-right"></ha-icon>${this.chip(x.entityId, { tone: 'missing' })}
-              <span class="role">${this.m(`role.${x.role}`)}</span>
-            </div>`
-          );
-        default:
-          return map.chains.map(
-            (c) => html`<div class="row">
-              ${this.chip(c.from)}<ha-icon class="arrow" icon="mdi:arrow-right"></ha-icon>
-              ${c.via !== c.to ? html`${this.chip(c.via)}<ha-icon class="arrow" icon="mdi:arrow-right"></ha-icon>` : nothing}
-              ${this.chip(c.to)}
-            </div>`
-          );
-      }
-    })();
+    const rows = this.issueRows(map);
     return html`<h3>${this.m(`issues.${this.issue}.title`)}</h3>
       ${rows.length > 0 ? rows : html`<p class="muted">${this.m(`issues.${this.issue}.empty`)}</p>`}`;
   }

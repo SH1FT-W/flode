@@ -47,7 +47,8 @@ export const HAConditionSchema: z.ZodType<
     after_offset?: TimePeriod;
     before_offset?: TimePeriod;
     zone?: string;
-    conditions?: z.infer<typeof HAConditionSchema>[];
+    // nested Jinja shorthand (`- "{{ … }}"`) is allowed in groups, as in HA
+    conditions?: (z.infer<typeof HAConditionSchema> | string)[];
     above?: string | number;
     below?: string | number;
     attribute?: string;
@@ -70,7 +71,7 @@ export const HAConditionSchema: z.ZodType<
   after_offset: TimePeriodSchema.optional(),
   before_offset: TimePeriodSchema.optional(),
   zone: z.string().optional(),
-  conditions: z.array(z.lazy(() => HAConditionSchema)).optional(),
+  conditions: z.array(z.union([z.string(), z.lazy(() => HAConditionSchema)])).optional(),
   above: z.union([z.string(), z.number()]).optional(),
   below: z.union([z.string(), z.number()]).optional(),
   attribute: z.string().optional(),
@@ -195,8 +196,8 @@ export interface HAAction {
   event_data?: Record<string, unknown>;
   id?: string;
   alias?: string;
-  target?: Record<string, unknown>;
-  data?: Record<string, unknown>;
+  target?: Record<string, unknown> | string;
+  data?: Record<string, unknown> | string;
   data_template?: Record<string, unknown>;
   response_variable?: string;
   continue_on_error?: boolean;
@@ -346,8 +347,9 @@ export const HAActionSchema: z.ZodType<HAAction> = z.lazy(() =>
     event_data: z.record(z.string(), z.unknown()).optional(),
     id: z.string().optional(),
     alias: z.string().optional(),
-    target: z.record(z.string(), z.unknown()).optional(),
-    data: z.record(z.string(), z.unknown()).optional(),
+    // A mapping, or one template that renders to it (`data: "{{ {...} }}"`)
+    target: z.union([z.record(z.string(), z.unknown()), z.string()]).optional(),
+    data: z.union([z.record(z.string(), z.unknown()), z.string()]).optional(),
     data_template: z.record(z.string(), z.unknown()).optional(),
     response_variable: z.string().optional(),
     continue_on_error: z.boolean().optional(),

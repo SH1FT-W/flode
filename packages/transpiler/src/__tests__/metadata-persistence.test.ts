@@ -730,7 +730,7 @@ this is not
       expect(parsed.errors?.length).toBeGreaterThan(0);
     });
 
-    it('should reject YAML without triggers', async () => {
+    it('should open YAML without triggers with a hidden start (C.A.F.E. #248)', async () => {
       const noTriggerYaml = `
 alias: No Trigger
 action:
@@ -740,8 +740,10 @@ mode: single
 
       const parsed = await parser.parse(noTriggerYaml);
 
-      expect(parsed.success).toBe(false);
-      expect(parsed.warnings).toContain('No triggers found in automation');
+      expect(parsed.success).toBe(true);
+      expect(parsed.graph?.nodes.find((node) => node.type === 'trigger')?.data).toEqual({
+        trigger: 'flode_manual_start',
+      });
     });
 
     it('should handle corrupted metadata gracefully', async () => {

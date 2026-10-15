@@ -13,6 +13,8 @@ export interface ValidationResult {
   success: boolean;
   graph?: FlowGraph;
   errors: ValidationError[];
+  /** Things that don't stop the flow from being saved, but likely aren't meant. */
+  warnings: ValidationError[];
 }
 
 /**
@@ -50,7 +52,7 @@ export function validateFlowGraph(input: unknown): ValidationResult {
         message: error instanceof Error ? error.message : 'Unknown validation error',
       });
     }
-    return { success: false, errors };
+    return { success: false, errors, warnings: [] };
   }
 
   // Step 2: Structural validation
@@ -72,7 +74,28 @@ export function validateFlowGraph(input: unknown): ValidationResult {
     success: errors.length === 0,
     graph: errors.length === 0 ? graph : undefined,
     errors,
+    warnings: findUnconnectedTriggers(graph),
   };
+}
+
+/**
+ * Triggers with nothing after them: firing one starts a run that does
+ * nothing (FLODE ends it at once) — most likely a connection was forgotten.
+ */
+function findUnconnectedTriggers(graph: FlowGraph): ValidationError[] {
+  const hasActions = graph.nodes.some((n) => n.type !== 'trigger');
+  if (!hasActions) return [];
+  return graph.nodes
+    .filter(
+      (n) =>
+        n.type === 'trigger' &&
+        !graph.edges.some((e) => e.source === n.id && e.type !== 'hint' && e.type !== 'choose-hint')
+    )
+    .map((n) => ({
+      code: 'UNCONNECTED_TRIGGER',
+      message: `Trigger "${n.data.alias ?? n.id}" is not connected to anything — firing it does nothing`,
+      path: ['nodes', n.id],
+    }));
 }
 
 /**

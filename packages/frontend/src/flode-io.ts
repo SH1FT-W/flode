@@ -2,8 +2,10 @@ import { type FlowGraph, FlowGraphSchema, isPlainObject } from '@flode/shared';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { defineElement } from './define-element';
 import { flowYaml } from './flow-yaml';
+import { focusFirstField } from './focus';
 import { errorMessage, type FlowKind, type HomeAssistant } from './ha';
 import { copyToClipboard } from './notify';
+import { submitOnModEnter } from './shortcuts';
 import { t } from './strings';
 
 /** A flow read from pasted YAML or a JSON file — opened as a new, unsaved draft. */
@@ -20,7 +22,7 @@ export function yamlKind(config: unknown): FlowKind {
 }
 
 export async function flowFromYaml(yaml: string): Promise<ImportedFlow> {
-  const { transpiler, parseFlowYaml, loadHaYaml } = await import('@flode/transpiler');
+  const { transpiler, parseFlowYaml, loadHaYaml, dumpHaYaml } = await import('@flode/transpiler');
   let config: unknown = loadHaYaml(yaml);
   // A pasted scripts.yaml entry (`my_script: {…}`) — take the script itself.
   if (isPlainObject(config) && Object.keys(config).length === 1) {
@@ -30,8 +32,7 @@ export async function flowFromYaml(yaml: string): Promise<ImportedFlow> {
   // automations.yaml is a list — the first automation.
   if (Array.isArray(config)) config = config[0];
   const kind = yamlKind(config);
-  const { dump } = await import('js-yaml');
-  const result = await parseFlowYaml(transpiler, dump(config), kind, { keepBlocks: true });
+  const result = await parseFlowYaml(transpiler, dumpHaYaml(config), kind, { keepBlocks: true });
   if (!result.success || !result.graph) throw new Error(result.errors?.join('\n') ?? 'parse');
   return { graph: result.graph, kind };
 }
@@ -108,6 +109,9 @@ export class FlodeYamlImport extends LitElement {
     this.dispatchEvent(new CustomEvent('closed'));
   }
 
+  /** ⌘↩ opens it, like the dialog's button (Enter alone is a new line in the editor). */
+  private readonly submitKey = submitOnModEnter(() => void this.import());
+
   private async import(): Promise<void> {
     if (!this.yaml.trim() || this.busy) return;
     this.busy = true;
@@ -129,6 +133,8 @@ export class FlodeYamlImport extends LitElement {
       .open=${this.open}
       .headerTitle=${t(language, 'ioYamlTitle')}
       width="large"
+      @after-show=${() => focusFirstField(this.renderRoot)}
+      @keydown=${this.submitKey}
       @closed=${() => this.close()}
     >
       <p class="muted">${t(language, 'ioYamlIntro')}</p>

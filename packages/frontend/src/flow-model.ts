@@ -1,8 +1,11 @@
 import {
+  dropSupersededManualStart,
   type FlowEdge,
   type FlowGraph,
+  type FlowMetadata,
+  FlowMetadataSchema,
   type FlowNode,
-  isScriptStart,
+  isFlowStart,
   NodeSchema,
 } from '@flode/shared';
 
@@ -104,7 +107,7 @@ export function updateNodeData(
   };
 }
 
-/** A copy of `node` (new id, no connections) next to where it was, or at `at` — duplicate and paste. */
+/** A copy of `node` (new id, no connections) next to where it was, or at `at` — paste. */
 export function copyNode(
   graph: FlowGraph,
   node: FlowNode,
@@ -118,6 +121,46 @@ export function copyNode(
     `${node.type}_${Date.now().toString(36)}`,
     structuredClone(node.data)
   );
+}
+
+/** A real connection of the flow (not a drawing aid like hints or loop-backs). */
+function isFlowEdge(edge: FlowEdge): boolean {
+  return edge.type === undefined || edge.type === 'default' || edge.type === 'deletable';
+}
+
+/**
+ * ⌘D: a copy of `node` at `position`, right after it in the flow — like HA's
+ * "Duplicate", which puts the copy behind the original: what followed the
+ * card follows the copy (a condition's Yes path). A trigger's copy starts
+ * the same steps as the original.
+ */
+export function duplicateNode(
+  graph: FlowGraph,
+  node: FlowNode,
+  position: { x: number; y: number }
+): { graph: FlowGraph; id: string } {
+  const added = copyNode(graph, node, position);
+  const { id } = added;
+  if (added.graph === graph) return added;
+  const outgoing = graph.edges.filter((e) => e.source === node.id && isFlowEdge(e));
+  if (node.type === 'trigger') {
+    const next = outgoing.reduce(
+      (g, e) => connect(g, { source: id, sourceHandle: e.sourceHandle ?? null, target: e.target }),
+      added.graph
+    );
+    return { graph: next, id };
+  }
+  const handle = node.type === 'condition' ? 'true' : null;
+  const moved = outgoing.filter((e) => (e.sourceHandle ?? null) === handle);
+  const rest: FlowGraph = {
+    ...added.graph,
+    edges: added.graph.edges.filter((e) => !moved.includes(e)),
+  };
+  const next = moved.reduce(
+    (g, e) => connect(g, { source: id, sourceHandle: handle, target: e.target }),
+    connect(rest, { source: node.id, sourceHandle: handle, target: id })
+  );
+  return { graph: next, id };
 }
 
 /** Removes every connection of a card (the card stays). */
@@ -278,9 +321,12 @@ export function freePosition(
 
 // ---- scripts: the start node exists for the transpiler but is never shown ---------
 
-/** The script's start node (it carries the `fields`), if this flow is a script. */
+/**
+ * The hidden start node: a script's (it carries the `fields`), or that of an
+ * automation without triggers — both begin with their first step, like in HA.
+ */
 export function scriptStartId(graph: FlowGraph): string | undefined {
-  return graph.nodes.find((node) => isScriptStart(node.data))?.id;
+  return graph.nodes.find((node) => isFlowStart(node.data))?.id;
 }
 
 /** What the canvas shows: a script without its start node (like HA — a script begins with its first action). */
@@ -304,14 +350,98 @@ export function scriptEntryIds(graph: FlowGraph): Set<string> {
 
 /**
  * Keeps a script startable: when its start leads nowhere (new script, first
- * card deleted), the left-most card without a predecessor becomes the beginning.
+ * card deleted), the left-most card without a predecessor becomes the
+ * beginning. An automation without triggers loses its hidden start as soon
+ * as it has a trigger of its own.
  */
-export function ensureScriptEntry(graph: FlowGraph): FlowGraph {
+export function ensureScriptEntry(next: FlowGraph): FlowGraph {
+  const graph = dropSupersededManualStart(next);
   const startId = scriptStartId(graph);
   if (!startId || graph.edges.some((edge) => edge.source === startId)) return graph;
   const hasPredecessor = new Set(graph.edges.map((edge) => edge.target));
+  // Never a trigger (one added to an automation without triggers is an entry of its own).
   const first = graph.nodes
-    .filter((node) => node.id !== startId && !hasPredecessor.has(node.id))
+    .filter(
+      (node) => node.id !== startId && node.type !== 'trigger' && !hasPredecessor.has(node.id)
+    )
     .sort((a, b) => a.position.x - b.position.x || a.position.y - b.position.y)[0];
   return first ? connect(graph, { source: startId, sourceHandle: null, target: first.id }) : graph;
+}
+
+// ---- assistant proposals -------------------------------------------------
+
+/** What the YAML parser fills in for a flow without `alias:` (not a name the reply gave). */
+const PARSER_DEFAULT_NAME = 'Imported Automation';
+
+/** Flow settings a reply's YAML can set (top-level keys = metadata keys). */
+const PROPOSAL_METADATA_KEYS = [
+  'mode',
+  'max',
+  'max_exceeded',
+  'icon',
+  'initial_state',
+  'hide_entity',
+  'trace',
+] as const satisfies readonly (keyof FlowMetadata)[];
+
+/**
+ * Whether the reply set top-level key `key`. `present` = the top-level keys
+ * of the reply's YAML; without it only a value other than the parser's
+ * default (`fallback`) counts as set.
+ */
+function proposalSets(
+  present: ReadonlySet<string> | undefined,
+  key: string,
+  fallback: boolean
+): boolean {
+  return present ? present.has(key) : fallback;
+}
+
+/**
+ * The assistant's proposal applied to the open flow: its cards, plus the
+ * name, description, settings and variables the reply actually wrote — a
+ * reply without `alias:` keeps the flow's name instead of the parser's
+ * "Imported Automation". The flow's kind never changes.
+ */
+export function applyProposal(
+  current: FlowGraph,
+  proposal: FlowGraph,
+  present?: ReadonlySet<string>
+): FlowGraph {
+  const proposed = proposal.metadata;
+  const metadata: Record<string, unknown> = { ...current.metadata };
+  for (const key of PROPOSAL_METADATA_KEYS) {
+    const value = proposed?.[key];
+    const set = proposalSets(
+      present,
+      key,
+      value !== undefined && !(key === 'mode' && value === 'single')
+    );
+    if (set) metadata[key] = value;
+  }
+  metadata.kind = current.metadata?.kind;
+  const parsed = FlowMetadataSchema.safeParse(metadata);
+  const name = proposalSets(present, 'alias', proposal.name !== PARSER_DEFAULT_NAME)
+    ? proposal.name
+    : '';
+  return {
+    ...current,
+    nodes: proposal.nodes,
+    edges: proposal.edges,
+    name: name || current.name,
+    description: proposalSets(present, 'description', Boolean(proposal.description))
+      ? (proposal.description ?? '')
+      : current.description,
+    userVariables: proposalSets(present, 'variables', proposal.userVariables !== undefined)
+      ? proposal.userVariables
+      : current.userVariables,
+    userTriggerVariables: proposalSets(
+      present,
+      'trigger_variables',
+      proposal.userTriggerVariables !== undefined
+    )
+      ? proposal.userTriggerVariables
+      : current.userTriggerVariables,
+    ...(parsed.success ? { metadata: parsed.data } : {}),
+  };
 }

@@ -5,11 +5,12 @@ import {
   createRawStepData,
   type FlowNode,
   HAConditionSchema,
+  INTERNAL_CONDITION_KEYS,
   isDeviceAction,
   isPlainObject,
-  SHORTHAND_CONDITION_KEY,
 } from '@flode/shared';
 import type { NodeType } from './flow-model';
+import type { PlatformDescriptions } from './platform-descriptions';
 
 /**
  * Bridge between FLODE's node data and the step format HA's own automation
@@ -29,13 +30,6 @@ export interface StepEdit {
 export function stepKind(type: NodeType): StepKind {
   return type === 'trigger' || type === 'condition' ? type : 'action';
 }
-
-/** FLODE-internal keys HA's editors must not see (and that survive an edit). */
-const INTERNAL_CONDITION_KEYS = [
-  '_chooseCase',
-  '_chooseCaseTotal',
-  SHORTHAND_CONDITION_KEY,
-] as const;
 
 function withoutId(data: Record<string, unknown>): Record<string, unknown> {
   const { id: _id, ...rest } = data;
@@ -194,13 +188,62 @@ const ACTION_TYPE_KEYS: readonly [string, string][] = [
   ['service', 'service'],
 ];
 
-/** Whether HA has a form (not only YAML) for this step. */
-export function hasUiEditor(kind: StepKind, step: Record<string, unknown>): boolean {
+/** The integration trigger/condition (`motion.detected`) a step is, if HA described it. */
+export function platformDescription(
+  kind: StepKind,
+  step: Record<string, unknown>,
+  descriptions: PlatformDescriptions
+): Record<string, unknown> | undefined {
+  if (kind === 'action') return undefined;
+  const type = kind === 'trigger' ? step.trigger : step.condition;
+  return typeof type === 'string' && Object.hasOwn(descriptions, type)
+    ? descriptions[type]
+    : undefined;
+}
+
+/**
+ * Whether HA has a form (not only YAML) for this step. Mirrors HA's
+ * `_getType`: a described integration trigger/condition is shown by HA's
+ * generic `ha-automation-<kind>-platform` form.
+ */
+export function hasUiEditor(
+  kind: StepKind,
+  step: Record<string, unknown>,
+  descriptions: PlatformDescriptions = {}
+): boolean {
   let type: unknown;
-  if (kind === 'trigger') type = step.trigger ?? step.platform;
+  if (platformDescription(kind, step, descriptions)) type = 'platform';
+  else if (kind === 'trigger') type = step.trigger ?? step.platform;
   else if (kind === 'condition') type = step.condition;
   else type = ACTION_TYPE_KEYS.find(([key]) => key in step)?.[1];
   return (
     typeof type === 'string' && customElements.get(`ha-automation-${kind}-${type}`) !== undefined
   );
+}
+
+/** What HA's duration field reports for 0:00:00.000 — the value an untouched new delay shows. */
+const ZERO_DURATION = { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 };
+
+/**
+ * A step just taken from HA's add dialog, completed so HA accepts it as
+ * shown: a new webhook trigger gets its webhook id (HA's form shows a
+ * generated one but doesn't report it, and HA won't save a trigger without
+ * one); a new delay (HA's template is `delay: ""`, which HA refuses to save)
+ * gets the 0:00:00.000 its form shows. Loaded steps never pass through here.
+ */
+export function completeNewStep(step: Record<string, unknown>): Record<string, unknown> {
+  if (step.delay === '') return { ...step, delay: { ...ZERO_DURATION } };
+  const type = step.trigger ?? step.platform;
+  if (type !== 'webhook' || (typeof step.webhook_id === 'string' && step.webhook_id !== ''))
+    return step;
+  return { ...step, webhook_id: newWebhookId() };
+}
+
+/** A webhook id like HA's editor makes: random, URL-safe. */
+function newWebhookId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(18));
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }

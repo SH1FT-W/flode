@@ -109,16 +109,73 @@ export function listAutomations(hass: HomeAssistant): AutomationListItem[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Every script HA knows; its config id is the entity's object id (`script.<id>`). */
+const SCRIPT_PREFIX = 'script.';
+
+/**
+ * Script config ids by entity id. A script's config id is its registry
+ * `unique_id` — the entity's object id only until the entity gets renamed
+ * (config id `flur_licht`, entity `script.flur`). Filled by `syncScriptIds`.
+ */
+const scriptConfigIds = new Map<string, string>();
+let scriptIdSync: Promise<boolean> | null = null;
+
+function scriptEntityIds(hass: HomeAssistant): string[] {
+  return Object.keys(hass.states).filter((id) => id.startsWith(SCRIPT_PREFIX));
+}
+
+/** The config id of script `entityId` (`script.flur` → `flur_licht` after a rename). */
+export function scriptConfigId(entityId: string): string {
+  return scriptConfigIds.get(entityId) ?? entityId.slice(SCRIPT_PREFIX.length);
+}
+
+async function readScriptIds(hass: HomeAssistant, entityIds: string[]): Promise<boolean> {
+  try {
+    const entries = await hass.callWS<unknown>({
+      type: 'config/entity_registry/get_entries',
+      entity_ids: entityIds,
+    });
+    let changed = false;
+    for (const entityId of entityIds) {
+      const entry = isRecord(entries) ? entries[entityId] : undefined;
+      const uniqueId =
+        isRecord(entry) && typeof entry.unique_id === 'string' ? entry.unique_id : null;
+      const configId = uniqueId ?? entityId.slice(SCRIPT_PREFIX.length);
+      if (configId !== scriptConfigId(entityId)) changed = true;
+      scriptConfigIds.set(entityId, configId);
+    }
+    return changed;
+  } catch {
+    return false; // Unknown ones keep their object id and are asked for again next time.
+  }
+}
+
+/**
+ * Reads the config ids of scripts not looked up yet from HA's entity
+ * registry. Resolves `true` when an id differs from the entity's object id
+ * (the script lists must then be rendered again).
+ */
+export async function syncScriptIds(hass: HomeAssistant): Promise<boolean> {
+  while (scriptIdSync) await scriptIdSync;
+  const missing = scriptEntityIds(hass).filter((id) => !scriptConfigIds.has(id));
+  if (missing.length === 0) return false;
+  scriptIdSync = readScriptIds(hass, missing);
+  try {
+    return await scriptIdSync;
+  } finally {
+    scriptIdSync = null;
+  }
+}
+
+/** Every script HA knows, by its config id (see `scriptConfigId`). */
 export function listScripts(hass: HomeAssistant): AutomationListItem[] {
   return Object.values(hass.states)
-    .filter((s) => s.entity_id.startsWith('script.'))
+    .filter((s) => s.entity_id.startsWith(SCRIPT_PREFIX))
     .map((s) => {
       const last = s.attributes.last_triggered;
       return {
         kind: 'script' as const,
         entityId: s.entity_id,
-        configId: s.entity_id.slice('script.'.length),
+        configId: scriptConfigId(s.entity_id),
         name: friendlyName(hass, s.entity_id),
         enabled: true,
         lastTriggered: typeof last === 'string' ? last : null,
@@ -133,7 +190,8 @@ export function listFlows(hass: HomeAssistant, kind: FlowKind): AutomationListIt
 
 /**
  * Config id for a new script from its name — like HA's script editor
- * (`Flur Licht` → `flur_licht`), unique among the existing scripts.
+ * (`Flur Licht` → `flur_licht`), unique among the existing scripts' config
+ * ids and entity ids (call `syncScriptIds` first so renamed ones are known).
  */
 export function newScriptId(hass: HomeAssistant, alias: string): string {
   const base =
@@ -144,8 +202,9 @@ export function newScriptId(hass: HomeAssistant, alias: string): string {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '_')
       .replace(/^_+|_+$/g, '') || 'script';
+  const taken = new Set(scriptEntityIds(hass).map(scriptConfigId));
   let id = base;
-  for (let n = 2; hass.states[`script.${id}`]; n++) id = `${base}_${n}`;
+  for (let n = 2; taken.has(id) || hass.states[`${SCRIPT_PREFIX}${id}`]; n++) id = `${base}_${n}`;
   return id;
 }
 
@@ -159,17 +218,84 @@ export async function loadFlowConfig(
   return config;
 }
 
+/** JSON with sorted keys — the same config always gives the same text. */
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (isRecord(value)) {
+    const entries = Object.keys(value)
+      .filter((key) => value[key] !== undefined)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`);
+    return `{${entries.join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'null';
+}
+
+/**
+ * A short fingerprint of a config as HA has it stored. FLODE remembers it
+ * when opening or saving a flow; a different one later means the flow was
+ * changed in HA meanwhile (HA's editor, YAML, another window).
+ */
+export function configFingerprint(config: Record<string, unknown>): string {
+  const text = stableJson(config);
+  // FNV-1a (32 bit) plus the length — enough to tell two versions apart.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return `${text.length.toString(36)}-${hash.toString(36)}`;
+}
+
 /** Made from a blueprint — its steps live in the blueprint, only its inputs in the config. */
 export function usesBlueprint(config: Record<string, unknown>): boolean {
   return 'use_blueprint' in config;
 }
 
+/** The blueprint a flow is made from (`use_blueprint.path`), if any. */
+export function blueprintPath(config: Record<string, unknown>): string | undefined {
+  const use = config.use_blueprint;
+  return isRecord(use) && typeof use.path === 'string' ? use.path : undefined;
+}
+
+/**
+ * A blueprint flow's steps with its inputs filled in — HA's own
+ * `blueprint/substitute` (what HA's "Take control" uses). For showing only.
+ */
+export async function substituteBlueprint(
+  hass: HomeAssistant,
+  kind: FlowKind,
+  config: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const use = isRecord(config.use_blueprint) ? config.use_blueprint : {};
+  const result = await hass.callWS<unknown>({
+    type: 'blueprint/substitute',
+    domain: kind,
+    path: blueprintPath(config) ?? '',
+    input: isRecord(use.input) ? use.input : {},
+  });
+  const substituted = isRecord(result) ? result.substituted_config : undefined;
+  if (!isRecord(substituted)) throw new Error('blueprint/substitute: no config');
+  return substituted;
+}
+
+/**
+ * Writes a flow's config. Never over one made from a blueprint: FLODE only
+ * shows those (HA's version is read right before writing, whatever the
+ * open tab believes) — its steps live in the blueprint, its inputs would be lost.
+ */
 export async function saveFlowConfig(
   hass: HomeAssistant,
   kind: FlowKind,
   configId: string,
   config: Record<string, unknown>
 ): Promise<void> {
+  const stored = await hass
+    .callApi<unknown>('GET', `config/${kind}/config/${configId}`)
+    .catch(() => null);
+  if (isRecord(stored) && usesBlueprint(stored)) {
+    throw new Error(`${kind} ${configId} is made from a blueprint – not overwritten`);
+  }
   await hass.callApi('POST', `config/${kind}/config/${configId}`, config);
 }
 
@@ -276,7 +402,11 @@ export function ensureAutomationEditors(hass: HomeAssistant | undefined): Promis
       ? Promise.resolve(true)
       : loadAutomationEditors(),
     hass?.loadFragmentTranslation?.('config').catch(() => undefined),
-  ]).then(([ready]) => ready);
+  ]).then(([ready]) => {
+    // Not ready (yet): the next caller tries again instead of getting `false` forever.
+    if (!ready) editorLoad = null;
+    return ready;
+  });
   return editorLoad;
 }
 
@@ -576,13 +706,15 @@ export async function waitForAutomationEntity(
 /** Applies area / category / labels the way HA's automation editor does after saving. */
 export async function applyRegistryUpdate(
   hass: HomeAssistant,
+  kind: FlowKind,
   entityId: string,
   update: RegistryUpdate
 ): Promise<void> {
   await hass.callWS({
     type: 'config/entity_registry/update',
     entity_id: entityId,
-    categories: { automation: update.category ?? null },
+    // Categories are per scope — a script's category lives under `script`.
+    categories: { [kind]: update.category ?? null },
     labels: update.labels ?? [],
     area_id: update.area ?? null,
   });
@@ -632,6 +764,16 @@ export function getTrace(
   return hass.callWS({ type: 'trace/get', domain: kind, item_id: configId, run_id: runId });
 }
 
+/** The flow's newest run as HA recorded it, `null` when it never ran. */
+export async function getLatestTrace(
+  hass: HomeAssistant,
+  kind: FlowKind,
+  configId: string
+): Promise<HaTrace | null> {
+  const [latest] = await listTraces(hass, kind, configId);
+  return latest ? getTrace(hass, kind, configId, latest.run_id) : null;
+}
+
 /** Logbook lines caused by a run (what HA's timeline shows between the steps). */
 export async function getRunLogbook(
   hass: HomeAssistant,
@@ -652,20 +794,22 @@ export async function getRunLogbook(
 
 let traceViewerLoad: Promise<boolean> | null = null;
 
+async function loadTraceViewer(hass: HomeAssistant | undefined): Promise<boolean> {
+  await ensureAutomationEditors(hass);
+  try {
+    const automation = document.createElement('ha-config-automation') as unknown as RouteLoader;
+    await automation.routerOptions.routes.trace?.load();
+  } catch {
+    // Falls through to the definition check.
+  }
+  return ['hat-trace-timeline', 'ha-trace-path-details'].every(
+    (tag) => customElements.get(tag) !== undefined
+  );
+}
+
 /** HA's trace timeline and step details live in the automation trace page's chunk. */
 export function ensureTraceViewer(hass: HomeAssistant | undefined): Promise<boolean> {
-  traceViewerLoad ??= (async () => {
-    await ensureAutomationEditors(hass);
-    try {
-      const automation = document.createElement('ha-config-automation') as unknown as RouteLoader;
-      await automation.routerOptions.routes.trace?.load();
-    } catch {
-      // Falls through to the definition check.
-    }
-    return ['hat-trace-timeline', 'ha-trace-path-details'].every(
-      (tag) => customElements.get(tag) !== undefined
-    );
-  })();
+  traceViewerLoad ??= loadTraceViewer(hass);
   return traceViewerLoad;
 }
 

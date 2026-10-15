@@ -35,7 +35,9 @@ export function buildRawStepAction(data: Record<string, unknown>): Record<string
   const raw = getRawStep(data);
   if (!raw) return null;
   const { enabled: _originalEnabled, ...rest } = raw;
-  return data.enabled === false ? { ...rest, enabled: false } : rest;
+  if (data.enabled === false) return { ...rest, enabled: false };
+  // Switched back on in FLODE — otherwise the step's own `enabled` (a template, too) stays
+  return raw.enabled === false ? rest : { ...raw };
 }
 
 /**
@@ -58,11 +60,7 @@ export function createRawConditionData(
  * unchanged unless its `enabled` state was toggled in FLODE.
  */
 export function buildRawCondition(data: Record<string, unknown>): Record<string, unknown> | null {
-  const raw = getRawStep(data);
-  if (!raw) return null;
-  return (raw.enabled === false) === (data.enabled === false)
-    ? { ...raw }
-    : buildRawStepAction(data);
+  return buildRawStepAction(data);
 }
 
 /** Marks a condition node that HA had as a Jinja shorthand (a bare template string). */
@@ -87,3 +85,23 @@ export function getShorthandCondition(data: Record<string, unknown>): string | n
     Object.entries(data).every(([key, value]) => SHORTHAND_KEYS.has(key) || value === undefined);
   return isPlainTemplate && typeof data.value_template === 'string' ? data.value_template : null;
 }
+
+/**
+ * Marks a condition node that HA had as a step of the actions (`- condition: …`
+ * in a sequence) rather than in the automation's `conditions:` — written back
+ * there, as a plain step, instead of being moved or turned into an `if`.
+ */
+export const CONDITION_STEP_KEY = '_step';
+
+/** True for a condition node that came in as a step of the actions. */
+export function isConditionStep(data: Record<string, unknown>): boolean {
+  return data[CONDITION_STEP_KEY] === true;
+}
+
+/** FLODE-internal keys on a condition node — never written to HA, and kept through an edit. */
+export const INTERNAL_CONDITION_KEYS = [
+  '_chooseCase',
+  '_chooseCaseTotal',
+  SHORTHAND_CONDITION_KEY,
+  CONDITION_STEP_KEY,
+] as const;

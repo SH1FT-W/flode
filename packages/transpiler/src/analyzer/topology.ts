@@ -390,21 +390,21 @@ function detectDivergentTriggerPaths(g: GraphInstance, flow: FlowGraph): boolean
     return new Set(successors);
   });
 
-  // When each trigger connects exclusively to condition nodes, the conditions
-  // handle routing at runtime (e.g. `condition: trigger` checks). This pattern
-  // is natively expressible in HA with sequential `if` blocks and is NOT
-  // truly divergent from a transpilation standpoint.
-  const allTriggerTargetsAreConditions = triggerNodes.every((trigger) => {
+  // When each trigger connects exclusively to `condition: trigger` nodes, those
+  // conditions route by trigger id at runtime — natively expressible in HA with
+  // sequential `if` blocks, so NOT divergent. Any other condition does not tell
+  // the triggers apart: written natively, every trigger would run every branch.
+  const allTriggerTargetsAreTriggerIdConditions = triggerNodes.every((trigger) => {
     const successors = g.successors(trigger.id) || [];
     return (
       successors.length > 0 &&
       successors.every((succ) => {
         const node = flow.nodes.find((n) => n.id === succ);
-        return node?.type === 'condition';
+        return node?.type === 'condition' && node.data.condition === 'trigger';
       })
     );
   });
-  if (allTriggerTargetsAreConditions) {
+  if (allTriggerTargetsAreTriggerIdConditions) {
     return false;
   }
 

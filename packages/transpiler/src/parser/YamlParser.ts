@@ -12,12 +12,12 @@ import type {
   HADelay,
   HAWait,
   SetVariablesNode,
-  Target,
   TriggerNode,
   WaitNode,
 } from '@flode/shared';
 import {
   CafeMetadataSchema,
+  CONDITION_STEP_KEY,
   createRawConditionData,
   createRawStepData,
   createShorthandConditionData,
@@ -25,12 +25,12 @@ import {
   FlowGraphSchema,
   HAConditionSchema,
   HATriggerSchema,
-  hasTimeout,
   isDeviceAction,
   isHACondition,
   isPlainObject,
   isTargetedPlatform,
   validateGraphStructure,
+  withManualStart,
 } from '@flode/shared';
 import { load as yamlLoad } from 'js-yaml';
 import { generateEdgeId, generateGraphId, generateNodeId } from '../utils/generateIds';
@@ -139,6 +139,11 @@ const EVENT_NODE_KEYS = ['alias', 'event', 'event_data', 'enabled'];
 /** The keys FLODE's stop node models — a step with any other key is kept verbatim. */
 const STOP_NODE_KEYS = ['alias', 'stop', 'error', 'enabled'];
 
+/** A step whose `enabled` is not a plain on/off (a template). */
+function hasTemplatedEnabled(step: unknown): boolean {
+  return isPlainObject(step) && step.enabled !== undefined && typeof step.enabled !== 'boolean';
+}
+
 /** True if every key of the step is one of `keys`. */
 function hasOnlyKeys(step: object, keys: readonly string[]): boolean {
   return Object.keys(step).every((key) => keys.includes(key));
@@ -170,11 +175,62 @@ function isEventAction(action: unknown): action is Record<string, unknown> {
  */
 interface StateMachineNodeInfo {
   nodeId: string;
-  nodeType: 'action' | 'condition' | 'delay' | 'wait' | 'set_variables';
-  data: Record<string, unknown>;
+  /** The node, read like any other step — `null` for an entry that only moves on. */
+  node: FlowNode | null;
   trueTarget: string | null;
   falseTarget: string | null;
   parallelItems?: unknown[];
+}
+
+/** What reading the inline branches of a state machine's fan-out needs. */
+interface InlineParseContext {
+  generateId: (type: string) => string;
+  warnings: string[];
+}
+
+/** The `{{ current_node == "END" }}` loop FLODE's state machine runs in. */
+const STATE_MACHINE_LOOP_END = '{{ current_node == "END" }}';
+
+/** The variables of a state-machine transition step (`variables: { current_node: … }`), or null. */
+function transitionVariables(step: unknown): Record<string, unknown> | null {
+  if (!isPlainObject(step) || !isPlainObject(step.variables)) return null;
+  if (!hasOnlyKeys(step, ['variables', 'alias'])) return null;
+  const vars = step.variables;
+  const isTransition =
+    'current_node' in vars &&
+    Object.keys(vars).every((key) => key === 'current_node' || key === 'flow_context');
+  return isTransition ? vars : null;
+}
+
+/** A then/else list that only moves the state machine on. */
+function isTransitionList(steps: unknown): boolean {
+  return (
+    Array.isArray(steps) && steps.length > 0 && steps.every((step) => transitionVariables(step))
+  );
+}
+
+/** A condition node's step: `if: [condition]` whose branches only move on. */
+function isConditionTransition(step: Record<string, unknown>): boolean {
+  return (
+    Array.isArray(step.if) &&
+    step.if.length === 1 &&
+    isTransitionList(step.then) &&
+    (step.else === undefined || isTransitionList(step.else))
+  );
+}
+
+/** A node's fan-out: a `parallel:` of the branches FLODE inlined (`alias: parallel_branch:<id>`). */
+function isFanOutTail(step: Record<string, unknown>): step is { parallel: unknown[] } {
+  return (
+    Array.isArray(step.parallel) &&
+    hasOnlyKeys(step, ['parallel']) &&
+    step.parallel.every(
+      (branch) =>
+        isPlainObject(branch) &&
+        typeof branch.alias === 'string' &&
+        branch.alias.startsWith('parallel_branch:')
+    )
+  );
 }
 
 /**
@@ -296,8 +352,10 @@ type NestedCondition = NonNullable<ConditionNode['data']['conditions']>[number];
 /**
  * Transform an array of Home Assistant conditions to internal format
  */
-function transformConditions(conditions: HACondition[]): NestedCondition[] {
-  return conditions.map((c) => transformToNestedCondition(c));
+function transformConditions(conditions: (HACondition | string)[]): NestedCondition[] {
+  return conditions.map((c) =>
+    transformToNestedCondition(typeof c === 'string' ? createShorthandConditionData(c) : c)
+  );
 }
 
 /**
@@ -364,6 +422,11 @@ export class YamlParser {
             hadMetadata: false,
           };
         }
+        if (parsed.length > 1) {
+          warnings.push(
+            `The YAML holds ${parsed.length} automations — only the first one is opened.`
+          );
+        }
         parsed = parsed[0] as Record<string, unknown>;
       }
 
@@ -383,8 +446,9 @@ export class YamlParser {
       // Step 2b: Extract user-defined variables (excluding _flode_metadata)
       const userVariables = this.extractUserVariables(parsed);
 
-      // Step 3: Only support automation format (no script import)
-      const content = parsed;
+      // Step 3: Only support automation format (no script import). One without
+      // triggers gets the hidden start node a script has.
+      const content = isPlainObject(parsed) ? withManualStart(parsed) : parsed;
       // Defensive: ensure content is Record<string, unknown>
       if (typeof content !== 'object' || content === null) {
         return {
@@ -399,8 +463,7 @@ export class YamlParser {
       const metadataNodeIds = metadata ? Object.keys(metadata.nodes) : [];
 
       // Step 5: Check if this is a state-machine format automation
-      const isStateMachine =
-        metadata?.strategy === 'state-machine' || this.detectStateMachineFormat(content);
+      const isStateMachine = this.isFlodeStateMachine(content, metadata, warnings);
 
       // Step 6: Parse nodes and edges from YAML structure
       const { nodes, edges } = isStateMachine
@@ -583,46 +646,62 @@ export class YamlParser {
   }
 
   /**
-   * Detect if automation is in state-machine format
-   * State-machine format has:
-   * - A variables action with current_node and flow_context
-   * - A repeat loop with choose blocks
+   * The state machine FLODE wrote for a flow its native steps can't express:
+   * a `variables` step with `current_node` and `flow_context`, then a
+   * `repeat` loop of `choose` entries. Returns those two steps, or null.
    */
-  private detectStateMachineFormat(content: Record<string, unknown>): boolean {
-    const actions = (content.actions || content.action) as unknown[];
-    if (!Array.isArray(actions)) return false;
+  private findStateMachineSteps(
+    content: Record<string, unknown>
+  ): { init: Record<string, unknown>; loop: Record<string, unknown> } | null {
+    const actions = content.actions ?? content.action;
+    if (!Array.isArray(actions)) return null;
+    const init = actions.find(
+      (step) =>
+        isPlainObject(step) &&
+        isPlainObject(step.variables) &&
+        'current_node' in step.variables &&
+        'flow_context' in step.variables
+    );
+    const loop = actions.find(
+      (step) =>
+        isPlainObject(step) &&
+        isPlainObject(step.repeat) &&
+        Array.isArray(step.repeat.sequence) &&
+        step.repeat.sequence.some((item) => isPlainObject(item) && Array.isArray(item.choose))
+    );
+    return isPlainObject(init) && isPlainObject(loop) ? { init, loop } : null;
+  }
 
-    let hasCurrentNodeVar = false;
-    let hasRepeatChoose = false;
-
-    for (const action of actions) {
-      const actionObj = action as Record<string, unknown>;
-
-      // Check for variables with current_node
-      if (actionObj.variables) {
-        const vars = actionObj.variables as Record<string, unknown>;
-        if ('current_node' in vars && 'flow_context' in vars) {
-          hasCurrentNodeVar = true;
-        }
-      }
-
-      // Check for repeat with choose
-      if (actionObj.repeat) {
-        const repeat = actionObj.repeat as Record<string, unknown>;
-        const sequence = repeat.sequence as unknown[];
-        if (Array.isArray(sequence)) {
-          for (const seqItem of sequence) {
-            const seqObj = seqItem as Record<string, unknown>;
-            if (Array.isArray(seqObj.choose)) {
-              hasRepeatChoose = true;
-              break;
-            }
-          }
-        }
-      }
+  /**
+   * Whether to read the automation as FLODE's state machine. A user's own
+   * automation that happens to use `current_node` is not one: it needs FLODE's
+   * metadata saying so, or FLODE's exact loop. One that was changed outside
+   * FLODE — a top-level condition, another step, or rebuilt as plain steps
+   * (the metadata is stale then) — is read like any automation, so nothing in
+   * it is lost.
+   */
+  private isFlodeStateMachine(
+    content: Record<string, unknown>,
+    metadata: CafeMetadata | null,
+    warnings: string[]
+  ): boolean {
+    const steps = this.findStateMachineSteps(content);
+    if (!steps) return false;
+    const loopUntil = isPlainObject(steps.loop.repeat) ? steps.loop.repeat.until : undefined;
+    if (metadata?.strategy !== 'state-machine' && loopUntil !== STATE_MACHINE_LOOP_END) {
+      return false;
     }
-
-    return hasCurrentNodeVar && hasRepeatChoose;
+    const actions = content.actions ?? content.action;
+    const conditions = content.conditions ?? content.condition;
+    const hasOtherSteps = Array.isArray(actions) && actions.length !== 2;
+    const hasConditions = Array.isArray(conditions) ? conditions.length > 0 : Boolean(conditions);
+    if (hasOtherSteps || hasConditions) {
+      warnings.push(
+        "This flow's state machine was changed outside FLODE, so it is kept as one block — nothing in it is lost."
+      );
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -676,7 +755,8 @@ export class YamlParser {
             if (Array.isArray(seqObj.choose)) {
               for (const chooseBlock of seqObj.choose) {
                 const nodeInfo = this.parseStateMachineChooseBlock(
-                  chooseBlock as Record<string, unknown>
+                  chooseBlock as Record<string, unknown>,
+                  warnings
                 );
                 if (nodeInfo) {
                   nodeInfoMap.set(nodeInfo.nodeId, nodeInfo);
@@ -701,7 +781,11 @@ export class YamlParser {
     for (const [nodeId, info] of nodeInfoMap) {
       if (!SYNTHETIC_ENTRY_ID.test(nodeId)) continue;
 
-      const targetIds = this.parseInlineParallelBranches(info.parallelItems ?? [], nodeInfoMap);
+      const targetIds = this.parseInlineParallelBranches(
+        info.parallelItems ?? [],
+        nodeInfoMap,
+        warnings
+      );
       if (targetIds.length > 0) {
         parallelTriggerTargets.set(nodeId, targetIds);
       }
@@ -711,7 +795,7 @@ export class YamlParser {
     // A regular node's own fan-out (`parallel:` in its transition tail) inlines
     // its branches the same way — reconstruct those subgraphs too so a mid-flow
     // fan-out survives reimport instead of the branches vanishing entirely.
-    const parallelFanOutTargets = this.resolveParallelFanOuts(nodeInfoMap);
+    const parallelFanOutTargets = this.resolveParallelFanOuts(nodeInfoMap, warnings);
 
     // In state-machine strategy, action/condition/delay/wait node IDs are extracted
     // directly from the Jinja2 templates in the YAML choose blocks. Only trigger
@@ -743,52 +827,9 @@ export class YamlParser {
     );
     nodes.push(...triggerNodes);
 
-    // Create nodes from parsed info
+    // Create nodes from parsed info (an entry that only moves on stays an empty step)
     for (const [nodeId, info] of nodeInfoMap) {
-      const nodeType = info.nodeType;
-
-      switch (nodeType) {
-        case 'condition':
-          nodes.push({
-            id: nodeId,
-            type: 'condition',
-            position: { x: 0, y: 0 },
-            data: info.data as ConditionNode['data'],
-          });
-          break;
-        case 'action':
-          nodes.push({
-            id: nodeId,
-            type: 'action',
-            position: { x: 0, y: 0 },
-            data: info.data as ActionNode['data'],
-          });
-          break;
-        case 'delay':
-          nodes.push({
-            id: nodeId,
-            type: 'delay',
-            position: { x: 0, y: 0 },
-            data: info.data as DelayNode['data'],
-          });
-          break;
-        case 'wait':
-          nodes.push({
-            id: nodeId,
-            type: 'wait',
-            position: { x: 0, y: 0 },
-            data: info.data as WaitNode['data'],
-          });
-          break;
-        case 'set_variables':
-          nodes.push({
-            id: nodeId,
-            type: 'set_variables',
-            position: { x: 0, y: 0 },
-            data: info.data as SetVariablesNode['data'],
-          });
-          break;
-      }
+      nodes.push(info.node ?? { id: nodeId, type: 'action', position: { x: 0, y: 0 }, data: {} });
     }
 
     // Create edges
@@ -801,7 +842,8 @@ export class YamlParser {
         // Different triggers route to different nodes
         for (let i = 0; i < triggerNodes.length; i++) {
           const targetNodeId = triggerRouting.get(i);
-          if (targetNodeId) {
+          // A trigger routed to END has no connection
+          if (targetNodeId && targetNodeId !== 'END') {
             // Expand a synthetic parallel trigger entry into direct edges
             const expandedTargets = parallelTriggerTargets.get(targetNodeId);
             if (expandedTargets) {
@@ -859,7 +901,8 @@ export class YamlParser {
     const pushTransition = (target: string, sourceHandle: 'true' | 'false' | undefined): void => {
       for (const actual of syntheticParallelTargets.get(target) ?? [target]) {
         edges.push({
-          id: `edge-${nodeId}-${actual}`,
+          // With the handle: both branches of a condition may lead to one node
+          id: `edge-${nodeId}-${actual}${sourceHandle ? `-${sourceHandle}` : ''}`,
           source: nodeId,
           target: actual,
           sourceHandle,
@@ -868,7 +911,7 @@ export class YamlParser {
     };
 
     if (info.trueTarget && info.trueTarget !== 'END') {
-      const isBranch = info.nodeType === 'condition' || !!info.falseTarget;
+      const isBranch = info.node?.type === 'condition' || !!info.falseTarget;
       pushTransition(info.trueTarget, isBranch ? 'true' : undefined);
     }
 
@@ -896,7 +939,8 @@ export class YamlParser {
    * which only becomes visible once that branch has been parsed.
    */
   private resolveParallelFanOuts(
-    nodeInfoMap: Map<string, StateMachineNodeInfo>
+    nodeInfoMap: Map<string, StateMachineNodeInfo>,
+    warnings: string[]
   ): Map<string, string[]> {
     const fanOutTargets = new Map<string, string[]>();
     const resolved = new Set<string>();
@@ -912,7 +956,11 @@ export class YamlParser {
         resolved.add(nodeId);
         foundMore = true;
 
-        const targetIds = this.parseInlineParallelBranches(info.parallelItems, nodeInfoMap);
+        const targetIds = this.parseInlineParallelBranches(
+          info.parallelItems,
+          nodeInfoMap,
+          warnings
+        );
         if (targetIds.length > 0) {
           fanOutTargets.set(nodeId, targetIds);
         }
@@ -931,7 +979,8 @@ export class YamlParser {
    */
   private parseInlineParallelBranches(
     parallelItems: unknown[],
-    nodeInfoMap: Map<string, StateMachineNodeInfo>
+    nodeInfoMap: Map<string, StateMachineNodeInfo>,
+    warnings: string[]
   ): string[] {
     const targetIds: string[] = [];
     let idCounter = 0;
@@ -945,15 +994,12 @@ export class YamlParser {
 
       const rootNodeId = branchMatch[1];
 
+      // Without a `sequence` the branch is empty (`stop: Empty branch`)
       if (Array.isArray(pItem.sequence)) {
-        this.parseInlineActionList(
-          pItem.sequence as Record<string, unknown>[],
-          rootNodeId,
-          nodeInfoMap,
-          generateId
-        );
-      } else {
-        this.parseInlineActionItem(pItem, rootNodeId, nodeInfoMap, generateId);
+        this.parseInlineActionList(pItem.sequence, rootNodeId, nodeInfoMap, {
+          generateId,
+          warnings,
+        });
       }
 
       // An empty branch (`{ stop: 'Empty branch' }`) produces no node — skip it
@@ -972,137 +1018,131 @@ export class YamlParser {
    * generated IDs, since FLODE's generator doesn't tag interior branch nodes.
    */
   private parseInlineActionList(
-    actions: Record<string, unknown>[],
+    actions: unknown[],
     firstNodeId: string,
     nodeInfoMap: Map<string, StateMachineNodeInfo>,
-    generateId: (type: string) => string
+    context: InlineParseContext
   ): void {
     let prevNodeId: string | null = null;
 
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
+      if (!isPlainObject(action)) continue;
 
       // A bare parallel block is the previous node's own fan-out (emitted by
       // continueInlineBranch), not a node of its own — attach it so the
       // fan-out pass can rebuild those nested branches too.
-      if (Array.isArray(action.parallel) && action.alias === undefined) {
+      if (isFanOutTail(action)) {
         const prevInfo = prevNodeId ? nodeInfoMap.get(prevNodeId) : undefined;
         if (prevInfo) {
-          prevInfo.parallelItems = action.parallel as unknown[];
+          prevInfo.parallelItems = action.parallel;
         }
         continue;
       }
 
-      const nodeId = i === 0 ? firstNodeId : generateId(this.inferInlineNodeType(action));
+      const nodeId = i === 0 ? firstNodeId : context.generateId(this.inferInlineNodeType(action));
 
       // Chain the previous non-condition node to this one
       if (prevNodeId) {
         const prevInfo = nodeInfoMap.get(prevNodeId);
-        if (prevInfo && prevInfo.nodeType !== 'condition') {
+        if (prevInfo && prevInfo.node?.type !== 'condition') {
           prevInfo.trueTarget = nodeId;
         }
       }
 
-      this.parseInlineActionItem(action, nodeId, nodeInfoMap, generateId);
+      this.parseInlineActionItem(action, nodeId, nodeInfoMap, context);
       prevNodeId = nodeId;
     }
   }
 
   /**
-   * Parse a single inline HA action item into a StateMachineNodeInfo entry.
-   * Handles actions, conditions (if/then/else), delays, waits, and set_variables.
+   * Parse a single inline HA action item into a StateMachineNodeInfo entry: a
+   * condition node's `if/then/else` (its branches inlined too), or any other
+   * step read whole, like everywhere else.
    */
   private parseInlineActionItem(
     item: Record<string, unknown>,
     nodeId: string,
     nodeInfoMap: Map<string, StateMachineNodeInfo>,
-    generateId: (type: string) => string
+    context: InlineParseContext
   ): void {
-    const rawAlias = item.alias as string | undefined;
-    const alias = rawAlias?.startsWith('parallel_branch:') ? undefined : rawAlias;
+    const { alias: rawAlias, ...rest } = item;
+    // The branch root's alias only names the branch
+    const isBranchAlias = typeof rawAlias === 'string' && rawAlias.startsWith('parallel_branch:');
+    const step = isBranchAlias ? rest : item;
 
-    if (item.if && Array.isArray(item.if)) {
-      // Condition node (native if/then/else, used for complex templates)
-      const conditions = item.if as Record<string, unknown>[];
-      const condition = conditions[0] ?? {};
-      const data: Record<string, unknown> = { ...condition };
-      if (alias) data.alias = alias;
-
-      let trueTarget: string | null = null;
-      let falseTarget: string | null = null;
-
-      const thenActions = item.then as Record<string, unknown>[] | undefined;
-      if (thenActions && thenActions.length > 0) {
-        const thenNodeId = generateId(this.inferInlineNodeType(thenActions[0]));
-        trueTarget = thenNodeId;
-        this.parseInlineActionList(thenActions, thenNodeId, nodeInfoMap, generateId);
-      }
-
-      const elseActions = item.else as Record<string, unknown>[] | undefined;
-      if (elseActions && elseActions.length > 0) {
-        const elseNodeId = generateId(this.inferInlineNodeType(elseActions[0]));
-        falseTarget = elseNodeId;
-        this.parseInlineActionList(elseActions, elseNodeId, nodeInfoMap, generateId);
-      }
-
-      nodeInfoMap.set(nodeId, { nodeId, nodeType: 'condition', data, trueTarget, falseTarget });
-    } else if (item.delay !== undefined) {
-      const data: Record<string, unknown> = { delay: item.delay };
-      if (alias) data.alias = alias;
+    if (Array.isArray(step.if) && step.if.length === 1 && Array.isArray(step.then)) {
+      const branchTarget = (actions: unknown): string | null => {
+        if (!Array.isArray(actions) || actions.length === 0) return null;
+        const targetId = context.generateId(this.inferInlineNodeType(actions[0]));
+        this.parseInlineActionList(actions, targetId, nodeInfoMap, context);
+        return targetId;
+      };
       nodeInfoMap.set(nodeId, {
         nodeId,
-        nodeType: 'delay',
-        data,
-        trueTarget: null,
-        falseTarget: null,
+        node: this.createConditionNode(nodeId, step.if[0], step.alias),
+        trueTarget: branchTarget(step.then),
+        falseTarget: branchTarget(step.else),
       });
-    } else if (item.wait_template !== undefined || item.wait_for_trigger !== undefined) {
-      const data: Record<string, unknown> = {};
-      if (item.wait_template) data.wait_template = item.wait_template;
-      if (item.wait_for_trigger) data.wait_for_trigger = item.wait_for_trigger;
-      if (hasTimeout(item.timeout)) data.timeout = item.timeout;
-      if (item.continue_on_timeout !== undefined)
-        data.continue_on_timeout = item.continue_on_timeout;
-      if (alias) data.alias = alias;
-      nodeInfoMap.set(nodeId, {
-        nodeId,
-        nodeType: 'wait',
-        data,
-        trueTarget: null,
-        falseTarget: null,
-      });
-    } else if (item.variables !== undefined) {
-      const data: Record<string, unknown> = { variables: item.variables };
-      if (alias) data.alias = alias;
-      if (item.id) data.id = item.id;
-      nodeInfoMap.set(nodeId, {
-        nodeId,
-        nodeType: 'set_variables',
-        data,
-        trueTarget: null,
-        falseTarget: null,
-      });
-    } else if (item.service || item.action) {
-      const data: Record<string, unknown> = {};
-      data.service = item.service ?? item.action;
-      if (item.target) data.target = item.target;
-      if (item.data) data.data = item.data;
-      if (alias) data.alias = alias;
-      nodeInfoMap.set(nodeId, {
-        nodeId,
-        nodeType: 'action',
-        data,
-        trueTarget: null,
-        falseTarget: null,
-      });
+      return;
     }
+
+    nodeInfoMap.set(nodeId, {
+      nodeId,
+      node: this.parseSingleStep(step, nodeId, context.warnings),
+      trueTarget: null,
+      falseTarget: null,
+    });
+  }
+
+  /** A condition node — for a condition read back from a state machine. */
+  private createConditionNode(nodeId: string, condition: unknown, alias: unknown): ConditionNode {
+    const data = this.toConditionData(condition);
+    return {
+      id: nodeId,
+      type: 'condition',
+      position: { x: 0, y: 0 },
+      data: typeof alias === 'string' ? { ...data, alias } : data,
+    };
+  }
+
+  /**
+   * A condition as FLODE's condition data: as modelled, or — when FLODE can't
+   * model it — kept verbatim (see createUnmodeledConditionData).
+   */
+  private toConditionData(condition: unknown): ConditionNode['data'] {
+    if (typeof condition === 'string') {
+      return HAConditionSchema.parse(createShorthandConditionData(condition));
+    }
+    const record = isPlainObject(condition) ? condition : {};
+    return HAConditionSchema.safeParse(record).data ?? createUnmodeledConditionData(record);
+  }
+
+  /**
+   * One step of a state machine as a node — read whole, exactly as in a
+   * plain automation (HA's blocks stay one block, since the state machine
+   * holds them as one node).
+   */
+  private parseSingleStep(
+    step: Record<string, unknown>,
+    nodeId: string,
+    warnings: string[]
+  ): FlowNode | null {
+    const parser = new YamlParser({ ...this.options, keepBlocks: true });
+    const { nodes } = parser.parseActions([step], {
+      warnings,
+      previousNodeIds: [],
+      getNextNodeId: () => nodeId,
+    });
+    return nodes[0] ?? null;
   }
 
   /**
    * Infer the node type from an inline HA action item, to pick an ID prefix
    * for freshly generated interior branch nodes.
    */
-  private inferInlineNodeType(item: Record<string, unknown>): string {
+  private inferInlineNodeType(item: unknown): string {
+    if (!isPlainObject(item)) return 'action';
     if (item.if) return 'condition';
     if (item.delay !== undefined) return 'delay';
     if (item.wait_template !== undefined || item.wait_for_trigger !== undefined) return 'wait';
@@ -1150,10 +1190,14 @@ export class YamlParser {
   }
 
   /**
-   * Parse a single choose block from state-machine format
+   * Parse a single choose block from state-machine format: the node's own
+   * step (read whole), then how the machine moves on — a transition, a
+   * condition's `if/then/else` (or, as written before, a Jinja `{% if %}`
+   * transition), or a fan-out into parallel branches.
    */
   private parseStateMachineChooseBlock(
-    chooseBlock: Record<string, unknown>
+    chooseBlock: Record<string, unknown>,
+    warnings: string[]
   ): StateMachineNodeInfo | null {
     const conditions = chooseBlock.conditions;
     if (!Array.isArray(conditions) || conditions.length === 0) {
@@ -1161,9 +1205,9 @@ export class YamlParser {
     }
 
     // Extract node ID from condition: {{ current_node == "node-id" }}
-    const firstCondition = conditions[0] as Record<string, unknown>;
-    const valueTemplate = firstCondition.value_template as string;
-    if (!valueTemplate) return null;
+    const [firstCondition] = conditions;
+    const valueTemplate = isPlainObject(firstCondition) ? firstCondition.value_template : undefined;
+    if (typeof valueTemplate !== 'string') return null;
 
     const match = valueTemplate.match(/current_node\s*==\s*["']([^"']+)["']/);
     if (!match) return null;
@@ -1174,110 +1218,51 @@ export class YamlParser {
       return null;
     }
 
-    // Parse sequence to determine node type and data
-    let nodeType: StateMachineNodeInfo['nodeType'] = 'action';
-    const data: Record<string, unknown> = {};
-    let trueTarget: string | null = null;
-    let falseTarget: string | null = null;
-    let parallelItems: unknown[] | undefined;
+    const info: StateMachineNodeInfo = { nodeId, node: null, trueTarget: null, falseTarget: null };
 
     for (const item of sequence) {
-      const seqItem = item as Record<string, unknown>;
+      if (!isPlainObject(item)) continue;
 
-      // Check for variables action. Two distinct shapes share this key: the
-      // state-machine transition, which carries only `current_node` (and
-      // sometimes `flow_context`), and a user set_variables node, which carries
-      // arbitrary user variables. Requiring the transition to hold nothing else
-      // means a user variable merely named `current_node` alongside others is
-      // still read back as a set_variables node instead of a transition.
-      if (seqItem.variables) {
-        const vars = seqItem.variables as Record<string, unknown>;
-        const isTransition =
-          'current_node' in vars &&
-          Object.keys(vars).every((key) => key === 'current_node' || key === 'flow_context');
-
-        if (!isTransition) {
-          nodeType = 'set_variables';
-          data.variables = vars;
-          if (seqItem.alias) data.alias = seqItem.alias;
-          if (seqItem.id) data.id = seqItem.id;
-          continue;
-        }
-
-        const currentNodeValue = vars.current_node;
-
-        if (typeof currentNodeValue === 'string') {
-          // Check if it's a Jinja conditional (condition node)
-          if (currentNodeValue.includes('{%') && currentNodeValue.includes('%}')) {
-            nodeType = 'condition';
-
-            // Extract true and false targets. The `if` expression may itself
-            // contain `%` (e.g. `now().strftime('%H:%M:%S')` from a time
-            // condition), so it runs lazily up to the first `%}` instead of
-            // stopping at any `%`.
-            const trueMatch = currentNodeValue.match(
-              /{%-?\s*if\b[\s\S]*?%}\s*"?([^"'{%]+?)"?(?=\s*{%)/
-            );
-            const falseMatch = currentNodeValue.match(/{%\s*else\s*%}\s*"?([^"'{%]+?)"?(?=\s*{%)/);
-
-            trueTarget = trueMatch ? trueMatch[1] : null;
-            falseTarget = falseMatch ? falseMatch[1] : null;
-
-            // Extract condition expression from Jinja template
-            const conditionMatch = currentNodeValue.match(/{%-?\s*if\s+([\s\S]+?)\s*-?%}/);
-            if (conditionMatch) {
-              const conditionExpr = conditionMatch[1];
-              Object.assign(data, this.parseJinjaCondition(conditionExpr));
-            }
-          } else {
-            // Simple transition
-            trueTarget = currentNodeValue === 'END' ? null : currentNodeValue;
-          }
-        }
-      }
-      // Condition written as a native HA `if/then/else` (conditions Jinja
-      // can't express: `for` durations, templates with `{% %}` blocks) — each
-      // branch holds the `current_node` transition.
-      else if (Array.isArray(seqItem.if)) {
-        nodeType = 'condition';
-        const [condition] = seqItem.if;
-        if (isPlainObject(condition)) Object.assign(data, condition);
-        if (seqItem.alias) data.alias = seqItem.alias;
-        trueTarget = this.transitionTarget(seqItem.then);
-        falseTarget = this.transitionTarget(seqItem.else);
-      }
-      // Check for delay action
-      else if (seqItem.delay !== undefined) {
-        nodeType = 'delay';
-        data.delay = seqItem.delay;
-        if (seqItem.alias) data.alias = seqItem.alias;
-      }
-      // Check for wait action
-      else if (seqItem.wait_template !== undefined) {
-        nodeType = 'wait';
-        data.wait_template = seqItem.wait_template;
-        if (seqItem.timeout) data.timeout = seqItem.timeout;
-        if (seqItem.continue_on_timeout !== undefined) {
-          data.continue_on_timeout = seqItem.continue_on_timeout;
-        }
-        if (seqItem.alias) data.alias = seqItem.alias;
-      }
-      // Check for a fan-out into several branches (buildTransitionTail emits
-      // this instead of a plain `variables: END` transition)
-      else if (Array.isArray(seqItem.parallel)) {
-        parallelItems = seqItem.parallel;
-      }
-      // Check for service call action
-      else if (seqItem.service || seqItem.action) {
-        nodeType = 'action';
-        data.service = seqItem.service || seqItem.action;
-        if (seqItem.target) data.target = seqItem.target;
-        if (seqItem.data) data.data = seqItem.data;
-        if (seqItem.alias) data.alias = seqItem.alias;
+      const transition = transitionVariables(item);
+      if (transition) {
+        this.readTransition(info, transition.current_node, item.alias);
+      } else if (isConditionTransition(item) && Array.isArray(item.if)) {
+        info.node = this.createConditionNode(nodeId, item.if[0], item.alias);
+        info.trueTarget = this.transitionTarget(item.then);
+        info.falseTarget = this.transitionTarget(item.else);
+      } else if (isFanOutTail(item)) {
+        info.parallelItems = item.parallel;
+      } else {
+        info.node = this.parseSingleStep(item, nodeId, warnings);
       }
     }
 
-    return { nodeId, nodeType, data, trueTarget, falseTarget, parallelItems };
+    return info;
+  }
+
+  /**
+   * Read a `current_node` transition: the next node, or — as FLODE wrote
+   * conditions before — a Jinja `{% if … %}a{% else %}b{% endif %}` choice.
+   */
+  private readTransition(info: StateMachineNodeInfo, next: unknown, alias: unknown): void {
+    if (typeof next !== 'string') return;
+    if (!(next.includes('{%') && next.includes('%}'))) {
+      info.trueTarget = next === 'END' ? null : next;
+      return;
+    }
+    // The `if` expression may itself contain `%` (e.g. `now().strftime('%H:%M:%S')`
+    // from a time condition), so it runs lazily up to the first `%}`.
+    const trueMatch = next.match(/{%-?\s*if\b[\s\S]*?%}\s*"?([^"'{%]+?)"?(?=\s*{%)/);
+    const falseMatch = next.match(/{%\s*else\s*%}\s*"?([^"'{%]+?)"?(?=\s*{%)/);
+    const toTarget = (target: string | undefined): string | null =>
+      target === undefined || target === 'END' ? null : target;
+    info.trueTarget = toTarget(trueMatch?.[1]);
+    info.falseTarget = toTarget(falseMatch?.[1]);
+    const conditionMatch = next.match(/{%-?\s*if\s+([\s\S]+?)\s*-?%}/);
+    const condition = conditionMatch
+      ? this.parseJinjaCondition(conditionMatch[1])
+      : { condition: 'template', value_template: next };
+    info.node = this.createConditionNode(info.nodeId, condition, alias);
   }
 
   /** The `current_node` a state-machine branch moves to (`null` for END). */
@@ -1801,7 +1786,9 @@ export class YamlParser {
 
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: large dispatch switch, refactoring deferred
     actions.forEach((action, index) => {
-      if (this.options.keepBlocks && isHaBlockStep(action)) {
+      // A block, or a step switched on and off by a template (`enabled: "{{ … }}"`),
+      // which FLODE's nodes can't hold: kept verbatim
+      if ((this.options.keepBlocks && isHaBlockStep(action)) || hasTemplatedEnabled(action)) {
         const nodeId = getNextNodeId('action');
         nodes.push(this.createRawStepNode(nodeId, action));
         createEdgesFromCurrent(nodeId);
@@ -1849,7 +1836,8 @@ export class YamlParser {
           id: nodeId,
           type: 'condition',
           position: { x: 0, y: 0 },
-          data: parsedData,
+          // A step of the actions — written back there, not moved to `conditions:`
+          data: { ...parsedData, [CONDITION_STEP_KEY]: true },
         };
 
         nodes.push(conditionNode);
@@ -2528,12 +2516,9 @@ export class YamlParser {
                   : typeof actionField === 'string'
                     ? actionField
                     : undefined,
-              target:
-                typeof target === 'object' && target !== null ? (target as Target) : undefined,
-              data:
-                typeof data === 'object' && data !== null
-                  ? (data as Record<string, unknown>)
-                  : undefined,
+              // A mapping, or a template that renders to one — kept as written
+              target: typeof target === 'string' || isPlainObject(target) ? target : undefined,
+              data: typeof data === 'string' || isPlainObject(data) ? data : undefined,
               data_template:
                 typeof data_template === 'object' && data_template !== null
                   ? (data_template as Record<string, string>)
@@ -3238,7 +3223,7 @@ export class YamlParser {
    */
   private createEdge(source: string, target: string, sourceHandle?: string): FlowEdge {
     return {
-      id: generateEdgeId(source, target),
+      id: generateEdgeId(source, target, sourceHandle),
       source,
       target,
       sourceHandle: sourceHandle || undefined,

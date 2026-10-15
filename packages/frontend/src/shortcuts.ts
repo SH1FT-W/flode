@@ -89,9 +89,64 @@ function eventKeys(event: KeyboardEvent): string {
   return `${mod ? 'mod+' : ''}${event.shiftKey && !shiftIsKey ? 'shift+' : ''}${event.altKey ? 'alt+' : ''}${key}`;
 }
 
+/** ⌘↩ (Ctrl+Enter elsewhere): confirms a dialog whose field takes Enter as a new line. */
+export function isSubmitKey(event: KeyboardEvent): boolean {
+  return eventKeys(event) === 'mod+enter';
+}
+
+/**
+ * A capturing keydown listener for a dialog (Lit `@keydown=${…}`): ⌘↩ runs
+ * `submit` before the field in it (HA's code editor) takes the key.
+ */
+export function submitOnModEnter(
+  submit: () => void
+): EventListenerObject & AddEventListenerOptions {
+  return {
+    capture: true,
+    handleEvent: (event: Event) => {
+      if (!(event instanceof KeyboardEvent) || !isSubmitKey(event)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      submit();
+    },
+  };
+}
+
 export function matchShortcut(event: KeyboardEvent): Shortcut | undefined {
   const pressed = eventKeys(event);
   return SHORTCUTS.find((shortcut) => !shortcut.listOnly && shortcut.keys.includes(pressed));
+}
+
+/** HA's dialog elements (`ha-dialog`, `ha-wa-dialog`, `dialog-box`, `ha-bottom-sheet` …) and native `<dialog>`. */
+const DIALOG_TAG = /(^|-)dialog($|-)|bottom-sheet/;
+
+/**
+ * One of HA's own dialogs is showing (e.g. its "add action" dialog, opened by
+ * HA's editor). HA mounts them on its root (`home-assistant`), each wrapping an
+ * open dialog element. Seen from there, since the focus may not be in it (WebKit).
+ */
+export function haDialogShowing(doc: Document = document): boolean {
+  const root = doc.querySelector('home-assistant')?.shadowRoot;
+  if (!root) return false;
+  return [...root.children].some((host) =>
+    [...(host.shadowRoot?.querySelectorAll('[open]') ?? [])].some((el) =>
+      DIALOG_TAG.test(el.localName)
+    )
+  );
+}
+
+/**
+ * The key came from inside a dialog (FLODE's or HA's) — its event path
+ * (`event.composedPath()`) passes a dialog element. The editor's shortcuts
+ * must not act behind it.
+ */
+export function isInDialog(path: readonly EventTarget[]): boolean {
+  return path.some(
+    (target) =>
+      'localName' in target &&
+      typeof target.localName === 'string' &&
+      DIALOG_TAG.test(target.localName)
+  );
 }
 
 const MAC_SYMBOLS: Record<string, string> = {

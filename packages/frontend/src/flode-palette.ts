@@ -1,5 +1,6 @@
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { defineElement } from './define-element';
+import { focusFirstField } from './focus';
 import type { HomeAssistant } from './ha';
 import { t } from './strings';
 
@@ -61,8 +62,7 @@ export class FlodePalette extends LitElement {
     if (changed.has('open') && this.open) {
       this.query = '';
       this.index = 0;
-      // HA's dialog animates in; focus the search once it's there.
-      window.setTimeout(() => this.renderRoot.querySelector('input')?.focus(), 80);
+      focusFirstField(this.renderRoot);
     }
   }
 

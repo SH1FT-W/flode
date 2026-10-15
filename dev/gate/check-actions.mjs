@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  awaitEntities,
   ENGINES,
   gotoPanel,
   haLabel,
@@ -32,7 +33,9 @@ async function scratchFor(engine) {
   const name = `${template.name} ${engine}`;
   const config = { ...template.config, id, alias: name };
   await rest('POST', `config/automation/config/${id}`, config);
-  return { id, name, config };
+  const flow = { id, name, config };
+  if ((await awaitEntities([flow])).length > 0) throw new Error(`HA has no entity for ${name}`);
+  return flow;
 }
 
 const slug = (text) => text.replace(/[^a-z0-9]+/gi, '-');

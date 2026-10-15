@@ -4,6 +4,7 @@ import {
   addNode,
   connect,
   connectionError,
+  duplicateNode,
   ensureScriptEntry,
   graphBounds,
   handlePosition,
@@ -141,5 +142,63 @@ describe('scripts: hidden start, first card is the beginning', () => {
   it('leaves automations alone', () => {
     expect(ensureScriptEntry(base)).toBe(base);
     expect(visibleGraph(base)).toBe(base);
+  });
+});
+
+describe('automation without triggers: hidden start until it gets a trigger', () => {
+  const manual: FlowGraph = {
+    id: '00000000-0000-4000-8000-000000000003',
+    name: 'Nur manuell',
+    version: 1,
+    nodes: [
+      {
+        id: 's',
+        type: 'trigger',
+        position: { x: 0, y: 0 },
+        data: { trigger: 'flode_manual_start' },
+      },
+      { id: 'a', type: 'action', position: { x: 400, y: 0 }, data: { service: 'light.turn_on' } },
+    ],
+    edges: [{ id: 's-a', source: 's', target: 'a' }],
+  };
+  const trigger = {
+    id: 't',
+    type: 'trigger' as const,
+    position: { x: -400, y: 0 },
+    data: { trigger: 'state', entity_id: 'light.b' },
+  };
+
+  it('hides the start like a script', () => {
+    expect(visibleGraph(manual).nodes.map((n) => n.id)).toEqual(['a']);
+    expect([...scriptEntryIds(manual)]).toEqual(['a']);
+    expect(ensureScriptEntry(manual)).toBe(manual);
+  });
+
+  it('drops the start once a trigger is added — never wires the start to that trigger', () => {
+    const graph = ensureScriptEntry({ ...manual, nodes: [...manual.nodes, trigger] });
+    expect(graph.nodes.map((n) => n.id)).toEqual(['a', 't']);
+    expect(graph.edges).toEqual([]);
+  });
+});
+
+describe('duplicating a card', () => {
+  const chain: FlowGraph = {
+    ...base,
+    edges: [
+      { id: 'e1', source: 't', target: 'c' },
+      { id: 'e2', source: 'c', target: 'a', sourceHandle: 'true' },
+    ],
+  };
+
+  it('puts the copy right after the card, on its Yes path', () => {
+    const { graph, id } = duplicateNode(chain, chain.nodes[1]!, { x: 300, y: 300 });
+    const edges = graph.edges.map((e) => `${e.source}-${e.sourceHandle ?? ''}-${e.target}`);
+    expect(edges).toEqual(['t--c', `c-true-${id}`, `${id}-true-a`]);
+  });
+
+  it('lets a trigger’s copy start the same steps', () => {
+    const { graph, id } = duplicateNode(chain, chain.nodes[0]!, { x: 0, y: 300 });
+    expect(graph.edges.filter((e) => e.source === id).map((e) => e.target)).toEqual(['c']);
+    expect(graph.edges.filter((e) => e.source === 't').map((e) => e.target)).toEqual(['c']);
   });
 });

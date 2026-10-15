@@ -6,11 +6,19 @@ export interface Proposal {
   graph?: FlowGraph;
   /** Why it can't be applied as is (unparseable YAML, unknown entities …). */
   problems: string[];
+  /** Must not be applied at all (an automation without triggers). */
+  blocked?: boolean;
+  /** Top-level keys the proposal's YAML has — the others keep the open flow's values. */
+  present?: string[];
+  /** The flow's YAML when the question was asked — a different one now means the proposal is outdated. */
+  baseYaml?: string;
 }
 
 export interface ChatTurn extends AssistTurn {
   proposal?: Proposal;
   applied?: boolean;
+  /** The request failed — kept with the flow that asked, even after a tab switch. */
+  error?: string;
 }
 
 /** One conversation per open flow (by graph id), kept while the page lives. */

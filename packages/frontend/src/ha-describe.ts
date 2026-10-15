@@ -69,7 +69,7 @@ export class HaDescriptions {
    */
   constructor(
     private readonly onReady: () => void,
-    private readonly host: () => ParentNode | null
+    private readonly host: () => Pick<ParentNode, 'append'> | null
   ) {}
 
   /**
@@ -127,13 +127,25 @@ export class HaDescriptions {
       return row;
     });
     host?.append(box);
+    let read = 0;
     try {
-      await Promise.all(rows.map(updateCompleteOf));
+      const rendered = await Promise.allSettled(rows.map(updateCompleteOf));
       rows.forEach((row, index) => {
-        const text = readRowText(row);
         const request = known[index];
-        if (request && text && !DESCRIBE_ERROR.test(text)) this.texts.set(request.key, text);
+        if (!request) return;
+        // A row that failed to render is read again next time (not kept as "no text").
+        if (rendered[index]?.status === 'rejected') {
+          this.texts.delete(request.key);
+          return;
+        }
+        const text = readRowText(row);
+        if (text && !DESCRIBE_ERROR.test(text)) {
+          this.texts.set(request.key, text);
+          read++;
+        }
       });
+      // No place for the rows yet (panel not rendered): ask again on the next render.
+      if (ready && !host) for (const { key } of batch) this.texts.delete(key);
     } finally {
       box.remove();
       this.flushing = false;
@@ -142,6 +154,7 @@ export class HaDescriptions {
         queueMicrotask(() => void this.flush(hass));
       }
     }
-    this.onReady();
+    // Only new texts re-render the canvas — a retry that read nothing doesn't loop.
+    if (read > 0) this.onReady();
   }
 }

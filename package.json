@@ -40,6 +40,8 @@
     "diff": "^4.0.4",
     "brace-expansion": "^5.0.9",
     "postcss": "^8.5.23",
-    "js-yaml": "^4.3.2"
+    "js-yaml": "^4.3.2",
+    "source-map-js": "^1.2.2",
+    "http-cache-semantics": "^4.3.0"
   }
 }

@@ -1,8 +1,9 @@
-import type { FlowGraph } from '@flode/shared';
+import { type FlowGraph, isPlainObject } from '@flode/shared';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { defineElement } from './define-element';
-import { errorMessage, type HomeAssistant } from './ha';
+import { type AutomationListItem, errorMessage, getLatestTrace, type HomeAssistant } from './ha';
 import { t } from './strings';
+import { runVariables } from './trace';
 
 interface Prepared {
   sequence?: unknown[];
@@ -10,6 +11,32 @@ interface Prepared {
   nodeIds?: string[];
   errors?: string[];
   usesTriggerData?: boolean;
+  /** `trigger` of the automation's last run, for steps that read `trigger.…`. */
+  variables?: { trigger: Record<string, unknown> };
+  /** When that run started. */
+  triggeredAt?: string;
+}
+
+/**
+ * The `trigger` variable of a saved automation's last run (HA's trace keeps
+ * it) — what steps reading `trigger.…` get when run from here. `null` without
+ * one: never ran, not saved yet, or a script (scripts have no trigger).
+ */
+async function lastTrigger(
+  hass: HomeAssistant,
+  item: AutomationListItem | undefined
+): Promise<Pick<Prepared, 'variables' | 'triggeredAt'> | null> {
+  if (item?.kind !== 'automation') return null;
+  try {
+    const trace = await getLatestTrace(hass, item.kind, item.configId);
+    const trigger = trace ? runVariables(trace).trigger : undefined;
+    return trace && isPlainObject(trigger)
+      ? { variables: { trigger }, triggeredAt: trace.timestamp.start }
+      : null;
+  } catch {
+    // No run to borrow from — it runs without, as before (and says so).
+    return null;
+  }
 }
 
 /**
@@ -22,6 +49,8 @@ export class FlodeRunFrom extends LitElement {
     hass: { attribute: false },
     graph: { attribute: false },
     nodeId: { attribute: false },
+    /** The saved automation (its last run lends `trigger`); unset for a new flow. */
+    item: { attribute: false },
     label: { attribute: false },
     prepared: { state: true },
   };
@@ -29,6 +58,7 @@ export class FlodeRunFrom extends LitElement {
   declare hass: HomeAssistant | undefined;
   declare graph: FlowGraph | undefined;
   declare nodeId: string | null;
+  declare item: AutomationListItem | undefined;
   declare label: string;
   declare prepared: Prepared | null;
 
@@ -58,12 +88,21 @@ export class FlodeRunFrom extends LitElement {
         '@flode/transpiler'
       );
       const result = transpileSequence(transpiler, graph, [nodeId]);
+      const borrowed =
+        result.success && result.usesTriggerData && this.hass
+          ? await lastTrigger(this.hass, this.item)
+          : null;
       if (this.nodeId !== nodeId) return;
       const nodeIds = buildSequenceFlow(graph, [nodeId])
         .nodes.map((node) => node.id)
         .filter((id) => id !== SEQUENCE_ENTRY_ID);
       this.prepared = result.success
-        ? { sequence: result.sequence, nodeIds, usesTriggerData: result.usesTriggerData }
+        ? {
+            sequence: result.sequence,
+            nodeIds,
+            usesTriggerData: result.usesTriggerData,
+            ...borrowed,
+          }
         : { errors: result.errors ?? [] };
     } catch (error) {
       // Shown like any other reason it can't run — not "Preparing…" forever.
@@ -81,10 +120,27 @@ export class FlodeRunFrom extends LitElement {
     if (!prepared?.sequence) return;
     this.dispatchEvent(
       new CustomEvent('run-start', {
-        detail: { sequence: prepared.sequence, nodeIds: prepared.nodeIds ?? [], label: this.label },
+        detail: {
+          sequence: prepared.sequence,
+          nodeIds: prepared.nodeIds ?? [],
+          label: this.label,
+          variables: prepared.variables,
+        },
       })
     );
     this.close();
+  }
+
+  /** Steps reading `trigger.…`: they get the last run's, or are warned about. */
+  private renderTriggerData(prepared: Prepared | null) {
+    if (!prepared?.usesTriggerData) return nothing;
+    const language = this.language;
+    return prepared.triggeredAt
+      ? html`<ha-alert alert-type="info"
+          >${t(language, 'runFromLastTrigger')}
+          <ha-relative-time .hass=${this.hass} .datetime=${prepared.triggeredAt}></ha-relative-time
+        ></ha-alert>`
+      : html`<ha-alert alert-type="warning">${t(language, 'runFromTriggerData')}</ha-alert>`;
   }
 
   render() {
@@ -107,11 +163,7 @@ export class FlodeRunFrom extends LitElement {
                   ${t(language, steps === 1 ? 'runFromStep' : 'runFromSteps').replace('{n}', String(steps))}
                 </p>`
         }
-        ${
-          prepared?.usesTriggerData
-            ? html`<ha-alert alert-type="warning">${t(language, 'runFromTriggerData')}</ha-alert>`
-            : nothing
-        }
+        ${this.renderTriggerData(prepared)}
       </div>
       <ha-dialog-footer slot="footer">
         <ha-button slot="secondaryAction" appearance="plain" @click=${() => this.close()}>

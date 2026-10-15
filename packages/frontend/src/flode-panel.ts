@@ -22,12 +22,14 @@ import './flode-runfrom';
 import './flode-shortcuts';
 import './flode-ha-list';
 import './flode-progress';
-import { chooseAiTask, keepAiTask, mergeAutomationGraphs, randomId } from '@flode/ui-core';
+import { chooseAiTask, keepAiTask, mergeAutomations, randomId } from '@flode/ui-core';
 import {
+  type BranchCardRef,
   type BranchView,
   branchInsertAt,
   branchLabelText,
   cachedBranchView,
+  drawnBox,
   insertBranchStep,
   removeBranchStep,
   setBranchStep,
@@ -43,9 +45,11 @@ import type { Progress } from './flode-progress';
 import { type WelcomeMode, welcomeMode } from './flode-welcome';
 import {
   addNode,
+  applyProposal,
   connect,
   copyNode,
   disconnectNode,
+  duplicateNode,
   ensureScriptEntry,
   freePosition,
   moveNode,
@@ -63,6 +67,8 @@ import {
   type AutomationListItem,
   type AutomationSettings,
   applyRegistryUpdate,
+  blueprintPath,
+  configFingerprint,
   confirmUnsavedChanges,
   ensureAutomationEditors,
   errorMessage,
@@ -80,19 +86,38 @@ import {
   runScript,
   sameFlow,
   saveFlowConfig,
+  substituteBlueprint,
+  syncScriptIds,
   usesBlueprint,
   waitForAutomationEntity,
 } from './ha';
-import { nodeToStep, type StepEdit, type StepKind, stepToNode } from './ha-step';
+import { completeNewStep, nodeToStep, type StepEdit, type StepKind, stepToNode } from './ha-step';
 import { mapT } from './i18n';
-import { InFlight } from './in-flight';
+import { InFlight, Serial } from './in-flight';
 import { LOGBOOK_POLL_MS, type ManualRun } from './manual-runs';
+import { mergeWarningsHeading, mergeWarningText } from './merge-warnings';
 import { NODE_META, nodeTitle, summarize, typeLabel } from './node-meta';
 import { copyToClipboard, notify } from './notify';
-import { labelWithHint, matchShortcut, type ShortcutId, shortcutHint } from './shortcuts';
+import {
+  describeFlowCheckErrors,
+  describeHaSaveError,
+  type SaveProblem,
+  SaveProblemError,
+} from './save-errors';
+import {
+  haDialogShowing,
+  isInDialog,
+  labelWithHint,
+  matchShortcut,
+  type ShortcutId,
+  shortcutHint,
+} from './shortcuts';
 import { t } from './strings';
 import {
+  continuesStep,
   type EditorTab,
+  type HistoryMark,
+  historySaveState,
   type OpenFlow,
   readTabs,
   type SaveResult,
@@ -101,7 +126,7 @@ import {
   writeTabs,
 } from './tabs';
 import type { RunMark } from './trace';
-import { isNarrow } from './viewport';
+import { isNarrow, SHEET_SHARE } from './viewport';
 
 const INSPECTOR_WIDTH_KEY = 'flode3.inspectorWidth';
 const INSPECTOR_MIN = 300;
@@ -161,6 +186,19 @@ const ADD_LIST_PROP: Record<StepKind, string> = {
   action: 'actions',
 };
 const HISTORY_LIMIT = 100;
+
+/** `past` with `graph` as its newest undo step (at most `HISTORY_LIMIT`). */
+function withHistory(past: FlowGraph[], graph: FlowGraph): FlowGraph[] {
+  return [...past.slice(-HISTORY_LIMIT + 1), graph];
+}
+
+/** Edits of one card's form share an undo step while they come in quickly. */
+function cardEditKey(id: string): string {
+  return `card:${id}`;
+}
+
+/** The answer to "changed in Home Assistant meanwhile" when saving. */
+type ConflictChoice = 'overwrite' | 'reload' | 'cancel';
 
 /** The transpiler (with elkjs) is only needed once a flow is opened. */
 function loadTranspiler() {
@@ -235,6 +273,7 @@ export class FlodePanel extends LitElement {
     selectedId: { state: true },
     saveState: { state: true },
     message: { state: true },
+    saveProblem: { state: true },
     progress: { state: true },
     inspectorError: { state: true },
     addOpen: { state: true },
@@ -266,6 +305,7 @@ export class FlodePanel extends LitElement {
     aiSetupHidden: { state: true },
     runMarks: { state: true },
     activeRunNode: { state: true },
+    conflict: { state: true },
   };
 
   declare hass: HomeAssistant | undefined;
@@ -275,6 +315,8 @@ export class FlodePanel extends LitElement {
   declare selectedId: string | null;
   declare saveState: SaveState;
   declare message: string | null;
+  /** Why the active tab's last save failed (its bar and the red card). */
+  declare saveProblem: SaveProblem | null;
   /** A running load (opening, merging) — shown as HA dialog with a progress bar. */
   declare progress: Progress | null;
   declare inspectorError: string | null;
@@ -324,9 +366,18 @@ export class FlodePanel extends LitElement {
   declare aiSetupHidden: boolean;
   declare runMarks: Map<string, RunMark> | null;
   declare activeRunNode: string | null;
+  /** Saving found the flow changed in HA meanwhile — the question is open. */
+  declare conflict: { name: string; resolve: (choice: ConflictChoice) => void } | null;
 
   private past: FlowGraph[] = [];
   private future: FlowGraph[] = [];
+  /** The last edit in the undo history — typing in HA's form continues it (see `continuesStep`). */
+  private lastEdit: HistoryMark | null = null;
+  /** HA dialogs FLODE opened that are still open (rename, unsaved changes, run script). */
+  private haDialogs = 0;
+  /** Every tab this window had (open or closed) — other windows' drafts are the rest. */
+  private readonly knownTabIds = new Set<string>();
+  private storageFullNoted = false;
 
   constructor() {
     super();
@@ -336,6 +387,7 @@ export class FlodePanel extends LitElement {
     this.selectedId = null;
     this.saveState = 'saved';
     this.message = null;
+    this.saveProblem = null;
     this.inspectorError = null;
     this.addOpen = false;
     this.inspectorWidth = readInspectorWidth();
@@ -367,6 +419,7 @@ export class FlodePanel extends LitElement {
     this.aiSetupHidden = readFlag(AI_SETUP_HIDDEN_KEY);
     this.runMarks = null;
     this.activeRunNode = null;
+    this.conflict = null;
     this.restoreTabs();
   }
 
@@ -378,6 +431,7 @@ export class FlodePanel extends LitElement {
   private restoreTabs(): void {
     const stored = readTabs();
     if (!stored || stored.tabs.length === 0) return;
+    for (const tab of stored.tabs) this.knownTabIds.add(tab.id);
     this.tabs = stored.tabs;
     const active = stored.tabs.find((tab) => tab.id === stored.activeTabId);
     if (active) this.activateTab(active);
@@ -388,20 +442,28 @@ export class FlodePanel extends LitElement {
     window.clearTimeout(this.persistTimer);
     this.persistTimer = undefined;
     const viewport = this.canvas?.viewport;
-    writeTabs({
-      activeTabId: this.activeTabId,
-      showHome: this.showHome,
-      tabs: this.tabs.map((tab) =>
-        tab.id === this.activeTabId && this.flow
-          ? {
-              ...tab,
-              flow: this.flow,
-              saveState: this.saveState,
-              viewport: this.showHome ? tab.viewport : (viewport ?? tab.viewport),
-            }
-          : tab
-      ),
-    });
+    const stored = writeTabs(
+      {
+        activeTabId: this.activeTabId,
+        showHome: this.showHome,
+        tabs: this.tabs.map((tab) =>
+          tab.id === this.activeTabId && this.flow
+            ? {
+                ...tab,
+                flow: this.flow,
+                saveState: this.saveState,
+                viewport: this.showHome ? tab.viewport : (viewport ?? tab.viewport),
+              }
+            : tab
+        ),
+      },
+      this.knownTabIds
+    );
+    // Said once per page view — every later write would fail the same way.
+    if (!stored && !this.storageFullNoted) {
+      this.storageFullNoted = true;
+      this.notify(t(this.language, 'tabsStorageFull'));
+    }
   }
 
   private schedulePersist(): void {
@@ -411,8 +473,18 @@ export class FlodePanel extends LitElement {
 
   private onPageHide = (): void => this.persistTabs();
 
-  /** HA has no event when the AI default changes — re-read it whenever the window regains focus. */
-  private onWindowFocus = (): void => void this.loadAiChoice();
+  /**
+   * HA has no event when the AI default changes — re-read it whenever the
+   * window regains focus. The open flow may have been changed in HA meanwhile.
+   */
+  private onWindowFocus = (): void => {
+    void this.loadAiChoice();
+    this.refreshActiveTab();
+  };
+
+  private onVisibilityChange = (): void => {
+    if (document.visibilityState === 'visible') this.refreshActiveTab();
+  };
 
   /** Counts the reads — an older answer arriving late is ignored. */
   private aiChoiceRead = 0;
@@ -445,12 +517,17 @@ export class FlodePanel extends LitElement {
    * recorded for its context.
    */
   private async onRunStart(
-    event: CustomEvent<{ sequence: unknown[]; nodeIds: string[]; label: string }>
+    event: CustomEvent<{
+      sequence: unknown[];
+      nodeIds: string[];
+      label: string;
+      variables?: Record<string, unknown>;
+    }>
   ): Promise<void> {
     const hass = this.hass;
     const flow = this.flow;
     if (!hass || !flow) return;
-    const { sequence, nodeIds, label } = event.detail;
+    const { sequence, nodeIds, label, variables } = event.detail;
     const language = this.language;
     const run: ManualRun = {
       id: randomId(),
@@ -470,6 +547,8 @@ export class FlodePanel extends LitElement {
       const result = await hass.callWS<{ context?: { id?: string } }>({
         type: 'execute_script',
         sequence,
+        // `trigger` of the last run, for steps that read `trigger.…`.
+        ...(variables ? { variables } : {}),
       });
       const contextId = result?.context?.id;
       this.updateManualRun(run.id, { status: 'done', ...(contextId ? { contextId } : {}) });
@@ -481,6 +560,8 @@ export class FlodePanel extends LitElement {
             logbook: await getRunLogbook(hass, run.startedAt, contextId),
           });
         }
+        // Every poll is in: an empty logbook now means the run changed nothing.
+        this.updateManualRun(run.id, { logbookFinal: true });
       }
     } catch (error) {
       this.updateManualRun(run.id, { status: 'error', error: errorMessage(error) });
@@ -566,7 +647,8 @@ export class FlodePanel extends LitElement {
         });
       }
       // Laid out as one flow right away — not the source automations side by side.
-      const merged = await layoutGraph(mergeAutomationGraphs(sources));
+      const { graph: mergedGraph, warnings } = mergeAutomations(sources);
+      const merged = await layoutGraph(mergedGraph);
       const name = t(this.language, 'mergeName').replace(
         '{names}',
         items.map((item) => item.name).join(' + ')
@@ -587,6 +669,12 @@ export class FlodePanel extends LitElement {
         graph: { ...merged, name },
         isNew: true,
         registryEntry: null,
+        ...(warnings.length
+          ? {
+              importWarnings: warnings.map((warning) => mergeWarningText(this.language, warning)),
+              importWarningsHeading: mergeWarningsHeading(warnings),
+            }
+          : {}),
       });
       this.notify(t(this.language, 'mergeDone'));
     } catch (error) {
@@ -692,12 +780,23 @@ export class FlodePanel extends LitElement {
           this.selectedId = null;
         })
       );
+    } else if (menu.after) {
+      // A trigger's "+": what can follow a trigger, connected to it.
+      const after = menu.after;
+      for (const kind of ['condition', 'action'] as const) {
+        entries.push({
+          id: `add-${kind}`,
+          icon: NODE_META[kind].icon,
+          label: typeLabel(kind, language),
+          run: () => void this.openAddDialog(kind, after),
+        });
+      }
     } else {
       const copied = this.copiedNode;
       if (copied) {
         entries.push(
           hinted('paste', 'mdi:content-paste', t(language, 'pasteCard'), () =>
-            this.duplicateCard(copied, menu.position)
+            this.pasteCard(copied, menu.position)
           ),
           'divider'
         );
@@ -794,6 +893,9 @@ export class FlodePanel extends LitElement {
           'mdi:toggle-switch-off-outline',
           () => this.toggleCard(selected)
         );
+        command('runFrom', t(language, 'runFrom'), 'mdi:play-circle-outline', () => {
+          this.runFromId = selected.id;
+        });
       }
       command(
         'rename',
@@ -889,24 +991,16 @@ export class FlodePanel extends LitElement {
     return entries;
   }
 
-  /** The assistant's proposal replaces the flow — one undo step, not saved. */
-  private onAssistApply(event: CustomEvent<{ graph: FlowGraph }>): void {
+  /**
+   * The assistant's proposal replaces the flow's cards — one undo step, not
+   * saved. Name, description, mode and variables only change when the reply's
+   * YAML wrote them (`present`: its top-level keys).
+   */
+  private onAssistApply(event: CustomEvent<{ graph: FlowGraph; present?: string[] }>): void {
+    const { graph: proposal, present } = event.detail;
     const flow = this.flow;
     if (!flow) return;
-    const proposal = event.detail.graph;
-    const metadata = FlowMetadataSchema.safeParse({
-      ...flow.graph.metadata,
-      ...proposal.metadata,
-      kind: flow.graph.metadata?.kind,
-    });
-    this.commit({
-      ...flow.graph,
-      nodes: proposal.nodes,
-      edges: proposal.edges,
-      name: proposal.name || flow.graph.name,
-      description: proposal.description ?? flow.graph.description,
-      ...(metadata.success ? { metadata: metadata.data } : {}),
-    });
+    this.commit(applyProposal(flow.graph, proposal, present && new Set(present)));
     this.selectedId = null;
     void this.updateComplete.then(() => this.canvas?.fitView());
     this.notify(t(this.language, 'assistAppliedToast'));
@@ -939,29 +1033,73 @@ export class FlodePanel extends LitElement {
     this.notify(t(this.language, 'aiDone'));
   }
 
-  /** A restored tab without changes: show HA's current version, not the remembered one. */
-  private async refreshStaleTab(id: string): Promise<void> {
+  private readonly refreshing = new InFlight();
+
+  /**
+   * A tab without unsaved changes shows HA's current version: after a reload
+   * (remembered tabs) and whenever the flow was changed in HA meanwhile
+   * (HA's editor, another window) — checked when the tab is shown and when
+   * the window comes back.
+   */
+  private async refreshFromHa(id: string): Promise<void> {
     const hass = this.hass;
     const tab = this.tabs.find((candidate) => candidate.id === id);
-    if (!hass || !tab?.stale) return;
-    this.tabs = this.tabs.map((candidate) =>
-      candidate.id === id ? { ...candidate, stale: false } : candidate
-    );
-    let fresh: OpenFlow;
+    if (!hass || !tab) return;
+    const flow = this.tabFlow(tab);
+    if (flow.isNew || this.tabSaveState(tab) !== 'saved' || !this.refreshing.start(id)) return;
     try {
-      fresh = await this.loadFlow(hass, tab.flow.item);
+      const config = await loadFlowConfig(hass, flow.item.kind, flow.item.configId);
+      if (flow.haVersion === configFingerprint(config)) return;
+      const fresh = await this.loadFlow(hass, this.currentItem(flow.item), undefined, config);
+      // Only if nothing happened to the tab meanwhile (an edit, a save).
+      const now = this.tabs.find((candidate) => candidate.id === id);
+      if (now && this.tabSaveState(now) === 'saved' && this.tabFlow(now) === flow) {
+        this.adoptFromHa(id, fresh);
+      }
     } catch {
-      return; // Deleted or unreachable in HA — keep the remembered version.
+      // Deleted or unreachable in HA — keep what the tab shows.
+    } finally {
+      this.refreshing.end(id);
     }
-    if (this.activeTabId === id && this.saveState === 'saved' && this.past.length === 0) {
-      this.flow = fresh;
-    } else if (this.activeTabId !== id) {
-      this.tabs = this.tabs.map((candidate) =>
-        candidate.id === id && candidate.saveState === 'saved'
-          ? { ...candidate, flow: fresh }
-          : candidate
-      );
+  }
+
+  /** `item` as HA lists it now (renamed in HA meanwhile, new entity id …). */
+  private currentItem(item: AutomationListItem): AutomationListItem {
+    const hass = this.hass;
+    return (hass && listFlows(hass, item.kind).find((other) => sameFlow(other, item))) || item;
+  }
+
+  /** Re-checks the open flow against HA (window focus, tab visible again). */
+  private refreshActiveTab(): void {
+    if (this.activeTabId && !this.showHome) void this.refreshFromHa(this.activeTabId);
+  }
+
+  /**
+   * Tab `id` shows `fresh` (HA's version), saved. What it showed before stays
+   * one undo step back.
+   */
+  private adoptFromHa(id: string, fresh: OpenFlow): void {
+    if (id === this.activeTabId) {
+      const flow = this.flow;
+      if (!flow) return;
+      this.past = withHistory(this.past, flow.graph);
+      this.future = [];
+      this.lastEdit = null;
+      this.flow = { ...fresh, savedGraph: fresh.graph };
+      this.saveState = 'saved';
+      return;
     }
+    this.tabs = this.tabs.map((tab) =>
+      tab.id === id
+        ? {
+            ...tab,
+            flow: { ...fresh, savedGraph: fresh.graph },
+            past: withHistory(tab.past, tab.flow.graph),
+            future: [],
+            saveState: 'saved',
+          }
+        : tab
+    );
   }
 
   private get language(): string {
@@ -977,6 +1115,7 @@ export class FlodePanel extends LitElement {
     window.addEventListener('keydown', this.onWindowKeyDown, true);
     window.addEventListener('pagehide', this.onPageHide);
     window.addEventListener('focus', this.onWindowFocus);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
   disconnectedCallback(): void {
@@ -984,6 +1123,7 @@ export class FlodePanel extends LitElement {
     window.removeEventListener('keydown', this.onWindowKeyDown, true);
     window.removeEventListener('pagehide', this.onPageHide);
     window.removeEventListener('focus', this.onWindowFocus);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.persistTabs();
   }
 
@@ -991,10 +1131,16 @@ export class FlodePanel extends LitElement {
     if (changed.has('hass') && this.hass) {
       loadSummaryTranslations(this.hass);
       // First `hass` after a reload: refresh the restored active tab.
-      if (!changed.get('hass') && this.activeTabId) void this.refreshStaleTab(this.activeTabId);
+      if (!changed.get('hass') && this.activeTabId) void this.refreshFromHa(this.activeTabId);
       if (!changed.get('hass')) void this.loadAiChoice();
       if (!changed.get('hass')) void this.loadHaList();
+      void this.syncScripts(this.hass);
     }
+  }
+
+  /** Renamed scripts: their config ids come from HA's entity registry (see `syncScriptIds`). */
+  private async syncScripts(hass: HomeAssistant): Promise<void> {
+    if (await syncScriptIds(hass)) this.requestUpdate();
   }
 
   /** The start screen is HA's own automation list — FLODE's cards stay the fallback. */
@@ -1004,8 +1150,23 @@ export class FlodePanel extends LitElement {
   }
 
   protected updated(changed: PropertyValues<this>): void {
+    // ⌘B / "+": the keyboard goes into the menu (↑↓, Enter, Esc).
+    if (changed.has('addOpen') && this.addOpen) this.addMenuButtons()[0]?.focus();
     if (changed.has('selectedId') && this.selectedId && isNarrow()) {
       this.canvas?.revealNode(this.selectedId);
+    }
+    // Phones: runs / assistant open as a sheet over the lower part — the flow (or the
+    // run's path) moves into the part above it.
+    if (
+      (changed.has('debugOpen') || changed.has('assistOpen') || changed.has('runMarks')) &&
+      (this.debugOpen || this.assistOpen) &&
+      isNarrow()
+    ) {
+      const marks = this.debugOpen ? this.runMarks : null;
+      this.canvas?.fitView(true, {
+        covered: SHEET_SHARE,
+        only: marks ? new Set(marks.keys()) : undefined,
+      });
     }
     if (
       changed.has('tabs') ||
@@ -1025,22 +1186,26 @@ export class FlodePanel extends LitElement {
   private async loadFlow(
     hass: HomeAssistant,
     item: AutomationListItem,
-    report: (step: string, value: number) => void = () => undefined
+    report: (step: string, value: number) => void = () => undefined,
+    /** HA's config when it was just read. */
+    loaded?: Record<string, unknown>
   ): Promise<OpenFlow> {
     const language = this.language;
     report(t(language, 'progressConfig'), 0.1);
-    const config = await loadFlowConfig(hass, item.kind, item.configId);
-    // FLODE can't show a blueprint's steps — and must not overwrite its inputs.
-    if (usesBlueprint(config)) throw new Error(t(language, 'blueprintNotEditable'));
+    const config = loaded ?? (await loadFlowConfig(hass, item.kind, item.configId));
+    // A blueprint flow is shown read-only: the blueprint's steps with its inputs filled in.
+    const blueprint = usesBlueprint(config) ? (blueprintPath(config) ?? '') : undefined;
+    const steps =
+      blueprint === undefined ? config : await substituteBlueprint(hass, item.kind, config);
     report(t(language, 'progressParse'), 0.35);
     const { transpiler, parseScript } = await loadTranspiler();
     // Wenn-dann, Auswählen, Wiederholen, Parallel stay HA blocks (HA's own nested editor).
     const options = { keepBlocks: true };
     const result =
       item.kind === 'script'
-        ? await parseScript(transpiler, config, options)
+        ? await parseScript(transpiler, steps, options)
         : await transpiler.fromYaml(
-            yamlDump(config, { indent: 2, lineWidth: -1, quotingType: '"', forceQuotes: false }),
+            yamlDump(steps, { indent: 2, lineWidth: -1, quotingType: '"', forceQuotes: false }),
             options
           );
     if (!result.success || !result.graph) throw new Error(result.errors?.join('\n') ?? 'parse');
@@ -1055,7 +1220,9 @@ export class FlodePanel extends LitElement {
         description: typeof config.description === 'string' ? config.description : '',
       },
       isNew: false,
+      ...(blueprint === undefined ? {} : { blueprint }),
       registryEntry,
+      haVersion: configFingerprint(config),
       ...(result.warnings?.length ? { importWarnings: result.warnings } : {}),
     };
   }
@@ -1098,34 +1265,76 @@ export class FlodePanel extends LitElement {
     }
   }
 
-  /** `named`: the name was just entered (HA's unsaved-changes dialog) — don't ask again. */
-  private async save(named = false): Promise<void> {
+  /** Saves run one after another: a later one sees the first one's result (`isNew`, config id). */
+  private readonly saves = new Serial();
+
+  /**
+   * Saves the active tab. `named`: the name was just entered (HA's
+   * unsaved-changes dialog) — don't ask again. Never two at once: a save
+   * requested while one runs waits for it (a new flow is in HA then); one
+   * requested while the name dialog is open joins that save.
+   */
+  private save(named = false): Promise<void> {
+    const tabId = this.activeTabId;
+    return this.saves.enqueue(
+      tabId,
+      () => this.prepareSave(tabId, named),
+      () => this.writeFlow(tabId)
+    );
+  }
+
+  /** Whether tab `tabId` is to be written: still shown, has changes, has a name. */
+  private async prepareSave(tabId: string | null, named: boolean): Promise<boolean> {
+    const flow = this.flow;
+    // Switched to another tab while waiting for the previous save.
+    if (!this.hass || !flow || tabId !== this.activeTabId) return false;
+    if (!flow.isNew && this.saveState === 'saved') return false;
+    // A new automation gets its name first, exactly like HA's own editor.
+    return !flow.isNew || named || (await this.editSettings('alias'));
+  }
+
+  private async writeFlow(tabId: string | null): Promise<void> {
     const hass = this.hass;
     const flow = this.flow;
-    if (!hass || !flow || this.saveState === 'saving') return;
-    // A new automation gets its name first, exactly like HA's own editor.
-    if (flow.isNew && !named && !(await this.editSettings('alias'))) return;
+    if (!hass || !flow) return;
     // The tab can change while saving — the result belongs to the one saved.
-    const tabId = this.activeTabId;
-    let current = this.flow ?? flow;
+    let current = flow;
     this.saveState = 'saving';
     try {
       const { FlowTranspiler, buildAutomationSaveConfig, transpileScript } = await loadTranspiler();
       const transpiler = new FlowTranspiler();
       const validation = transpiler.validate(current.graph);
       if (validation.errors.length > 0) {
-        throw new Error(validation.errors.map((e) => e.message).join(', '));
+        throw new SaveProblemError(
+          describeFlowCheckErrors(validation.errors, current.graph, {
+            language: this.language,
+            hass,
+          })
+        );
+      }
+      // A blueprint flow is only shown — never written over (`saveFlowConfig` checks HA's too).
+      if (current.blueprint !== undefined && !current.isNew) {
+        throw new Error(t(this.language, 'blueprintNoSave'));
       }
       const kind = current.item.kind;
       if (kind === 'script' && current.isNew) {
         // Like HA's script editor: a new script's id comes from its name —
-        // checked against today's states, not those from before the name dialog.
+        // unique among today's scripts (renamed ones by their registry id).
+        await syncScriptIds(this.hass ?? hass);
         const configId = newScriptId(this.hass ?? hass, current.graph.name);
         current = { ...current, item: { ...current.item, configId } };
         this.updateTab(tabId, (open, saveState) => ({
           flow: { ...open, item: { ...open.item, configId } },
           saveState,
         }));
+      }
+      if (!(await this.resolveConflict(tabId, current))) {
+        // Cancelled, or HA's version was loaded instead (that tab is saved then).
+        this.updateTab(tabId, (open, saveState) => ({
+          flow: open,
+          saveState: saveState === 'saving' ? 'unsaved' : saveState,
+        }));
+        return;
       }
       // Offsets of steps no longer in their branch aren't saved.
       const graph = withoutStaleOffsets(current.graph);
@@ -1137,16 +1346,108 @@ export class FlodePanel extends LitElement {
               description: current.graph.description ?? '',
             });
       if (!result.success || !result.config) throw new Error(result.errors?.join(', '));
-      await saveFlowConfig(hass, kind, current.item.configId, result.config);
+      const configId = current.item.configId;
+      await saveFlowConfig(hass, kind, configId, result.config);
+      // It's in HA now — whatever comes next (another save, closing) must not create it again.
+      this.updateTab(tabId, (open, saveState) => ({
+        flow: open.item.configId === configId ? { ...open, isNew: false } : open,
+        saveState,
+      }));
       const saved = await this.afterSave(current);
       if (this.updateTab(tabId, (open) => settleSave(open, { graph: current.graph, saved }))) {
         this.message = null;
+        this.saveProblem = null;
       }
     } catch (error) {
-      const message = `${t(this.language, 'saveFailed')}: ${errorMessage(error)}`;
-      if (this.updateTab(tabId, (open) => settleSave(open, null))) this.message = message;
-      else this.notify(message);
+      const problem =
+        error instanceof SaveProblemError
+          ? error.problem
+          : describeHaSaveError(errorMessage(error), current.graph, current.item.kind, {
+              language: this.language,
+              hass: this.hass,
+            });
+      if (this.updateTab(tabId, (open) => settleSave(open, null))) this.showSaveProblem(problem);
+      else this.notify(`${t(this.language, 'saveFailed')}: ${problem.text}`);
     }
+  }
+
+  /**
+   * Before overwriting a flow in HA: was it changed there since FLODE read
+   * it? Then the user picks — overwrite, or load HA's version (theirs stays
+   * one undo step back). Resolves `true` to go on saving.
+   */
+  private async resolveConflict(tabId: string | null, flow: OpenFlow): Promise<boolean> {
+    const hass = this.hass;
+    if (!hass || flow.isNew || !flow.haVersion) return true;
+    let stored: Record<string, unknown>;
+    try {
+      stored = await loadFlowConfig(hass, flow.item.kind, flow.item.configId);
+    } catch {
+      return true; // Gone from HA — saving creates it again.
+    }
+    if (configFingerprint(stored) === flow.haVersion) return true;
+    const choice = await this.askConflict(flow.graph.name);
+    if (choice !== 'reload') return choice === 'overwrite';
+    try {
+      const fresh = await this.loadFlow(hass, this.currentItem(flow.item), undefined, stored);
+      if (tabId) this.adoptFromHa(tabId, fresh);
+    } catch (error) {
+      this.message = `${t(this.language, 'loadFailed')}: ${errorMessage(error)}`;
+    }
+    return false;
+  }
+
+  /** The tab's bar: why saving failed (with a way to its card and HA's own words), or a message. */
+  private renderSaveProblem() {
+    const problem = this.saveProblem;
+    const language = this.language;
+    if (!problem) return this.message ? html`<p class="message">${this.message}</p>` : nothing;
+    return html`<div class="message save-problem" role="alert">
+      <div class="save-problem-line">
+        <span><strong>${t(language, 'saveFailed')}:</strong> ${problem.text}</span>
+        ${
+          problem.issue
+            ? html`<ha-button appearance="plain" size="small" @click=${() => this.revealSaveProblem()}>
+                ${t(language, 'saveErrShow')}
+              </ha-button>`
+            : nothing
+        }
+      </div>
+      ${
+        problem.detail
+          ? html`<details>
+              <summary>${t(language, 'saveErrDetail')}</summary>
+              ${problem.detail}
+            </details>`
+          : nothing
+      }
+    </div>`;
+  }
+
+  /** A failed save of the active tab: its bar explains it, its card is marked and picked. */
+  private showSaveProblem(problem: SaveProblem): void {
+    this.message = null;
+    this.saveProblem = problem;
+    this.revealSaveProblem();
+  }
+
+  private revealSaveProblem(): void {
+    const nodeId = this.saveProblem?.issue?.nodeId;
+    if (!nodeId) return;
+    this.selectedId = nodeId;
+    this.canvas?.revealNode(nodeId);
+  }
+
+  private askConflict(name: string): Promise<ConflictChoice> {
+    return new Promise((resolve) => {
+      this.conflict = { name, resolve };
+    });
+  }
+
+  private closeConflict(choice: ConflictChoice): void {
+    const conflict = this.conflict;
+    this.conflict = null;
+    conflict?.resolve(choice);
   }
 
   /**
@@ -1178,9 +1479,18 @@ export class FlodePanel extends LitElement {
       '';
     const hass = this.hass;
     if (hass && entityId && saved.registryUpdate)
-      await applyRegistryUpdate(hass, entityId, saved.registryUpdate);
+      await applyRegistryUpdate(hass, saved.item.kind, entityId, saved.registryUpdate);
     const registryEntry = hass && entityId ? await getRegistryEntry(hass, entityId) : null;
-    return { configId: saved.item.configId, entityId, registryEntry };
+    // What HA stored now is the version later saves compare against.
+    const stored = hass
+      ? await loadFlowConfig(hass, saved.item.kind, saved.item.configId).catch(() => null)
+      : null;
+    return {
+      configId: saved.item.configId,
+      entityId,
+      registryEntry,
+      ...(stored ? { haVersion: configFingerprint(stored) } : {}),
+    };
   }
 
   /** HA's own "run": the version saved in HA (fields → HA's dialog to fill them in). */
@@ -1189,11 +1499,23 @@ export class FlodePanel extends LitElement {
     const flow = this.flow;
     const host = this.renderRoot.querySelector('.dialog-host');
     if (!hass || !flow || flow.isNew || !(host instanceof HTMLElement)) return;
-    await runScript(hass, host, {
-      entityId: flow.item.entityId,
-      configId: flow.item.configId,
-      name: flow.graph.name,
-    });
+    await this.withHaDialog(() =>
+      runScript(hass, host, {
+        entityId: flow.item.entityId,
+        configId: flow.item.configId,
+        name: flow.graph.name,
+      })
+    );
+  }
+
+  /** Runs one of HA's dialogs; FLODE's shortcuts stay off while it's open. */
+  private async withHaDialog<T>(open: () => Promise<T>): Promise<T> {
+    this.haDialogs++;
+    try {
+      return await open();
+    } finally {
+      this.haDialogs--;
+    }
   }
 
   // ---- automation settings (HA's rename + mode dialogs) ------------------------
@@ -1261,6 +1583,8 @@ export class FlodePanel extends LitElement {
       saveState: this.saveState,
       selectedId: this.selectedId,
       viewport: this.canvas?.viewport,
+      message: this.message,
+      saveProblem: this.saveProblem,
     };
     this.tabs = this.tabs.map((tab) => (tab.id === parked.id ? parked : tab));
   }
@@ -1272,12 +1596,16 @@ export class FlodePanel extends LitElement {
     this.future = tab.future;
     this.saveState = tab.saveState;
     this.selectedId = tab.selectedId;
+    this.message = tab.message ?? null;
+    this.saveProblem = tab.saveProblem ?? null;
     this.inspectorError = null;
     this.addOpen = false;
     this.showHome = false;
     const viewport = tab.viewport;
     if (viewport) void this.updateComplete.then(() => this.canvas?.setViewport(viewport));
-    if (tab.stale) void this.refreshStaleTab(tab.id);
+    this.lastEdit = null;
+    // Unchanged tabs show what HA has now (changed there meanwhile, remembered from before a reload).
+    void this.refreshFromHa(tab.id);
   }
 
   /** Opens a flow in a new tab — or in the active one if that's still an empty new automation. */
@@ -1287,12 +1615,13 @@ export class FlodePanel extends LitElement {
       active !== undefined && this.flow?.isNew === true && this.flow.graph.nodes.length === 0;
     const tab: EditorTab = {
       id: activeIsBlank && active ? active.id : randomId(),
-      flow,
+      flow: flow.isNew ? flow : { ...flow, savedGraph: flow.graph },
       past: [],
       future: [],
       saveState: flow.isNew ? 'unsaved' : 'saved',
       selectedId: null,
     };
+    this.knownTabIds.add(tab.id);
     if (activeIsBlank) {
       this.tabs = this.tabs.map((existing) => (existing.id === tab.id ? tab : existing));
     } else {
@@ -1315,6 +1644,8 @@ export class FlodePanel extends LitElement {
 
   /** Closing a tab with changes asks through HA's own "unsaved changes" dialog. */
   private async closeTab(id: string): Promise<void> {
+    // A save still running decides whether there's anything left to ask about.
+    await this.saves.idle();
     const tab = this.tabs.find((candidate) => candidate.id === id);
     const hass = this.hass;
     if (!tab || !hass) return;
@@ -1324,17 +1655,19 @@ export class FlodePanel extends LitElement {
       const flow = this.flow;
       const host = this.renderRoot.querySelector('.dialog-host');
       if (!flow || !(host instanceof HTMLElement)) return;
-      const proceed = await confirmUnsavedChanges(hass, host, {
-        flowKind: flow.item.kind,
-        configId: flow.isNew ? undefined : flow.item.configId,
-        settings: this.settingsOf(flow),
-        registry: { entry: flow.registryEntry, update: flow.registryUpdate },
-        save: async (settings, registryUpdate) => {
-          this.applySettings(settings, registryUpdate);
-          await this.save(true);
-          return this.saveState === 'saved';
-        },
-      });
+      const proceed = await this.withHaDialog(() =>
+        confirmUnsavedChanges(hass, host, {
+          flowKind: flow.item.kind,
+          configId: flow.isNew ? undefined : flow.item.configId,
+          settings: this.settingsOf(flow),
+          registry: { entry: flow.registryEntry, update: flow.registryUpdate },
+          save: async (settings, registryUpdate) => {
+            this.applySettings(settings, registryUpdate);
+            await this.save(true);
+            return this.saveState === 'saved';
+          },
+        })
+      );
       if (!proceed) return;
     }
     const index = this.tabs.findIndex((candidate) => candidate.id === id);
@@ -1384,15 +1717,17 @@ export class FlodePanel extends LitElement {
       flowKind: flow.item.kind,
       configId: flow.isNew ? undefined : flow.item.configId,
     };
-    const result = await promptAutomationDialog(
-      hass,
-      host,
-      target,
-      kind,
-      this.settingsOf(flow),
-      { entry: flow.registryEntry, update: flow.registryUpdate },
-      // A new flow named in the title bar, by the AI, an import … (#25)
-      flow.isNew && !this.isPlaceholderName(flow) ? flow.graph.name : undefined
+    const result = await this.withHaDialog(() =>
+      promptAutomationDialog(
+        hass,
+        host,
+        target,
+        kind,
+        this.settingsOf(flow),
+        { entry: flow.registryEntry, update: flow.registryUpdate },
+        // A new flow named in the title bar, by the AI, an import … (#25)
+        flow.isNew && !this.isPlaceholderName(flow) ? flow.graph.name : undefined
+      )
     );
     if (!result || !this.flow) return false;
     this.applySettings(result.settings, result.registryUpdate);
@@ -1428,12 +1763,23 @@ export class FlodePanel extends LitElement {
 
   // ---- editing + history -----------------------------------------------------
 
-  private commit(next: FlowGraph): void {
+  /**
+   * One undo step — or part of the last one: `editKey` names what was edited
+   * (a card's form), so typing in HA's editor isn't an undo step per key.
+   */
+  private commit(next: FlowGraph, editKey?: string): void {
     const flow = this.flow;
     // A script always begins somewhere (its start node is hidden, see flow-model).
     const graph = ensureScriptEntry(next);
     if (!flow || graph === flow.graph) return;
-    this.past = [...this.past.slice(-HISTORY_LIMIT + 1), flow.graph];
+    // A blueprint flow is only shown, so it can't be changed either.
+    if (flow.blueprint !== undefined && !flow.isNew) {
+      this.notify(t(this.language, 'blueprintNoSave'));
+      return;
+    }
+    const now = Date.now();
+    if (!continuesStep(this.lastEdit, editKey, now)) this.past = withHistory(this.past, flow.graph);
+    this.lastEdit = editKey === undefined ? null : { key: editKey, at: now };
     this.future = [];
     this.flow = { ...flow, graph };
     this.saveState = 'unsaved';
@@ -1443,20 +1789,22 @@ export class FlodePanel extends LitElement {
     const flow = this.flow;
     const previous = this.past.at(-1);
     if (!flow || !previous) return;
+    this.lastEdit = null;
     this.past = this.past.slice(0, -1);
     this.future = [flow.graph, ...this.future];
     this.flow = { ...flow, graph: previous };
-    this.saveState = 'unsaved';
+    this.saveState = historySaveState(flow, previous);
   }
 
   private redo(): void {
     const flow = this.flow;
     const [next, ...rest] = this.future;
     if (!flow || !next) return;
+    this.lastEdit = null;
     this.future = rest;
-    this.past = [...this.past, flow.graph];
+    this.past = withHistory(this.past, flow.graph);
     this.flow = { ...flow, graph: next };
-    this.saveState = 'unsaved';
+    this.saveState = historySaveState(flow, next);
   }
 
   // ---- inspector resize ------------------------------------------------------
@@ -1524,10 +1872,9 @@ export class FlodePanel extends LitElement {
       window.setTimeout(() => Reflect.set(list, prop, NO_STEPS), 1000);
     }
     const flow = this.flow;
-    const added: unknown = Array.isArray(event.detail.value)
-      ? event.detail.value.at(-1)
-      : undefined;
-    if (!flow || !isPlainObject(added)) return;
+    const last: unknown = Array.isArray(event.detail.value) ? event.detail.value.at(-1) : undefined;
+    if (!flow || !isPlainObject(last)) return;
+    const added = completeNewStep(last);
     const at = this.pendingAdd;
     this.pendingAdd = null;
     // "+" on a branch of a choose / if: the step goes into that branch.
@@ -1537,17 +1884,23 @@ export class FlodePanel extends LitElement {
     if (branch) {
       const inserted = insertBranchStep(flow.graph, branch, added);
       this.commit(inserted.graph);
-      this.selectedId = inserted.id;
+      this.selectNewCard(inserted.id);
       return;
     }
     const { type, data } = stepToNode(kind, added);
     const source = at?.source ? flow.graph.nodes.find((n) => n.id === at.source) : undefined;
+    // From the toolbar: a condition / action goes beside the selected card, not below it.
+    const beside =
+      source ??
+      (!at && kind !== 'trigger'
+        ? flow.graph.nodes.find((n) => n.id === this.selectedId)
+        : undefined);
     // Where it was asked for (right-click, dropped connection); after a card one column
     // to its right; otherwise where the user is looking.
     const wanted =
       at?.position ??
-      (source
-        ? { x: source.position.x + NODE_WIDTH + 120, y: source.position.y }
+      (beside
+        ? { x: beside.position.x + NODE_WIDTH + 120, y: beside.position.y }
         : (this.canvas?.visibleCenter() ?? { x: 0, y: 0 }));
     const { graph, id } = addNode(
       flow.graph,
@@ -1565,11 +1918,32 @@ export class FlodePanel extends LitElement {
       ? storedPosition(cachedBranchView(connected), id, at.position)
       : undefined;
     this.commit(placed ? moveNode(connected, id, placed.x, placed.y) : connected);
+    this.selectNewCard(id);
+  }
+
+  private addMenuButtons(): HTMLButtonElement[] {
+    return [...this.renderRoot.querySelectorAll<HTMLButtonElement>('.add .menu button')];
+  }
+
+  private onAddMenuKey = (event: KeyboardEvent): void => {
+    const buttons = this.addMenuButtons();
+    const index = buttons.findIndex((button) => button.matches(':focus'));
+    const step = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
+    if (event.key === 'Escape') this.addOpen = false;
+    else if (step !== 0) buttons[(index + step + buttons.length) % buttons.length]?.focus();
+    else return;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  /** A new card is selected and panned into sight (phones: `updated` reveals it above the sheet). */
+  private selectNewCard(id: string): void {
     this.selectedId = id;
+    if (!isNarrow()) void this.updateComplete.then(() => this.canvas?.bringIntoView(id));
   }
 
   private onStepChange(event: CustomEvent<StepEdit>): void {
-    this.applyEdits([], event.detail);
+    this.applyEdits([], event.detail, cardEditKey(event.detail.id));
   }
 
   private onDataChange(event: CustomEvent<NodeDataEdit>): void {
@@ -1578,11 +1952,15 @@ export class FlodePanel extends LitElement {
     if (node && node.id === event.detail.id) {
       const edited = NodeSchema.safeParse({ ...node, data: event.detail.data });
       if (edited.success) {
-        this.applyEdits([], { id: node.id, kind: 'action', step: nodeToStep(edited.data) });
+        this.applyEdits(
+          [],
+          { id: node.id, kind: 'action', step: nodeToStep(edited.data) },
+          cardEditKey(node.id)
+        );
       }
       return;
     }
-    this.applyEdits([event.detail]);
+    this.applyEdits([event.detail], undefined, cardEditKey(event.detail.id));
   }
 
   /** The branch card `id` stands for (a step inside a choose / if), if it is one. */
@@ -1608,8 +1986,8 @@ export class FlodePanel extends LitElement {
       .replace('{n}', String(card.index + 1));
   }
 
-  /** Card data edits plus the open card's HA step, committed as one undo step. */
-  private applyEdits(data: readonly NodeDataEdit[], step?: StepEdit): void {
+  /** Card data edits plus the open card's HA step, committed as one undo step (see `commit`). */
+  private applyEdits(data: readonly NodeDataEdit[], step?: StepEdit, editKey?: string): void {
     const flow = this.flow;
     if (!flow) return;
     let graph = flow.graph;
@@ -1633,7 +2011,7 @@ export class FlodePanel extends LitElement {
       error = result.error;
     }
     this.inspectorError = error ? `${t(this.language, 'invalid')}: ${error}` : null;
-    if (!error) this.commit(graph);
+    if (!error) this.commit(graph, editKey);
   }
 
   private onDelete(event: CustomEvent<{ id: string }>): void {
@@ -1650,7 +2028,12 @@ export class FlodePanel extends LitElement {
   private onWindowKeyDown = (event: KeyboardEvent): void => {
     if (!this.isConnected) return;
     const shortcut = matchShortcut(event);
-    if (!shortcut) return;
+    if (!shortcut) {
+      this.closeSideOnEscape(event);
+      return;
+    }
+    // A dialog is open (FLODE's or HA's): ⌘Z, ⌘V, ⌘S … must not act on the editor behind it.
+    if (this.dialogOpen() || isInDialog(event.composedPath())) return;
     if (!shortcut.global && (!this.flow || this.showHome)) return;
     // Inside a text field / HA's code editor these keys belong to the text.
     if (shortcut.notInText && isTyping(event)) return;
@@ -1661,6 +2044,32 @@ export class FlodePanel extends LitElement {
     event.stopImmediatePropagation();
     run();
   };
+
+  /** Esc closes the runs view or the assistant (not while a dialog or a field has the keys). */
+  private closeSideOnEscape(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || this.showHome || !(this.debugOpen || this.assistOpen)) return;
+    if (this.dialogOpen() || isInDialog(event.composedPath()) || isTyping(event)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    this.closeSheet();
+  }
+
+  private dialogOpen(): boolean {
+    return (
+      this.haDialogs > 0 ||
+      this.saves.pending ||
+      this.conflict !== null ||
+      this.paletteOpen ||
+      this.yamlViewOpen ||
+      this.shortcutsOpen ||
+      this.yamlImportOpen ||
+      this.templatesOpen ||
+      this.aiOpen ||
+      this.runFromId !== null ||
+      this.welcome !== null ||
+      haDialogShowing()
+    );
+  }
 
   private shortcutAction(id: ShortcutId): (() => void) | null {
     const selected = this.selectedCard();
@@ -1687,22 +2096,26 @@ export class FlodePanel extends LitElement {
         return () => {
           this.addOpen = true;
         };
-      case 'copy':
+      case 'copy': {
         // A text selection on the page keeps the browser's own copy.
-        if (!selected || window.getSelection()?.toString()) return null;
+        const card = this.selectedAnyCard();
+        if (!card || window.getSelection()?.toString()) return null;
         return () => {
-          this.copiedNode = structuredClone(selected);
+          this.copiedNode = structuredClone(card);
           this.notify(
             t(this.language, 'cardCopied').replace('{keys}', shortcutHint('paste') ?? '')
           );
         };
+      }
       case 'paste': {
         const copied = this.copiedNode;
         if (!copied) return null;
-        return () => this.duplicateCard(copied);
+        return () => this.pasteCard(copied);
       }
-      case 'duplicate':
-        return selected ? () => this.duplicateCard(selected) : null;
+      case 'duplicate': {
+        const card = this.selectedAnyCard();
+        return card ? () => this.duplicateCard(card) : null;
+      }
       case 'toggleEnabled':
         return selected ? () => this.toggleCard(selected) : null;
       case 'tidy':
@@ -1729,19 +2142,46 @@ export class FlodePanel extends LitElement {
    * Parts of the automation the transpiler didn't recognise when it was opened
    * — HA's own warning, so nobody saves over something FLODE didn't read.
    */
+  private renderBlueprintNote(flow: OpenFlow) {
+    if (flow.blueprint === undefined || flow.isNew) return nothing;
+    const language = this.language;
+    const { kind, configId } = flow.item;
+    return html`<ha-alert
+      class="import-warnings"
+      alert-type="info"
+      .title=${t(language, 'blueprintReadOnlyTitle')}
+    >
+      ${t(language, 'blueprintReadOnlyText')}
+      <code>${flow.blueprint}</code>
+      <ha-button
+        slot="action"
+        appearance="plain"
+        @click=${() => navigateInHa(`/config/${kind}/edit/${encodeURIComponent(configId)}`)}
+      >
+        ${t(language, 'openInHa')}
+      </ha-button>
+    </ha-alert>`;
+  }
+
   private renderImportWarnings(flow: OpenFlow) {
     const warnings = flow.importWarnings;
     if (!warnings?.length) return nothing;
+    const heading = flow.importWarningsHeading ?? {
+      title: 'importWarnTitle',
+      text: 'importWarnText',
+    };
     return html`<ha-alert
       class="import-warnings"
       alert-type="warning"
-      .title=${t(this.language, 'importWarnTitle')}
+      .title=${t(this.language, heading.title)}
       dismissable
       @alert-dismissed-clicked=${() => {
-        if (this.flow) this.flow = { ...this.flow, importWarnings: undefined };
+        if (this.flow) {
+          this.flow = { ...this.flow, importWarnings: undefined, importWarningsHeading: undefined };
+        }
       }}
     >
-      ${t(this.language, 'importWarnText')}
+      ${t(this.language, heading.text)}
       <ul>
         ${warnings.map((warning) => html`<li>${warning}</li>`)}
       </ul>
@@ -1771,13 +2211,62 @@ export class FlodePanel extends LitElement {
     return node && !isScriptStart(node.data) ? node : null;
   }
 
-  private duplicateCard(node: FlowNode, at?: { x: number; y: number }): void {
+  /** The selected card as drawn — a flow card or a step in a choose / if branch. */
+  private selectedAnyCard(): FlowNode | null {
+    return this.selectedCard() ?? this.selectedBranchNode() ?? null;
+  }
+
+  /**
+   * ⌘D: the copy goes right after the card — into its branch, or connected
+   * behind it in the flow, below everything the card draws (a block's branches).
+   */
+  private duplicateCard(node: FlowNode): void {
     const flow = this.flow;
     if (!flow) return;
+    const view = cachedBranchView(flow.graph);
+    const card = view.cards.get(node.id);
+    if (card) {
+      this.insertAfterBranchCard(card, node);
+      return;
+    }
+    // The copy draws the same branches: its box starts below the original's.
+    const box = drawnBox(view, node.id);
+    const drawn = freePosition(view.graph, { x: box.x, y: box.bottom + 40 + box.y - box.top });
+    const { graph, id } = duplicateNode(flow.graph, node, drawn);
+    if (graph === flow.graph) return;
+    const placed = storedPosition(cachedBranchView(graph), id, drawn);
+    this.commit(moveNode(graph, id, placed.x, placed.y));
+    this.selectNewCard(id);
+  }
+
+  /**
+   * ⌘V: after the selected step of a branch, or as a card of its own (beside
+   * the copied one, or at `at` from the right-click menu).
+   */
+  private pasteCard(node: FlowNode, at?: { x: number; y: number }): void {
+    const flow = this.flow;
+    if (!flow) return;
+    const card = at ? undefined : this.branchCard(this.selectedId);
+    if (card && this.insertAfterBranchCard(card, node)) return;
     const { graph, id } = copyNode(flow.graph, node, at);
     if (graph === flow.graph) return;
     this.commit(graph);
-    this.selectedId = id;
+    this.selectNewCard(id);
+  }
+
+  /** A copy of `node` as the next step of branch card `card` (triggers can't go into a branch). */
+  private insertAfterBranchCard(card: BranchCardRef, node: FlowNode): boolean {
+    const flow = this.flow;
+    if (!flow || node.type === 'trigger') return false;
+    const inserted = insertBranchStep(
+      flow.graph,
+      { blockId: card.blockId, branch: card.branch, index: card.index + 1 },
+      nodeToStep(node)
+    );
+    if (inserted.graph === flow.graph) return false;
+    this.commit(inserted.graph);
+    this.selectNewCard(inserted.id);
+    return true;
   }
 
   private toggleCard(node: FlowNode): void {
@@ -2111,13 +2600,14 @@ export class FlodePanel extends LitElement {
                 </ha-icon-button>
                 ${
                   this.addOpen
-                    ? html`<div class="menu" title=${t(language, 'addHint')}>
+                    ? html`<div class="menu" role="menu" title=${t(language, 'addHint')} @keydown=${this.onAddMenuKey}>
                       ${(
                         flow.item.kind === 'script'
                           ? (['condition', 'action'] as const)
                           : (['trigger', 'condition', 'action'] as const)
                       ).map(
                         (kind) => html`<button
+                          role="menuitem"
                           @click=${() => void this.openAddDialog(kind)}
                           style="--node-color: ${NODE_META[kind].color}"
                         >
@@ -2154,7 +2644,7 @@ export class FlodePanel extends LitElement {
                 <ha-icon icon="mdi:auto-fix"></ha-icon>
               </ha-icon-button>
               <ha-icon-button
-                class=${this.minimapVisible ? 'active' : ''}
+                class="minimap-toggle ${this.minimapVisible ? 'active' : ''}"
                 .label=${labelWithHint(t(language, 'minimap'), 'minimap')}
                 @click=${() => this.toggleMinimap()}
               >
@@ -2271,7 +2761,8 @@ export class FlodePanel extends LitElement {
           </div>
         </header>
         ${this.renderTabs()}
-        ${this.message ? html`<p class="message">${this.message}</p>` : nothing}
+        ${this.renderSaveProblem()}
+        ${this.renderBlueprintNote(flow)}
         ${this.renderImportWarnings(flow)}
         <div class="work" @pointerdown=${this.closeCanvasMenuOutside}>
           <flode-canvas
@@ -2282,6 +2773,7 @@ export class FlodePanel extends LitElement {
             .selectedId=${this.selectedId}
             .runMarks=${this.debugOpen ? this.runMarks : null}
             .activeRunNode=${this.debugOpen ? this.activeRunNode : null}
+            .saveIssue=${this.saveProblem?.issue ?? null}
             @graph-change=${(e: CustomEvent<{ graph: FlowGraph }>) => this.commit(e.detail.graph)}
             @add-next=${this.onAddNext}
             @canvas-menu=${(e: CustomEvent<CanvasMenuDetail>) => {
@@ -2320,7 +2812,6 @@ export class FlodePanel extends LitElement {
           ></div>
           <div class="side ${this.assistOpen || this.debugOpen || selected ? 'open' : ''}">
           <div class="sheet-bar">
-            <span class="grip"></span>
             <ha-icon-button .label=${t(language, 'close')} @click=${() => this.closeSheet()}>
               <ha-icon icon="mdi:close"></ha-icon>
             </ha-icon-button>
@@ -2363,7 +2854,11 @@ export class FlodePanel extends LitElement {
               @data-change=${this.onDataChange}
               @step-change=${this.onStepChange}
               @nodes-change=${(e: CustomEvent<NodesChange>) =>
-                this.applyEdits(e.detail.data, e.detail.step)}
+                this.applyEdits(
+                  e.detail.data,
+                  e.detail.step,
+                  cardEditKey(e.detail.step?.id ?? e.detail.data[0]?.id ?? '')
+                )}
             @run-from=${(e: CustomEvent<{ id: string }>) => {
               this.runFromId = e.detail.id;
             }}
@@ -2527,6 +3022,7 @@ export class FlodePanel extends LitElement {
         .hass=${this.hass}
         .graph=${this.flow?.graph}
         .nodeId=${this.runFromId}
+        .item=${this.flow?.isNew ? undefined : this.flow?.item}
         .label=${this.runFromLabel()}
         @closed=${() => {
           this.runFromId = null;
@@ -2552,7 +3048,33 @@ export class FlodePanel extends LitElement {
         }}
         @ai-draft=${this.onAiDraft}
       ></flode-ai-dialog>
+      ${this.renderConflictDialog()}
     `;
+  }
+
+  /** "Changed in Home Assistant" before saving over it (HA's dialog element, FLODE's texts). */
+  private renderConflictDialog() {
+    const conflict = this.conflict;
+    if (!conflict) return nothing;
+    const language = this.language;
+    return html`<ha-dialog
+      open
+      .headerTitle=${t(language, 'conflictTitle')}
+      @closed=${() => this.closeConflict('cancel')}
+    >
+      <p>${t(language, 'conflictText').replace('{name}', conflict.name)}</p>
+      <ha-dialog-footer slot="footer">
+        <ha-button slot="secondaryAction" appearance="plain" @click=${() => this.closeConflict('cancel')}>
+          ${this.hass?.localize('ui.common.cancel') || t(language, 'back')}
+        </ha-button>
+        <ha-button slot="secondaryAction" appearance="plain" @click=${() => this.closeConflict('reload')}>
+          ${t(language, 'conflictReload')}
+        </ha-button>
+        <ha-button slot="primaryAction" @click=${() => this.closeConflict('overwrite')}>
+          ${t(language, 'conflictOverwrite')}
+        </ha-button>
+      </ha-dialog-footer>
+    </ha-dialog>`;
   }
 
   static styles = css`
@@ -2809,6 +3331,23 @@ export class FlodePanel extends LitElement {
       background: color-mix(in srgb, var(--warning-color, #ffa600) 15%, transparent);
       font-size: 13px;
     }
+    .save-problem {
+      background: color-mix(in srgb, var(--error-color, #db4437) 12%, transparent);
+    }
+    .save-problem-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+    }
+    .save-problem details {
+      margin-top: 4px;
+      color: var(--secondary-text-color);
+      font-size: 12px;
+    }
+    .save-problem summary {
+      cursor: pointer;
+    }
     .editor {
       height: 100%;
       display: flex;
@@ -2824,6 +3363,9 @@ export class FlodePanel extends LitElement {
       border-bottom: 1px solid var(--divider-color);
       background: var(--app-header-background-color, var(--card-background-color));
       color: var(--app-header-text-color, var(--primary-text-color));
+      /* HA's grey focus ring was barely visible (2.9 : 1) — the theme colour instead. */
+      --wa-focus-ring-color: var(--primary-color);
+      --wa-focus-ring: solid 2px var(--primary-color);
     }
     .name {
       flex: 1;
@@ -2890,10 +3432,11 @@ export class FlodePanel extends LitElement {
     .add {
       position: relative;
     }
+    /* Opens to the right of "+": on the left it ran under HA's sidebar (iPad, toolbar in two rows). */
     .menu {
       position: absolute;
       top: 44px;
-      right: 0;
+      left: 0;
       z-index: 5;
       display: flex;
       flex-direction: column;
@@ -2923,6 +3466,11 @@ export class FlodePanel extends LitElement {
     }
     .menu button:hover {
       background: var(--secondary-background-color);
+    }
+    @media (pointer: coarse) {
+      .menu button {
+        min-height: 44px;
+      }
     }
     .last-run {
       display: flex;
@@ -3154,7 +3702,9 @@ export class FlodePanel extends LitElement {
       }
       .tool-label,
       .status,
-      .last-run {
+      .last-run,
+      .minimap-toggle {
+        /* The minimap itself is hidden on phones (flode-canvas). */
         display: none;
       }
       .tool-labeled {
@@ -3215,16 +3765,6 @@ export class FlodePanel extends LitElement {
         height: 36px;
         --mdc-icon-button-size: 36px;
         --mdc-icon-size: 20px;
-      }
-      .grip {
-        position: absolute;
-        top: 8px;
-        left: 50%;
-        width: 40px;
-        height: 4px;
-        margin-left: -20px;
-        border-radius: 2px;
-        background: var(--divider-color);
       }
     }
   `;

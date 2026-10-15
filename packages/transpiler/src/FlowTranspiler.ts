@@ -1,4 +1,10 @@
-import { type FlodeMetadata, FlodeMetadataSchema, type FlowGraph } from '@flode/shared';
+import {
+  dropSupersededManualStart,
+  type FlodeMetadata,
+  FlodeMetadataSchema,
+  type FlowGraph,
+  withoutManualStart,
+} from '@flode/shared';
 import { dump as yamlDump } from 'js-yaml';
 import { analyzeTopology, type TopologyAnalysis } from './analyzer/topology';
 import { type ValidationResult, validateFlowGraph } from './analyzer/validator';
@@ -54,6 +60,8 @@ export interface TranspileResult {
    * Warnings from transpilation
    */
   warnings: string[];
+  /** The strategy that wrote the YAML, as recorded in `_flode_metadata`. */
+  strategy?: FlodeMetadata['strategy'];
 }
 
 /**
@@ -92,7 +100,8 @@ export class FlowTranspiler {
       };
     }
 
-    const flow = validation.graph;
+    const flow = dropSupersededManualStart(validation.graph);
+    warnings.push(...validation.warnings.map((w) => w.message));
 
     // Step 2: Analyze topology
     const analysis = this.analyzeTopology(flow);
@@ -128,8 +137,11 @@ export class FlowTranspiler {
       }
     }
 
-    // Step 4: Generate YAML output
-    const output = strategy.generate(flow, analysis);
+    // Step 4: Generate YAML output (an automation without triggers loses its hidden start again)
+    const generated = strategy.generate(flow, analysis);
+    const output = generated.automation
+      ? { ...generated, automation: withoutManualStart(generated.automation) }
+      : generated;
     warnings.push(...output.warnings);
 
     // Step 5: Inject _flode_metadata metadata with node positions
@@ -173,6 +185,7 @@ export class FlowTranspiler {
       output,
       analysis,
       warnings,
+      strategy: metadataStrategy(strategy),
     };
   }
 
@@ -230,9 +243,13 @@ export class FlowTranspiler {
 
   /** FLODE's layout metadata for `flow`, written by `strategy`. */
   private generateCafeMetadata(flow: FlowGraph, strategy: TranspilerStrategy): FlodeMetadata {
-    const name = FlodeMetadataSchema.shape.strategy.safeParse(strategy.name).data ?? 'native';
-    return flodeMetadata(flow, name);
+    return flodeMetadata(flow, metadataStrategy(strategy));
   }
+}
+
+/** `strategy.name` as `_flode_metadata` records it. */
+function metadataStrategy(strategy: TranspilerStrategy): FlodeMetadata['strategy'] {
+  return FlodeMetadataSchema.shape.strategy.safeParse(strategy.name).data ?? 'native';
 }
 
 // Export singleton instance

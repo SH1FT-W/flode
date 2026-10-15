@@ -1,11 +1,13 @@
 import type { FlowGraph } from '@flode/shared';
 import {
+  type AssistReply,
   type AssistTurn,
   buildAssistInstructions,
   findUnknownEntityIds,
   generateWithAiTask,
   parseAssistReply,
   readableAiError,
+  safeAiMarkdown,
   selectPromptEntities,
 } from '@flode/ui-core';
 import { css, html, LitElement, nothing } from 'lit';
@@ -24,6 +26,7 @@ import { defineElement } from './define-element';
 import { entityCandidates } from './flode-ai';
 import { flowYaml } from './flow-yaml';
 import { errorMessage, type FlowKind, type HomeAssistant } from './ha';
+import { entityExists } from './node-meta';
 import { t } from './strings';
 
 function loadTranspiler() {
@@ -44,7 +47,7 @@ export class FlodeAssist extends LitElement {
     turns: { state: true },
     input: { state: true },
     running: { state: true },
-    error: { state: true },
+    confirmIndex: { state: true },
   };
 
   declare hass: HomeAssistant | undefined;
@@ -54,7 +57,8 @@ export class FlodeAssist extends LitElement {
   declare turns: ChatTurn[];
   declare input: string;
   declare running: boolean;
-  declare error: string | null;
+  /** The proposal whose flow changed since the question — waiting for "apply anyway". */
+  declare confirmIndex: number | null;
 
   constructor() {
     super();
@@ -63,7 +67,7 @@ export class FlodeAssist extends LitElement {
     this.turns = [];
     this.input = '';
     this.running = false;
-    this.error = null;
+    this.confirmIndex = null;
   }
 
   private get language(): string {
@@ -77,7 +81,7 @@ export class FlodeAssist extends LitElement {
     // Another tab: show its own conversation.
     if (changed.has('graph') && before !== this.graph?.id) {
       this.showConversation();
-      this.error = null;
+      this.confirmIndex = null;
     }
   }
 
@@ -111,14 +115,12 @@ export class FlodeAssist extends LitElement {
     const { hass, aiEntityId, graph, kind } = this;
     const text = request.trim();
     if (!hass || !aiEntityId || !graph || !text || !startRequest(graph.id)) return;
-    const history: AssistTurn[] = this.turns.map(({ role, text: turnText }) => ({
-      role,
-      text: turnText,
-    }));
+    const history: AssistTurn[] = this.turns
+      .filter((turn) => !turn.error)
+      .map(({ role, text: turnText }) => ({ role, text: turnText }));
     this.setTurns([...this.turns, { role: 'user', text }]);
     this.input = '';
     this.running = true;
-    this.error = null;
     try {
       const currentYaml = await flowYaml(graph, kind);
       const candidates = entityCandidates(hass);
@@ -135,55 +137,92 @@ export class FlodeAssist extends LitElement {
           history,
         })
       );
-      const parsed = parseAssistReply(reply);
+      // HA's YAML (`!input`, `!secret` …), read like the transpiler reads it.
+      const { loadHaYaml } = await loadTranspiler();
+      const parsed = parseAssistReply(reply, { kind, parseYaml: loadHaYaml });
       addTurn(graph.id, {
         role: 'assistant',
         text: parsed.text,
-        ...(parsed.yaml ? { proposal: await this.readProposal(parsed.yaml, kind) } : {}),
+        ...(parsed.yaml
+          ? { proposal: { ...(await this.readProposal(parsed, kind)), baseYaml: currentYaml } }
+          : {}),
       });
     } catch (error) {
-      if (this.graph?.id === graph.id) this.error = readableAiError(errorMessage(error));
+      // Stays with the flow that asked — the user may be on another tab by now.
+      addTurn(graph.id, {
+        role: 'assistant',
+        text: '',
+        error: readableAiError(errorMessage(error)),
+      });
     } finally {
       endRequest(graph.id);
     }
   }
 
-  private async readProposal(yaml: string, kind: FlowKind): Promise<Proposal> {
+  private async readProposal(reply: AssistReply, kind: FlowKind): Promise<Proposal> {
     const hass = this.hass;
+    const language = this.language;
     const { transpiler, parseFlowYaml, validateFlowGraph } = await loadTranspiler();
-    const result = await parseFlowYaml(transpiler, yaml, kind, { keepBlocks: true });
+    const result = await parseFlowYaml(transpiler, reply.yaml ?? '', kind, { keepBlocks: true });
     if (!result.success || !result.graph) {
-      return { problems: result.errors ?? [t(this.language, 'assistUnreadable')] };
+      return { problems: result.errors ?? [t(language, 'assistUnreadable')] };
     }
     const unknown = hass
       ? findUnknownEntityIds(
           result.graph.nodes.map((node) => node.data),
-          new Set(Object.keys(hass.states))
+          (entityId) => entityExists(hass, entityId)
         )
       : [];
     return {
       graph: result.graph,
       problems: [
+        ...(reply.blocked ? [t(language, 'assistNoTriggers')] : []),
         ...validateFlowGraph(result.graph).errors.map((e) => e.message),
-        ...unknown.map((id) => `${t(this.language, 'assistUnknownEntity')} ${id}`),
+        ...unknown.map((id) => `${t(language, 'assistUnknownEntity')} ${id}`),
       ],
+      ...(reply.blocked ? { blocked: true } : {}),
+      ...(reply.present ? { present: reply.present } : {}),
     };
   }
 
-  private apply(index: number): void {
-    const turn = this.turns[index];
-    const graph = turn?.proposal?.graph;
-    if (!turn || !graph) return;
-    this.dispatchEvent(new CustomEvent('assist-apply', { detail: { graph } }));
+  /** Whether the open flow still is what the proposal was made for. */
+  private async proposalIsCurrent(proposal: Proposal): Promise<boolean> {
+    const { graph, kind } = this;
+    if (!graph || proposal.baseYaml === undefined) return true;
+    try {
+      return (await flowYaml(graph, kind)) === proposal.baseYaml;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Applies a proposal. One made for an older state of the flow would undo
+   * the changes since — it needs a second click ("apply anyway").
+   */
+  private async apply(index: number): Promise<void> {
+    const proposal = this.turns[index]?.proposal;
+    const graph = proposal?.graph;
+    if (!proposal || !graph || proposal.blocked) return;
+    if (this.confirmIndex !== index && !(await this.proposalIsCurrent(proposal))) {
+      this.confirmIndex = index;
+      return;
+    }
+    this.confirmIndex = null;
+    this.dispatchEvent(
+      new CustomEvent('assist-apply', { detail: { graph, present: proposal.present } })
+    );
     this.setTurns(this.turns.map((t, i) => (i === index ? { ...t, applied: true } : t)));
   }
 
   private renderTurn(turn: ChatTurn, index: number) {
     const language = this.language;
     if (turn.role === 'user') return html`<div class="turn user">${turn.text}</div>`;
+    if (turn.error) return html`<ha-alert alert-type="error">${turn.error}</ha-alert>`;
     const proposal = turn.proposal;
+    const stale = this.confirmIndex === index;
     return html`<div class="turn assistant">
-      ${turn.text ? html`<ha-markdown .content=${turn.text}></ha-markdown>` : nothing}
+      ${turn.text ? html`<ha-markdown .content=${safeAiMarkdown(turn.text)}></ha-markdown>` : nothing}
       ${
         proposal
           ? html`<div class="proposal">
@@ -206,13 +245,21 @@ export class FlodeAssist extends LitElement {
                   : nothing
               }
               ${
-                proposal.graph
+                stale
+                  ? html`<ha-alert alert-type="warning">${t(language, 'assistStale')}</ha-alert>`
+                  : nothing
+              }
+              ${
+                proposal.graph && !proposal.blocked
                   ? html`<ha-button
                       .disabled=${turn.applied === true}
-                      @click=${() => this.apply(index)}
+                      @click=${() => void this.apply(index)}
                     >
                       <ha-icon slot="start" icon=${turn.applied ? 'mdi:check' : 'mdi:check-bold'}></ha-icon>
-                      ${t(language, turn.applied ? 'assistApplied' : 'assistApply')}
+                      ${t(
+                        language,
+                        turn.applied ? 'assistApplied' : stale ? 'assistApplyAnyway' : 'assistApply'
+                      )}
                     </ha-button>`
                   : nothing
               }
@@ -267,7 +314,6 @@ export class FlodeAssist extends LitElement {
           ? html`<p class="hint running"><ha-spinner size="small"></ha-spinner>${t(language, 'assistThinking')}</p>`
           : nothing
       }
-      ${this.error ? html`<ha-alert alert-type="error">${this.error}</ha-alert>` : nothing}
       <div class="ask">
         <ha-selector
           .hass=${this.hass}

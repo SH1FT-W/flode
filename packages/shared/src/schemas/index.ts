@@ -114,22 +114,31 @@ export {
 export {
   buildRawCondition,
   buildRawStepAction,
+  CONDITION_STEP_KEY,
   createRawConditionData,
   createRawStepData,
   createShorthandConditionData,
   getRawStep,
   getShorthandCondition,
+  INTERNAL_CONDITION_KEYS,
+  isConditionStep,
   RAW_STEP_KEY,
   SHORTHAND_CONDITION_KEY,
 } from './raw-step';
 // Scripts
 export {
   automationToScriptConfig,
+  dropSupersededManualStart,
   getScriptFields,
+  isFlowStart,
+  isManualStart,
   isScriptStart,
+  MANUAL_START_TRIGGER,
   SCRIPT_START_TRIGGER,
   type ScriptFields,
   scriptToAutomationConfig,
+  withManualStart,
+  withoutManualStart,
 } from './script';
 // Validation schemas for UI
 export {

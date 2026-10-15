@@ -96,6 +96,14 @@ export function summarize(
   );
 }
 
+/**
+ * Whether HA knows an entity — with a state, or only in the entity registry
+ * (disabled entities have no state but still exist).
+ */
+export function entityExists(hass: HomeAssistant, entityId: string): boolean {
+  return entityId in hass.states || hass.entities?.[entityId] !== undefined;
+}
+
 interface CachedIssues {
   hass: HomeAssistant;
   created: ReadonlySet<string>;
@@ -120,11 +128,9 @@ export function nodeIssues(
   const data: Record<string, unknown> = isPlainObject(node.data) ? node.data : {};
   const cached = issueCache.get(data);
   if (cached && cached.hass === hass && cached.created === created) return cached.issues;
-  const { states, entities } = hass;
   const issues = stepIssues(node.type, data, {
     hasService: (service) => serviceInfo(hass, service) !== undefined,
-    hasEntity: (entityId) =>
-      entityId in states || entities?.[entityId] !== undefined || created.has(entityId),
+    hasEntity: (entityId) => entityExists(hass, entityId) || created.has(entityId),
   });
   issueCache.set(data, { hass, created, issues });
   return issues;

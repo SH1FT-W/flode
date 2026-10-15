@@ -57,7 +57,7 @@ export function buildAutomationSaveConfig(
       ...automation,
       variables: {
         ...(automation.variables || {}),
-        _flode_metadata: flodeMetadata(graph, 'native'),
+        _flode_metadata: flodeMetadata(graph, result.strategy ?? 'native'),
       },
     },
   };

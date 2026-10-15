@@ -1,3 +1,5 @@
+import { isPlainObject, toList } from '@flode/shared';
+
 /**
  * Prompt building and response handling for FLODE's AI assist, which runs on
  * Home Assistant's own `ai_task.generate_data` — the LLM the user configured
@@ -299,9 +301,13 @@ export function collectEntityIds(value: unknown, found = new Set<string>()): Set
   return found;
 }
 
-/** Entity ids the model used that don't exist in this Home Assistant. */
-export function findUnknownEntityIds(value: unknown, knownIds: ReadonlySet<string>): string[] {
-  return [...collectEntityIds(value)].filter((id) => !knownIds.has(id)).sort();
+/** Entity ids the model used that don't exist in this Home Assistant (`known`: a set or a check). */
+export function findUnknownEntityIds(
+  value: unknown,
+  known: ReadonlySet<string> | ((entityId: string) => boolean)
+): string[] {
+  const exists = typeof known === 'function' ? known : (id: string) => known.has(id);
+  return [...collectEntityIds(value)].filter((id) => !exists(id)).sort();
 }
 
 /**
@@ -385,11 +391,84 @@ export interface AssistReply {
   text: string;
   /** The proposed complete flow, if the reply contains one. */
   yaml?: string;
+  /**
+   * The top-level keys the proposal's YAML actually has (`alias`, `mode` …) —
+   * keys missing here were not proposed, so applying must keep the open
+   * flow's values instead of a parser's defaults.
+   */
+  present?: string[];
+  /** Why the proposal must not be applied (an automation without triggers). */
+  blocked?: 'noTriggers';
 }
 
-/** Splits an assistant reply into its text and the proposed YAML (if any). */
-export function parseAssistReply(reply: string): AssistReply {
-  const fenced = reply.match(/```(?:ya?ml)[ \t]*\n([\s\S]*?)```/i);
-  if (!fenced || fenced[1] === undefined) return { text: reply.trim() };
-  return { text: reply.replace(fenced[0], '').trim(), yaml: fenced[1].trim() };
+export interface AssistReplyOptions {
+  kind: AiFlowKind;
+  /** YAML text → value (throws on invalid YAML) — the UI brings its YAML library. */
+  parseYaml: (text: string) => unknown;
+}
+
+/** Top-level keys that make a YAML block a whole automation / script rather than a snippet. */
+const FLOW_KEYS: Record<AiFlowKind, readonly string[]> = {
+  automation: ['triggers', 'trigger', 'conditions', 'condition', 'actions', 'action'],
+  script: ['sequence', 'fields'],
+};
+
+const TRIGGER_KEYS = ['triggers', 'trigger'];
+
+/** Fenced blocks of a reply that may hold YAML: ```yaml, ```yml or no language. */
+interface FencedBlock {
+  whole: string;
+  body: string;
+  tagged: boolean;
+}
+
+function fencedBlocks(reply: string): FencedBlock[] {
+  return [...reply.matchAll(/```([^\s`]*)[ \t]*\n([\s\S]*?)```/g)].flatMap((match) => {
+    const language = (match[1] ?? '').toLowerCase();
+    if (language !== '' && language !== 'yaml' && language !== 'yml') return [];
+    return [{ whole: match[0], body: (match[2] ?? '').trim(), tagged: language !== '' }];
+  });
+}
+
+/** The block parsed — when it is a whole flow of `kind`. */
+function parseFlowBlock(
+  block: FencedBlock,
+  { kind, parseYaml }: AssistReplyOptions
+): Record<string, unknown> | undefined {
+  try {
+    const value = parseYaml(block.body);
+    return isPlainObject(value) && FLOW_KEYS[kind].some((key) => key in value) ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function hasTriggers(config: Record<string, unknown>): boolean {
+  return TRIGGER_KEYS.some((key) => toList(config[key]).length > 0);
+}
+
+/**
+ * Splits an assistant reply into its text and the proposed flow: the LAST
+ * fenced block that parses as a whole automation / script (an earlier example
+ * snippet must not replace the flow). Without one, the last ```yaml block is
+ * still handed over, so the user sees why it can't be applied.
+ */
+export function parseAssistReply(reply: string, options: AssistReplyOptions): AssistReply {
+  const normalized = reply.replace(/\r\n?/g, '\n');
+  const blocks = fencedBlocks(normalized);
+  const parsed = blocks
+    .map((block) => ({ block, config: parseFlowBlock(block, options) }))
+    .filter((entry) => entry.config !== undefined)
+    .at(-1);
+  const block = parsed?.block ?? blocks.filter((candidate) => candidate.tagged).at(-1);
+  if (!block) return { text: normalized.trim() };
+  const config = parsed?.config;
+  const blocked: AssistReply['blocked'] =
+    config && options.kind === 'automation' && !hasTriggers(config) ? 'noTriggers' : undefined;
+  return {
+    text: normalized.replace(block.whole, '').trim(),
+    yaml: block.body,
+    ...(config ? { present: Object.keys(config) } : {}),
+    ...(blocked ? { blocked } : {}),
+  };
 }

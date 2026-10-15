@@ -81,6 +81,18 @@ const STRINGS = {
     mergeName: 'Zusammengeführt: {names}',
     mergeFailed: 'Zusammenführen fehlgeschlagen:',
     mergeDone: 'Zusammengeführt – als neue Automation offen. Die Originale bleiben unverändert.',
+    mergeWarnVariable:
+      'Variable „{name}“ aus „{source}“ heißt jetzt „{renamed}“ – ihre Vorlagen wurden angepasst.',
+    mergeWarnVariableCheck:
+      'Variable „{name}“ aus „{source}“ heißt jetzt „{renamed}“ – bitte ihre Vorlagen prüfen, nicht alle Stellen ließen sich sicher anpassen.',
+    mergeWarnMode:
+      'Die Automationen liefen in verschiedenen Modi ({modes}) – die zusammengeführte läuft jetzt „{mode}“, damit sich keine gegenseitig blockiert.',
+    mergeWarnInfoTitle: 'Beim Zusammenführen angepasst',
+    mergeWarnInfoText:
+      'Damit die Automationen zusammen funktionieren, hat FLODE Folgendes geändert:',
+    mergeWarnCheckTitle: 'Zusammengeführt – bitte prüfen',
+    mergeWarnCheckText:
+      'Beim Zusammenführen hat FLODE Folgendes angepasst. Prüfe es vor dem Speichern (⋮ → YAML anzeigen):',
     manualTitle: 'Ab hier ausgeführt',
     manualRunning: 'Läuft …',
     manualDone: 'Durchgelaufen',
@@ -100,7 +112,8 @@ const STRINGS = {
     runFromStep: '{n} Schritt wird ausgeführt.',
     runFromSteps: '{n} Schritte werden ausgeführt.',
     runFromTriggerData:
-      'Einige Schritte verwenden Daten des Auslösers (trigger.…). Die gibt es beim manuellen Start nicht – diese Schritte können fehlschlagen oder leere Werte nutzen.',
+      'Einige Schritte verwenden Daten des Auslösers (trigger.…). Die gibt es erst nach einem Lauf der gespeicherten Automation – bis dahin können diese Schritte fehlschlagen oder leere Werte nutzen.',
+    runFromLastTrigger: 'Daten des Auslösers (trigger.…) stammen aus dem letzten Lauf:',
     runFromConfirm: 'Jetzt ausführen',
     runFromStarted: '„{name}“ läuft …',
     runFromDone: '„{name}“ und die folgenden Schritte sind durchgelaufen',
@@ -170,6 +183,10 @@ const STRINGS = {
     assistApply: 'Änderung übernehmen',
     assistApplied: 'Übernommen',
     assistAppliedToast: 'Änderung übernommen – ⌘Z macht sie rückgängig',
+    assistNoTriggers: 'Der Vorschlag hat keine Auslöser – er würde alle Auslöser löschen.',
+    assistStale:
+      'Der Ablauf wurde seit der Frage geändert – übernehmen ersetzt diese Änderungen durch den Vorschlag.',
+    assistApplyAnyway: 'Trotzdem übernehmen',
     assistPrivacy:
       'Die aktuelle Fassung und passende Entitäten gehen an die KI aus deinem Home Assistant. Gespeichert wird nichts ohne dich.',
     disabledGroup: 'Deaktiviert',
@@ -191,6 +208,8 @@ const STRINGS = {
     aiExampleScript2: 'Alles aus: alle Lichter und Medien ausschalten, Haustür abschließen',
     aiExampleScript3: 'Timer-Skript: Kaffeemaschine für eine wählbare Anzahl Minuten einschalten',
     aiCreate: 'Entwurf erstellen',
+    aiProblems: 'Der Entwurf hat noch Probleme',
+    aiOpenAnyway: 'Trotzdem öffnen',
     aiRunning: 'KI baut den Flow …',
     aiPrivacy:
       'Nur ein Entwurf – gespeichert wird erst, wenn du speicherst. Deine Beschreibung und Namen/IDs passender Entitäten gehen an die KI, die du in Home Assistant eingerichtet hast.',
@@ -211,6 +230,8 @@ const STRINGS = {
     runs: 'Abläufe',
     refresh: 'Neu laden',
     noRuns: 'Noch keine Abläufe – löse die Automation einmal aus.',
+    runOutdated:
+      'Dieser Lauf stammt von einer anderen Fassung des Ablaufs – die Karten werden nicht markiert, weil die Schritte nicht mehr passen.',
     runsHint: 'Home Assistant speichert pro Automation nur die letzten Abläufe (Standard: 5).',
     timeline: 'Zeitleiste',
     stepDetails: 'Schritt',
@@ -224,6 +245,9 @@ const STRINGS = {
     lastRun: 'Letzter Lauf',
     showRuns: 'Abläufe anzeigen',
     addNext: 'Aktion hinzufügen (danach)',
+    addAfterTrigger: 'Bedingung oder Aktion hinzufügen (danach)',
+    outputYes: 'Ja',
+    outputNo: 'Nein',
     addFirstTrigger: 'Auslöser hinzufügen',
     addFirstAction: 'Aktion hinzufügen',
     emptyScriptHint: 'Was soll das Skript tun?',
@@ -257,8 +281,30 @@ const STRINGS = {
       'Automationen und Skripte als Flow bauen, testen und verstehen – gespeichert wird ganz normales Home-Assistant-YAML.',
     loadFailed: 'Konnte nicht geladen werden',
     saveFailed: 'Speichern fehlgeschlagen',
-    blueprintNotEditable:
-      'Diese Automation basiert auf einem Blueprint – bitte in Home Assistant bearbeiten.',
+    saveErrAtCard: '„{card}“: {reason}',
+    saveErrRequired: 'Pflichtfeld „{field}“ fehlt.',
+    saveErrAtLeastOne: 'Es fehlt eine Angabe – mindestens eines der Felder muss ausgefüllt sein.',
+    saveErrFormat: 'Ungültiges Format bei „{field}“ – z. B. 00:05:00 (Stunden:Minuten:Sekunden).',
+    saveErrExtra: 'Das Feld „{field}“ kennt Home Assistant hier nicht.',
+    saveErrEntity: 'Ungültige Entität bei „{field}“.',
+    saveErrGeneric: 'Home Assistant hat die Einstellungen nicht angenommen.',
+    saveErrOrphan: 'Die Karte ist mit keinem Auslöser verbunden – verbinde oder lösche sie.',
+    saveErrService: 'Die Aktion ist kein gültiger Dienst (Form: bereich.dienst).',
+    saveErrDetail: 'Meldung von Home Assistant',
+    saveErrShow: 'Zur Karte',
+    conflictTitle: 'In Home Assistant geändert',
+    conflictText:
+      '„{name}“ wurde in Home Assistant geändert, seit du es hier geöffnet hast. Mit deiner Version überschreiben oder die Version aus Home Assistant laden? (Deine Änderungen bleiben über „Rückgängig“ erreichbar.)',
+    conflictOverwrite: 'Überschreiben',
+    conflictReload: 'Aus Home Assistant laden',
+    tabsStorageFull:
+      'Der Browserspeicher ist voll – offene Tabs und ungespeicherte Entwürfe werden nicht mehr gemerkt.',
+    blueprintReadOnlyTitle: 'Blueprint – nur lesen',
+    blueprintReadOnlyText:
+      'Diese Automation stammt aus einem Blueprint. FLODE zeigt ihren Ablauf mit ihren Eingaben, speichert sie aber nicht – bearbeite sie in Home Assistant. Blueprint:',
+    openInHa: 'In HA öffnen',
+    blueprintNoSave:
+      'Diese Automation stammt aus einem Blueprint – FLODE speichert sie nicht. Bearbeite sie in Home Assistant.',
     invalid: 'Ungültig',
     type_trigger: 'Auslöser',
     type_automation: 'Automation',
@@ -284,12 +330,18 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new323CardTextTitle: 'Kartentext wie Home Assistant, ohne Fehler',
-    new323CardTextText:
-      'Mit dem Home-Assistant-Kartentext landen keine Fehlermeldungen mehr in der Browser-Konsole. Die Texte selbst bleiben gleich.',
-    new323NameTitle: 'Name bleibt lesbar',
-    new323NameText:
-      'In schmaleren Fenstern weicht in der Kopfzeile zuerst „Letzter Lauf“, der Name der Automation bleibt sichtbar.',
+    new330ErrorsTitle: 'Fehler zeigen auf die Karte',
+    new330ErrorsText:
+      'Lehnt Home Assistant das Speichern ab, sagt FLODE auf Deutsch, was fehlt, markiert die betroffene Karte rot und springt auf Wunsch hin.',
+    new330EditingTitle: 'Schneller bauen',
+    new330EditingText:
+      'Duplizieren setzt die Kopie verbunden direkt dahinter, Kopieren und Einfügen geht auch in Zweigen, und das „+“ am Auslöser bietet gleich Bedingung oder Aktion an.',
+    new330BlueprintTitle: 'Blueprints ansehen',
+    new330BlueprintText:
+      'Automationen aus einem Blueprint öffnen jetzt als Ablauf zum Lesen. Auch Automationen ohne Auslöser lassen sich öffnen.',
+    new330TouchTitle: 'Besser auf Handy und Tablet',
+    new330TouchText:
+      'Größere Knöpfe zum Antippen, der Ablauf bleibt über dem unteren Blatt sichtbar, und „Ab hier ausführen“ nimmt die Daten des letzten Auslösers mit.',
   },
   en: {
     title: 'FLODE',
@@ -369,6 +421,17 @@ const STRINGS = {
     mergeName: 'Merged: {names}',
     mergeFailed: 'Merging failed:',
     mergeDone: 'Merged – open as a new automation. The originals stay unchanged.',
+    mergeWarnVariable:
+      'Variable "{name}" from "{source}" is now "{renamed}" – its templates were updated.',
+    mergeWarnVariableCheck:
+      'Variable "{name}" from "{source}" is now "{renamed}" – please check its templates, not every use could be updated safely.',
+    mergeWarnMode:
+      'The automations ran in different modes ({modes}) – the merged one now runs "{mode}" so none blocks another.',
+    mergeWarnInfoTitle: 'Adjusted while merging',
+    mergeWarnInfoText: 'So the automations work together, FLODE changed the following:',
+    mergeWarnCheckTitle: 'Merged – please check',
+    mergeWarnCheckText:
+      'While merging, FLODE adjusted the following. Check it before saving (⋮ → Show YAML):',
     manualTitle: 'Run from here',
     manualRunning: 'Running …',
     manualDone: 'Finished',
@@ -387,7 +450,8 @@ const STRINGS = {
     runFromStep: '{n} step will run.',
     runFromSteps: '{n} steps will run.',
     runFromTriggerData:
-      'Some steps use trigger data (trigger.…). It doesn’t exist when starting by hand – those steps may fail or use empty values.',
+      'Some steps use trigger data (trigger.…). It only exists after the saved automation has run once – until then those steps may fail or use empty values.',
+    runFromLastTrigger: 'Trigger data (trigger.…) comes from the last run:',
     runFromConfirm: 'Run now',
     runFromStarted: '“{name}” is running …',
     runFromDone: '“{name}” and the following steps have finished',
@@ -457,6 +521,10 @@ const STRINGS = {
     assistApply: 'Apply change',
     assistApplied: 'Applied',
     assistAppliedToast: 'Change applied – ⌘Z to undo',
+    assistNoTriggers: 'The proposal has no triggers – it would delete all triggers.',
+    assistStale:
+      'The flow changed since you asked – applying replaces those changes with the proposal.',
+    assistApplyAnyway: 'Apply anyway',
     assistPrivacy:
       'The current version and matching entities go to the AI from your Home Assistant. Nothing is saved without you.',
     disabledGroup: 'Disabled',
@@ -476,6 +544,8 @@ const STRINGS = {
     aiExampleScript2: 'All off: turn off every light and media player, lock the front door',
     aiExampleScript3: 'Timer script: turn on the coffee maker for a chosen number of minutes',
     aiCreate: 'Create draft',
+    aiProblems: 'The draft still has problems',
+    aiOpenAnyway: 'Open anyway',
     aiRunning: 'AI is building the flow …',
     aiPrivacy:
       'Just a draft – nothing is saved until you save. Your description and names/IDs of matching entities go to the AI you set up in Home Assistant.',
@@ -496,6 +566,8 @@ const STRINGS = {
     runs: 'Runs',
     refresh: 'Reload',
     noRuns: 'No runs yet – trigger the automation once.',
+    runOutdated:
+      "This run comes from a different version of the flow – the cards aren't marked because its steps no longer match.",
     runsHint: 'Home Assistant only keeps the last runs per automation (default: 5).',
     timeline: 'Timeline',
     stepDetails: 'Step',
@@ -509,6 +581,9 @@ const STRINGS = {
     lastRun: 'Last run',
     showRuns: 'Show runs',
     addNext: 'Add action (after this)',
+    addAfterTrigger: 'Add condition or action (after this)',
+    outputYes: 'Yes',
+    outputNo: 'No',
     addFirstTrigger: 'Add trigger',
     addFirstAction: 'Add action',
     emptyScriptHint: 'What should the script do?',
@@ -542,8 +617,30 @@ const STRINGS = {
       'Build, test and understand automations and scripts as flows – saved as plain Home Assistant YAML.',
     loadFailed: 'Could not be loaded',
     saveFailed: 'Saving failed',
-    blueprintNotEditable:
-      'This automation is based on a blueprint – please edit it in Home Assistant.',
+    saveErrAtCard: '"{card}": {reason}',
+    saveErrRequired: 'Required field "{field}" is missing.',
+    saveErrAtLeastOne: 'Something is missing – at least one of the fields must be filled in.',
+    saveErrFormat: 'Invalid format for "{field}" – e.g. 00:05:00 (hours:minutes:seconds).',
+    saveErrExtra: 'Home Assistant doesn’t know the field "{field}" here.',
+    saveErrEntity: 'Invalid entity for "{field}".',
+    saveErrGeneric: 'Home Assistant did not accept the settings.',
+    saveErrOrphan: 'The card isn’t connected to any trigger – connect or delete it.',
+    saveErrService: 'The action is not a valid service (form: domain.service).',
+    saveErrDetail: 'Message from Home Assistant',
+    saveErrShow: 'Go to card',
+    conflictTitle: 'Changed in Home Assistant',
+    conflictText:
+      '“{name}” was changed in Home Assistant since you opened it here. Overwrite it with your version or load the version from Home Assistant? (Your changes stay reachable via Undo.)',
+    conflictOverwrite: 'Overwrite',
+    conflictReload: 'Load from Home Assistant',
+    tabsStorageFull:
+      'Browser storage is full – open tabs and unsaved drafts are no longer remembered.',
+    blueprintReadOnlyTitle: 'Blueprint – read only',
+    blueprintReadOnlyText:
+      'This automation is made from a blueprint. FLODE shows its steps with its inputs but doesn’t save it – edit it in Home Assistant. Blueprint:',
+    openInHa: 'Open in HA',
+    blueprintNoSave:
+      'This automation is made from a blueprint – FLODE doesn’t save it. Edit it in Home Assistant.',
     invalid: 'Invalid',
     type_trigger: 'Trigger',
     type_automation: 'Automation',
@@ -569,12 +666,18 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new323CardTextTitle: 'Card text like Home Assistant, without errors',
-    new323CardTextText:
-      'With the Home Assistant card text, no more error messages end up in the browser console. The texts themselves stay the same.',
-    new323NameTitle: 'Name stays readable',
-    new323NameText:
-      'In narrower windows, "Last run" in the header gives way first, so the automation\'s name stays visible.',
+    new330ErrorsTitle: 'Errors point to the card',
+    new330ErrorsText:
+      'When Home Assistant refuses to save, FLODE says in plain words what is missing, marks the card red and takes you there.',
+    new330EditingTitle: 'Build faster',
+    new330EditingText:
+      'Duplicate puts a connected copy right behind the card, copy and paste work inside branches too, and the "+" on a trigger offers condition or action right away.',
+    new330BlueprintTitle: 'See blueprints',
+    new330BlueprintText:
+      'Automations made from a blueprint now open as a flow to read. Automations without a trigger open as well.',
+    new330TouchTitle: 'Better on phone and tablet',
+    new330TouchText:
+      'Bigger buttons to tap, the flow stays visible above the bottom sheet, and "Run from here" takes the data of the last trigger along.',
   },
 } as const;
 

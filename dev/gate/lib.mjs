@@ -57,6 +57,32 @@ export async function ws(message) {
   });
 }
 
+/**
+ * Waits until HA has an entity for each saved automation (`{ id, name, config }`) and returns
+ * the ones still missing. HA creates the entities a moment after the config is saved (longer
+ * right after a restart). On Docker for Mac, HA's reload sometimes catches automations.yaml
+ * mid-write and skips one — such an automation is saved again.
+ */
+export async function awaitEntities(flows) {
+  let missing = flows;
+  for (let round = 0; round < 3 && missing.length > 0; round++) {
+    if (round > 0) {
+      for (const flow of missing)
+        await rest('POST', `config/automation/config/${flow.id}`, { ...flow.config, id: flow.id });
+    }
+    const deadline = Date.now() + 30000;
+    while (Date.now() < deadline) {
+      const names = new Set(
+        (await rest('GET', 'states')).map((state) => state.attributes.friendly_name)
+      );
+      missing = flows.filter((flow) => !names.has(flow.name));
+      if (missing.length === 0) break;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  return missing;
+}
+
 /** The automations the gate seeded (`seed.mjs` writes this list). */
 export function seededFlows() {
   return JSON.parse(fs.readFileSync(path.join(OUT_DIR, 'seeded.json'), 'utf8'));

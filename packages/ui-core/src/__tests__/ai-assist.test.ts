@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  type AssistReplyOptions,
   buildAssistInstructions,
   buildExplainInstructions,
   buildFlowInstructions,
@@ -177,10 +178,45 @@ describe('assistant for the open flow', () => {
     expect(prompt.trim().endsWith('Warum geht das Licht nicht an?')).toBe(true);
   });
 
+  // JSON is YAML — enough of a parser for these tests.
+  const automation: AssistReplyOptions = {
+    kind: 'automation',
+    parseYaml: (text) => JSON.parse(text),
+  };
+
   it('splits a reply into explanation and proposed YAML', () => {
-    expect(parseAssistReply('Alles gut.')).toEqual({ text: 'Alles gut.' });
+    expect(parseAssistReply('Alles gut.', automation)).toEqual({ text: 'Alles gut.' });
     expect(
-      parseAssistReply('- Verzögerung ergänzt\n\n```yaml\nalias: Flur\nactions: []\n```')
-    ).toEqual({ text: '- Verzögerung ergänzt', yaml: 'alias: Flur\nactions: []' });
+      parseAssistReply(
+        '- Verzögerung ergänzt\n\n```yaml\n{"alias": "Flur", "triggers": [{"trigger": "sun"}], "actions": []}\n```',
+        automation
+      )
+    ).toEqual({
+      text: '- Verzögerung ergänzt',
+      yaml: '{"alias": "Flur", "triggers": [{"trigger": "sun"}], "actions": []}',
+      present: ['alias', 'triggers', 'actions'],
+    });
+  });
+
+  it('takes the last whole flow, not an example snippet before it (```yml, no tag, CRLF)', () => {
+    const reply =
+      'Zum Beispiel:\r\n```yaml\n[{"delay": "00:01:00"}]\n```\r\nSo:\r\n```\r\n{"triggers": [{"trigger": "sun"}], "actions": []}\r\n```';
+    expect(parseAssistReply(reply, automation)).toMatchObject({
+      yaml: '{"triggers": [{"trigger": "sun"}], "actions": []}',
+      present: ['triggers', 'actions'],
+    });
+    expect(
+      parseAssistReply('```yml\n{"actions": [], "triggers": [{"trigger": "sun"}]}\n```', automation)
+        .present
+    ).toEqual(['actions', 'triggers']);
+  });
+
+  it('blocks an automation proposal without triggers', () => {
+    expect(parseAssistReply('```yaml\n{"actions": []}\n```', automation)).toMatchObject({
+      blocked: 'noTriggers',
+    });
+    expect(
+      parseAssistReply('```yaml\n{"sequence": []}\n```', { ...automation, kind: 'script' }).blocked
+    ).toBeUndefined();
   });
 });

@@ -1,6 +1,6 @@
 import type { FlowNode } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
-import { nodeToStep, stepToNode } from '../ha-step';
+import { completeNewStep, nodeToStep, platformDescription, stepToNode } from '../ha-step';
 
 const node = (type: FlowNode['type'], data: Record<string, unknown>) =>
   ({ id: 'n', type, position: { x: 0, y: 0 }, data }) as FlowNode;
@@ -94,5 +94,48 @@ describe('ha-step', () => {
       entity_id: 'y',
       _chooseCase: 1,
     });
+  });
+});
+
+describe('completeNewStep', () => {
+  it('gives a new webhook trigger its id, like HA does', () => {
+    const step = completeNewStep({ trigger: 'webhook', webhook_id: '', allowed_methods: ['POST'] });
+    expect(step.webhook_id).toMatch(/^[A-Za-z0-9_-]{20,}$/);
+    expect(step.allowed_methods).toEqual(['POST']);
+    expect(completeNewStep({ platform: 'webhook' }).webhook_id).toBeTypeOf('string');
+  });
+
+  it('gives a new delay the 0:00:00.000 HA shows (HA rejects its own `delay: ""`)', () => {
+    expect(completeNewStep({ delay: '' })).toEqual({
+      delay: { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 },
+    });
+    const set = { delay: { seconds: 5 } };
+    expect(completeNewStep(set)).toBe(set);
+  });
+
+  it('leaves other steps and set ids alone', () => {
+    const own = { trigger: 'webhook', webhook_id: 'mine' };
+    expect(completeNewStep(own)).toBe(own);
+    const state = { trigger: 'state', entity_id: 'light.a' };
+    expect(completeNewStep(state)).toBe(state);
+  });
+});
+
+describe('platformDescription', () => {
+  const descriptions = { 'motion.detected': { target: {} }, 'sun.is_night': { fields: {} } };
+
+  it('finds the description of an integration trigger or condition', () => {
+    expect(platformDescription('trigger', { trigger: 'motion.detected' }, descriptions)).toEqual({
+      target: {},
+    });
+    expect(platformDescription('condition', { condition: 'sun.is_night' }, descriptions)).toEqual({
+      fields: {},
+    });
+  });
+
+  it('has none for built-in steps, actions or unknown keys', () => {
+    expect(platformDescription('trigger', { trigger: 'state' }, descriptions)).toBeUndefined();
+    expect(platformDescription('action', { action: 'sun.is_night' }, descriptions)).toBeUndefined();
+    expect(platformDescription('trigger', { trigger: 'toString' }, descriptions)).toBeUndefined();
   });
 });

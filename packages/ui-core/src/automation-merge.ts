@@ -1,5 +1,15 @@
-import type { FlowEdge, FlowGraph, FlowMetadata, FlowNode, FlowWorkspace } from '@flode/shared';
+import {
+  type FlowEdge,
+  type FlowGraph,
+  type FlowMetadata,
+  type FlowNode,
+  type FlowWorkspace,
+  isTemplateString,
+  NodeSchema,
+} from '@flode/shared';
+import { definesVariable, mapStrings, renameJinjaVariable } from './jinja-rename';
 import { randomId } from './random-id';
+import { renameTriggerIdReferences } from './trigger-ids';
 
 export interface MergeAutomationSource {
   graph: FlowGraph;
@@ -54,31 +64,138 @@ export function sanitizeSourcePrefix(input: string, index: number): string {
   return `${base}_${index + 1}`;
 }
 
-function mergeUserVariables(
-  sources: Array<{ prefix: string; variables?: Record<string, unknown> }>
-): Record<string, unknown> | undefined {
-  const mergedVariables: Record<string, unknown> = {};
+/** Something the merge had to change that the user should know about. */
+export type MergeWarning =
+  /** A clashing variable was renamed; the templates of its automation were adjusted. */
+  | { kind: 'variableRenamed'; source: string; name: string; renamed: string }
+  /** A clashing variable was renamed, but its automation's templates could not all be adjusted. */
+  | { kind: 'variableCheck'; source: string; name: string; renamed: string }
+  /** The automations ran in different modes; the merged one runs in `mode`. */
+  | { kind: 'modeChanged'; modes: AutomationMode[]; mode: AutomationMode };
 
-  for (const source of sources) {
-    if (!source.variables) {
-      continue;
+export interface MergeResult {
+  graph: FlowGraph;
+  warnings: MergeWarning[];
+}
+
+type AutomationMode = FlowMetadata['mode'];
+
+interface PreparedSource {
+  source: MergeAutomationSource;
+  prefix: string;
+  /** Variable renames (old → new name) of this source. */
+  renames: Map<string, string>;
+}
+
+/** Renames variables inside the templates of one automation; collects names it couldn't rewrite. */
+function variableRewriter(
+  renames: ReadonlyMap<string, string>,
+  unsafe: Set<string>
+): (text: string) => string {
+  return (text) => {
+    if (!isTemplateString(text)) return text;
+    let out = text;
+    for (const [from, to] of renames) {
+      const renamed = renameJinjaVariable(out, from, to);
+      if (renamed === null) unsafe.add(from);
+      else out = renamed;
     }
+    return out;
+  };
+}
 
-    for (const [key, value] of Object.entries(source.variables)) {
-      if (!(key in mergedVariables)) {
-        mergedVariables[key] = value;
-        continue;
+/** One automation's variables as they go into the merged block (renamed, templates rewritten). */
+function sourceVariables(prepared: PreparedSource): [string, unknown][] {
+  const rewrite = variableRewriter(prepared.renames, new Set());
+  return Object.entries(prepared.source.graph.userVariables ?? {}).map(([key, value]) => [
+    prepared.renames.get(key) ?? key,
+    mapStrings(value, rewrite),
+  ]);
+}
+
+/** The merged variables, or the first clash: a name a later automation defines differently. */
+function collectVariables(
+  sources: readonly PreparedSource[]
+): { merged: Record<string, unknown> } | { clash: PreparedSource; key: string } {
+  const merged: Record<string, unknown> = {};
+  for (const prepared of sources) {
+    const original = Object.keys(prepared.source.graph.userVariables ?? {});
+    for (const [index, [name, value]] of sourceVariables(prepared).entries()) {
+      if (!(name in merged)) merged[name] = value;
+      else if (JSON.stringify(merged[name]) !== JSON.stringify(value)) {
+        return { clash: prepared, key: original[index] ?? name };
       }
-
-      if (JSON.stringify(mergedVariables[key]) === JSON.stringify(value)) {
-        continue;
-      }
-
-      mergedVariables[`${source.prefix}__${key}`] = value;
     }
   }
+  return { merged };
+}
 
-  return Object.keys(mergedVariables).length > 0 ? mergedVariables : undefined;
+/**
+ * All automations' variables in one block. A name two automations define
+ * differently gets the later automation's prefix (`b_2__level`, recorded in
+ * its `renames`); its templates then read the new name — which can make
+ * further variables differ, so this repeats until nothing clashes.
+ */
+function mergeUserVariables(sources: PreparedSource[]): Record<string, unknown> | undefined {
+  for (;;) {
+    const result = collectVariables(sources);
+    if ('merged' in result) {
+      return Object.keys(result.merged).length > 0 ? result.merged : undefined;
+    }
+    result.clash.renames.set(result.key, `${result.clash.prefix}__${result.key}`);
+  }
+}
+
+/**
+ * Lets an automation's steps read its renamed variables. Returns the
+ * rewritten nodes and the names that could not be rewritten reliably (a step
+ * or template defines the name itself).
+ */
+function applyVariableRenames(
+  renames: ReadonlyMap<string, string>,
+  nodes: FlowNode[]
+): { nodes: FlowNode[]; unsafe: Set<string> } {
+  const unsafe = new Set<string>();
+  for (const name of renames.keys()) {
+    if (nodes.some((node) => definesVariable(node.data, name))) unsafe.add(name);
+  }
+  const rewrite = variableRewriter(renames, unsafe);
+  return { nodes: nodes.map((node) => withData(node, mapStrings(node.data, rewrite))), unsafe };
+}
+
+/** `node` with rewritten data — the node itself when nothing changed (or the data became invalid). */
+function withData(node: FlowNode, data: unknown): FlowNode {
+  if (data === node.data) return node;
+  const parsed = NodeSchema.safeParse({ ...node, data });
+  return parsed.success ? parsed.data : node;
+}
+
+/**
+ * Merged automations run as one: when their modes differ, the merged one runs
+ * `parallel` so a run of one automation never blocks, restarts or queues
+ * behind the others.
+ */
+function mergeMetadata(sources: MergeAutomationSource[]): {
+  metadata: FlowMetadata;
+  warning?: MergeWarning;
+} {
+  const metadata: FlowMetadata = {
+    mode: 'single',
+    initial_state: true,
+    ...(sources[0]?.graph.metadata || {}),
+  };
+  const modes = [...new Set(sources.map((source) => source.graph.metadata?.mode ?? 'single'))];
+  if (modes.length < 2) return { metadata };
+  const maxes = sources.flatMap((source) => source.graph.metadata?.max ?? []);
+  const { max: _max, ...rest } = metadata;
+  return {
+    metadata: {
+      ...rest,
+      mode: 'parallel',
+      ...(maxes.length > 0 ? { max: Math.max(...maxes) } : {}),
+    },
+    warning: { kind: 'modeChanged', modes, mode: 'parallel' },
+  };
 }
 
 /**
@@ -96,14 +213,24 @@ function gateByTriggers(
   const outgoing = edges.filter((edge) => triggerIds.has(edge.source));
   if (triggers.length === 0 || outgoing.length === 0) return { nodes, edges };
 
+  // Every ID gets the automation's prefix — two automations may both use `on`,
+  // and each gate must only let its own triggers through.
   const ids: string[] = [];
-  const idNodes = nodes.map((node, index) => {
+  const renames = new Map<string, string>();
+  const withIds = nodes.map((node, index) => {
     if (node.type !== 'trigger') return node;
     const existing = 'id' in node.data ? node.data.id : undefined;
-    const id = typeof existing === 'string' && existing ? existing : `${prefix}_${index + 1}`;
+    const id =
+      typeof existing === 'string' && existing
+        ? `${prefix}__${existing}`
+        : `${prefix}_${index + 1}`;
+    if (typeof existing === 'string' && existing) renames.set(existing, id);
     ids.push(id);
     return { ...node, data: { ...node.data, id } };
   });
+  const idNodes = withIds.map((node) =>
+    node.type === 'trigger' ? node : withData(node, renameTriggerIdReferences(node.data, renames))
+  );
   const gateId = `${prefix}__trigger_gate`;
   const gate: FlowNode = {
     id: gateId,
@@ -134,7 +261,12 @@ function gateByTriggers(
   };
 }
 
-export function mergeAutomationGraphs(sources: MergeAutomationSource[]): FlowGraph {
+/**
+ * Merges automations into one: each keeps its own triggers (gated by a
+ * "Triggered by" condition), clashing variables are renamed. `warnings` says
+ * what the user should check.
+ */
+export function mergeAutomations(sources: MergeAutomationSource[]): MergeResult {
   if (sources.length < 2) {
     throw new Error('At least two automations are required for merge.');
   }
@@ -146,17 +278,19 @@ export function mergeAutomationGraphs(sources: MergeAutomationSource[]): FlowGra
   const cellWidth = maxWidth + 260;
   const cellHeight = maxHeight + 220;
 
+  const prepared: PreparedSource[] = sources.map((source, index) => ({
+    source,
+    prefix: sanitizeSourcePrefix(source.alias || source.automationId || source.entityId, index),
+    renames: new Map(),
+  }));
+  const userVariables = mergeUserVariables(prepared);
+
   const mergedNodes: FlowNode[] = [];
   const mergedEdges: FlowEdge[] = [];
   const workspaceSources: FlowWorkspace['sources'] = [];
-  const prefixedVariableSources: Array<{ prefix: string; variables?: Record<string, unknown> }> =
-    [];
+  const warnings: MergeWarning[] = [];
 
-  sources.forEach((source, index) => {
-    const prefix = sanitizeSourcePrefix(
-      source.alias || source.automationId || source.entityId,
-      index
-    );
+  prepared.forEach(({ source, prefix, renames }, index) => {
     const bounds = boundsPerSource[index];
     const col = index % columns;
     const row = Math.floor(index / columns);
@@ -164,21 +298,29 @@ export function mergeAutomationGraphs(sources: MergeAutomationSource[]): FlowGra
     const offsetY = row * cellHeight;
 
     const nodeIdMap = new Map<string, string>();
-    const sourceNodes: FlowNode[] = [];
     const sourceEdges: FlowEdge[] = [];
+    const rewritten = applyVariableRenames(renames, source.graph.nodes);
+    for (const [name, renamed] of renames) {
+      warnings.push({
+        kind: rewritten.unsafe.has(name) ? 'variableCheck' : 'variableRenamed',
+        source: source.alias,
+        name,
+        renamed,
+      });
+    }
 
-    for (const node of source.graph.nodes) {
+    const sourceNodes = rewritten.nodes.map((node): FlowNode => {
       const nextNodeId = `${prefix}__${node.id}`;
       nodeIdMap.set(node.id, nextNodeId);
-      sourceNodes.push({
+      return {
         ...node,
         id: nextNodeId,
         position: {
-          x: node.position.x - bounds.minX + offsetX,
-          y: node.position.y - bounds.minY + offsetY,
+          x: node.position.x - (bounds?.minX ?? 0) + offsetX,
+          y: node.position.y - (bounds?.minY ?? 0) + offsetY,
         },
-      });
-    }
+      };
+    });
 
     for (const edge of source.graph.edges) {
       const sourceId = nodeIdMap.get(edge.source);
@@ -206,31 +348,26 @@ export function mergeAutomationGraphs(sources: MergeAutomationSource[]): FlowGra
       node_prefix: prefix,
       imported_at: source.importedAt ?? new Date().toISOString(),
     });
-
-    prefixedVariableSources.push({
-      prefix,
-      variables: source.graph.userVariables,
-    });
   });
 
-  const baseMetadata: FlowMetadata = {
-    mode: 'single',
-    initial_state: true,
-    ...(sources[0]?.graph.metadata || {}),
-  };
+  const { metadata, warning } = mergeMetadata(sources);
+  if (warning) warnings.push(warning);
 
   return {
-    id: randomId(),
-    name: 'Merged Automation',
-    description: `Merged from ${sources.length} automations`,
-    nodes: mergedNodes,
-    edges: mergedEdges,
-    metadata: baseMetadata,
-    version: 1,
-    workspace: {
-      mode: 'merged',
-      sources: workspaceSources,
+    graph: {
+      id: randomId(),
+      name: 'Merged Automation',
+      description: `Merged from ${sources.length} automations`,
+      nodes: mergedNodes,
+      edges: mergedEdges,
+      metadata,
+      version: 1,
+      workspace: {
+        mode: 'merged',
+        sources: workspaceSources,
+      },
+      userVariables,
     },
-    userVariables: mergeUserVariables(prefixedVariableSources),
+    warnings,
   };
 }

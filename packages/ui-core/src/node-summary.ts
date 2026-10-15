@@ -166,9 +166,19 @@ function parseDuration(value: unknown): DurationParts | null {
   return null;
 }
 
+/** Parts of a duration object that aren't numbers — templates (`minutes: "{{ … }}"`). */
+function durationTemplates(value: unknown): string[] {
+  if (!isPlainObject(value)) return [];
+  return Object.values(value).flatMap((part) =>
+    typeof part === 'string' && part.trim() !== '' && Number.isNaN(Number(part)) ? [part] : []
+  );
+}
+
 /** "00:00:05" / {seconds: 5} → "5 seconds"; templates and unknown shapes pass through. */
 export function humanizeDuration(value: unknown, t: SummaryT): string | undefined {
   if (value === undefined || value === null || value === '') return undefined;
+  const templates = durationTemplates(value);
+  if (templates.length > 0) return snippet(templates.join(' '), 28);
   const parts = parseDuration(value);
   if (!parts) return typeof value === 'string' ? snippet(value, 28) : undefined;
   const out: string[] = [];

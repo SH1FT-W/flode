@@ -62,7 +62,8 @@ describe('state-machine condition roundtrip (GH #16 follow-up)', () => {
 
     const { yaml } = new FlowTranspiler().transpile(flow, { forceStrategy: 'state-machine' });
     if (!yaml) throw new Error('expected generated yaml');
-    expect(yaml).toContain(' or ');
+    // HA checks the condition itself (no Jinja version of it)
+    expect(yaml).toContain('condition: or');
 
     const reimported = await new YamlParser().parse(yaml);
     expect(reimported.success).toBe(true);

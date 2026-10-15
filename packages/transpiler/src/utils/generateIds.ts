@@ -18,10 +18,11 @@ export function generateGraphId(): string {
 }
 
 /**
- * Generate a unique edge ID.
+ * Generate a unique edge ID — the handle is part of it, so a condition's
+ * "true" and "false" edges to one node don't share an id.
  */
-export function generateEdgeId(source: string, target: string): string {
-  return `e-${source}-${target}-${Date.now()}`;
+export function generateEdgeId(source: string, target: string, sourceHandle?: string): string {
+  return `e-${source}-${target}${sourceHandle ? `-${sourceHandle}` : ''}-${Date.now()}`;
 }
 
 /**

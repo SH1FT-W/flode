@@ -43,11 +43,16 @@ export interface AiDraftResult {
   graph: FlowGraph;
   /** Entity ids the model used that don't exist in this HA — shown as a warning. */
   unknownEntityIds: string[];
+  /** What `validate` still finds after the repair round — shown as a warning. */
+  problems: string[];
 }
 
 interface Evaluation {
   graph?: FlowGraph;
   unknownEntityIds: string[];
+  /** `validate`'s findings. */
+  invalid: string[];
+  /** Everything the model is told to fix (`invalid` + unknown entities). */
   problems: string[];
 }
 
@@ -59,18 +64,21 @@ async function evaluate(
 ): Promise<Evaluation> {
   const result = await deps.parse(reply, kind);
   if (!result.success || !result.graph) {
-    return { unknownEntityIds: [], problems: result.errors ?? ['The YAML could not be parsed'] };
+    const problems = result.errors ?? ['The YAML could not be parsed'];
+    return { unknownEntityIds: [], invalid: problems, problems };
   }
   const graph = result.graph;
   const unknownEntityIds = findUnknownEntityIds(
     graph.nodes.map((node) => node.data),
     knownIds
   );
+  const invalid = deps.validate(graph);
   return {
     graph,
     unknownEntityIds,
+    invalid,
     problems: [
-      ...deps.validate(graph),
+      ...invalid,
       ...unknownEntityIds.map((id) => `Entity ${id} does not exist in this Home Assistant`),
     ],
   };
@@ -112,5 +120,9 @@ export async function draftFlowWithAi(
     }
   }
   if (!evaluation.graph) throw new Error(evaluation.problems.join('\n'));
-  return { graph: evaluation.graph, unknownEntityIds: evaluation.unknownEntityIds };
+  return {
+    graph: evaluation.graph,
+    unknownEntityIds: evaluation.unknownEntityIds,
+    problems: evaluation.invalid,
+  };
 }

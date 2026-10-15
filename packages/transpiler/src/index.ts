@@ -22,4 +22,4 @@ export type { HAYamlOutput, TranspilerStrategy } from './strategies/base';
 export { BaseStrategy } from './strategies/base';
 export { NativeStrategy } from './strategies/native';
 export { StateMachineStrategy } from './strategies/state-machine';
-export { loadHaYaml } from './yaml';
+export { dumpHaYaml, loadHaYaml } from './yaml';

@@ -1,5 +1,6 @@
 import type { FlowGraph } from '@flode/shared';
 import {
+  type AiDraftResult,
   type AiEntityCandidate,
   type AiFlowKind,
   draftFlowWithAi,
@@ -45,6 +46,7 @@ export class FlodeAiDialog extends LitElement {
     description: { state: true },
     running: { state: true },
     error: { state: true },
+    draft: { state: true },
   };
 
   declare hass: HomeAssistant | undefined;
@@ -54,6 +56,8 @@ export class FlodeAiDialog extends LitElement {
   declare description: string;
   declare running: boolean;
   declare error: string | null;
+  /** A draft that still has problems — shown before it opens. */
+  declare draft: AiDraftResult | null;
 
   constructor() {
     super();
@@ -63,6 +67,7 @@ export class FlodeAiDialog extends LitElement {
     this.description = '';
     this.running = false;
     this.error = null;
+    this.draft = null;
   }
 
   private get language(): string {
@@ -72,6 +77,7 @@ export class FlodeAiDialog extends LitElement {
   private close(): void {
     if (this.running) return;
     this.error = null;
+    this.draft = null;
     this.dispatchEvent(new CustomEvent('closed'));
   }
 
@@ -81,6 +87,7 @@ export class FlodeAiDialog extends LitElement {
     if (!hass || !aiEntityId || !description || this.running) return;
     this.running = true;
     this.error = null;
+    this.draft = null;
     try {
       const { transpiler, parseFlowYaml, validateFlowGraph } = await loadTranspiler();
       const result = await draftFlowWithAi(
@@ -98,15 +105,8 @@ export class FlodeAiDialog extends LitElement {
           validate: (graph) => validateFlowGraph(graph).errors.map((error) => error.message),
         }
       );
-      this.description = '';
-      this.dispatchEvent(
-        new CustomEvent<{ graph: FlowGraph; unknownEntityIds: string[]; kind: AiFlowKind }>(
-          'ai-draft',
-          {
-            detail: { ...result, kind: this.kind },
-          }
-        )
-      );
+      if (result.problems.length > 0) this.draft = result;
+      else this.openDraft(result);
     } catch (error) {
       this.error = readableAiError(errorMessage(error));
     } finally {
@@ -114,8 +114,26 @@ export class FlodeAiDialog extends LitElement {
     }
   }
 
+  private openDraft(result: AiDraftResult): void {
+    this.description = '';
+    this.draft = null;
+    this.dispatchEvent(
+      new CustomEvent<{ graph: FlowGraph; unknownEntityIds: string[]; kind: AiFlowKind }>(
+        'ai-draft',
+        {
+          detail: {
+            graph: result.graph,
+            unknownEntityIds: result.unknownEntityIds,
+            kind: this.kind,
+          },
+        }
+      )
+    );
+  }
+
   render() {
     const language = this.language;
+    const draft = this.draft;
     const aiName = this.aiEntityId
       ? this.hass?.states[this.aiEntityId]?.attributes.friendly_name
       : undefined;
@@ -152,10 +170,18 @@ export class FlodeAiDialog extends LitElement {
           .disabled=${this.running}
           @value-changed=${(event: CustomEvent<{ value: unknown }>) => {
             this.description = typeof event.detail.value === 'string' ? event.detail.value : '';
+            this.draft = null;
           }}
           @keydown=${(event: KeyboardEvent) => event.stopPropagation()}
         ></ha-selector>
         ${this.error ? html`<ha-alert alert-type="error">${this.error}</ha-alert>` : nothing}
+        ${
+          draft
+            ? html`<ha-alert alert-type="warning" .title=${t(language, 'aiProblems')}>
+                <ul class="problems">${draft.problems.map((problem) => html`<li>${problem}</li>`)}</ul>
+              </ha-alert>`
+            : nothing
+        }
         ${
           this.running
             ? html`<p class="running"><ha-spinner size="small"></ha-spinner>${t(language, 'aiRunning')}${
@@ -172,9 +198,9 @@ export class FlodeAiDialog extends LitElement {
         <ha-button
           slot="primaryAction"
           .disabled=${this.running || !this.description.trim()}
-          @click=${() => void this.create()}
+          @click=${() => (draft ? this.openDraft(draft) : void this.create())}
         >
-          ${t(language, 'aiCreate')}
+          ${t(language, draft ? 'aiOpenAnyway' : 'aiCreate')}
         </ha-button>
       </ha-dialog-footer>
     </ha-dialog>`;
@@ -219,6 +245,10 @@ export class FlodeAiDialog extends LitElement {
       align-items: center;
       gap: 10px;
       margin: 0;
+    }
+    .problems {
+      margin: 0;
+      padding-left: 18px;
     }
   `;
 }

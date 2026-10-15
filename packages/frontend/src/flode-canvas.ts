@@ -3,7 +3,6 @@ import { isScriptStart, isTargetedPlatform } from '@flode/shared';
 import { createdEntityIds, type NodeSummary, type StepIssue } from '@flode/ui-core';
 import {
   getBezierPath,
-  getViewportForBounds,
   PanOnScrollMode,
   type PanZoomInstance,
   Position,
@@ -24,6 +23,7 @@ import {
   removeBranchStep,
 } from './branch-view';
 import { defineElement } from './define-element';
+import { fitViewport } from './fit';
 import {
   connect,
   connectionError,
@@ -51,6 +51,7 @@ import {
   nodeTypeLine,
   summarize,
 } from './node-meta';
+import type { CardIssue } from './save-errors';
 import { t } from './strings';
 import type { RunMark } from './trace';
 import { isNarrow } from './viewport';
@@ -120,6 +121,8 @@ export interface CanvasMenuDetail {
   clientY: number;
   /** Flow position of the click — where "add here" puts a card. */
   position: { x: number; y: number };
+  /** A trigger's "+": the menu offers only what follows a trigger, connected to that output. */
+  after?: AddAt;
 }
 
 /** Flow units a connection must be dragged before dropping it on empty canvas offers a new card. */
@@ -134,9 +137,26 @@ function capturePointer(event: PointerEvent): void {
     event.currentTarget.setPointerCapture(event.pointerId);
 }
 
-function addNextLabel(language: string): string {
-  return t(language, 'addNext');
+function addNextLabel(language: string, node: FlowNode): string {
+  return t(language, node.type === 'trigger' ? 'addAfterTrigger' : 'addNext');
 }
+
+/** A condition's outputs say "Yes" / "No" in words too — not only green and red. */
+function outputLabel(language: string, handle: string | null): string {
+  if (handle === 'true') return t(language, 'outputYes');
+  return handle === 'false' ? t(language, 'outputNo') : '';
+}
+
+/** What `fitView` frames. */
+interface FitOptions {
+  /** Share of the pane's height a bottom sheet hides — the flow is framed above it. */
+  covered?: number;
+  /** Frame only these cards (a run's path) when any of them is shown. */
+  only?: ReadonlySet<string>;
+}
+
+/** Room kept around a card brought into view — its "+" included (px). */
+const REVEAL_MARGIN = 56;
 
 function snap(value: number): number {
   return Math.round(value / GRID) * GRID;
@@ -182,6 +202,7 @@ export class FlodeCanvas extends LitElement {
     selectedId: { attribute: false },
     runMarks: { attribute: false },
     activeRunNode: { attribute: false },
+    saveIssue: { attribute: false },
     minimap: { type: Boolean },
     haText: { type: Boolean },
     viewport: { state: true },
@@ -198,6 +219,8 @@ export class FlodeCanvas extends LitElement {
   declare runMarks: Map<string, RunMark> | null;
   /** The card of the step picked in HA's timeline. */
   declare activeRunNode: string | null;
+  /** The card Home Assistant refused on the last save — marked red with its explanation. */
+  declare saveIssue: CardIssue | null;
   declare viewport: Viewport;
   /** Overview in the corner. */
   declare minimap: boolean;
@@ -413,22 +436,43 @@ export class FlodeCanvas extends LitElement {
     </svg>`;
   }
 
-  /** Frames every node; animated unless it's the first layout. */
-  fitView(animate = true): void {
+  /** Frames every node (see `FitOptions`); animated unless it's the first layout. */
+  fitView(animate = true, { covered = 0, only }: FitOptions = {}): void {
     const pane = this.pane;
     if (!pane || !this.panZoom || !this.graph) return;
     const { width, height } = pane.getBoundingClientRect();
     if (width === 0 || height === 0) return;
-    const viewport = getViewportForBounds(
-      graphBounds(this.shownGraph()),
+    const shown = this.shownGraph();
+    const picked = only ? shown.nodes.filter((node) => only.has(node.id)) : [];
+    const bounds = graphBounds(picked.length > 0 ? { ...shown, nodes: picked } : shown);
+    const narrow = isNarrow();
+    const viewport = fitViewport(bounds, {
       width,
       height,
-      // Phones: a long flow would shrink to unreadable — stay readable and pan instead.
-      isNarrow() ? NARROW_MIN_FIT_ZOOM : MIN_ZOOM,
-      1,
-      0.15
-    );
+      // Phones: a long flow would shrink to unreadable — stay readable, start at the trigger and pan.
+      minZoom: narrow ? NARROW_MIN_FIT_ZOOM : MIN_ZOOM,
+      covered,
+      startLeft: narrow,
+    });
     void this.panZoom.setViewport(viewport, { duration: animate ? 250 : 0 });
+  }
+
+  /** Pans just enough that the card is fully visible — a new card behind the inspector. */
+  bringIntoView(id: string): void {
+    const node = this.graph ? this.drawnNode(id) : undefined;
+    // Measured now: the inspector that opens with the new card has just narrowed the pane.
+    const pane = this.pane?.getBoundingClientRect();
+    if (!node || !this.panZoom || !pane || pane.width === 0) return;
+    const { width, height } = pane;
+    const { x, y, zoom } = this.viewport;
+    const shift = (start: number, size: number, room: number): number => {
+      if (start < REVEAL_MARGIN) return REVEAL_MARGIN - start;
+      return start + size > room - REVEAL_MARGIN ? room - REVEAL_MARGIN - start - size : 0;
+    };
+    const dx = shift(x + node.position.x * zoom, NODE_WIDTH * zoom, width);
+    const dy = shift(y + node.position.y * zoom, cardShape(this.view, node).height * zoom, height);
+    if (dx === 0 && dy === 0) return;
+    void this.panZoom.setViewport({ x: x + dx, y: y + dy, zoom }, { duration: 300 });
   }
 
   /** Phones: the bottom sheet covers the lower part — move the card into the upper part. */
@@ -472,21 +516,36 @@ export class FlodeCanvas extends LitElement {
     this.dispatchEvent(new CustomEvent<AddAt>('add-next', { detail }));
   }
 
+  /** A card's "+": after a trigger first a choice — condition or action — then HA's dialog. */
+  private onAddNextClick(event: MouseEvent, node: FlowNode, handle: string | null): void {
+    event.stopPropagation();
+    const after: AddAt = { source: node.id, sourceHandle: handle };
+    if (node.type !== 'trigger' || !(event.currentTarget instanceof Element)) {
+      this.emitAddAt(after);
+      return;
+    }
+    const button = event.currentTarget.getBoundingClientRect();
+    this.dispatchCanvasMenu({ nodeId: null, clientX: button.left, clientY: button.bottom, after });
+  }
+
+  private dispatchCanvasMenu(menu: Omit<CanvasMenuDetail, 'position'>): void {
+    this.dispatchEvent(
+      new CustomEvent<CanvasMenuDetail>('canvas-menu', {
+        detail: { ...menu, position: this.toFlow(menu.clientX, menu.clientY) },
+      })
+    );
+  }
+
   /** Right-click: HA-style menu from the panel instead of the browser's own. */
   private onContextMenu(event: MouseEvent, node: FlowNode | null): void {
     event.preventDefault();
     event.stopPropagation();
     if (node) this.emitSelect(node.id);
-    this.dispatchEvent(
-      new CustomEvent<CanvasMenuDetail>('canvas-menu', {
-        detail: {
-          nodeId: node?.id ?? null,
-          clientX: event.clientX,
-          clientY: event.clientY,
-          position: this.toFlow(event.clientX, event.clientY),
-        },
-      })
-    );
+    this.dispatchCanvasMenu({
+      nodeId: node?.id ?? null,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
   }
 
   private emitSelect(id: string | null): void {
@@ -509,6 +568,9 @@ export class FlodeCanvas extends LitElement {
   private onNodePointerDown(event: PointerEvent, node: FlowNode): void {
     if (event.button !== 0) return;
     event.stopPropagation();
+    // A second finger while a card is being dragged: the first drag keeps going
+    // (taking it over would leave that card's preview position behind).
+    if (this.drag) return;
     capturePointer(event);
     // Moves happen on the stored position; branch cards (no node of their own) on the drawn one.
     const stored = this.graph.nodes.find((n) => n.id === node.id);
@@ -733,15 +795,18 @@ export class FlodeCanvas extends LitElement {
     const { handles, height } = cardShape(this.view, node);
     const branches = this.view.branches.get(node.id);
     const inBranch = !!branches || this.view.cards.has(node.id);
-    const addLabel = inBranch ? t(language, 'addInBranch') : addNextLabel(language);
+    const addLabel = inBranch ? t(language, 'addInBranch') : addNextLabel(language, node);
     const selected = this.selectedId === node.id;
     const summary = this.cardSummary(node);
-    const issues = issueLines(this.issues.get(node.id) ?? [], language);
+    const issues = [
+      ...issueLines(this.issues.get(node.id) ?? [], language),
+      ...(this.saveIssue?.nodeId === node.id ? [this.saveIssue.text] : []),
+    ];
     // HA's `enabled: false` — the step stays in the flow but is skipped.
     const off = 'enabled' in node.data && node.data.enabled === false;
     return html`
       <div
-        class="node nopan ${branches ? 'branching' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${this.runClass(node.id)}"
+        class="node nopan ${branches ? 'branching' : ''} ${handles.includes('true') ? 'two-way' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${this.runClass(node.id)}"
         style="transform: translate(${node.position.x}px, ${node.position.y}px); height: ${height}px; --node-color: ${meta.color}"
         data-node-id=${node.id}
         title=${[
@@ -771,13 +836,15 @@ export class FlodeCanvas extends LitElement {
         ${handles.map((handle, index) => {
           const top = (height / (handles.length + 1)) * (index + 1);
           const branch = branches?.[index];
-          const name = branch ? branchLabelText(language, branch.label) : '';
+          const name = branch
+            ? branchLabelText(language, branch.label)
+            : outputLabel(language, handle);
           return html`
-            ${branch ? html`<span class="port ${branch.label.kind}" style="top: ${top}px" title=${name}>${name}</span>` : nothing}
+            ${name ? html`<span class="port ${branch?.label.kind ?? handle ?? ''}" style="top: ${top}px" title=${name}>${name}</span>` : nothing}
             <span
               class="handle source ${handle ?? ''} ${branch ? 'branch' : ''}"
               style="top: ${top}px"
-              title=${branch ? name : handle === 'true' ? 'Ja' : handle === 'false' ? 'Nein' : ''}
+              title=${name}
               @pointerdown=${(e: PointerEvent) => this.onHandlePointerDown(e, node, handle)}
               @pointermove=${(e: PointerEvent) => this.onHandlePointerMove(e)}
               @pointerup=${(e: PointerEvent) => this.onHandlePointerUp(e)}
@@ -790,10 +857,7 @@ export class FlodeCanvas extends LitElement {
               title=${addLabel}
               aria-label=${addLabel}
               @pointerdown=${(e: PointerEvent) => e.stopPropagation()}
-              @click=${(e: MouseEvent) => {
-                e.stopPropagation();
-                this.emitAddAt({ source: node.id, sourceHandle: handle });
-              }}
+              @click=${(e: MouseEvent) => this.onAddNextClick(e, node, handle)}
             >
               <ha-icon icon="mdi:plus"></ha-icon>
             </button>
@@ -824,7 +888,7 @@ export class FlodeCanvas extends LitElement {
       >
         <div
           class="viewport ${zoomClass(zoom)}"
-          style="transform: translate(${x}px, ${y}px) scale(${zoom})"
+          style="transform: translate(${x}px, ${y}px) scale(${zoom}); --zoom: ${zoom}"
         >
           <svg class="edges">
             <defs>
@@ -997,6 +1061,11 @@ export class FlodeCanvas extends LitElement {
     .node.selected {
       border-color: var(--primary-color);
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 35%, transparent);
+    }
+    /* A faulty card stays red while picked (e.g. where saving failed). */
+    .node.selected.faulty {
+      border-color: var(--error-color, #db4437);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--error-color, #db4437) 45%, transparent);
     }
     /* Debug view: what the selected run did. */
     .node.run-done {
@@ -1206,9 +1275,37 @@ export class FlodeCanvas extends LitElement {
       color: var(--primary-color);
       border-color: var(--primary-color);
     }
+    /* Touch: a finger-sized (44 px on screen), invisible hit area around the
+       outputs and their "+", which stays fully visible. Zoomed far out the
+       areas stop growing in flow units, so they stay in the gap to the next card. */
+    @media (pointer: coarse) {
+      .handle.source::before,
+      .add-next::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: var(--hit);
+        height: var(--hit);
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+      }
+      .handle.source {
+        --hit: min(44px / var(--zoom, 1), 60px);
+      }
+      .add-next {
+        --hit: min(44px / var(--zoom, 1), 80px);
+        opacity: 1;
+        /* Its hit area starts where the output's ends. */
+        right: calc(-11px - min(22px / var(--zoom, 1), 30px) - min(22px / var(--zoom, 1), 40px));
+      }
+    }
     /* An expanded choose / if: one named output per branch (#27). */
     .node.branching .text {
       padding-right: 72px;
+    }
+    .node.two-way .text {
+      padding-right: 28px;
     }
     .port {
       position: absolute;
@@ -1232,6 +1329,12 @@ export class FlodeCanvas extends LitElement {
     }
     .handle.false {
       border-color: var(--error-color);
+    }
+    .port.true {
+      color: color-mix(in srgb, var(--success-color, #43a047) 70%, var(--primary-text-color));
+    }
+    .port.false {
+      color: color-mix(in srgb, var(--error-color, #db4437) 70%, var(--primary-text-color));
     }
   `;
 }

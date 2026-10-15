@@ -1,6 +1,5 @@
 {
   "roundtrip": {
-    "flode_gate_08_sm_simple_cafe": "C.A.F.E. state-machine flows are saved as plain native HA steps (by design: FLODE unwraps the state machine).",
-    "flode_gate_29_stop_action": "A condition as the first action becomes a top-level condition on save. Same outcome for the actions, but HA then counts the run as not triggered. Open: keep or fix."
+    "flode_gate_08_sm_simple_cafe": "C.A.F.E. state-machine flows are saved as plain native HA steps (by design: FLODE unwraps the state machine)."
   }
 }

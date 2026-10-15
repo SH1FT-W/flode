@@ -1,4 +1,5 @@
 import { isPlainObject, toList } from '@flode/shared';
+import { mapStrings } from './jinja-rename';
 
 /**
  * Trigger IDs for the "Triggered by" condition (`condition: trigger`).
@@ -219,6 +220,41 @@ function templateReferencedIds(value: unknown, ids: ReadonlySet<string>): Set<st
   };
   walk(value);
   return found;
+}
+
+/**
+ * Where a template compares the trigger's ID (`trigger.id`, not
+ * `wait.trigger.id`) with literals: `trigger.id == 'a'`, `'a' != trigger.id`,
+ * `trigger.id in ['a', 'b']` — only these literals are trigger IDs.
+ */
+const TRIGGER_ID_COMPARISON =
+  /(?<![\w.])trigger\.id\s*(?:[!=]=\s*(['"])[^'"]*\1|(?:not\s+)?in\s*[[(][^\])]*[\])])|(['"])[^'"]*\2\s*[!=]=\s*(?<![\w.])trigger\.id\b/g;
+
+function renameQuotedIds(text: string, renames: ReadonlyMap<string, string>): string {
+  return text.replace(/(['"])([^'"]*)\1/g, (literal, quote: string, id: string) => {
+    const renamed = renames.get(id);
+    return renamed === undefined ? literal : `${quote}${renamed}${quote}`;
+  });
+}
+
+/**
+ * Renames trigger IDs wherever `value` (a card's data, variables …) refers to
+ * them: "Triggered by" conditions, and IDs compared with `trigger.id` in
+ * templates (`{{ trigger.id == 'motion' }}`).
+ */
+export function renameTriggerIdReferences(
+  value: unknown,
+  renames: ReadonlyMap<string, string>
+): unknown {
+  if (renames.size === 0) return value;
+  const conditions = mapTriggerConditions(value, (condition) =>
+    mapReferencedIds(condition, (id) => renames.get(id) ?? id)
+  );
+  return mapStrings(conditions, (text) =>
+    text.includes('trigger.id')
+      ? text.replace(TRIGGER_ID_COMPARISON, (comparison) => renameQuotedIds(comparison, renames))
+      : text
+  );
 }
 
 /** Removes generated IDs no trigger condition or template refers to (anymore). */

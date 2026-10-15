@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTracePathResolver } from '../trace-mapping';
+import { configShape, createTracePathResolver } from '../trace-mapping';
 
 const n = (id: string, type: string) => ({ id, type });
 const e = (source: string, target: string, sourceHandle?: string) => ({
@@ -21,6 +21,25 @@ describe('createTracePathResolver', () => {
     expect(resolve('action/0')).toBe('d');
     expect(resolve('action/1')).toBe('a');
     expect(resolve('action/2')).toBeUndefined();
+  });
+
+  it('a leading condition continuing only via No is a top-level (not) condition', () => {
+    // The transpiler writes it as `conditions: [{condition: not, …}]`.
+    const resolve = createTracePathResolver(
+      [n('t', 'trigger'), n('c', 'condition'), n('a', 'action')],
+      [e('t', 'c'), e('c', 'a', 'false')]
+    );
+    expect(resolve('condition/0')).toBe('c');
+    expect(resolve('action/0')).toBe('a');
+  });
+
+  it('a leading condition with an unlabelled output is a step, as in the transpiler', () => {
+    const resolve = createTracePathResolver(
+      [n('t', 'trigger'), n('c', 'condition'), n('a', 'action')],
+      [e('t', 'c'), e('c', 'a')]
+    );
+    expect(resolve('condition/0')).toBeUndefined();
+    expect(resolve('action/0')).toBe('c');
   });
 
   it('if/else in the sequence: branches nest, flow continues at the merge node', () => {
@@ -63,5 +82,61 @@ describe('createTracePathResolver', () => {
     );
     expect(resolve('action/0')).toBe('a');
     expect(resolve('sequence/0')).toBeUndefined();
+  });
+});
+
+describe('configShape', () => {
+  const config = {
+    alias: 'Flur',
+    triggers: [{ trigger: 'state', entity_id: 'binary_sensor.a' }],
+    conditions: [{ condition: 'state', entity_id: 'sun.sun', state: 'below_horizon' }],
+    actions: [
+      { action: 'light.turn_on', target: { entity_id: 'light.a' } },
+      { if: [{ condition: 'template', value_template: '{{ x }}' }], then: [{ delay: 5 }] },
+    ],
+    variables: { _flode_metadata: { nodes: {} } },
+  };
+
+  it('ignores values, metadata and old key spellings', () => {
+    expect(
+      configShape({
+        alias: 'Anders',
+        mode: 'restart',
+        trigger: { platform: 'state', entity_id: 'binary_sensor.b' },
+        condition: [{ condition: 'state', entity_id: 'sun.sun', state: 'above_horizon' }],
+        action: [
+          { service: 'light.turn_off', target: { entity_id: 'light.b' } },
+          { then: [{ delay: '00:00:09' }], if: [{ condition: 'template', value_template: '1' }] },
+        ],
+      })
+    ).toBe(configShape(config));
+  });
+
+  it('differs when steps were added, removed or moved', () => {
+    expect(configShape({ ...config, actions: config.actions.slice(1) })).not.toBe(
+      configShape(config)
+    );
+    expect(configShape({ ...config, actions: [...config.actions].reverse() })).not.toBe(
+      configShape(config)
+    );
+    expect(configShape({ ...config, conditions: [] })).not.toBe(configShape(config));
+  });
+});
+
+describe('createTracePathResolver: condition steps of the actions', () => {
+  it('keeps them in the actions; the steps after them are siblings', () => {
+    // As the transpiler writes it: `actions: [{condition: …}, {action: …}]`.
+    const resolve = createTracePathResolver(
+      [
+        n('t', 'trigger'),
+        { id: 'c', type: 'condition', data: { condition: 'state', _step: true } },
+        n('a', 'action'),
+      ],
+      [e('t', 'c'), e('c', 'a', 'true')]
+    );
+    expect(resolve('condition/0')).toBeUndefined();
+    expect(resolve('action/0')).toBe('c');
+    expect(resolve('action/0/entity_id/0')).toBe('c');
+    expect(resolve('action/1')).toBe('a');
   });
 });

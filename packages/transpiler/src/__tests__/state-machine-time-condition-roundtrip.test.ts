@@ -57,7 +57,8 @@ describe('state-machine time condition roundtrip (C.A.F.E. #256)', () => {
   it('keeps the condition connected and restores it as a time condition', async () => {
     const { yaml } = new FlowTranspiler().transpile(flow, { forceStrategy: 'state-machine' });
     if (!yaml) throw new Error('expected generated yaml');
-    expect(yaml).toContain("strftime('%H:%M:%S')");
+    // HA checks the condition itself (no Jinja version of it)
+    expect(yaml).toContain('condition: time');
 
     const reimported = await new YamlParser().parse(yaml);
     expect(reimported.success).toBe(true);

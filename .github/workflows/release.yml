@@ -67,8 +67,8 @@ jobs:
       - name: Create release archive
         run: |
           cd custom_components/flode
-          zip -r ../../flode.zip . -x "*.DS_Store"
-          tar -czf ../../flode.tar.gz --exclude="*.DS_Store" .
+          zip -r ../../flode.zip . -x "*.DS_Store" "*.map"
+          tar -czf ../../flode.tar.gz --exclude="*.DS_Store" --exclude="*.map" .
           cd ../..
           echo "Archive erstellt:"
           ls -la *.zip *.tar.gz

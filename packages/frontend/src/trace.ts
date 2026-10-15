@@ -1,6 +1,8 @@
 import { type FlowGraph, isPlainObject } from '@flode/shared';
-import { createTracePathResolver } from '@flode/ui-core';
+import { configShape, createTracePathResolver } from '@flode/ui-core';
+import { load as yamlLoad } from 'js-yaml';
 import { branchCardForPath, cachedBranchView } from './branch-view';
+import { flowYaml } from './flow-yaml';
 import type { FlowKind } from './ha';
 
 /**
@@ -121,4 +123,23 @@ export function runVariables(trace: HaTrace, uptoPath?: string): Record<string, 
   // FLODE's layout metadata lives in `variables:` but isn't something a template uses.
   delete variables._flode_metadata;
   return variables;
+}
+
+/**
+ * The layout of what the open flow saves as (`configShape`) — a run whose
+ * config has another layout is from an older version and its paths would
+ * land on the wrong cards. `null` when the flow can't be transpiled.
+ */
+export async function graphShape(graph: FlowGraph, kind: FlowKind): Promise<string | null> {
+  try {
+    const config: unknown = yamlLoad(await flowYaml(graph, kind));
+    return isPlainObject(config) ? configShape(config) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether a run fits the open flow's layout (`shape` from `graphShape`; unknown counts as fitting). */
+export function runFitsGraph(trace: HaTrace, shape: string | null): boolean {
+  return shape === null || configShape(trace.config) === shape;
 }
