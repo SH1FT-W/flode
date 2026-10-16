@@ -343,21 +343,12 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261012BranchTitle: 'In einen Zweig ziehen',
-    new261012BranchText:
-      'Eine Verbindung vom Ausgang eines Zweigs auf eine freie Karte zieht die Karte in diesen Zweig, genau wie das „+“ dort. Bisher landete sie hinter dem ganzen Block, mit Linien aus allen Zweigen.',
-    new261011HoldTitle: 'Halten am Handy',
-    new261011HoldText:
-      'Eine Karte oder Verbindung kurz gedrückt halten öffnet nur ihr Menü, der Eigenschaften-Bereich bleibt zu. Jetzt auch am iPhone.',
-    new261011LinesTitle: 'Verbindungen im Griff',
-    new261011LinesText:
-      'Rechtsklick oder Halten auf einer Verbindung bietet „Verbindung löschen“. Ein leicht wackliger Klick wählt sie trotzdem. Linien zu Schritten links oder über ihrem Block laufen in Stufen um die Karten herum.',
-    new261011DetachTitle: 'Schritte aus Zweigen lösen',
-    new261011DetachText:
-      '„Verbindungen trennen“ gibt es jetzt auch für Schritte in einem Wenn-dann oder Auswählen: Der Schritt verlässt den Zweig und bleibt als eigene Karte stehen.',
-    new261012VersionTitle: 'Neue Versionsnummern',
-    new261012VersionText:
-      'FLODE zählt jetzt nach Kalender: 26.10.12 ist das zwölfte Release im Oktober 2026. Jede Änderung bekommt die nächste Nummer, Updates über HACS laufen wie gewohnt.',
+    new261013LaneTitle: 'Linien folgen verschobenen Schritten',
+    new261013LaneText:
+      'Wird der erste Schritt eines Zweigs nach oben oder unten gezogen, fährt die Linie vom Ausgang jetzt direkt auf seine Höhe. Bisher stieg sie erst zur alten Reihe und fiel dann zur Karte zurück.',
+    new261013HintsTitle: 'Tastenkürzel nur, wo es eine Tastatur gibt',
+    new261013HintsText:
+      'Am Handy und Tablet zeigen die Menüs keine Kürzel mehr. Am Rechner stehen sie kleiner und grauer neben dem Eintrag, damit „Backspace“ nicht wie ein zweiter Menüpunkt aussieht.',
   },
   en: {
     title: 'FLODE',
@@ -695,21 +686,12 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261012BranchTitle: 'Dragging into a branch',
-    new261012BranchText:
-      'A connection dragged from a branch output onto a free card pulls the card into that branch, just like its "+". Before, it ended up after the whole block, with lines from every branch.',
-    new261011HoldTitle: 'Press and hold on the phone',
-    new261011HoldText:
-      'Holding a finger on a card or a connection opens just its menu; the properties sheet stays closed. Now on the iPhone too.',
-    new261011LinesTitle: 'Connections under control',
-    new261011LinesText:
-      'Right-click or hold on a connection offers "Delete connection". A slightly shaky click still picks it. Lines to steps left of or above their block run in steps around the cards.',
-    new261011DetachTitle: 'Steps out of branches',
-    new261011DetachText:
-      '"Disconnect" now works on steps inside an if or choose block too: the step leaves its branch and stays as a card of its own.',
-    new261012VersionTitle: 'New version numbers',
-    new261012VersionText:
-      'FLODE now counts by the calendar: 26.10.12 is the twelfth release of October 2026. Every change gets the next number; updates through HACS work as before.',
+    new261013LaneTitle: 'Lines follow moved steps',
+    new261013LaneText:
+      'When the first step of a branch is dragged up or down, the line from the output now heads straight to its row. Before, it climbed to the old row first and dropped back to the card.',
+    new261013HintsTitle: 'Shortcuts only where there is a keyboard',
+    new261013HintsText:
+      'On phones and tablets the menus show no shortcuts any more. On the desktop they sit smaller and greyer next to the entry, so "Backspace" no longer reads like a second menu item.',
   },
 } as const;
 
