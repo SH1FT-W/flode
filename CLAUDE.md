@@ -63,7 +63,8 @@ yarn build:ha     # Build + copy to custom_components
 yarn test         # Run tests
 yarn typecheck    # Type checking
 yarn lint:biome   # Linting
-dev/gate/gate.sh  # Release gate: browser checks against the Docker test HA (before every release)
+dev/gate/gate.sh  # Release gate: browser checks against the Docker test HA (before every release, always in full)
+dev/next-version  # Next release version (calendar version YY.M.N)
 ```
 
 # Development Guidelines
@@ -140,7 +141,7 @@ To cut a new release, follow these steps:
 
 **Release gate (mandatory):** after the release commit (version bump, "What's new", changelog) and before tagging or pushing, run `dev/gate/gate.sh` (see `dev/gate/README.md`). Release only if `.gate/gate-<commit>.json` says `"counts_for_release": true` for exactly that commit. If the visual step reports differences, show `.gate/visual/report.html` to the user first. After the release is out, run `dev/gate/gate.sh --baseline` so the next release is compared with this one.
 
-- The version number should be determined based on semantic versioning and recent changes.
+- **Versions are calendar versions `YY.M.N`** (since October 2026, after 3.4.1): `YY` = two-digit year, `M` = month without leading zero, `N` = number of the release within that month, starting at 1 (every GitHub release published in that month counts, old X.Y.Z ones too; bare tags without a release do not). Every release — feature or bugfix — gets the next number; there is no patch/minor/major distinction any more. Get it with `dev/next-version` (e.g. `26.10.11`; a new month starts at `.1` again). Never use leading zeros (`26.3.1`, not `26.03.1`) — they are invalid semver and break `package.json`.
 - The release notes should be compiled from user-facing changes in the commit history (new features, bug fixes, breaking changes), without requiring user input.
 
 0. **Update the "What's new" sheet** (`packages/frontend/src/flode-welcome.ts`)
@@ -151,20 +152,20 @@ To cut a new release, follow these steps:
 1. **Commit your changes**
 
 - Ensure all changes are staged and committed with a clear message.
-- Bump the version in `custom_components/flode/manifest.json` to the new release version (e.g., "0.7.7").
+- Bump the version in `custom_components/flode/manifest.json` to the new release version from `dev/next-version` (e.g., "26.10.11").
 - Example:
   ```bash
   # Edit manifest.json and update the version field
   git add .
-  git commit -m "Release: v0.x.x - <short description>"
+  git commit -m "Release: 26.10.11 - <short description>"
   ```
 
 2. **Create a new git tag**
 
-- Use semantic versioning, **without a leading "v"** (e.g., 3.0.8) — since 3.0.8 tags, release titles and the version badge are just the number.
+- Use the calendar version from `dev/next-version`, **without a leading "v"** (e.g., 26.10.11) — since 3.0.8 tags, release titles and the version badge are just the number.
 - Example:
   ```bash
-  git tag 3.0.8
+  git tag "$(dev/next-version)"
   ```
 
 3. **Push changes to remote**
@@ -188,7 +189,7 @@ To cut a new release, follow these steps:
 
 ```bash
 # IMPORTANT: Use real newlines in the --notes argument, not literal \n. For multiline notes, write each line on a new line inside the string.
-gh release create 3.0.8 --title "3.0.8" --notes "<release notes>"
+gh release create 26.10.11 --title "26.10.11" --notes "<release notes>"
 ```
 
 5. **Verify release on GitHub**

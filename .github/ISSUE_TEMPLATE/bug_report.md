@@ -44,7 +44,7 @@ assignees: ''
 ```
 
 ### Environment
-- FLODE version: <!-- e.g. 0.7.6 -->
+- FLODE version: <!-- e.g. 26.10.11 -->
 - Home Assistant version:
 - Browser/OS:
 

@@ -1,6 +1,8 @@
 # Changelog
 
-All notable changes to FLODE are documented here. Every 3.x release builds on 3.0.0, so each entry only lists what changed in it.
+All notable changes to FLODE are documented here. Every release since 3.0.0 builds on the one before, so each entry only lists what changed in it.
+
+After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the release in that month), e.g. `26.10.11`. They count as newer than every 3.x version, so updates through HACS work as before.
 
 ---
 

@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Nächste Kalender-Version nach Schema YY.M.N
+#   YY = Jahr zweistellig, M = Monat ohne führende Null,
+#   N  = laufende Nummer des Releases im Monat (ab 1).
+# Gezählt werden nur echte, veröffentlichte GitHub-Releases (gh release list),
+# die im laufenden Monat (Ortszeit, publishedAt) erschienen sind, auch solche
+# im alten X.Y.Z-Schema. Keine Entwürfe; Vorabversionen (Prereleases) nur mit
+# --pre. Bloße Git-Tags ohne Release zählen nicht. Gibt es schon Releases
+# YY.M.k, zählt zusätzlich das höchste k. Ohne Release im Monat ist N = 1.
+# Damit die Zählung stimmt, jedes Release als GitHub-Release veröffentlichen.
+# Ist gh nicht erreichbar: Warnung und Rückfall auf die Git-Tags des Monats.
+# Schutz gegen doppelte Nummern: steht in der Versionsdatei (--file) schon
+# YY.M.k des laufenden Monats, ist N mindestens k+1.
+#
+# Standard in diesem Repo: Präfix "", Versionsdatei custom_components/flode/manifest.json
+# Aufruf:  next-version [--prefix P] [--file F] [--pre] [--tag] [--month YYYY-MM] [--no-fetch]
+#   --prefix P   Tag-Präfix (z. B. "v"); nur Releases, deren Tag mit diesem
+#                Präfix gefolgt von einer Ziffer beginnt, zählen
+#   --pre        Vorabversionen (Prereleases) mitzählen
+#   --file F     Versionsdatei (JSON/YAML mit "version"), nur der aktuelle Wert
+#                zählt als Schutz gegen doppelte Nummern; "" = keine
+#   --tag        Ausgabe mit Präfix (fertiger Tag-Name)
+#   --month      anderen Monat rechnen (Test)
+#   --no-fetch   beim Rückfall auf Tags diese nicht vorher von origin holen
+set -euo pipefail
+prefix=""; vfile="custom_components/flode/manifest.json"; with_tag=0; pre=0; month=$(date +%Y-%m); fetch=1
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --prefix) prefix="$2"; shift 2 ;;
+    --file) vfile="$2"; shift 2 ;;
+    --pre) pre=1; shift ;;
+    --tag) with_tag=1; shift ;;
+    --month) month="$2"; shift 2 ;;
+    --no-fetch) fetch=0; shift ;;
+    -h|--help) sed -n '2,/^set -euo/p' "$0" | sed '$d'; exit 0 ;;
+    *) echo "Unbekannte Option: $1" >&2; exit 2 ;;
+  esac
+done
+cd "$(git rev-parse --show-toplevel)"
+yy=${month:2:2}; m=$((10#${month:5:2}))
+maxn=0
+bump() { local k=${1##*.}; if [[ $k =~ ^[0-9]+$ ]] && (( 10#$k > maxn )); then maxn=$((10#$k)); fi; }
+slug=$(git remote get-url origin 2>/dev/null | sed -E 's#^(https://github\.com/|git@github\.com:)##; s#\.git$##')
+# Tag + Monat (Ortszeit) jedes veröffentlichten Releases, ohne Entwürfe
+if rel=$(gh release list -R "$slug" -L 1000 --json tagName,publishedAt,isDraft,isPrerelease \
+      -q ".[] | select(.isDraft | not) | select($pre == 1 or (.isPrerelease | not)) | select(.publishedAt != null)
+            | \"\(.tagName) \(.publishedAt | fromdateiso8601 | strflocaltime(\"%Y-%m\"))\"" 2>/dev/null); then
+  count=0
+  while read -r t mon; do
+    [ -n "${t:-}" ] || continue
+    case "$t" in "${prefix}"[0-9]*) ;; *) continue ;; esac
+    [ "$mon" = "$month" ] || continue
+    count=$((count + 1))
+    case "$t" in "${prefix}${yy}.${m}."*) bump "$t" ;; esac
+  done <<< "$rel"
+else
+  echo "Warnung: GitHub-Releases nicht abrufbar (gh), zähle ersatzweise die Git-Tags des Monats." >&2
+  if [ "$fetch" = 1 ]; then git fetch --tags -q origin 2>/dev/null || true; fi
+  count=$(git for-each-ref --format='%(creatordate:format-local:%Y-%m)' "refs/tags/${prefix}[0-9]*" | grep -c "^${month}\$" || true)
+  while IFS= read -r t; do [ -n "$t" ] && bump "$t"; done < <(git tag -l "${prefix}${yy}.${m}.*")
+fi
+if [ -n "$vfile" ] && [ -f "$vfile" ]; then
+  cur=$(sed -n 's/^[[:space:]"]*version"\{0,1\}[[:space:]]*:[[:space:]]*["'\'']\{0,1\}\([0-9][0-9.]*\).*/\1/p' "$vfile" | head -1)
+  [[ $cur == "${yy}.${m}."* ]] && bump "$cur"
+fi
+n=$(( count > maxn ? count : maxn ))
+v="${yy}.${m}.$((n + 1))"
+if [ "$with_tag" = 1 ]; then echo "${prefix}${v}"; else echo "$v"; fi
