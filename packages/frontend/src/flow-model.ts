@@ -91,6 +91,11 @@ export function outgoing(graph: FlowGraph, source: string, handle: string | null
   );
 }
 
+/** The connections of the flow leading into `target`. */
+export function incoming(graph: FlowGraph, target: string): FlowEdge[] {
+  return graph.edges.filter((e) => e.target === target && isFlowEdge(e));
+}
+
 /**
  * Leads `source` at `handle` through the card `id`: whatever followed there
  * now follows `id` (a condition's yes), and `id` follows `source`. After a

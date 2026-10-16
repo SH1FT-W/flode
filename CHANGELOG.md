@@ -6,6 +6,15 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.10.12] — 2026-10-16 — Dragging into a branch
+
+Report by Bart ([#36](https://github.com/SH1FT-W/flode/issues/36)).
+
+### Fixed
+- **A connection dragged from a branch** ([#36](https://github.com/SH1FT-W/flode/issues/36)): dragging from a branch output of a choose or if block, or from one of the branch's cards, onto a free card now pulls that card into the branch, at the place where the "+" adds a step (a plain chain of cards after it comes along). Before, FLODE read the drag as "after the whole block" and drew a line from every branch to the card. Dropping on the empty canvas adds the new step into the branch too. A card something else leads to, or a chain that forks, stays where it is.
+
+---
+
 ## [26.10.11] — 2026-10-16 — Phones, connections, branch steps
 
 The first calendar version (see above). Reports by Bart ([#31](https://github.com/SH1FT-W/flode/issues/31), [#32](https://github.com/SH1FT-W/flode/issues/32), [#33](https://github.com/SH1FT-W/flode/issues/33), [#34](https://github.com/SH1FT-W/flode/issues/34), [#35](https://github.com/SH1FT-W/flode/issues/35)).

@@ -22,12 +22,13 @@ import {
 } from '@xyflow/system';
 import { css, html, LitElement, nothing, type PropertyValues, svg } from 'lit';
 import {
+  adoptIntoBranch,
   type BlockTail,
   type BranchView,
+  branchInsertAt,
   branchLabelText,
   cachedBranchView,
   cardShape,
-  connectionSource,
   moveBranchCard,
   type Point,
   removeBranchStep,
@@ -878,20 +879,25 @@ export class FlodeCanvas extends LitElement {
     this.connecting = null;
     const drop = this.toFlow(event.clientX, event.clientY);
     const target = this.nodeAt(drop);
-    // From a branch: the connection continues after the whole block.
-    const from = connectionSource(this.view, connecting.source, connecting.sourceHandle);
+    const { source, sourceHandle } = connecting;
+    // From a branch's output or card: into that branch, where its "+" adds a step (#36).
+    const branch = branchInsertAt(this.view, source, sourceHandle);
     if (!target) {
-      // Dropped on empty canvas: add a card there, connected.
+      // Dropped on empty canvas: add a card there, connected (a branch lays its cards out itself).
       if (Math.hypot(drop.x - connecting.start.x, drop.y - connecting.start.y) > DROP_DISTANCE) {
-        const { axis } = this.view;
-        const position = cardAtInput(axis, drop);
-        this.emitAddAt({ ...from, position });
+        const position = cardAtInput(this.view.axis, drop);
+        this.emitAddAt(branch ? { source, sourceHandle } : { source, sourceHandle, position });
       }
       return;
     }
     // Steps inside a branch are added with its "+", not connected into.
     if (this.view.cards.has(target.id)) return;
-    const request = { ...from, target: target.id };
+    if (branch) {
+      const adopted = adoptIntoBranch(this.graph, branch, target.id);
+      if (adopted) this.emitGraph(adopted);
+      return;
+    }
+    const request = { source, sourceHandle, target: target.id };
     if (connectionError(this.graph, request) === null) this.emitGraph(connect(this.graph, request));
   }
 

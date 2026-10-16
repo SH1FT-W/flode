@@ -15,14 +15,17 @@ import {
   addNode,
   byFlowOrder,
   CARD_SIZE,
+  incoming,
   isDrawnEdge,
   NODE_HEIGHT,
   NODE_WIDTH,
+  outgoing,
   PORT_ROW,
+  removeNode,
   sourceHandles,
   updateNodeData,
 } from './flow-model';
-import { stepToNode } from './ha-step';
+import { nodeToStep, stepToNode } from './ha-step';
 import { t } from './strings';
 
 /**
@@ -703,19 +706,38 @@ export function insertBranchStep(
 }
 
 /**
- * A connection started at a branch (its output or its last card) means "after
- * the block": every branch continues there.
+ * A connection dragged from a branch (its output or one of its cards) onto a
+ * free card pulls that card into the branch — the same place its "+" adds a
+ * step (#36) — along with the plain chain of cards after it. A card tied in
+ * elsewhere (something leads to it, a later card has other sources, the
+ * chain forks) stays where it is: null, nothing to adopt.
  */
-export function connectionSource(
-  view: BranchView,
-  source: string,
-  handle: string | null
-): { source: string; sourceHandle: string | null } {
-  const card = view.cards.get(source);
-  if (card) return { source: card.blockId, sourceHandle: null };
-  return view.branches.has(source)
-    ? { source, sourceHandle: null }
-    : { source, sourceHandle: handle };
+export function adoptIntoBranch(graph: FlowGraph, at: BranchInsert, id: string): FlowGraph | null {
+  const chain = adoptableChain(graph, at.blockId, id);
+  if (!chain) return null;
+  const inserted = chain.reduce(
+    (g, node, i) => insertBranchStep(g, { ...at, index: at.index + i }, nodeToStep(node)).graph,
+    graph
+  );
+  return chain.reduce((g, node) => removeNode(g, node.id), inserted);
+}
+
+/** `id` and the plain chain of free cards after it; null if any of them is tied in elsewhere. */
+function adoptableChain(graph: FlowGraph, blockId: string, id: string): FlowNode[] | null {
+  const chain: FlowNode[] = [];
+  for (let next: string | undefined = id; next; ) {
+    const node = graph.nodes.find((n) => n.id === next);
+    if (!node || node.id === blockId || node.type === 'trigger') return null;
+    if (incoming(graph, node.id).length !== (chain.length === 0 ? 0 : 1)) return null;
+    chain.push(node);
+    // Only the main output may lead on (a condition's No would be lost in a sequence).
+    const [main = null, ...others] = sourceHandles(node.type);
+    if (others.some((handle) => outgoing(graph, node.id, handle).length > 0)) return null;
+    const out = outgoing(graph, node.id, main);
+    if (out.length > 1) return null;
+    next = out[0]?.target;
+  }
+  return chain;
 }
 
 /**

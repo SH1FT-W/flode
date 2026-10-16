@@ -1,10 +1,10 @@
 import type { FlowGraph } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
 import {
+  adoptIntoBranch,
   branchCardId,
   branchInsertAt,
   branchView,
-  connectionSource,
   detachBranchStep,
   insertBranchStep,
   moveBranchCard,
@@ -181,11 +181,50 @@ describe('branch view (#27)', () => {
     });
   });
 
-  it('connects from a branch as "after the block" and stores drawn positions unshifted', () => {
+  it('pulls a free card into the branch a connection was dragged from (#36)', () => {
+    const graph = flow();
+    // A free card and a plain chain after it.
+    const free: FlowGraph = {
+      ...graph,
+      nodes: [
+        ...graph.nodes,
+        { id: 'f', type: 'action', position: { x: 400, y: 300 }, data: { delay: 5 } },
+        { id: 'g', type: 'action', position: { x: 800, y: 300 }, data: { delay: 6 } },
+      ],
+      edges: [...graph.edges, { id: 'e3', source: 'f', target: 'g' }],
+    };
+    const view = branchView(free);
+    // From the default output (its "+" adds before the first step): the chain goes in there, the cards are gone.
+    const at = branchInsertAt(view, 'b', 'b1');
+    const adopted = at && adoptIntoBranch(free, at, 'f');
+    expect(adopted?.nodes.map((n) => n.id)).toEqual(['t', 'b', 'n']);
+    expect(adopted?.edges.map((e) => e.id)).toEqual(['e1', 'e2']);
+    expect(adopted?.nodes[1]?.data).toMatchObject({
+      _raw: {
+        default: [{ delay: 5 }, { delay: 6 }, { action: 'alarm_control_panel.alarm_arm_home' }],
+      },
+    });
+    // From the option's card: after it.
+    const after = branchInsertAt(view, option, null);
+    const appended = after && adoptIntoBranch(free, after, 'f');
+    expect(appended?.nodes[1]?.data).toMatchObject({
+      _raw: { choose: [{ sequence: [{ action: 'script.turn_on' }, { delay: 5 }, { delay: 6 }] }] },
+    });
+    // A card in the middle of a chain is tied to what leads to it.
+    expect(after && adoptIntoBranch(free, after, 'g')).toBeNull();
+    // Not adoptable: the block itself, a trigger, a card something leads to, a chain that forks.
+    expect(at && adoptIntoBranch(free, at, 'b')).toBeNull();
+    expect(at && adoptIntoBranch(free, at, 't')).toBeNull();
+    expect(at && adoptIntoBranch(free, at, 'n')).toBeNull();
+    const forked: FlowGraph = {
+      ...free,
+      edges: [...free.edges, { id: 'e4', source: 'f', target: 'n' }],
+    };
+    expect(at && adoptIntoBranch(forked, at, 'f')).toBeNull();
+  });
+
+  it('stores drawn positions unshifted', () => {
     const view = branchView(flow());
-    expect(connectionSource(view, option, null)).toEqual({ source: 'b', sourceHandle: null });
-    expect(connectionSource(view, 'b', 'b1')).toEqual({ source: 'b', sourceHandle: null });
-    expect(connectionSource(view, 't', null)).toEqual({ source: 't', sourceHandle: null });
     const drawn = view.graph.nodes.find((n) => n.id === 'n')?.position ?? { x: 0, y: 0 };
     expect(storedPosition(view, 'n', drawn)).toEqual({ x: 800, y: 0 });
   });
