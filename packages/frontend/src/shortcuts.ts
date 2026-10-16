@@ -4,6 +4,7 @@
  * Keys are written platform-neutrally: `mod` is ⌘ on macOS and Ctrl elsewhere.
  */
 import type { StringKey } from './strings';
+import { isTouch } from './viewport';
 
 export type ShortcutId =
   | 'palette'
@@ -176,10 +177,19 @@ export function formatKeys(keys: string): string {
   return parts.sort((a, b) => (a === '⇧' ? -1 : b === '⇧' ? 1 : 0)).join('');
 }
 
-/** The first combination of a shortcut, for hints (⌘K rows, tooltips). */
-export function shortcutHint(id: string): string | undefined {
+/** The first combination of a shortcut, formatted ("⌫", "Ctrl+Shift+Z"). */
+export function shortcutKeys(id: string): string | undefined {
   const keys = SHORTCUTS.find((shortcut) => shortcut.id === id)?.keys[0];
   return keys ? formatKeys(keys) : undefined;
+}
+
+/**
+ * The shortcut as a hint next to a menu entry (⌘K rows, right-click menu,
+ * tooltips). Nothing on a touch screen: there is no keyboard to point at, and
+ * a lone "Backspace" next to the only entry reads like a second entry (#32).
+ */
+export function shortcutHint(id: string): string | undefined {
+  return isTouch() ? undefined : shortcutKeys(id);
 }
 
 /** A tooltip with its shortcut, e.g. "Aufräumen (⇧⌘F)". */

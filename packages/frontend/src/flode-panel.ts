@@ -120,6 +120,7 @@ import {
   matchShortcut,
   type ShortcutId,
   shortcutHint,
+  shortcutKeys,
 } from './shortcuts';
 import { type StringKey, t } from './strings';
 import {
@@ -2383,7 +2384,7 @@ export class FlodePanel extends LitElement {
         return () => {
           this.copiedNode = structuredClone(card);
           this.notify(
-            t(this.language, 'cardCopied').replace('{keys}', shortcutHint('paste') ?? '')
+            t(this.language, 'cardCopied').replace('{keys}', shortcutKeys('paste') ?? '')
           );
         };
       }
@@ -3982,6 +3983,13 @@ export class FlodePanel extends LitElement {
     .import-warnings ul {
       margin: 6px 0 0;
       padding-left: 20px;
+    }
+    /* Shortcut hints in the menus: clearly an aside, not a second entry (#32). */
+    ha-dropdown-item [slot='details'] {
+      font-size: 0.8em;
+      color: var(--secondary-text-color);
+      opacity: 0.8;
+      margin-left: 16px;
     }
     .menu-anchor {
       position: fixed;
