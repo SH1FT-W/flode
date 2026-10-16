@@ -1,8 +1,9 @@
-import type { FlowGraph } from '@flode/shared';
+import { axisOf, type FlowGraph } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
 import {
   acrossPoints,
   addNode,
+  backCrossing,
   connect,
   connectionError,
   duplicateNode,
@@ -15,6 +16,7 @@ import {
   NODE_TYPES,
   NODE_WIDTH,
   removeNode,
+  runsBack,
   scriptEntryIds,
   updateNodeData,
   visibleGraph,
@@ -301,5 +303,41 @@ describe('lines left to right (#31)', () => {
       { x: 100, y: 0 },
     ];
     expect(acrossPoints(loop, true)).toEqual(loop);
+  });
+});
+
+describe('lines running back (#31)', () => {
+  const right = axisOf('right');
+  const down = axisOf('down');
+  const card = (x: number, y: number, height = 92) => ({ x, y, width: 260, height });
+
+  it('runs back when the input is not clearly past the output', () => {
+    expect(runsBack(right, { x: 500, y: 100 }, { x: 540, y: 300 })).toBe(true);
+    expect(runsBack(right, { x: 500, y: 100 }, { x: 200, y: 100 })).toBe(true);
+    expect(runsBack(right, { x: 500, y: 100 }, { x: 620, y: 300 })).toBe(false);
+    expect(runsBack(down, { x: 100, y: 500 }, { x: 300, y: 520 })).toBe(true);
+    expect(runsBack(down, { x: 100, y: 500 }, { x: 300, y: 600 })).toBe(false);
+  });
+
+  it('crosses over in the middle of the gap between the cards', () => {
+    // Source card 100..192, target card above it at -100..-8: the gap is -8..100.
+    expect(
+      backCrossing(right, { x: 360, y: 150 }, { x: 50, y: -60 }, card(100, 100), card(50, -100))
+    ).toBe(46);
+    // Top to bottom the gap is across in x.
+    expect(
+      backCrossing(down, { x: 230, y: 192 }, { x: 530, y: 100 }, card(100, 100), card(400, 100))
+    ).toBe(380);
+  });
+
+  it('goes round both cards where they overlap across the flow', () => {
+    // Target beside the source, lower: below both (the lower card's bottom plus the lane).
+    expect(
+      backCrossing(right, { x: 360, y: 150 }, { x: 50, y: 180 }, card(100, 100), card(50, 140))
+    ).toBe(262);
+    // Target higher: above both.
+    expect(
+      backCrossing(right, { x: 360, y: 150 }, { x: 50, y: 120 }, card(100, 100), card(50, 80))
+    ).toBe(50);
   });
 });

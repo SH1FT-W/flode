@@ -12,6 +12,7 @@ import {
   RAW_STEP_KEY,
 } from '@flode/shared';
 import {
+  addNode,
   byFlowOrder,
   CARD_SIZE,
   isDrawnEdge,
@@ -581,6 +582,20 @@ export function setBranchStep(
   return setBranchList(graph, ref.blockId, ref.branch.path, (steps) =>
     steps.map((s, i) => (i === ref.index ? step : s))
   );
+}
+
+/**
+ * "Disconnect" on a branch step (#35): out of its branch, kept as a card of
+ * its own where it was drawn — a step of the flow again, connected to nothing.
+ */
+export function detachBranchStep(graph: FlowGraph, ref: BranchCardRef, drawn: FlowNode): FlowGraph {
+  return addNode(
+    removeBranchStep(graph, ref),
+    drawn.type,
+    drawn.position,
+    undefined,
+    structuredClone(drawn.data)
+  ).graph;
 }
 
 export function removeBranchStep(graph: FlowGraph, ref: BranchCardRef): FlowGraph {

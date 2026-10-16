@@ -10,6 +10,7 @@ import {
 import { createdEntityIds, type NodeSummary, type StepIssue } from '@flode/ui-core';
 import {
   getBezierPath,
+  getSmoothStepPath,
   PanOnScrollMode,
   type PanZoomInstance,
   Position,
@@ -38,6 +39,7 @@ import {
   ADD_BUTTON,
   acrossPoints,
   type Bounds,
+  backCrossing,
   cardAtInput,
   connect,
   connectionError,
@@ -53,15 +55,18 @@ import {
   NODE_WIDTH,
   outgoing,
   outputOffsets,
+  PAST_ADD,
   PORT_ROW,
   removeEdge,
   removeNode,
+  runsBack,
   scriptEntryIds,
   unionBounds,
   visibleGraph,
 } from './flow-model';
 import type { HomeAssistant } from './ha';
 import { HaDescriptions } from './ha-describe';
+import { watchHold } from './hold';
 import { HA_ICON_ELEMENTS, nodeIconTemplate } from './node-icon';
 import {
   issueLines,
@@ -88,6 +93,13 @@ function detailText(detail: string): string {
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 1.6;
 
+/** Which side of a card a line leaves and arrives at, per direction of the flow. */
+function lineEnds(axis: Axis): { sourcePosition: Position; targetPosition: Position } {
+  return axis.direction === 'down'
+    ? { sourcePosition: Position.Bottom, targetPosition: Position.Top }
+    : { sourcePosition: Position.Right, targetPosition: Position.Left };
+}
+
 /**
  * A line through `points` along the flow (left to right, or top to bottom):
  * a curve between each pair (straight where they are level).
@@ -99,6 +111,7 @@ function linePath(points: readonly Point[], axis: Axis, merge = false, loop = fa
   const drawn = down
     ? shaped.filter((p, i) => i === 0 || p.x !== shaped[i - 1]?.x || p.y !== shaped[i - 1]?.y)
     : shaped;
+  const ends = lineEnds(axis);
   return drawn
     .slice(1)
     .map((to, i) => {
@@ -106,14 +119,35 @@ function linePath(points: readonly Point[], axis: Axis, merge = false, loop = fa
       const [path] = getBezierPath({
         sourceX: from.x,
         sourceY: from.y,
-        sourcePosition: down ? Position.Bottom : Position.Right,
         targetX: to.x,
         targetY: to.y,
-        targetPosition: down ? Position.Top : Position.Left,
+        ...ends,
       });
       return path;
     })
     .join(' ');
+}
+
+/** Corners of a line running back. */
+const BACK_RADIUS = 14;
+
+/**
+ * A line running back along the flow (#31): out past the output's "+", across
+ * at `crossing` beside the cards, and back into the input — steps with rounded
+ * corners, where a curve would hook back through the cards.
+ */
+function backPath(axis: Axis, from: Point, to: Point, crossing: number): string {
+  const [path] = getSmoothStepPath({
+    sourceX: from.x,
+    sourceY: from.y,
+    targetX: to.x,
+    targetY: to.y,
+    ...lineEnds(axis),
+    offset: PAST_ADD,
+    borderRadius: BACK_RADIUS,
+    ...(axis.direction === 'down' ? { centerX: crossing } : { centerY: crossing }),
+  });
+  return path;
 }
 
 /** Per picture of a flow: the bends of its lines round cards in their way (see `detourOf`). */
@@ -162,6 +196,8 @@ export interface AddAt {
 /** Right-click on a card (nodeId) or on the empty canvas (null). */
 export interface CanvasMenuDetail {
   nodeId: string | null;
+  /** A connection's menu (its id as stored in the graph): just "delete" (#34). */
+  edgeId?: string;
   clientX: number;
   clientY: number;
   /** Flow position of the click — where "add here" puts a card. */
@@ -174,6 +210,11 @@ export interface CanvasMenuDetail {
 const DROP_DISTANCE = 40;
 
 /** Keeps receiving move/up events for this pointer even outside the element. */
+/** A contextmenu raised by a touch (Android's long press). */
+function isTouchEvent(event: MouseEvent): boolean {
+  return event instanceof PointerEvent && event.pointerType === 'touch';
+}
+
 function capturePointer(event: PointerEvent): void {
   // No native text selection / drag while moving cards or drawing connections —
   // the browser would cancel the pointer mid-gesture.
@@ -293,6 +334,8 @@ export class FlodeCanvas extends LitElement {
   private minimapControl: XYMinimapInstance | null = null;
   /** Flow units per minimap pixel — XYMinimap needs it for dragging. */
   private minimapScale = 1;
+  /** Calls off a touch's wait for its long press. */
+  private holdOff: () => void = () => undefined;
   private resizeObserver = new ResizeObserver(([entry]) => {
     if (!entry) return;
     const { width, height } = entry.contentRect;
@@ -436,11 +479,13 @@ export class FlodeCanvas extends LitElement {
         this.viewport = { x, y, zoom };
       },
       connectionInProgress: false,
-      paneClickDistance: 0,
+      // A hand that moves a pixel between press and release still clicks a line (#34).
+      paneClickDistance: CLICK_DISTANCE,
     });
   }
 
   disconnectedCallback(): void {
+    this.holdOff();
     super.disconnectedCallback();
     this.resizeObserver.disconnect();
     this.minimapControl?.destroy();
@@ -663,9 +708,35 @@ export class FlodeCanvas extends LitElement {
   }
 
   /** Right-click: HA-style menu from the panel instead of the browser's own. */
+  private selectEdge(id: string): void {
+    this.selectedEdgeId = id;
+    this.dispatchEvent(new CustomEvent('select', { detail: { id: null } }));
+  }
+
+  /** The connection's id as stored in the graph (a branch's line stands for the block's). */
+  private storedEdgeId(id: string): string {
+    return this.view.edgeOrigin.get(id) ?? id;
+  }
+
+  /** Right-click on a line: its menu, the line picked (#34). A touch's long press is watched from its pointerdown. */
+  private onEdgeContextMenu(event: MouseEvent, id: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isTouchEvent(event)) return;
+    this.openEdgeMenu(id, event.clientX, event.clientY);
+  }
+
+  private openEdgeMenu(id: string, clientX: number, clientY: number): void {
+    this.selectEdge(id);
+    this.dispatchCanvasMenu({ nodeId: null, edgeId: this.storedEdgeId(id), clientX, clientY });
+  }
+
   private onContextMenu(event: MouseEvent, node: FlowNode | null): void {
     event.preventDefault();
     event.stopPropagation();
+    // A touch's long press is watched from its pointerdown (Android reports it
+    // here, iOS not at all) and opens the menu alone, without picking the card (#32).
+    if (isTouchEvent(event)) return;
     if (node) this.emitSelect(node.id);
     this.dispatchCanvasMenu({
       nodeId: node?.id ?? null,
@@ -710,6 +781,12 @@ export class FlodeCanvas extends LitElement {
       startPos: { ...(stored ?? node).position },
       moved: false,
     };
+    const { clientX, clientY } = event;
+    this.holdOff = watchHold(event, CLICK_DISTANCE, () => {
+      // Held still: the card's menu, and no move or pick when the finger lifts (#32).
+      this.drag = null;
+      this.dispatchCanvasMenu({ nodeId: node.id, clientX, clientY });
+    });
   }
 
   private onNodePointerMove(event: PointerEvent): void {
@@ -826,8 +903,7 @@ export class FlodeCanvas extends LitElement {
     event.stopPropagation();
     const branchCard = this.selectedId ? this.view.cards.get(this.selectedId) : undefined;
     if (this.selectedEdgeId) {
-      const stored = this.view.edgeOrigin.get(this.selectedEdgeId) ?? this.selectedEdgeId;
-      this.emitGraph(removeEdge(this.graph, stored));
+      this.emitGraph(removeEdge(this.graph, this.storedEdgeId(this.selectedEdgeId)));
       this.selectedEdgeId = null;
     } else if (branchCard) {
       this.emitGraph(removeBranchStep(this.graph, branchCard));
@@ -873,6 +949,11 @@ export class FlodeCanvas extends LitElement {
   private issues = new Map<string, StepIssue[]>();
 
   /** A line's way round cards in its way — worked out once per picture, not on every pan or zoom. */
+  /** A card's place and size as drawn. */
+  private cardBounds(node: FlowNode): Bounds {
+    return { ...node.position, width: NODE_WIDTH, height: cardShape(this.view, node).height };
+  }
+
   private detourOf(id: string, from: Point, to: Point, ends: readonly string[]): Point[] {
     const view = this.view;
     let known = detours.get(view);
@@ -888,7 +969,7 @@ export class FlodeCanvas extends LitElement {
       to,
       view.graph.nodes,
       new Set(ends),
-      (n) => cardShape(view, n).height
+      (n) => this.cardBounds(n).height
     );
     known.set(id, bends);
     return bends;
@@ -908,18 +989,37 @@ export class FlodeCanvas extends LitElement {
       edgeOrigin.has(edge.id) || (!cards.has(edge.source) && !cards.has(edge.target));
     const bends = via.get(edge.id) ?? this.detourOf(edge.id, from, to, [source.id, target.id]);
     const isLoop = edge.type === 'loop-back';
-    const path = linePath([from, ...bends, to], this.view.axis, merge, isLoop);
+    const axis = this.view.axis;
+    const path =
+      !isLoop && runsBack(axis, from, to)
+        ? backPath(
+            axis,
+            from,
+            to,
+            backCrossing(axis, from, to, this.cardBounds(source), this.cardBounds(target))
+          )
+        : linePath([from, ...bends, to], axis, merge, isLoop);
     const selected = this.selectedEdgeId === edge.id;
     const isNo = edge.sourceHandle === 'false';
     const faulty = (this.issues.get(edge.target)?.length ?? 0) > 0;
     return svg`
-      <g class="edge ${selected ? 'selected' : ''} ${isNo ? 'no' : ''} ${isLoop ? 'loop' : ''} ${faulty ? 'faulty' : ''}">
+      <g class="edge ${selected ? 'selected' : ''} ${selectable ? 'selectable' : ''} ${isNo ? 'no' : ''} ${isLoop ? 'loop' : ''} ${faulty ? 'faulty' : ''}">
         <path class="edge-hit" d=${path}
           @click=${(e: Event) => {
             e.stopPropagation();
-            if (!selectable) return;
-            this.selectedEdgeId = edge.id;
-            this.dispatchEvent(new CustomEvent('select', { detail: { id: null } }));
+            // A line that can't be picked acts like the canvas behind it.
+            if (selectable) this.selectEdge(edge.id);
+            else this.emitSelect(null);
+          }}
+          @contextmenu=${(e: MouseEvent) => {
+            if (selectable) this.onEdgeContextMenu(e, edge.id);
+          }}
+          @pointerdown=${(e: PointerEvent) => {
+            // The pane still pans when the finger moves on; held still, the line's menu.
+            if (selectable)
+              this.holdOff = watchHold(e, CLICK_DISTANCE, () =>
+                this.openEdgeMenu(edge.id, e.clientX, e.clientY)
+              );
           }}></path>
         <path class="edge-line" d=${path} marker-end=${faulty ? 'url(#arrow-faulty)' : 'url(#arrow)'}></path>
       </g>`;
@@ -1228,6 +1328,9 @@ export class FlodeCanvas extends LitElement {
       stroke: transparent;
       stroke-width: 16px;
       pointer-events: stroke;
+    }
+    /* A line into or between a branch's steps is not a connection of its own: nothing to pick (#34). */
+    .edge.selectable .edge-hit {
       cursor: pointer;
     }
     .edge-line {

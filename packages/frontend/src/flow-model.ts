@@ -621,6 +621,9 @@ const MERGE_ABOVE = 24;
 /** Top to bottom, a line passing cards runs in the middle of the gap beside them. */
 const LANE = NODE_GAP / 2;
 
+/** Room a line keeps past an output's "+" before it turns away. */
+export const PAST_ADD = ADD_BELOW + LANE / 2;
+
 /** Where the straight line from `from` to `to` is, across the flow, at `y` (top to bottom). */
 function crossAt(from: { x: number; y: number }, to: { x: number; y: number }, y: number): number {
   return from.x + ((to.x - from.x) * (y - from.y)) / (to.y - from.y);
@@ -666,10 +669,9 @@ export function detour(
   if (!Number.isFinite(lane)) return [];
   const top = Math.min(...between.map((n) => n.position.y));
   const bottom = Math.max(...between.map((n) => n.position.y + height(n)));
-  const pastAdd = ADD_BELOW + LANE / 2;
-  const below = from.y + pastAdd;
+  const below = from.y + PAST_ADD;
   // Out of the lane in time to turn to the target (and never below its input).
-  const leave = Math.min(bottom + pastAdd, to.y - MERGE_ABOVE);
+  const leave = Math.min(bottom + PAST_ADD, to.y - MERGE_ABOVE);
   return [
     ...(below < top ? [{ x: from.x, y: below }] : []),
     { x: lane, y: top },
@@ -695,6 +697,42 @@ export function acrossPoints(
   if (!from || !to || points.length < 3 || loop) return [...points];
   const middle = points.slice(1, -1).filter((p) => p.x <= to.x - INTO_LEFT);
   return [from, ...middle, to];
+}
+
+/**
+ * Along the flow, a line runs back when its target's input is not clearly past
+ * its source's output (#31: a branch step dragged beside or before its block).
+ * Drawn as a curve it would hook back through the cards.
+ */
+export function runsBack(
+  axis: Axis,
+  from: { x: number; y: number },
+  to: { x: number; y: number }
+): boolean {
+  const room = axis.direction === 'down' ? OUT_STRAIGHT + MERGE_ABOVE : 2 * INTO_LEFT;
+  return axis.main(to) < axis.main(from) + room;
+}
+
+/**
+ * Where a line running back crosses over, across the flow: in the middle of
+ * the gap between its two cards, or, where they overlap there, clear of both
+ * on the side its target lies.
+ */
+export function backCrossing(
+  axis: Axis,
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  source: Bounds,
+  target: Bounds
+): number {
+  const near = (b: Bounds) => axis.cross(b);
+  const far = (b: Bounds) => axis.cross(b) + axis.breadth(b);
+  const gapStart = Math.min(far(source), far(target));
+  const gapEnd = Math.max(near(source), near(target));
+  if (gapEnd - gapStart >= LANE) return (gapStart + gapEnd) / 2;
+  return axis.cross(to) < axis.cross(from)
+    ? Math.min(near(source), near(target)) - LANE
+    : Math.max(far(source), far(target)) + LANE;
 }
 
 /**

@@ -53,6 +53,7 @@ const STRINGS = {
     enableCard: 'Karte aktivieren',
     disableCard: 'Karte deaktivieren',
     disconnectCard: 'Verbindungen trennen',
+    deleteConnection: 'Verbindung löschen',
     addHere: '{type} hier hinzufügen',
     ioYamlCopied: 'YAML in die Zwischenablage kopiert',
     ioSaveCopy: 'Als Kopie speichern …',
@@ -342,15 +343,15 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new341MenuTitle: 'Rechtsklick in Zweigen',
-    new341MenuText:
-      'Auch Schritte in einem Wenn-dann oder Auswählen haben jetzt ihr Kartenmenü: kopieren, duplizieren, deaktivieren, löschen.',
-    new341DragTitle: 'Ruhigeres Verschieben',
-    new341DragText:
-      'Karten springen beim Ziehen nicht mehr zurück, wenn die Automation gerade läuft. Linien laufen weich in verschobene Schritte, der Pfeil zeigt gerade hinein.',
-    new341EndTitle: 'Aufgeräumtes Ende',
-    new341EndText:
-      'Nach einem Block am Ende des Flows stehen keine gestrichelten Linien und kein zusätzliches „+“ mehr. Jeder Schritt hat sein eigenes „+“.',
+    new261011HoldTitle: 'Halten am Handy',
+    new261011HoldText:
+      'Eine Karte oder Verbindung kurz gedrückt halten öffnet nur ihr Menü, der Eigenschaften-Bereich bleibt zu. Jetzt auch am iPhone.',
+    new261011LinesTitle: 'Verbindungen im Griff',
+    new261011LinesText:
+      'Rechtsklick oder Halten auf einer Verbindung bietet „Verbindung löschen“. Ein leicht wackliger Klick wählt sie trotzdem. Linien zu Schritten links oder über ihrem Block laufen in Stufen um die Karten herum.',
+    new261011DetachTitle: 'Schritte aus Zweigen lösen',
+    new261011DetachText:
+      '„Verbindungen trennen“ gibt es jetzt auch für Schritte in einem Wenn-dann oder Auswählen: Der Schritt verlässt den Zweig und bleibt als eigene Karte stehen.',
   },
   en: {
     title: 'FLODE',
@@ -402,6 +403,7 @@ const STRINGS = {
     enableCard: 'Enable card',
     disableCard: 'Disable card',
     disconnectCard: 'Disconnect',
+    deleteConnection: 'Delete connection',
     addHere: 'Add {type} here',
     ioYamlCopied: 'YAML copied to the clipboard',
     ioSaveCopy: 'Save as copy …',
@@ -687,15 +689,15 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new341MenuTitle: 'Right-click in branches',
-    new341MenuText:
-      'Steps inside an if or choose block now have their card menu too: copy, duplicate, disable, delete.',
-    new341DragTitle: 'Smoother dragging',
-    new341DragText:
-      'Cards no longer jump back while dragged when the automation runs. Lines curve into moved steps and the arrow points straight in.',
-    new341EndTitle: 'A tidier end',
-    new341EndText:
-      'A block at the end of a flow no longer shows dashed lines and an extra "+". Every step has its own "+".',
+    new261011HoldTitle: 'Press and hold on the phone',
+    new261011HoldText:
+      'Holding a finger on a card or a connection opens just its menu; the properties sheet stays closed. Now on the iPhone too.',
+    new261011LinesTitle: 'Connections under control',
+    new261011LinesText:
+      'Right-click or hold on a connection offers "Delete connection". A slightly shaky click still picks it. Lines to steps left of or above their block run in steps around the cards.',
+    new261011DetachTitle: 'Steps out of branches',
+    new261011DetachText:
+      '"Disconnect" now works on steps inside an if or choose block too: the step leaves its branch and stays as a card of its own.',
   },
 } as const;
 

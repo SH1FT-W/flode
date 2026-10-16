@@ -6,6 +6,22 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.10.11] — 2026-10-16 — Phones, connections, branch steps
+
+The first calendar version (see above). Reports by Bart ([#31](https://github.com/SH1FT-W/flode/issues/31), [#32](https://github.com/SH1FT-W/flode/issues/32), [#33](https://github.com/SH1FT-W/flode/issues/33), [#34](https://github.com/SH1FT-W/flode/issues/34), [#35](https://github.com/SH1FT-W/flode/issues/35)).
+
+### Added
+- **Press and hold on a card or a connection** ([#32](https://github.com/SH1FT-W/flode/issues/32)) opens just its menu on touch screens; the properties sheet stays closed and the card is not picked. FLODE measures the hold itself, so it works on the iPhone too, which reports no long press.
+- **Menu on a connection** ([#34](https://github.com/SH1FT-W/flode/issues/34)): right-click or hold on a connection offers "Delete connection" (the Delete key worked before, but nothing showed it).
+- **"Disconnect" on a step inside a branch** ([#35](https://github.com/SH1FT-W/flode/issues/35)): the step leaves its if or choose branch and stays as a card of its own where it was, to be connected again.
+
+### Fixed
+- **Lines to a step left of or above its block** ([#31](https://github.com/SH1FT-W/flode/issues/31)) no longer hook back through the cards: they run out past the "+", across the gap beside the cards and back into the input, with rounded corners. Top to bottom alike.
+- **Picking a connection** ([#34](https://github.com/SH1FT-W/flode/issues/34)) works when the hand moves a pixel between press and release. Lines into and between a branch's steps are not connections of their own and no longer show a pointer.
+- **"Last run" in the toolbar** ([#33](https://github.com/SH1FT-W/flode/issues/33)) keeps its icon whole when the header gets tight; only the text gives way.
+
+---
+
 ## [3.4.1] — 2026-10-15 — Branch steps, dragging, block ends
 
 Fixes reported by Bart ([#30](https://github.com/SH1FT-W/flode/issues/30), [#31](https://github.com/SH1FT-W/flode/issues/31)).

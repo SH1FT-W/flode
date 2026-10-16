@@ -32,6 +32,7 @@ import {
   branchLabelText,
   cachedBranchView,
   cardShape,
+  detachBranchStep,
   drawnBox,
   insertBranchStep,
   removeBranchStep,
@@ -61,6 +62,7 @@ import {
   NODE_WIDTH,
   nextPosition,
   outgoing,
+  removeEdge,
   removeNode,
   scriptStartId,
   setNodeStep,
@@ -891,7 +893,14 @@ export class FlodePanel extends LitElement {
       hint: shortcutHint(id),
     });
     const entries: MenuEntry[] = [];
-    if (node && !isScriptStart(node.data)) {
+    if (menu.edgeId) {
+      const edgeId = menu.edgeId;
+      entries.push(
+        hinted('delete', 'mdi:delete-outline', t(language, 'deleteConnection'), () =>
+          this.commit(removeEdge(flow.graph, edgeId))
+        )
+      );
+    } else if (node && !isScriptStart(node.data)) {
       const off = 'enabled' in node.data && node.data.enabled === false;
       entries.push(
         hinted('copy', 'mdi:content-copy', t(language, 'copyCard'), () => {
@@ -907,7 +916,22 @@ export class FlodePanel extends LitElement {
           () => this.toggleCard(node)
         )
       );
-      if (!branchCard) {
+      const disconnect = (run: () => void): MenuItem => ({
+        id: 'disconnect',
+        icon: 'mdi:link-variant-off',
+        label: t(language, 'disconnectCard'),
+        run,
+      });
+      if (branchCard) {
+        // A branch step's only connection is its place in the branch: out of it, as a card of its own (#35).
+        entries.push(
+          'divider',
+          disconnect(() => {
+            this.commit(detachBranchStep(flow.graph, branchCard, node));
+            this.selectedId = null;
+          })
+        );
+      } else {
         entries.push('divider', {
           id: 'runFrom',
           icon: 'mdi:play-circle-outline',
@@ -916,14 +940,8 @@ export class FlodePanel extends LitElement {
             this.runFromId = node.id;
           },
         });
-      }
-      if (flow.graph.edges.some((e) => e.source === node.id || e.target === node.id)) {
-        entries.push({
-          id: 'disconnect',
-          icon: 'mdi:link-variant-off',
-          label: t(language, 'disconnectCard'),
-          run: () => this.commit(disconnectNode(flow.graph, node.id)),
-        });
+        if (flow.graph.edges.some((e) => e.source === node.id || e.target === node.id))
+          entries.push(disconnect(() => this.commit(disconnectNode(flow.graph, node.id))));
       }
       entries.push(
         'divider',
@@ -3781,7 +3799,8 @@ export class FlodePanel extends LitElement {
     .last-run {
       display: flex;
       flex: 0 1000 auto;
-      min-width: 0;
+      /* Squeezed, the text goes first; the icon stays whole (#33). */
+      min-width: calc(var(--mdc-icon-size) + 20px);
       overflow: hidden;
       align-items: center;
       gap: 4px;

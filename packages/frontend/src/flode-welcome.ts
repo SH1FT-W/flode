@@ -24,9 +24,9 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:menu', title: 'new341MenuTitle', text: 'new341MenuText' },
-  { icon: 'mdi:cursor-move', title: 'new341DragTitle', text: 'new341DragText' },
-  { icon: 'mdi:source-branch', title: 'new341EndTitle', text: 'new341EndText' },
+  { icon: 'mdi:gesture-tap-hold', title: 'new261011HoldTitle', text: 'new261011HoldText' },
+  { icon: 'mdi:vector-line', title: 'new261011LinesTitle', text: 'new261011LinesText' },
+  { icon: 'mdi:link-variant-off', title: 'new261011DetachTitle', text: 'new261011DetachText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

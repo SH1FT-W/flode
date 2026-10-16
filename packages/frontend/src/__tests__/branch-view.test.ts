@@ -5,6 +5,7 @@ import {
   branchInsertAt,
   branchView,
   connectionSource,
+  detachBranchStep,
   insertBranchStep,
   moveBranchCard,
   removeBranchStep,
@@ -138,6 +139,22 @@ describe('branch view (#27)', () => {
     if (!offRef || !offCard) throw new Error('no card');
     const on = setBranchStep(off.graph, offRef, withEnabledToggled(nodeToStep(offCard)));
     expect(await flowYaml(on.graph, 'automation')).not.toContain('enabled');
+  });
+
+  it('takes a branch step out of its branch as a card of its own (#35)', () => {
+    const graph = flow();
+    const view = branchView(graph);
+    const ref = view.cards.get(fallback);
+    const card = view.graph.nodes.find((n) => n.id === fallback);
+    if (!ref || !card) throw new Error('no card');
+    const detached = detachBranchStep(graph, ref, card);
+    // The block lost its default; the step is a free card where it was drawn (to be connected again).
+    expect(JSON.stringify(detached.nodes.find((n) => n.id === 'b')?.data)).not.toContain('default');
+    const free = detached.nodes.find((n) => n.type === 'action' && n.id !== 'b' && n.id !== 'n');
+    expect(free?.data).toMatchObject({ service: 'alarm_control_panel.alarm_arm_home' });
+    expect(free?.position).toEqual(card.position);
+    expect(detached.edges.some((e) => e.source === free?.id || e.target === free?.id)).toBe(false);
+    expect(branchView(detached).cards.has(fallback)).toBe(false);
   });
 
   it('adds steps with a branch’s "+" and drops an emptied default', () => {
