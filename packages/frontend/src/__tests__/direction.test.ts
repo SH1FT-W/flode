@@ -88,6 +88,23 @@ describe('flows top to bottom (#29)', () => {
     expect(via?.at(-1)?.x).toBe(lane + NODE_WIDTH / 2);
   });
 
+  it('takes the lane into a first step along when the step is moved off its row (#31)', () => {
+    for (const direction of [undefined, 'down'] as const) {
+      const moved = { ...flow(direction), branchOffsets: { [first]: { x: 300, y: 300 } } };
+      const view = branchView(moved);
+      const card = view.graph.nodes.find((n) => n.id === first);
+      const into = view.graph.edges.find((e) => e.target === first);
+      const via = into ? view.via.get(into.id) : undefined;
+      expect(card).toBeDefined();
+      expect(via?.length).toBeGreaterThan(0);
+      // Every bend lies on the step's own row: no climb to where it was laid out.
+      const input = direction
+        ? (card?.position.x ?? 0) + NODE_WIDTH / 2
+        : (card?.position.y ?? 0) + NODE_HEIGHT / 2;
+      for (const point of via ?? []) expect(direction ? point.x : point.y).toBe(input);
+    }
+  });
+
   it('puts the input at the top and the outputs along the bottom, with room for their names', () => {
     const view = branchView(flow('down'));
     const block = view.graph.nodes.find((n) => n.id === 'b');

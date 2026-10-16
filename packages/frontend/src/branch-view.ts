@@ -307,6 +307,17 @@ function extended(axis: Axis, exit: Exit, main: number): Exit {
   return { ...exit, via: [...exit.via, end], end };
 }
 
+/**
+ * `exit` with its lane brought to the row `cross`: the first step of a branch
+ * moved off its row takes the lane into it along (#31) — left where the step
+ * was laid out, the line would climb to that row and back down to the step.
+ */
+function laneAt(axis: Axis, exit: Exit, cross: number): Exit {
+  if (exit.via.length === 0) return exit;
+  const via = exit.via.map((p) => axis.at(axis.main(p), cross));
+  return { ...exit, via, end: via[via.length - 1] ?? exit.end };
+}
+
 /** Collects the branch cards, their lines and positions while a block is laid out. */
 class BranchLayout {
   readonly nodes: FlowNode[] = [];
@@ -365,8 +376,9 @@ class BranchLayout {
         const size = nested ? cardSize(axis, blockBranches('', nested, []).length) : CARD_SIZE;
         this.card(card, raw, axis.at(main, middle - axis.breadth(size) / 2));
         this.cards.set(card, { blockId: this.blockId, parentId: id, branch, path, index: i });
-        for (const exit of from) this.line(exit, card);
         const position = this.position(card);
+        const into = axis.cross(position) + axis.breadth(size) / 2;
+        for (const exit of from) this.line(i === 0 ? laneAt(axis, exit, into) : exit, card);
         from = nested
           ? this.block(card, nested, path, position)
           : [
