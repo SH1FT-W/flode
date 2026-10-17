@@ -82,6 +82,7 @@ import {
   confirmUnsavedChanges,
   ensureAutomationEditors,
   errorMessage,
+  flowName,
   type FlowKind,
   getRegistryEntry,
   getRunLogbook,
@@ -1516,7 +1517,7 @@ export class FlodePanel extends LitElement {
       item,
       graph: {
         ...graph,
-        name: item.name,
+        name: flowName(config, item.name),
         description: typeof config.description === 'string' ? config.description : '',
       },
       isNew: false,

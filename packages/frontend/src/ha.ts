@@ -82,6 +82,15 @@ export interface AutomationListItem {
 
 type FlowRef = Pick<AutomationListItem, 'kind' | 'configId'>;
 
+/**
+ * The name a flow is edited and saved under: the config's own `alias`. The
+ * entity's name is only the fallback for a config without one; after a rename
+ * in the entity registry it differs, and saving must not write it over the alias.
+ */
+export function flowName(config: Record<string, unknown>, entityName: string): string {
+  return typeof config.alias === 'string' && config.alias.trim() !== '' ? config.alias : entityName;
+}
+
 /** The same automation/script — items are re-created on rename or save, so not by identity. */
 export function sameFlow(a: FlowRef | undefined, b: FlowRef | undefined): boolean {
   return a !== undefined && b !== undefined && a.kind === b.kind && a.configId === b.configId;

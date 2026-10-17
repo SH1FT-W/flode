@@ -4,6 +4,7 @@ import {
   applyRegistryUpdate,
   configFingerprint,
   ensureAutomationEditors,
+  flowName,
   type HomeAssistant,
   listScripts,
   newScriptId,
@@ -117,5 +118,15 @@ describe('ensureAutomationEditors', () => {
     expect(await ensureAutomationEditors(undefined)).toBe(false);
     defined = true;
     expect(await ensureAutomationEditors(undefined)).toBe(true);
+  });
+});
+
+describe('the name a flow is edited under', () => {
+  it('is the alias of the config, not the entity name (renamed in the registry)', () => {
+    expect(flowName({ alias: 'Licht an' }, 'Licht an (Registry)')).toBe('Licht an');
+  });
+  it('falls back to the entity name when the config has no alias', () => {
+    expect(flowName({}, 'Automation 7')).toBe('Automation 7');
+    expect(flowName({ alias: '' }, 'Automation 7')).toBe('Automation 7');
   });
 });
