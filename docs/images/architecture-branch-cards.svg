@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 250" width="720" height="250" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12">
+  <defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#555"/></marker></defs>
+  <!-- real cards -->
+  <rect x="20" y="95" width="120" height="50" rx="8" fill="#fff" stroke="#333" stroke-width="1.5"/>
+  <text x="80" y="116" text-anchor="middle" font-weight="600">Trigger</text><text x="80" y="133" text-anchor="middle" fill="#555">node t0</text>
+  <rect x="185" y="78" width="150" height="86" rx="8" fill="#fff" stroke="#333" stroke-width="1.5"/>
+  <text x="200" y="104" text-anchor="start" font-weight="600">Choose</text><text x="200" y="121" text-anchor="start" fill="#555">node a1</text><text x="200" y="137" text-anchor="start" fill="#555">(_raw)</text>
+  <text x="329" y="96" text-anchor="end" fill="#333" font-size="10">Option 1</text>
+  <text x="329" y="126" text-anchor="end" fill="#333" font-size="10">Option 2</text>
+  <text x="329" y="151" text-anchor="end" fill="#333" font-size="10">Default</text>
+  <rect x="580" y="95" width="120" height="50" rx="8" fill="#fff" stroke="#333" stroke-width="1.5"/>
+  <text x="640" y="116" text-anchor="middle" font-weight="600">Notify</text><text x="640" y="133" text-anchor="middle" fill="#555">node a2</text>
+  <!-- real edges -->
+  <path d="M140,120 L185,120" stroke="#333" stroke-width="1.8" marker-end="url(#ar2)"/>
+  <!-- branch cards -->
+  <g stroke-dasharray="4 3">
+    <rect x="380" y="20" width="120" height="44" rx="8" fill="#fbfbfb" stroke="#777"/>
+    <rect x="380" y="98" width="120" height="44" rx="8" fill="#fbfbfb" stroke="#777"/>
+  </g>
+  <text x="440" y="38" text-anchor="middle" font-weight="600" fill="#444">Light on</text><text x="440" y="54" text-anchor="middle" fill="#777" font-size="10">a1::choose.0.sequence.0</text>
+  <text x="440" y="116" text-anchor="middle" font-weight="600" fill="#444">Delay</text><text x="440" y="132" text-anchor="middle" fill="#777" font-size="10">a1::choose.1.sequence.0</text>
+  <!-- derived lines -->
+  <g stroke="#777" stroke-width="1.5" fill="none" stroke-dasharray="5 4">
+    <path d="M335,93 C358,93 358,42 380,42"/>
+    <path d="M335,123 C358,123 358,120 380,120"/>
+    <path d="M335,148 C370,148 430,200 520,200 C560,200 560,120 580,120"/>
+    <path d="M500,42 C540,42 540,120 580,120"/>
+    <path d="M500,120 L580,120"/>
+  </g>
+  <!-- legend -->
+  <rect x="20" y="205" width="22" height="14" rx="3" fill="#fff" stroke="#333" stroke-width="1.5"/><text x="50" y="216" fill="#333">flow card / stored connection</text>
+  <rect x="260" y="205" width="22" height="14" rx="3" fill="#fbfbfb" stroke="#777" stroke-dasharray="4 3"/><text x="290" y="216" fill="#333">branch card / derived line (not in the graph)</text>
+</svg>

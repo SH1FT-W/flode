@@ -10,7 +10,7 @@
   [![License](https://img.shields.io/badge/license-Apache%202.0-orange?style=flat-square)](https://github.com/SH1FT-W/flode/blob/main/LICENSE)
   [![HACS](https://img.shields.io/badge/HACS-default-41BDF5?style=flat-square)](https://hacs.xyz)
 
-  **[Website](https://sh1ft-w.github.io/flode)** &nbsp;·&nbsp; [Installation](#installation) &nbsp;·&nbsp; [Changelog](https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md) &nbsp;·&nbsp; [Issues](https://github.com/SH1FT-W/flode/issues)
+  **[Website](https://sh1ft-w.github.io/flode)** &nbsp;·&nbsp; [Installation](#installation) &nbsp;·&nbsp; [Changelog](https://github.com/SH1FT-W/flode/blob/main/CHANGELOG.md) &nbsp;·&nbsp; [How it works](https://github.com/SH1FT-W/flode/blob/main/docs/architecture.md) &nbsp;·&nbsp; [Issues](https://github.com/SH1FT-W/flode/issues)
 
   <br/>
 

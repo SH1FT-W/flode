@@ -21,7 +21,7 @@ Thank you for considering contributing to FLODE This document explains how to se
 - `packages/transpiler` — YAML parsing & transpilation
 - `custom_components/flode` — Home Assistant integration (Python)
 
-See the repository root and the `packages` folder for the full layout.
+See the repository root and the `packages` folder for the full layout. [`docs/architecture.md`](docs/architecture.md) explains how the pieces work together: the flow graph, flow cards versus branch cards, the parser, the transpiler and its two strategies, runs and "run from here", the editor, and how to run and release FLODE.
 
 ## Common Commands
 
