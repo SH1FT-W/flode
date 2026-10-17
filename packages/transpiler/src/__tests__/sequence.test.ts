@@ -86,3 +86,27 @@ describe('transpileSequence', () => {
     expect(transpileSequence(transpiler, withTemplate, ['wait']).usesTriggerData).toBe(true);
   });
 });
+
+describe('transpileSequence with scope "only"', () => {
+  it('runs just the chosen card, nothing after it', () => {
+    const result = transpileSequence(transpiler, flow, ['wait'], {}, 'only');
+    expect(result.success).toBe(true);
+    expect(result.sequence).toEqual([{ delay: '00:05:00' }]);
+  });
+
+  it('runs a condition card as a single condition step', () => {
+    const result = transpileSequence(transpiler, flow, ['cond'], {}, 'only');
+    expect(result.success).toBe(true);
+    expect(result.sequence).toEqual([
+      { condition: 'state', entity_id: 'sun.sun', state: 'below_horizon' },
+    ]);
+  });
+
+  it('runs the first step after a trigger when the trigger is chosen', () => {
+    const result = transpileSequence(transpiler, flow, ['trigger'], {}, 'only');
+    expect(result.success).toBe(true);
+    expect(result.sequence).toEqual([
+      { condition: 'state', entity_id: 'sun.sun', state: 'below_horizon' },
+    ]);
+  });
+});

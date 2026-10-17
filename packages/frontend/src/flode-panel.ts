@@ -20,6 +20,7 @@ import './flode-assist';
 import './flode-palette';
 import './flode-map';
 import './flode-templates';
+import type { SequenceScope } from '@flode/transpiler';
 import './flode-runfrom';
 import './flode-shortcuts';
 import './flode-ha-list';
@@ -351,6 +352,7 @@ export class FlodePanel extends LitElement {
     canvasMenu: { state: true },
     templatesOpen: { state: true },
     runFromId: { state: true },
+    runScope: { state: true },
     manualRuns: { state: true },
     yamlImportOpen: { state: true },
     mergeMode: { state: true },
@@ -409,6 +411,7 @@ export class FlodePanel extends LitElement {
   declare templatesOpen: boolean;
   /** The block "run from here" was chosen for (its confirmation is open). */
   declare runFromId: string | null;
+  declare runScope: SequenceScope;
   /** "Run from here" executions of this page view (newest first). */
   declare manualRuns: ManualRun[];
   declare yamlImportOpen: boolean;
@@ -468,6 +471,7 @@ export class FlodePanel extends LitElement {
     this.templatesOpen = false;
     this.templateVars = null;
     this.runFromId = null;
+    this.runScope = 'from';
     this.manualRuns = [];
     this.yamlImportOpen = false;
     this.mergeMode = false;
@@ -601,13 +605,14 @@ export class FlodePanel extends LitElement {
       sequence: unknown[];
       nodeIds: string[];
       label: string;
+      scope?: SequenceScope;
       variables?: Record<string, unknown>;
     }>
   ): Promise<void> {
     const hass = this.hass;
     const flow = this.flow;
     if (!hass || !flow) return;
-    const { sequence, nodeIds, label, variables } = event.detail;
+    const { sequence, nodeIds, label, scope, variables } = event.detail;
     const language = this.language;
     const run: ManualRun = {
       id: randomId(),
@@ -632,7 +637,9 @@ export class FlodePanel extends LitElement {
       });
       const contextId = result?.context?.id;
       this.updateManualRun(run.id, { status: 'done', ...(contextId ? { contextId } : {}) });
-      this.notify(t(language, 'runFromDone').replace('{name}', label));
+      this.notify(
+        t(language, scope === 'only' ? 'runOnlyDone' : 'runFromDone').replace('{name}', label)
+      );
       if (contextId) {
         for (const delay of LOGBOOK_POLL_MS) {
           await new Promise((resolve) => setTimeout(resolve, delay));
@@ -923,23 +930,32 @@ export class FlodePanel extends LitElement {
         label: t(language, 'disconnectCard'),
         run,
       });
+      // The card alone (its step is all it needs); a trigger has no step to run.
+      const runOnly: MenuItem = {
+        id: 'runOnly',
+        icon: 'mdi:play-outline',
+        label: t(language, 'runOnly'),
+        run: () => this.startRun(node.id, 'only'),
+      };
       if (branchCard) {
-        // A branch step's only connection is its place in the branch: out of it, as a card of its own (#35).
+        // A branch step runs on its own, but not "from here": it has no connections of the
+        // graph. Its only connection is its place in the branch: out of it, as a card of its own (#35).
         entries.push(
           'divider',
+          runOnly,
           disconnect(() => {
             this.commit(detachBranchStep(flow.graph, branchCard, node));
             this.selectedId = null;
           })
         );
       } else {
-        entries.push('divider', {
+        entries.push('divider');
+        if (node.type !== 'trigger') entries.push(runOnly);
+        entries.push({
           id: 'runFrom',
           icon: 'mdi:play-circle-outline',
           label: t(language, 'runFrom'),
-          run: () => {
-            this.runFromId = node.id;
-          },
+          run: () => this.startRun(node.id, 'from'),
         });
         if (flow.graph.edges.some((e) => e.source === node.id || e.target === node.id))
           entries.push(disconnect(() => this.commit(disconnectNode(flow.graph, node.id))));
@@ -1047,8 +1063,21 @@ export class FlodePanel extends LitElement {
   }
 
   private runFromLabel(): string {
-    const node = this.flow?.graph.nodes.find((n) => n.id === this.runFromId);
+    const node = this.runGraph()?.nodes.find((n) => n.id === this.runFromId);
     return node ? summarize(node, this.hass).title : '';
+  }
+
+  /** Opens the run dialog for `id`: the card and everything after it, or the card alone. */
+  private startRun(id: string, scope: SequenceScope): void {
+    this.runScope = scope;
+    this.runFromId = id;
+  }
+
+  /** The graph the run dialog works on: a branch card is a node of the drawn graph only. */
+  private runGraph(): FlowGraph | undefined {
+    const flow = this.flow;
+    if (!flow) return undefined;
+    return this.branchCard(this.runFromId) ? cachedBranchView(flow.graph).graph : flow.graph;
   }
 
   private openTemplates(variables: Record<string, unknown> | null): void {
@@ -1104,9 +1133,13 @@ export class FlodePanel extends LitElement {
           'mdi:toggle-switch-off-outline',
           () => this.toggleCard(selected)
         );
-        command('runFrom', t(language, 'runFrom'), 'mdi:play-circle-outline', () => {
-          this.runFromId = selected.id;
-        });
+        if (selected.type !== 'trigger')
+          command('runOnly', t(language, 'runOnly'), 'mdi:play-outline', () =>
+            this.startRun(selected.id, 'only')
+          );
+        command('runFrom', t(language, 'runFrom'), 'mdi:play-circle-outline', () =>
+          this.startRun(selected.id, 'from')
+        );
       }
       command(
         'rename',
@@ -3184,9 +3217,8 @@ export class FlodePanel extends LitElement {
                   e.detail.step,
                   cardEditKey(e.detail.step?.id ?? e.detail.data[0]?.id ?? '')
                 )}
-            @run-from=${(e: CustomEvent<{ id: string }>) => {
-              this.runFromId = e.detail.id;
-            }}
+            @run-from=${(e: CustomEvent<{ id: string; scope?: SequenceScope }>) =>
+              this.startRun(e.detail.id, e.detail.scope ?? 'from')}
               @delete=${this.onDelete}
             ></flode-inspector>`
           }
@@ -3345,8 +3377,9 @@ export class FlodePanel extends LitElement {
       ></flode-yaml-import>
       <flode-runfrom
         .hass=${this.hass}
-        .graph=${this.flow?.graph}
+        .graph=${this.runGraph()}
         .nodeId=${this.runFromId}
+        .scope=${this.runScope}
         .item=${this.flow?.isNew ? undefined : this.flow?.item}
         .label=${this.runFromLabel()}
         @closed=${() => {

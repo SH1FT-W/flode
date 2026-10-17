@@ -2,7 +2,7 @@
 
 How FLODE reads, draws, edits, writes and runs Home Assistant automations.
 
-This document describes the inner workings of FLODE as of release 26.10.14 (October 2026). It is written for people who want to understand, question or contribute to FLODE: what the flow on the canvas really is, which parts of it are stored, how it becomes Home Assistant YAML and back, and what happens when a run is shown or started from the editor.
+This document describes the inner workings of FLODE as of release 26.10.15 (October 2026). It is written for people who want to understand, question or contribute to FLODE: what the flow on the canvas really is, which parts of it are stored, how it becomes Home Assistant YAML and back, and what happens when a run is shown or started from the editor.
 
 It is not a user manual. The README and the website cover what FLODE does; this document covers how.
 
@@ -252,11 +252,12 @@ Every edit of a branch card is an edit of the block card's step. `branch-view.ts
 | Add a step via the "+" at the end of a branch | `insertBranchStep` at that index |
 | Drag a connection from a branch output or branch card onto a free flow card | `adoptIntoBranch`: the card moves into the branch and stops being a flow card. A plain chain after it (cards that each have exactly one predecessor and one successor) comes along; a card something else leads to, or a chain that forks, stays |
 | Drag the card | `moveBranchCard`: an offset relative to its computed place, in `branchOffsets` |
+| "Run this card" | the step alone runs in Home Assistant through `execute_script` (7.3); the block's step is not changed |
 
 And what does not work, with the reason:
 
 - **Selecting the line into or between branch steps.** There is no edge to select, so there is nothing to delete or rewire. Since 26.10.11 these lines show no pointer cursor and open no menu. The real connections around a block are the one into the block card and the ones from the block's end to what follows; those are selectable even where they are drawn from a branch's last card, because the drawn line remembers the stored edge it stands for (4.7).
-- **"Run from here" on a branch step.** Run from here walks `graph.edges` from a node (section 7.3). A branch step is not a node, so there is no start point. Running from the block card runs the whole block, which is what Home Assistant would do too. (Running a single branch step on its own would not need edges: its step is reachable through the card's path on the block. That is not offered today; see 7.3.)
+- **"Run from here" on a branch step.** Run from here walks `graph.edges` from a node (section 7.3). A branch step is not a node, so there is no start point. Running from the block card runs the whole block, which is what Home Assistant would do too. "Run this card" does work on a branch step: it needs no edges, the step is taken from the drawn graph (7.3).
 - **Connecting a branch card to something else.** Its successors are fixed by the branch: the next step in the list, or the end of the block. To take a step out of the branch there is "Disconnect".
 - **Steps inside `repeat`, `parallel` and `sequence` blocks** are not drawn at all. Those blocks are a single card, and their inside is edited only in HA's nested editor.
 
@@ -506,7 +507,7 @@ Shapes the resolver does not follow (the inside of a `repeat`, a `parallel` fan-
 4. On confirmation the panel calls the websocket command `execute_script` with the sequence, the same command Home Assistant's editor uses for "Run action". The call returns when the sequence has finished, delays included.
 5. Home Assistant keeps no trace for `execute_script`, so FLODE lists these runs itself under Runs (`manual-runs.ts`): status, the cards that ran (marked on the canvas), and the logbook entries that carry the run's context id, polled a few times because the logbook is written with a short delay.
 
-Why there is no "Run from here" on a branch step was covered in 4.4: the sub-graph is cut along edges, and a branch step has none. A "run only this card" (what CAFE offered on an action node) would be a one-step sequence through the same machinery, and it would work for branch cards as well, because a branch card's step is available through its path on the block (`BranchCardRef.path`) without any edge. It is not offered today.
+**Run this card** (since 26.10.15) is the same machinery with the scope `only`: `buildSequenceFlow` keeps just the chosen card behind the synthetic trigger, so the sequence is that one step (a condition card becomes a single condition step; a trigger has no step and gets no entry). It is offered in the same three places. On a branch card it works too, where "Run from here" cannot: the panel hands the dialog the drawn graph (4.7), in which the branch card is a node with its step, and the scope `only` needs no edges. The run is listed under Runs like any manual run, with only that card marked.
 
 ## 8. The editor
 

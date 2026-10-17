@@ -31,11 +31,22 @@ function reachableFrom(flow: FlowGraph, startIds: readonly string[]): Set<string
 }
 
 /**
+ * What a run started by hand covers: the start cards and everything after
+ * them ("run from here"), or the start cards alone ("run this card").
+ */
+export type SequenceScope = 'from' | 'only';
+
+/**
  * The part of `flow` that runs from `startNodeIds` on, entered by a single
  * synthetic trigger instead of the flow's own triggers. A trigger among the
- * start nodes stands for "everything after this trigger".
+ * start nodes stands for "everything after this trigger". With scope `only`
+ * it is just the start cards themselves, each as a step of its own.
  */
-export function buildSequenceFlow(flow: FlowGraph, startNodeIds: readonly string[]): FlowGraph {
+export function buildSequenceFlow(
+  flow: FlowGraph,
+  startNodeIds: readonly string[],
+  scope: SequenceScope = 'from'
+): FlowGraph {
   const byId = new Map(flow.nodes.map((node) => [node.id, node]));
   const entryTargets = [
     ...new Set(
@@ -46,13 +57,14 @@ export function buildSequenceFlow(flow: FlowGraph, startNodeIds: readonly string
       )
     ),
   ];
-  const keep = reachableFrom(flow, entryTargets);
+  const keep = scope === 'only' ? new Set(entryTargets) : reachableFrom(flow, entryTargets);
   const nodes: FlowNode[] = flow.nodes.filter(
     (node) => keep.has(node.id) && node.type !== 'trigger'
   );
-  const edges: FlowEdge[] = flow.edges.filter(
-    (edge) => keep.has(edge.source) && keep.has(edge.target)
-  );
+  const edges: FlowEdge[] =
+    scope === 'only'
+      ? []
+      : flow.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
   const entry: FlowNode = {
     id: SEQUENCE_ENTRY_ID,
     type: 'trigger',
@@ -90,9 +102,10 @@ export function transpileSequence(
   transpiler: FlowTranspiler,
   flow: FlowGraph,
   startNodeIds: readonly string[],
-  options: YamlOptions = {}
+  options: YamlOptions = {},
+  scope: SequenceScope = 'from'
 ): SequenceResult {
-  const result = transpiler.transpile(buildSequenceFlow(flow, startNodeIds), options);
+  const result = transpiler.transpile(buildSequenceFlow(flow, startNodeIds, scope), options);
   const automation = result.output?.automation;
   if (!result.success || !automation) {
     return {

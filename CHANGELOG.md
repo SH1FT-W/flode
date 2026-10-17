@@ -6,6 +6,15 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.10.15] — 2026-10-17 — Run this card
+
+Suggested by Bart ([#35](https://github.com/SH1FT-W/flode/issues/35)).
+
+### Added
+- **"Run this card"** next to "Run from here" in the card menu, in ⌘K and in the editor: runs one step for real in Home Assistant (through HA's `execute_script`, like "Run from here"), without everything after it. A condition card runs as a single condition step. Works for steps inside an If-then or Choose branch too, where "Run from here" is not possible because a branch step has no connections of its own. Triggers have no step to run and get no entry. The run is listed under "Runs" like a "Run from here" run, with only that card marked.
+
+---
+
 ## [26.10.14] — 2026-10-17 — Cards keep their place
 
 ### Fixed

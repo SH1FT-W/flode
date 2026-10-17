@@ -24,6 +24,7 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
+  { icon: 'mdi:play-outline', title: 'new261015RunOnlyTitle', text: 'new261015RunOnlyText' },
   {
     icon: 'mdi:map-marker-check-outline',
     title: 'new261014PlacesTitle',

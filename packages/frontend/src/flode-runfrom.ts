@@ -1,4 +1,5 @@
 import { type FlowGraph, isPlainObject } from '@flode/shared';
+import type { SequenceScope } from '@flode/transpiler';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { defineElement } from './define-element';
 import { type AutomationListItem, errorMessage, getLatestTrace, type HomeAssistant } from './ha';
@@ -40,15 +41,18 @@ async function lastTrigger(
 }
 
 /**
- * "Run from here": runs the chosen block and everything after it for real
- * in Home Assistant — after this confirmation — with HA's own
- * `execute_script` (what HA's editor uses for "Run action").
+ * "Run from here" / "Run this card": runs the chosen card and everything
+ * after it, or the card alone, for real in Home Assistant — after this
+ * confirmation — with HA's own `execute_script` (what HA's editor uses for
+ * "Run action").
  */
 export class FlodeRunFrom extends LitElement {
   static properties = {
     hass: { attribute: false },
     graph: { attribute: false },
     nodeId: { attribute: false },
+    /** Everything after the card too (`from`), or the card alone (`only`). */
+    scope: { attribute: false },
     /** The saved automation (its last run lends `trigger`); unset for a new flow. */
     item: { attribute: false },
     label: { attribute: false },
@@ -58,6 +62,7 @@ export class FlodeRunFrom extends LitElement {
   declare hass: HomeAssistant | undefined;
   declare graph: FlowGraph | undefined;
   declare nodeId: string | null;
+  declare scope: SequenceScope;
   declare item: AutomationListItem | undefined;
   declare label: string;
   declare prepared: Prepared | null;
@@ -65,6 +70,7 @@ export class FlodeRunFrom extends LitElement {
   constructor() {
     super();
     this.nodeId = null;
+    this.scope = 'from';
     this.label = '';
     this.prepared = null;
   }
@@ -74,7 +80,7 @@ export class FlodeRunFrom extends LitElement {
   }
 
   protected willUpdate(changed: PropertyValues<this>): void {
-    if (changed.has('nodeId')) {
+    if (changed.has('nodeId') || changed.has('scope')) {
       this.prepared = null;
       if (this.nodeId) void this.prepare(this.nodeId);
     }
@@ -87,13 +93,14 @@ export class FlodeRunFrom extends LitElement {
       const { transpiler, transpileSequence, buildSequenceFlow, SEQUENCE_ENTRY_ID } = await import(
         '@flode/transpiler'
       );
-      const result = transpileSequence(transpiler, graph, [nodeId]);
+      const scope = this.scope;
+      const result = transpileSequence(transpiler, graph, [nodeId], {}, scope);
       const borrowed =
         result.success && result.usesTriggerData && this.hass
           ? await lastTrigger(this.hass, this.item)
           : null;
       if (this.nodeId !== nodeId) return;
-      const nodeIds = buildSequenceFlow(graph, [nodeId])
+      const nodeIds = buildSequenceFlow(graph, [nodeId], scope)
         .nodes.map((node) => node.id)
         .filter((id) => id !== SEQUENCE_ENTRY_ID);
       this.prepared = result.success
@@ -124,6 +131,7 @@ export class FlodeRunFrom extends LitElement {
           sequence: prepared.sequence,
           nodeIds: prepared.nodeIds ?? [],
           label: this.label,
+          scope: this.scope,
           variables: prepared.variables,
         },
       })
@@ -147,13 +155,14 @@ export class FlodeRunFrom extends LitElement {
     const language = this.language;
     const prepared = this.prepared;
     const steps = prepared?.sequence?.length ?? 0;
+    const only = this.scope === 'only';
     return html`<ha-dialog
       .open=${this.nodeId !== null}
-      .headerTitle=${t(language, 'runFromTitle')}
+      .headerTitle=${t(language, only ? 'runOnlyTitle' : 'runFromTitle')}
       @closed=${() => this.close()}
     >
       <div class="body">
-        <p>${t(language, 'runFromIntro').replace('{name}', this.label)}</p>
+        <p>${t(language, only ? 'runOnlyIntro' : 'runFromIntro').replace('{name}', this.label)}</p>
         ${
           prepared === null
             ? html`<p class="muted running"><ha-spinner size="tiny"></ha-spinner>${t(language, 'runFromPreparing')}</p>`

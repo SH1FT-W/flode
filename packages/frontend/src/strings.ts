@@ -119,6 +119,11 @@ const STRINGS = {
     runFromStarted: '„{name}“ läuft …',
     runFromDone: '„{name}“ und die folgenden Schritte sind durchgelaufen',
     runFromFailed: 'Ausführen fehlgeschlagen:',
+    runOnly: 'Nur diese Karte ausführen',
+    runOnlyTitle: 'Nur diese Karte ausführen',
+    runOnlyIntro:
+      'Führt nur „{name}“ jetzt echt in Home Assistant aus – Geräte werden wirklich geschaltet. Eine Bedingung wird mit den aktuellen Zuständen geprüft.',
+    runOnlyDone: '„{name}“ ist durchgelaufen',
     tplTitle: 'Template-Werkstatt',
     tplIntro:
       'Home Assistant rendert das Template live – mit Ergebnis-Typ und allem, worauf es reagiert.',
@@ -343,6 +348,9 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
+    new261015RunOnlyTitle: 'Nur diese Karte ausführen',
+    new261015RunOnlyText:
+      'Im Kartenmenü, in ⌘K und im Editor gibt es neben „Ab hier ausführen“ jetzt „Nur diese Karte ausführen“: ein einzelner Schritt läuft echt in Home Assistant, ohne alles danach. Geht auch für Schritte in einem Wenn-dann- oder Auswählen-Zweig.',
     new261014PlacesTitle: 'Karten behalten ihren Platz',
     new261014PlacesText:
       'Eine gezeichnete Bedingung mit Ja- und Nein-Pfad wird beim Speichern zu einem Wenn-dann-Block. Beim nächsten Öffnen steht der Block jetzt an der Stelle der Bedingung, und die Karten danach bleiben, wo sie waren. Bisher rutschten sie auf den Platz eines Nachbarn.',
@@ -461,6 +469,11 @@ const STRINGS = {
     runFromStarted: '“{name}” is running …',
     runFromDone: '“{name}” and the following steps have finished',
     runFromFailed: 'Running failed:',
+    runOnly: 'Run this card',
+    runOnlyTitle: 'Run this card',
+    runOnlyIntro:
+      'Runs only “{name}” for real in Home Assistant now – devices really switch. A condition is checked against the current states.',
+    runOnlyDone: '“{name}” has finished',
     tplTitle: 'Template workshop',
     tplIntro:
       'Home Assistant renders the template live – with the result type and everything it reacts to.',
@@ -683,6 +696,9 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
+    new261015RunOnlyTitle: 'Run this card',
+    new261015RunOnlyText:
+      'Next to "Run from here" the card menu, ⌘K and the editor now offer "Run this card": one step runs for real in Home Assistant, without everything after it. Works for steps inside an If-then or Choose branch too.',
     new261014PlacesTitle: 'Cards keep their place',
     new261014PlacesText:
       "A drawn condition with a Yes and a No path becomes an If-then block when saved. On the next open the block now sits where the condition was, and the cards after it stay where they were. Before, they slid onto a neighbour's spot.",

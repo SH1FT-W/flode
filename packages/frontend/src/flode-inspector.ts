@@ -412,12 +412,23 @@ export class FlodeInspector extends LitElement {
             : nothing
         }
         ${
+          // The card alone — a trigger (a script's start too) has no step to run.
+          node.type === 'trigger'
+            ? nothing
+            : html`<ha-icon-button
+                .label=${t(language, 'runOnly')}
+                @click=${() => this.emit('run-from', { id: node.id, scope: 'only' })}
+              >
+                <ha-icon icon="mdi:play-outline"></ha-icon>
+              </ha-icon-button>`
+        }
+        ${
           // Run from here starts at a card of the flow, not inside a block.
           isScriptStart(node.data) || this.context
             ? nothing
             : html`<ha-icon-button
                 .label=${t(language, 'runFrom')}
-                @click=${() => this.emit('run-from', { id: node.id })}
+                @click=${() => this.emit('run-from', { id: node.id, scope: 'from' })}
               >
                 <ha-icon icon="mdi:play-circle-outline"></ha-icon>
               </ha-icon-button>`

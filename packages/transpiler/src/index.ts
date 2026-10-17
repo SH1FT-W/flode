@@ -15,7 +15,7 @@ export type { AutomationSaveResult, FlowNaming } from './save-config';
 export { buildAutomationSaveConfig } from './save-config';
 export type { ScriptTranspileResult } from './script';
 export { parseFlowYaml, parseScript, transpileScript } from './script';
-export type { SequenceResult } from './sequence';
+export type { SequenceResult, SequenceScope } from './sequence';
 export { buildSequenceFlow, SEQUENCE_ENTRY_ID, transpileSequence } from './sequence';
 export type { HAYamlOutput, TranspilerStrategy } from './strategies/base';
 // Strategies
