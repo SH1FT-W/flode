@@ -2,7 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';
+import { normalizeHaConfig } from '../ha-equal';
 import { YamlParser } from '../parser/YamlParser';
+import { loadHaYaml } from '../yaml';
+
+/** The action list a config holds, in the form two configs are compared in (ha-equal). */
+const actionsOf = (config: unknown) => normalizeHaConfig(config).actions;
 
 const FIXTURES_DIR = join(__dirname, '../../../../__tests__/yaml-automation-fixtures');
 
@@ -17,11 +22,47 @@ describe('OR condition roundtrip', () => {
     const result = transpiler.transpile(parsed.graph!);
     expect(result.success).toBe(true);
 
-    expect(result.yaml).toContain('condition: or');
-    expect(result.yaml).toContain('condition: and');
-    expect(result.yaml).toContain('condition: not');
-    // else block must be present with content
-    expect(result.yaml).toContain('input_boolean.turn_off');
+    // or with nested and/not, then and else as in the fixture; a one-item `id` list is
+    // written as the string HA reads it as (Internals 6.6)
+    const forThirtySeconds = { hours: 0, minutes: 0, seconds: 30 };
+    const supposedState = { entity_id: 'input_boolean.tv_light_supposed_state' };
+    expect(actionsOf(result.output?.automation)).toEqual([
+      {
+        if: [
+          {
+            condition: 'or',
+            conditions: [
+              {
+                condition: 'and',
+                conditions: [
+                  { condition: 'trigger', id: 'Occupancy detected' },
+                  { condition: 'numeric_state', entity_id: 'sensor.xxx_light_level', below: 60 },
+                ],
+              },
+              {
+                condition: 'and',
+                conditions: [
+                  { condition: 'trigger', id: 'Illuminance below' },
+                  {
+                    condition: 'not',
+                    conditions: [
+                      {
+                        condition: 'state',
+                        entity_id: 'xxx_presence_sensor',
+                        state: ['off'],
+                        for: forThirtySeconds,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        then: [{ action: 'input_boolean.turn_on', target: supposedState }],
+        else: [{ action: 'input_boolean.turn_off', target: supposedState }],
+      },
+    ]);
   });
 
   it('or condition with else block: else must NOT be lost on roundtrip', async () => {
@@ -59,14 +100,8 @@ mode: single
     const result = transpiler.transpile(parsed.graph!);
     expect(result.success).toBe(true);
 
-    console.log('=== OR with else roundtrip ===');
-    console.log(result.yaml);
-
-    // The or condition must remain in an if: block (NOT promoted to root conditions)
-    // because there is an else block
-    expect(result.yaml).toContain('condition: or');
-    expect(result.yaml).toContain('light.turn_on');
-    expect(result.yaml).toContain('light.turn_off'); // else must not be lost!
+    // The or stays in an if block (not promoted to root conditions) with then and else as they were
+    expect(actionsOf(result.output?.automation)).toEqual(actionsOf(loadHaYaml(yaml)));
   });
 
   it('parallel OR graph pattern roundtrip: then re-import gives same functional result', async () => {
@@ -109,10 +144,20 @@ mode: single
     const result2 = transpiler.transpile(parsed2.graph!);
     expect(result2.success).toBe(true);
 
-    // The key check: or condition and both sub-conditions must survive 2 roundtrips
-    expect(result2.yaml).toContain('condition: or');
-    expect(result2.yaml).toContain('light.living_room');
-    expect(result2.yaml).toContain('light.bedroom');
-    expect(result2.yaml).toContain('light.all');
+    // Without an else, the exploded or is promoted to the root conditions (the same run
+    // for HA); both sub-conditions and the then survive two round trips
+    const written = normalizeHaConfig(result2.output?.automation);
+    expect({ conditions: written.conditions, actions: written.actions }).toEqual({
+      conditions: [
+        {
+          condition: 'or',
+          conditions: [
+            { condition: 'state', entity_id: 'light.living_room', state: 'off' },
+            { condition: 'state', entity_id: 'light.bedroom', state: 'off' },
+          ],
+        },
+      ],
+      actions: [{ action: 'light.turn_on', target: { entity_id: 'light.all' } }],
+    });
   });
 });

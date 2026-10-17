@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';
+import { normalizeHaConfig } from '../ha-equal';
+import { loadHaYaml } from '../yaml';
+
+/** The action list a config holds, in the form two configs are compared in (ha-equal). */
+const actionsOf = (config: unknown) => normalizeHaConfig(config).actions;
 
 describe('If/Then/Else Parsing', () => {
   it('should correctly parse and transpile if/then/else with multiple conditions', async () => {
@@ -57,29 +62,8 @@ mode: single
     expect(transpileResult.yaml).not.toContain('enablea');
     expect(transpileResult.yaml).not.toContain('TaLse');
 
-    // Should contain proper if/then/else structure
-    expect(transpileResult.yaml).toContain('if:');
-    expect(transpileResult.yaml).toContain('then:');
-    expect(transpileResult.yaml).toContain('else:');
-
-    console.log('Output YAML:');
-    console.log(transpileResult.yaml);
-
-    // Both conditions should appear in the output (but not duplicated)
-    const switch3Matches = (
-      transpileResult.yaml!.match(/switch\.dingtian_relay9277_switch3/g) || []
-    ).length;
-    const switch7Matches = (
-      transpileResult.yaml!.match(/switch\.dingtian_relay9277_switch7/g) || []
-    ).length;
-
-    console.log('switch3 matches:', switch3Matches);
-    console.log('switch7 matches:', switch7Matches);
-
-    // switch3 should appear twice: once in condition, once in else action target
-    expect(switch3Matches).toBe(2);
-    // switch7 should appear 3 times: once in condition, once in then action target, once in else action target
-    expect(switch7Matches).toBe(3);
+    // The same if/then/else, with both conditions once and the branches as they were
+    expect(actionsOf(transpileResult.output?.automation)).toEqual(actionsOf(loadHaYaml(inputYaml)));
   });
 
   it('should not duplicate actions that come after an if/then/else block (issue #164)', async () => {
@@ -123,20 +107,8 @@ mode: single
     const transpileResult = transpiler.transpile(parseResult.graph!);
     expect(transpileResult.success).toBe(true);
 
-    const yaml = transpileResult.yaml!;
-
-    // switch.toggle should appear exactly twice (once per action), not duplicated into branches
-    const toggleMatches = (yaml.match(/switch\.toggle/g) || []).length;
-    expect(toggleMatches).toBe(2);
-
-    // switch.tv should appear exactly twice: once in condition entity_id, once in toggle target
-    const tvMatches = (yaml.match(/switch\.tv\b/g) || []).length;
-    expect(tvMatches).toBe(2);
-
-    // The if/then/else block should appear (condition not promoted since it has an else branch)
-    expect(yaml).toContain('if:');
-    expect(yaml).toContain('then:');
-    expect(yaml).toContain('else:');
+    // The if/then/else (not promoted: it has an else) and the two steps after it, once each
+    expect(actionsOf(transpileResult.output?.automation)).toEqual(actionsOf(loadHaYaml(inputYaml)));
   });
 
   it('should not duplicate actions after nested if/then/else inside outer then block (issue #164 full case)', async () => {

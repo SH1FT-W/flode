@@ -63,17 +63,36 @@ mode: single
       expect(backEdge.target).toBe(conditionNodes[0].id);
     });
 
-    it('should transpile repeat.while back to valid YAML with repeat block', async () => {
+    it('writes repeat.while back as the same repeat block', async () => {
       const result = await parser.parse(yaml);
       expect(result.success).toBe(true);
 
-      const outputYaml = transpiler.toYaml(result.graph!);
-      expect(outputYaml).toContain('repeat');
-      expect(outputYaml).toContain('while');
-      expect(outputYaml).toContain('sequence');
-      expect(outputYaml).toContain('light.turn_on');
-      // Should NOT contain 'service: undefined'
-      expect(outputYaml).not.toContain('service: undefined');
+      expect(transpiler.transpile(result.graph!).output?.automation?.actions).toEqual([
+        {
+          repeat: {
+            while: [
+              {
+                condition: 'state',
+                entity_id: 'binary_sensor.motion',
+                state: 'on',
+              },
+            ],
+            sequence: [
+              {
+                action: 'light.turn_on',
+                target: {
+                  entity_id: 'light.living_room',
+                },
+              },
+              {
+                delay: {
+                  seconds: 5,
+                },
+              },
+            ],
+          },
+        },
+      ]);
     });
   });
 
@@ -120,16 +139,36 @@ mode: single
       expect(backEdgeIds.size).toBe(1);
     });
 
-    it('should transpile repeat.until back to valid YAML with repeat block', async () => {
+    it('writes repeat.until back as the same repeat block', async () => {
       const result = await parser.parse(yaml);
       expect(result.success).toBe(true);
 
-      const outputYaml = transpiler.toYaml(result.graph!);
-      expect(outputYaml).toContain('repeat');
-      expect(outputYaml).toContain('until');
-      expect(outputYaml).toContain('sequence');
-      expect(outputYaml).toContain('notify.mobile_app');
-      expect(outputYaml).not.toContain('service: undefined');
+      expect(transpiler.transpile(result.graph!).output?.automation?.actions).toEqual([
+        {
+          repeat: {
+            until: [
+              {
+                condition: 'state',
+                entity_id: 'binary_sensor.door',
+                state: 'off',
+              },
+            ],
+            sequence: [
+              {
+                action: 'notify.mobile_app',
+                data: {
+                  message: 'Door is still open!',
+                },
+              },
+              {
+                delay: {
+                  minutes: 1,
+                },
+              },
+            ],
+          },
+        },
+      ]);
     });
   });
 
@@ -185,18 +224,30 @@ mode: single
       expect(backEdge.source).toBe(conditionNodes[0].id);
     });
 
-    it('should transpile repeat.count back to valid YAML with repeat block', async () => {
+    it('writes repeat.count back as the same repeat block, without the internal counter', async () => {
       const result = await parser.parse(yaml);
       expect(result.success).toBe(true);
 
-      const outputYaml = transpiler.toYaml(result.graph!);
-      expect(outputYaml).toContain('repeat');
-      expect(outputYaml).toContain('count: 3');
-      expect(outputYaml).toContain('sequence');
-      expect(outputYaml).toContain('light.toggle');
-      expect(outputYaml).not.toContain('service: undefined');
-      // Should NOT contain the internal counter variable
-      expect(outputYaml).not.toContain('_repeat_counter_');
+      expect(transpiler.transpile(result.graph!).output?.automation?.actions).toEqual([
+        {
+          repeat: {
+            count: 3,
+            sequence: [
+              {
+                action: 'light.toggle',
+                target: {
+                  entity_id: 'light.living_room',
+                },
+              },
+              {
+                delay: {
+                  seconds: 1,
+                },
+              },
+            ],
+          },
+        },
+      ]);
     });
   });
 
@@ -247,14 +298,55 @@ mode: single
       expect(backEdgeIds.size).toBe(1);
     });
 
-    it('should roundtrip nested repeat', async () => {
+    it('writes the repeat nested in then back as it was', async () => {
       const result = await parser.parse(yaml);
       expect(result.success).toBe(true);
 
-      const outputYaml = transpiler.toYaml(result.graph!);
-      expect(outputYaml).toContain('repeat');
-      expect(outputYaml).toContain('while');
-      expect(outputYaml).not.toContain('service: undefined');
+      expect(transpiler.transpile(result.graph!).output?.automation?.actions).toEqual([
+        {
+          if: [
+            {
+              condition: 'state',
+              entity_id: 'binary_sensor.workday',
+              state: 'on',
+            },
+          ],
+          then: [
+            {
+              repeat: {
+                while: [
+                  {
+                    condition: 'state',
+                    entity_id: 'input_boolean.reminder_needed',
+                    state: 'on',
+                  },
+                ],
+                sequence: [
+                  {
+                    action: 'notify.mobile_app',
+                    data: {
+                      message: 'Time to get ready!',
+                    },
+                  },
+                  {
+                    delay: {
+                      minutes: 5,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+          else: [
+            {
+              action: 'notify.mobile_app',
+              data: {
+                message: 'Enjoy your day off!',
+              },
+            },
+          ],
+        },
+      ]);
     });
   });
 
@@ -285,16 +377,44 @@ actions:
 mode: single
 `;
 
-    it('should parse and transpile repeat with multiple actions', async () => {
+    it('writes a repeat with several steps back as it was', async () => {
       const result = await parser.parse(yaml);
       expect(result.success).toBe(true);
 
-      const outputYaml = transpiler.toYaml(result.graph!);
-      expect(outputYaml).toContain('repeat');
-      expect(outputYaml).toContain('count: 5');
-      expect(outputYaml).toContain('light.turn_on');
-      expect(outputYaml).toContain('light.turn_off');
-      expect(outputYaml).not.toContain('service: undefined');
+      expect(transpiler.transpile(result.graph!).output?.automation?.actions).toEqual([
+        {
+          repeat: {
+            count: 5,
+            sequence: [
+              {
+                action: 'light.turn_on',
+                target: {
+                  entity_id: 'light.kitchen',
+                },
+                data: {
+                  brightness: 255,
+                },
+              },
+              {
+                delay: {
+                  seconds: 2,
+                },
+              },
+              {
+                action: 'light.turn_off',
+                target: {
+                  entity_id: 'light.kitchen',
+                },
+              },
+              {
+                delay: {
+                  seconds: 2,
+                },
+              },
+            ],
+          },
+        },
+      ]);
     });
   });
 
