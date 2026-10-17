@@ -390,41 +390,6 @@ export const HAActionSchema: z.ZodType<HAAction> = z.lazy(() =>
 );
 
 /**
- * Zod schema for a full Home Assistant automation.
- */
-export const HAAutomationSchema = z.object({
-  id: z.string().optional(),
-  alias: z.string().optional(),
-  description: z.string().optional(),
-  trigger_variables: z.record(z.string(), z.unknown()).optional(),
-  trigger: z.union([HATriggerSchema, z.array(HATriggerSchema)]).optional(),
-  condition: z.union([HAConditionSchema, z.array(HAConditionSchema)]).optional(),
-  action: z.union([HAActionSchema, z.array(HAActionSchema)]),
-  mode: z.enum(['single', 'restart', 'queued', 'parallel']).optional().default('single'),
-  max: z.number().optional(),
-  max_exceeded: MaxExceededSchema.optional(),
-  initial_state: z.boolean().optional(),
-  hide_entity: z.boolean().optional(),
-  trace: z.record(z.string(), z.unknown()).optional(),
-  variables: z
-    .object({
-      _flode_metadata: CafeMetadataSchema.optional(),
-    })
-    .catchall(z.unknown())
-    .optional(),
-});
-export type HAAutomation = z.infer<typeof HAAutomationSchema>;
-
-/**
- * Zod schema for a Home Assistant script.
- */
-export const HAScriptSchema = HAAutomationSchema.omit({ action: true }).extend({
-  action: z.union([HAActionSchema, z.array(HAActionSchema)]).optional(),
-  sequence: z.union([HAActionSchema, z.array(HAActionSchema)]),
-});
-export type HAScript = z.infer<typeof HAScriptSchema>;
-
-/**
  * Zod schema for Home Assistant delay action.
  */
 export const HADelaySchema = z.looseObject({
