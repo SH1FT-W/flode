@@ -130,6 +130,7 @@ export type FlowGraph = z.infer<typeof FlowGraphSchema>;
 
 /**
  * Validate graph structure beyond schema validation
+ * - Node ids and edge ids are unique
  * - All edge sources/targets must reference existing nodes
  * - Trigger nodes should have no incoming edges
  * - Graph must have at least one trigger node
@@ -141,6 +142,15 @@ export function validateGraphStructure(graph: FlowGraph): { valid: boolean; erro
   // Check for duplicate node IDs
   if (nodeIds.size !== graph.nodes.length) {
     errors.push('Duplicate node IDs detected');
+  }
+
+  // Check for duplicate edge IDs. The same connection drawn twice (equal
+  // source, target and handle under different ids) is allowed: the transpiler
+  // reads it as one branch.
+  const edgeIds = new Set<string>();
+  for (const edge of graph.edges) {
+    if (edgeIds.has(edge.id)) errors.push(`Duplicate edge ID detected: ${edge.id}`);
+    edgeIds.add(edge.id);
   }
 
   // Check that all edge references are valid

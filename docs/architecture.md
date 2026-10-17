@@ -141,7 +141,7 @@ An edge is a directed connection between two node ids:
 FlowEdge { id, source, target, sourceHandle?, targetHandle?, label?, type? }
 ```
 
-`sourceHandle` matters on condition nodes only: `'true'` is the Yes output, `'false'` the No output. All other nodes have one unnamed output. Triggers have no input; the structure validator (5.5) rejects an edge into a trigger and an edge whose endpoints do not exist. The same connection drawn twice is not rejected: the transpiler reads it as one branch.
+`sourceHandle` matters on condition nodes only: `'true'` is the Yes output, `'false'` the No output. All other nodes have one unnamed output. Triggers have no input; the structure validator (5.5) rejects an edge into a trigger, a duplicate edge id and an edge whose endpoints do not exist. The same connection drawn twice (two ids, equal endpoints) is not rejected: the transpiler reads it as one branch. The parser hands out edge ids from source, target, handle and the time, with a counter when one is taken already (`generateEdgeId`), and makes the ids of a parsed graph unique once more before it validates (`withUniqueEdgeIds`); the editor gives new cards their id the same way (`newNodeId`).
 
 A connection that leads back to an earlier card (a loop) is an ordinary edge with no special type; the transpiler recognises it by its place in the graph (a "back edge", 6.2), not by a marker. The optional `type` field names a few special kinds of edges that the current editor no longer creates: `hint`, `choose-chain`, `choose-hint`, `choose-default`, `choose-entry` and `loop-back` come from the expanded choose chains of FLODE 2 (3.6). The transpiler and the topology analysis still understand them and skip the visual-only ones, so old graphs stay readable.
 
@@ -360,7 +360,7 @@ An automation that was never opened in FLODE therefore gets a readable layout on
 Two validations run on every graph, at parse time and again before saving:
 
 - the **schema**: every node's `data` matches the HA schema of its type, edges have the right shape, the metadata fields are valid;
-- the **structure**: no duplicate node ids, every edge connects existing nodes, at least one trigger, no edge into a trigger, every edge out of a condition has a `true` or `false` handle.
+- the **structure**: no duplicate node or edge ids, every edge connects existing nodes, at least one trigger, no edge into a trigger, every edge out of a condition has a `true` or `false` handle.
 
 The frontend turns validation errors into readable messages that name the card (`save-errors.ts`).
 

@@ -34,6 +34,7 @@ import {
   isTargetedPlatform,
   validateGraphStructure,
   withManualStart,
+  withUniqueEdgeIds,
 } from '@flode/shared';
 import { generateEdgeId, generateGraphId, generateNodeId } from '../utils/generateIds';
 import { loadHaYaml } from '../yaml';
@@ -527,9 +528,13 @@ export class YamlParser {
 
       // Step 6: Parse nodes and edges from YAML structure
       const stepIds = metadata?.steps ?? {};
-      const { nodes, edges } = isStateMachine
+      const structure = isStateMachine
         ? this.parseStateMachineStructure(content, warnings, metadataNodeIds, stepIds)
         : this.parseAutomationStructure(content, warnings, metadataNodeIds, stepIds);
+      const nodes = structure.nodes;
+      // A hint edge and the flow edge of the same connection share source and
+      // target; their ids must still differ (the structure validator insists).
+      const edges = withUniqueEdgeIds(structure.edges);
 
       // Step 7: Apply positions from metadata or generate heuristic layout
       let nodesWithPositions: FlowNode[];

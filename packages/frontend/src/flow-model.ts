@@ -12,6 +12,7 @@ import {
   LAYER_GAP,
   NODE_GAP,
   NodeSchema,
+  uniqueId,
 } from '@flode/shared';
 
 /**
@@ -429,11 +430,7 @@ export const NODE_TYPES: readonly NodeType[] = [
  * card of the graph has that id already (several cards within one millisecond).
  */
 export function newNodeId(graph: FlowGraph, type: NodeType): string {
-  const base = `${type}_${Date.now().toString(36)}`;
-  const taken = new Set(graph.nodes.map((n) => n.id));
-  let id = base;
-  for (let n = 1; taken.has(id); n++) id = `${base}_${n}`;
-  return id;
+  return uniqueId(`${type}_${Date.now().toString(36)}`, new Set(graph.nodes.map((n) => n.id)));
 }
 
 /** Adds a node of `type` at `position` (snapped); returns the new graph and the node's id. */
