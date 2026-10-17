@@ -23,6 +23,53 @@ import {
  * strategy, so a node means the same thing to HA whichever one writes it.
  */
 
+/**
+ * Which node a written step object came from. The strategies tag every step
+ * they build; `stepNodeIds` reads the tags off the finished config to record,
+ * per top-level step path, the node it stands for (`_flode_metadata.steps`).
+ */
+const STEP_NODES = new WeakMap<object, string>();
+
+/** Remembers that `step` was written for the node `nodeId`; returns `step`. */
+export function tagStep<T extends Record<string, unknown>>(step: T, nodeId: string): T {
+  STEP_NODES.set(step, nodeId);
+  return step;
+}
+
+function listOf(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : value === undefined || value === null ? [] : [value];
+}
+
+/**
+ * The node id behind each top-level step of a generated config, by HA step
+ * path — what the parser creates a node for when it reads the config back:
+ * `trigger/N`, `condition/N`, `action/N`. A script keeps its conditions as
+ * steps of its `sequence`, so there they count as actions. Steps no single
+ * node stands for (an `if` of several conditions, a `parallel`) are left out.
+ */
+export function stepNodeIds(
+  config: Record<string, unknown>,
+  asScript: boolean
+): Record<string, string> {
+  const ids: Record<string, string> = {};
+  const add = (prefix: string, items: unknown[]) => {
+    items.forEach((item, index) => {
+      const nodeId = typeof item === 'object' && item !== null ? STEP_NODES.get(item) : undefined;
+      if (nodeId !== undefined) ids[`${prefix}/${index}`] = nodeId;
+    });
+  };
+  const conditions = listOf(config.conditions ?? config.condition);
+  const actions = listOf(config.actions ?? config.action ?? config.sequence);
+  add('trigger', listOf(config.triggers ?? config.trigger));
+  if (asScript) {
+    add('action', [...conditions, ...actions]);
+  } else {
+    add('condition', conditions);
+    add('action', actions);
+  }
+  return ids;
+}
+
 /** State/event trigger keys where `null` means something in HA (`to: null` = state changes only, no attribute changes). */
 const MEANINGFUL_NULL_KEYS = new Set(['from', 'to', 'not_from', 'not_to']);
 
@@ -38,7 +85,7 @@ export function cleanTrigger(data: object): Record<string, unknown> {
 
 /** The trigger a trigger node stands for. */
 export function buildTrigger(node: TriggerNode): Record<string, unknown> {
-  return cleanTrigger(node.data);
+  return tagStep(cleanTrigger(node.data), node.id);
 }
 
 const INTERNAL_KEYS = new Set<string>(INTERNAL_CONDITION_KEYS);
@@ -89,7 +136,7 @@ function nestedCondition(condition: unknown): (Record<string, unknown> | string)
 /** A condition node's condition (its alias belongs to the step around it). */
 export function buildCondition(node: ConditionNode): Record<string, unknown> {
   // Pass-through condition (kept verbatim at import) — write it back unchanged
-  return buildRawCondition(node.data) ?? mapCondition(node.data, false);
+  return tagStep(buildRawCondition(node.data) ?? mapCondition(node.data, false), node.id);
 }
 
 /** A condition with its alias — as a root condition or a condition step. */
@@ -229,6 +276,13 @@ export function buildSetVariables(node: SetVariablesNode): Record<string, unknow
 
 /** The step a non-condition node stands for (`null` for a trigger). */
 export function buildNodeStep(
+  node: Exclude<FlowNode, ConditionNode>
+): Record<string, unknown> | null {
+  const step = buildUntaggedNodeStep(node);
+  return step === null ? null : tagStep(step, node.id);
+}
+
+function buildUntaggedNodeStep(
   node: Exclude<FlowNode, ConditionNode>
 ): Record<string, unknown> | null {
   switch (node.type) {

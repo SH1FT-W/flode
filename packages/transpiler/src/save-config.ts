@@ -14,10 +14,14 @@ export interface AutomationSaveResult {
   errors?: string[];
 }
 
-/** `_flode_metadata`: the layout (node positions, moved branch steps) and the graph's id. */
+/**
+ * `_flode_metadata`: the layout (node positions, moved branch steps), which
+ * node each top-level step came from (`steps`), and the graph's id.
+ */
 export function flodeMetadata(
   graph: FlowGraph,
-  strategy: FlodeMetadata['strategy']
+  strategy: FlodeMetadata['strategy'],
+  steps: Record<string, string> = {}
 ): FlodeMetadata {
   const offsets = graph.branchOffsets ?? {};
   return {
@@ -26,6 +30,7 @@ export function flodeMetadata(
       graph.nodes.map((node) => [node.id, { x: node.position.x, y: node.position.y }])
     ),
     ...(Object.keys(offsets).length > 0 ? { branch_offsets: offsets } : {}),
+    ...(Object.keys(steps).length > 0 ? { steps } : {}),
     ...(graph.direction ? { direction: graph.direction } : {}),
     graph_id: graph.id,
     graph_version: graph.version,
@@ -58,7 +63,7 @@ export function buildAutomationSaveConfig(
       ...automation,
       variables: {
         ...(automation.variables || {}),
-        _flode_metadata: flodeMetadata(graph, result.strategy ?? 'native'),
+        _flode_metadata: flodeMetadata(graph, result.strategy ?? 'native', result.steps),
       },
     },
   };

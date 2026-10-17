@@ -24,8 +24,11 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:vector-curve', title: 'new261013LaneTitle', text: 'new261013LaneText' },
-  { icon: 'mdi:keyboard-outline', title: 'new261013HintsTitle', text: 'new261013HintsText' },
+  {
+    icon: 'mdi:map-marker-check-outline',
+    title: 'new261014PlacesTitle',
+    text: 'new261014PlacesText',
+  },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

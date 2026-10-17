@@ -343,12 +343,9 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261013LaneTitle: 'Linien folgen verschobenen Schritten',
-    new261013LaneText:
-      'Wird der erste Schritt eines Zweigs nach oben oder unten gezogen, fährt die Linie vom Ausgang jetzt direkt auf seine Höhe. Bisher stieg sie erst zur alten Reihe und fiel dann zur Karte zurück.',
-    new261013HintsTitle: 'Tastenkürzel nur, wo es eine Tastatur gibt',
-    new261013HintsText:
-      'Am Handy und Tablet zeigen die Menüs keine Kürzel mehr. Am Rechner stehen sie kleiner und grauer neben dem Eintrag, damit „Backspace“ nicht wie ein zweiter Menüpunkt aussieht.',
+    new261014PlacesTitle: 'Karten behalten ihren Platz',
+    new261014PlacesText:
+      'Eine gezeichnete Bedingung mit Ja- und Nein-Pfad wird beim Speichern zu einem Wenn-dann-Block. Beim nächsten Öffnen steht der Block jetzt an der Stelle der Bedingung, und die Karten danach bleiben, wo sie waren. Bisher rutschten sie auf den Platz eines Nachbarn.',
   },
   en: {
     title: 'FLODE',
@@ -686,12 +683,9 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261013LaneTitle: 'Lines follow moved steps',
-    new261013LaneText:
-      'When the first step of a branch is dragged up or down, the line from the output now heads straight to its row. Before, it climbed to the old row first and dropped back to the card.',
-    new261013HintsTitle: 'Shortcuts only where there is a keyboard',
-    new261013HintsText:
-      'On phones and tablets the menus show no shortcuts any more. On the desktop they sit smaller and greyer next to the entry, so "Backspace" no longer reads like a second menu item.',
+    new261014PlacesTitle: 'Cards keep their place',
+    new261014PlacesText:
+      "A drawn condition with a Yes and a No path becomes an If-then block when saved. On the next open the block now sits where the condition was, and the cards after it stay where they were. Before, they slid onto a neighbour's spot.",
   },
 } as const;
 

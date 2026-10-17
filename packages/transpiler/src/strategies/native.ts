@@ -3,7 +3,13 @@ import { getShorthandCondition, isConditionStep } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { findBackEdges } from '../analyzer/topology';
 import { BaseStrategy, buildAutomationSettings, type HAYamlOutput } from './base';
-import { buildCondition, buildConditionWithAlias, buildNodeStep, buildTrigger } from './steps';
+import {
+  buildCondition,
+  buildConditionWithAlias,
+  buildNodeStep,
+  buildTrigger,
+  tagStep,
+} from './steps';
 
 /**
  * Describes a detected repeat pattern in the flow graph
@@ -881,7 +887,8 @@ export class NativeStrategy extends BaseStrategy {
     if (repeatPattern) {
       const repeatBlock = this.buildRepeatBlock(flow, repeatPattern, visited);
       if (repeatBlock) {
-        sequence.push(repeatBlock);
+        // Read back as one block card: it takes the loop's entry card's id and place
+        sequence.push(tagStep(repeatBlock, nodeId));
         // Continue from the exit node
         if (repeatPattern.exitNodeId) {
           const afterRepeat = this.buildSequenceFromNode(
@@ -1104,12 +1111,16 @@ export class NativeStrategy extends BaseStrategy {
           return sequence;
         }
 
-        const ifAction: Record<string, unknown> = {
-          alias: node.data.alias,
-          if: conditions,
-          then: [],
-          else: [],
-        };
+        // Read back as one `if` block card: it takes the first condition card's id and place
+        const ifAction: Record<string, unknown> = tagStep(
+          {
+            alias: node.data.alias,
+            if: conditions,
+            then: [],
+            else: [],
+          },
+          node.id
+        );
 
         const allBranchStarts = [...thenNodeIds, ...elseNodeIds];
         const convergencePoint =
@@ -1338,11 +1349,15 @@ export class NativeStrategy extends BaseStrategy {
    * Build an if/then/else block for a condition node (then/else filled by the caller)
    */
   private buildConditionChoose(node: ConditionNode): Record<string, unknown> {
-    return {
-      alias: node.data.alias,
-      if: [buildCondition(node)],
-      then: [],
-      else: [],
-    };
+    // Read back as one `if` block card: it takes the condition card's id and place
+    return tagStep(
+      {
+        alias: node.data.alias,
+        if: [buildCondition(node)],
+        then: [],
+        else: [],
+      },
+      node.id
+    );
   }
 }

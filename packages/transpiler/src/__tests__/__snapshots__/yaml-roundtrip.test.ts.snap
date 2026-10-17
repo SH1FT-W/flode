@@ -22,6 +22,9 @@ variables:
       action_test_1_206:
         x: 420
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_205
+      action/0: action_test_1_206
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -83,6 +86,9 @@ variables:
       action_test_3_204:
         x: 800
         "y": 200
+    steps:
+      trigger/0: trigger_test_0_201
+      action/0: condition_test_1_202
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -150,6 +156,12 @@ variables:
       action_test_7_200:
         x: 2700
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_193
+      condition/0: condition_test_1_194
+      condition/1: condition_test_2_195
+      condition/2: condition_test_3_196
+      action/1: action_test_7_200
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -223,6 +235,8 @@ variables:
       action_test_5_192:
         x: 800
         "y": 986
+    steps:
+      trigger/0: trigger_test_0_187
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -280,6 +294,14 @@ variables:
       action_test_6_186:
         x: 2320
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_180
+      action/0: action_test_1_181
+      action/1: delay_test_2_182
+      action/2: action_test_3_183
+      action/3: wait_test_4_184
+      action/4: delay_test_5_185
+      action/5: action_test_6_186
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -334,6 +356,13 @@ variables:
       action_test_5_179:
         x: 800
         "y": 210
+    steps:
+      trigger/0: trigger_test_0_174
+      trigger/1: trigger_test_1_175
+      trigger/2: trigger_test_2_176
+      trigger/3: trigger_test_3_177
+      action/0: action_test_4_178
+      action/1: action_test_5_179
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -622,6 +651,8 @@ variables:
       action_test_16_173:
         x: 6120
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_157
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: state-machine
@@ -651,6 +682,9 @@ variables:
       action_1767904379001_0:
         x: 195
         "y": 180
+    steps:
+      trigger/0: trigger_1767901134917_0
+      action/0: action_1767904379001_0
     graph_id: 15198922-f25d-427a-bcfa-958e7a85d62b
     graph_version: 1
     strategy: native
@@ -767,6 +801,10 @@ variables:
       action_test_12_156:
         x: 1560
         "y": 471
+    steps:
+      trigger/0: trigger_test_0_144
+      trigger/1: trigger_test_1_145
+      trigger/2: trigger_test_2_146
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -846,6 +884,10 @@ variables:
       action_test_6_143:
         x: 1180
         "y": 210
+    steps:
+      trigger/0: trigger_test_0_137
+      trigger/1: trigger_test_1_138
+      condition/0: condition_test_2_139
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -904,6 +946,8 @@ variables:
       action-sm-2:
         x: 150
         "y": 405
+    steps:
+      trigger/0: trigger-sm
     graph_id: 624cf5ff-0ab9-4881-b6c4-c2359635230f
     graph_version: 1
     strategy: state-machine
@@ -968,6 +1012,13 @@ variables:
       action_test_5_136:
         x: 1940
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_131
+      condition/0: condition_test_1_132
+      action/0: wait_test_2_133
+      action/1: wait_test_3_134
+      action/2: wait_test_4_135
+      action/3: action_test_5_136
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1156,6 +1207,11 @@ variables:
       action_test_20_130:
         x: 1960
         "y": 710
+    steps:
+      trigger/0: trigger_test_0_110
+      trigger/1: trigger_test_1_111
+      trigger/2: trigger_test_2_112
+      trigger/3: trigger_test_3_113
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1267,6 +1323,9 @@ variables:
       action_test_11_109:
         x: 2320
         "y": 380
+    steps:
+      trigger/0: trigger_test_0_98
+      trigger/1: trigger_test_1_99
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1380,6 +1439,15 @@ variables:
       action_test_12_97:
         x: 3840
         "y": 200
+    steps:
+      trigger/0: trigger_test_0_85
+      condition/0: condition_test_1_86
+      action/0: action_test_2_87
+      action/1: action_test_3_88
+      action/2: action_test_4_89
+      action/3: action_test_5_90
+      action/4: action_test_6_91
+      action/6: action_test_12_97
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1438,6 +1506,13 @@ variables:
       action_test_5_84:
         x: 1940
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_79
+      condition/0: condition_test_1_80
+      action/0: action_test_2_81
+      action/1: action_test_3_82
+      action/2: delay_test_4_83
+      action/3: action_test_5_84
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1533,6 +1608,12 @@ variables:
       action_test_6_78:
         x: 800
         "y": 353
+    steps:
+      trigger/0: trigger_test_0_72
+      trigger/1: trigger_test_1_73
+      trigger/2: trigger_test_2_74
+      trigger/3: trigger_test_3_75
+      action/0: condition_test_4_76
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1569,6 +1650,9 @@ variables:
       action_test_1_71:
         x: 420
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_70
+      action/0: action_test_1_71
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1605,6 +1689,10 @@ variables:
       action_test_2_69:
         x: 800
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_67
+      condition/0: condition_test_1_68
+      action/0: action_test_2_69
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1654,6 +1742,11 @@ variables:
       action_test_3_66:
         x: 1180
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_63
+      condition/0: condition_test_1_64
+      action/0: action_test_2_65
+      action/1: action_test_3_66
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1686,6 +1779,9 @@ variables:
       delay_test_1_62:
         x: 420
         "y": 54
+    steps:
+      trigger/0: trigger_test_0_61
+      action/0: delay_test_1_62
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1717,6 +1813,9 @@ variables:
       action_test_1_60:
         x: 420
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_59
+      action/0: action_test_1_60
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1756,6 +1855,10 @@ variables:
       action_test_2_58:
         x: 800
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_56
+      action/0: action_test_1_57
+      action/1: action_test_2_58
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1844,6 +1947,11 @@ variables:
       action_test_4_55:
         x: 1560
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_51
+      action/0: set_variables_test_1_52
+      action/1: action_test_2_53
+      action/2: condition_test_3_54
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1886,6 +1994,9 @@ variables:
       delay_test_3_50:
         x: 1180
         "y": 54
+    steps:
+      trigger/0: trigger_test_0_47
+      action/0: condition_test_1_48
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1928,6 +2039,9 @@ variables:
       condition_test_3_46:
         x: 1180
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_43
+      action/0: action_test_1_44
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -1973,6 +2087,9 @@ variables:
       condition_test_5_42:
         x: 1940
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_37
+      action/0: set_variables_test_1_38
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2029,6 +2146,9 @@ variables:
       action_test_5_36:
         x: 800
         "y": 223
+    steps:
+      trigger/0: trigger_test_0_31
+      action/0: condition_test_1_32
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2061,6 +2181,10 @@ variables:
       action_test_2_30:
         x: 800
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_28
+      action/0: condition_test_1_29
+      action/1: action_test_2_30
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2097,6 +2221,10 @@ variables:
       action_test_2_27:
         x: 420
         "y": 57
+    steps:
+      trigger/0: trigger_test_0_25
+      trigger/1: trigger_test_1_26
+      action/0: action_test_2_27
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2145,6 +2273,9 @@ variables:
       action_test_3_24:
         x: 800
         "y": 200
+    steps:
+      trigger/0: trigger_test_0_21
+      action/0: condition_test_1_22
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2185,6 +2316,10 @@ variables:
       action_test_2_20:
         x: 800
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_18
+      condition/0: condition_test_1_19
+      action/0: action_test_2_20
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2221,6 +2356,10 @@ variables:
       action_test_2_17:
         x: 800
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_15
+      action/0: set_variables_test_1_16
+      action/1: action_test_2_17
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2257,6 +2396,9 @@ variables:
       action_test_1_14:
         x: 420
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_13
+      action/0: action_test_1_14
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2303,6 +2445,12 @@ variables:
       action_test_4_12:
         x: 420
         "y": 210
+    steps:
+      trigger/0: trigger_test_0_8
+      trigger/1: trigger_test_1_9
+      trigger/2: trigger_test_2_10
+      trigger/3: trigger_test_3_11
+      action/0: action_test_4_12
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2331,6 +2479,9 @@ variables:
       action_test_1_7:
         x: 420
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_6
+      action/0: action_test_1_7
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2361,6 +2512,9 @@ variables:
       action_test_1_5:
         x: 420
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_4
+      action/0: action_test_1_5
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2397,6 +2551,9 @@ variables:
       action_test_1_3:
         x: 420
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_2
+      action/0: action_test_1_3
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native
@@ -2425,6 +2582,9 @@ variables:
       action_test_1_1:
         x: 420
         "y": 40
+    steps:
+      trigger/0: trigger_test_0_0
+      action/0: action_test_1_1
     graph_id: a18b0fbb-d966-432c-aba7-4f7361da8d29
     graph_version: 1
     strategy: native

@@ -309,6 +309,14 @@ export const FlodeMetadataSchema = z.object({
   /** How far the user moved steps inside a `choose` / `if` branch from where FLODE draws them (`FlowGraph.branchOffsets`). */
   branch_offsets: z.record(z.string(), PositionSchema).optional(),
   /**
+   * Which node each top-level step of the saved config came from, by HA step
+   * path (`trigger/0`, `condition/1`, `action/2`) — so the parser can give a
+   * card its old id (and position) back even when saving changed the shape
+   * of the step list (a drawn condition that became an `if` block …). Without
+   * it, ids are handed out in the order of `nodes`.
+   */
+  steps: z.record(z.string(), z.string()).optional(),
+  /**
    * Which way the flow was laid out (`FlowGraph.direction`); none = left to
    * right. An unknown value is dropped, not the whole layout.
    */

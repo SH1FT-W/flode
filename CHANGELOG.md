@@ -6,6 +6,23 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.10.14] — 2026-10-17 — Cards keep their place
+
+### Fixed
+- **Cards after a drawn condition kept their place.** A condition card with a Yes and a No path is saved as an `if` block, and its Yes/No steps become branch cards. On the next open, FLODE handed out card ids in the order they were saved, so the cards after the new block took a neighbour's old position. The saved layout now records which card each step came from (`_flode_metadata.steps`): the block takes the condition's id and place, the cards after it stay where they were. Layouts saved by older versions open as before.
+
+---
+
+## [26.10.13] — 2026-10-16 — Lines and shortcut hints
+
+Reports by Bart ([#31](https://github.com/SH1FT-W/flode/issues/31), [#32](https://github.com/SH1FT-W/flode/issues/32)).
+
+### Fixed
+- **Lines to a moved branch step** ([#31](https://github.com/SH1FT-W/flode/issues/31)): the line from a branch output to the first step of that branch kept a bend on the row where the step was laid out. With the step dragged up or down, the line climbed to the old row first and dropped back to the card. The bend now follows the step to its row, in left-to-right and top-to-bottom flows.
+- **Shortcut hints in menus** ([#32](https://github.com/SH1FT-W/flode/issues/32)): "Backspace" next to "Delete connection" read like a second menu entry on Windows and Android, where the key has no symbol. Menus on touch screens show no keyboard shortcuts any more, and on the desktop the hints are smaller and greyer than the entry.
+
+---
+
 ## [26.10.12] — 2026-10-16 — Dragging into a branch
 
 Report by Bart ([#36](https://github.com/SH1FT-W/flode/issues/36)).

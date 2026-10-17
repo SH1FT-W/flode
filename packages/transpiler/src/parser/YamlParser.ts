@@ -320,6 +320,58 @@ function parseMetadataFields(fields: Record<string, unknown>): FlowGraphMetadata
 }
 
 /**
+ * Hands out node ids while a config is read. A node whose step path
+ * (`trigger/0`, `action/2` …) the saved metadata lists in `steps` gets the
+ * id it had when the flow was saved, so a card keeps its id and position
+ * even when saving changed the shape of the step list (a drawn condition
+ * that became an `if` block …). Every other node takes the next unclaimed
+ * id from the metadata's `nodes`, in order, as before; once those are used
+ * up, fresh ids are generated.
+ */
+interface NodeIdAllocator {
+  /** The id for the next node; `path` is the step's HA path when it is a top-level step. */
+  next(type: string, path?: string): string;
+  /** Names the step path for the next id handed out (for walks that don't pass `path`). */
+  beginStep(path: string): void;
+}
+
+function createNodeIdAllocator(
+  stepIds: Record<string, string>,
+  metadataNodeIds: readonly string[]
+): NodeIdAllocator {
+  const claimed = new Set(Object.values(stepIds));
+  const pool = metadataNodeIds.filter((id) => !claimed.has(id));
+  const used = new Set<string>();
+  let poolIndex = 0;
+  let generated = 0;
+  let pending: string | undefined;
+  const take = (id: string): string => {
+    used.add(id);
+    return id;
+  };
+  return {
+    beginStep(path) {
+      pending = path;
+    },
+    next(type, path) {
+      const at = path ?? pending;
+      pending = undefined;
+      const fromStep = at === undefined ? undefined : stepIds[at];
+      if (fromStep !== undefined && !used.has(fromStep)) return take(fromStep);
+      while (poolIndex < pool.length) {
+        const id = pool[poolIndex++];
+        if (!used.has(id)) return take(id);
+      }
+      let id: string;
+      do {
+        id = generateNodeId(type, metadataNodeIds.length + generated++);
+      } while (used.has(id) || claimed.has(id));
+      return take(id);
+    },
+  };
+}
+
+/**
  * Options for parsing actions and nested blocks
  */
 interface ParseOptions {
@@ -329,6 +381,11 @@ interface ParseOptions {
   previousNodeIds: string[];
   /** Function to generate unique node IDs */
   getNextNodeId: (type: string) => string;
+  /**
+   * Called with each step's index before its node is created — only for the
+   * top-level action list, whose steps have a path in the saved metadata.
+   */
+  onStep?: (index: number) => void;
   /** Set of condition node IDs for proper edge handle assignment */
   conditionNodeIds?: Set<string>;
   /** Set of condition node IDs whose FALSE path should connect to next action */
@@ -468,9 +525,10 @@ export class YamlParser {
       const isStateMachine = this.isFlodeStateMachine(content, metadata, warnings);
 
       // Step 6: Parse nodes and edges from YAML structure
+      const stepIds = metadata?.steps ?? {};
       const { nodes, edges } = isStateMachine
-        ? this.parseStateMachineStructure(content, warnings, metadataNodeIds)
-        : this.parseAutomationStructure(content, warnings, metadataNodeIds);
+        ? this.parseStateMachineStructure(content, warnings, metadataNodeIds, stepIds)
+        : this.parseAutomationStructure(content, warnings, metadataNodeIds, stepIds);
 
       // Step 7: Apply positions from metadata or generate heuristic layout
       let nodesWithPositions: FlowNode[];
@@ -729,7 +787,8 @@ export class YamlParser {
   private parseStateMachineStructure(
     content: Record<string, unknown>,
     warnings: string[],
-    metadataNodeIds: string[]
+    metadataNodeIds: string[],
+    stepIds: Record<string, string> = {}
   ): { nodes: FlowNode[]; edges: FlowEdge[] } {
     const nodes: FlowNode[] = [];
     const edges: FlowEdge[] = [];
@@ -815,15 +874,8 @@ export class YamlParser {
     // are already claimed by the choose blocks to avoid assigning them to triggers.
     const stateMachineNodeIds = new Set(nodeInfoMap.keys());
     const triggerMetadataIds = metadataNodeIds.filter((id) => !stateMachineNodeIds.has(id));
-    let triggerIdIndex = 0;
-    let nodeIdIndex = 0;
-
-    const getNextNodeId = (type: string): string => {
-      if (triggerIdIndex < triggerMetadataIds.length) {
-        return triggerMetadataIds[triggerIdIndex++];
-      }
-      return generateNodeId(type, nodeIdIndex++);
-    };
+    const ids = createNodeIdAllocator(stepIds, triggerMetadataIds);
+    const getNextNodeId = (type: string, path?: string): string => ids.next(type, path);
 
     // Parse triggers
     const triggerData = content.triggers || content.trigger;
@@ -1493,20 +1545,16 @@ export class YamlParser {
   private parseAutomationStructure(
     content: Record<string, unknown>,
     warnings: string[],
-    metadataNodeIds: string[]
+    metadataNodeIds: string[],
+    stepIds: Record<string, string> = {}
   ): { nodes: FlowNode[]; edges: FlowEdge[] } {
     const nodes: FlowNode[] = [];
     const edges: FlowEdge[] = [];
     const conditionNodeIds = new Set<string>();
-    let nodeIdIndex = 0;
 
-    // Helper to get next node ID (from metadata if available, otherwise generate)
-    const getNextNodeId = (type: string): string => {
-      if (nodeIdIndex < metadataNodeIds.length) {
-        return metadataNodeIds[nodeIdIndex++];
-      }
-      return generateNodeId(type, nodeIdIndex++);
-    };
+    // Node ids: the saved one for a step the metadata knows, else the next from `nodes`
+    const ids = createNodeIdAllocator(stepIds, metadataNodeIds);
+    const getNextNodeId = (type: string, path?: string): string => ids.next(type, path);
 
     // Parse triggers (support both 'trigger' and 'triggers')
     const triggerData = content.triggers || content.trigger;
@@ -1588,6 +1636,7 @@ export class YamlParser {
       warnings,
       previousNodeIds: firstActionNodeIds,
       getNextNodeId,
+      onStep: (index) => ids.beginStep(`action/${index}`),
       conditionNodeIds,
       triggerNodeMap,
     });
@@ -1603,7 +1652,7 @@ export class YamlParser {
   private parseTriggers(
     triggers: unknown[],
     warnings: string[],
-    getNextNodeId: (type: string) => string
+    getNextNodeId: (type: string, path?: string) => string
   ): FlowNode[] {
     // Process all object-type trigger items — do NOT filter with isHATrigger here,
     // because modern HA may use formats (e.g. dict-keyed or novel trigger types)
@@ -1611,7 +1660,7 @@ export class YamlParser {
     return triggers
       .filter((t) => typeof t === 'object' && t !== null)
       .map((trigger, index) => {
-        const nodeId = getNextNodeId('trigger');
+        const nodeId = getNextNodeId('trigger', `trigger/${index}`);
         try {
           // Validate and parse trigger using HATriggerSchema
           const result = HATriggerSchema.safeParse(trigger);
@@ -1693,7 +1742,7 @@ export class YamlParser {
   private parseConditions(
     conditions: unknown[],
     warnings: string[],
-    getNextNodeId: (type: string) => string
+    getNextNodeId: (type: string, path?: string) => string
   ): { nodes: ConditionNode[]; edges: FlowEdge[]; outputNodeIds: string[] } {
     const nodes: ConditionNode[] = [];
     const edges: FlowEdge[] = [];
@@ -1703,7 +1752,7 @@ export class YamlParser {
       if (typeof condition === 'string') {
         // Jinja shorthand (`- "{{ … }}"`): a template condition, written back as a string
         nodes.push({
-          id: getNextNodeId('condition'),
+          id: getNextNodeId('condition', `condition/${index}`),
           type: 'condition',
           position: { x: 0, y: 0 },
           data: HAConditionSchema.parse(createShorthandConditionData(condition)),
@@ -1711,7 +1760,7 @@ export class YamlParser {
         return;
       }
       if (!isHACondition(condition)) return;
-      const nodeId = getNextNodeId('condition');
+      const nodeId = getNextNodeId('condition', `condition/${index}`);
       try {
         const result = HAConditionSchema.safeParse(condition);
         if (!result.success) {
@@ -1798,6 +1847,7 @@ export class YamlParser {
 
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: large dispatch switch, refactoring deferred
     actions.forEach((action, index) => {
+      options.onStep?.(index);
       // A block, or a step switched on and off by a template (`enabled: "{{ … }}"`),
       // which FLODE's nodes can't hold: kept verbatim
       if ((this.options.keepBlocks && isHaBlockStep(action)) || hasTemplatedEnabled(action)) {

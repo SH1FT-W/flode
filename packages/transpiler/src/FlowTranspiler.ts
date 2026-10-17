@@ -13,6 +13,7 @@ import { flodeMetadata } from './save-config';
 import type { HAYamlOutput, TranspilerStrategy } from './strategies/base';
 import { NativeStrategy } from './strategies/native';
 import { StateMachineStrategy } from './strategies/state-machine';
+import { stepNodeIds } from './strategies/steps';
 
 /**
  * Options for YAML generation
@@ -62,6 +63,8 @@ export interface TranspileResult {
   warnings: string[];
   /** The strategy that wrote the YAML, as recorded in `_flode_metadata`. */
   strategy?: FlodeMetadata['strategy'];
+  /** Node id per top-level step path of the output, as recorded in `_flode_metadata.steps`. */
+  steps?: Record<string, string>;
 }
 
 /**
@@ -139,6 +142,12 @@ export class FlowTranspiler {
 
     // Step 4: Generate YAML output (an automation without triggers loses its hidden start again)
     const generated = strategy.generate(flow, analysis);
+    // Which node each top-level step came from — read off `generated`, while the
+    // hidden start is still in front (the parser puts it back at `trigger/0`).
+    const steps = stepNodeIds(
+      generated.automation ?? generated.script ?? {},
+      flow.metadata?.kind === 'script'
+    );
     const output = generated.automation
       ? { ...generated, automation: withoutManualStart(generated.automation) }
       : generated;
@@ -149,7 +158,7 @@ export class FlowTranspiler {
     let yaml: string;
 
     if (yamlContent && typeof yamlContent === 'object') {
-      const metadata = this.generateCafeMetadata(flow, strategy);
+      const metadata = flodeMetadata(flow, metadataStrategy(strategy), steps);
       const contentWithMetadata = {
         ...yamlContent,
         variables: {
@@ -186,6 +195,7 @@ export class FlowTranspiler {
       analysis,
       warnings,
       strategy: metadataStrategy(strategy),
+      steps,
     };
   }
 
@@ -239,11 +249,6 @@ export class FlowTranspiler {
    */
   addStrategy(strategy: TranspilerStrategy): void {
     this.strategies.unshift(strategy); // Add at beginning for priority
-  }
-
-  /** FLODE's layout metadata for `flow`, written by `strategy`. */
-  private generateCafeMetadata(flow: FlowGraph, strategy: TranspilerStrategy): FlodeMetadata {
-    return flodeMetadata(flow, metadataStrategy(strategy));
   }
 }
 
