@@ -141,7 +141,7 @@ An edge is a directed connection between two node ids:
 FlowEdge { id, source, target, sourceHandle?, targetHandle?, label?, type? }
 ```
 
-`sourceHandle` matters on condition nodes only: `'true'` is the Yes output, `'false'` the No output. All other nodes have one unnamed output. Triggers have no input; the structure validator (5.5) rejects an edge into a trigger, a duplicate edge and an edge whose endpoints do not exist.
+`sourceHandle` matters on condition nodes only: `'true'` is the Yes output, `'false'` the No output. All other nodes have one unnamed output. Triggers have no input; the structure validator (5.5) rejects an edge into a trigger and an edge whose endpoints do not exist. The same connection drawn twice is not rejected: the transpiler reads it as one branch.
 
 A connection that leads back to an earlier card (a loop) is an ordinary edge with no special type; the transpiler recognises it by its place in the graph (a "back edge", 6.2), not by a marker. The optional `type` field names a few special kinds of edges that the current editor no longer creates: `hint`, `choose-chain`, `choose-hint`, `choose-default`, `choose-entry` and `loop-back` come from the expanded choose chains of FLODE 2 (3.6). The transpiler and the topology analysis still understand them and skip the visual-only ones, so old graphs stay readable.
 
