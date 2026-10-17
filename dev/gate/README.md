@@ -17,17 +17,23 @@ uncommitted in `packages/`, `custom_components/` or `dev/`.
 
 1. **static**: Biome, type check, all unit tests (incl. the YAML round-trip fixtures), build.
 2. **test HA**: copies the build into the Docker test HA, restarts it, waits until HA runs
-   and serves FLODE's panel, then puts the gate's automations in: every fixture from
-   `__tests__/yaml-automation-fixtures` that HA itself accepts, plus `dev/gate/flows/`.
+   and serves FLODE's panel, then puts the gate's flows in: every fixture from
+   `__tests__/yaml-automation-fixtures` that HA itself accepts, plus `dev/gate/flows/`
+   (one pattern per file, named after it; a file with `sequence:` is seeded as a script).
+   A new flow there runs in every step from then on; the visual step photographs only
+   the flows listed in `check-visual.mjs`.
 3. **cards** (Chromium + WebKit): opens every automation like a user (⌘K) and checks
    - no console or page errors, no unexpected page reload,
-   - FLODE read everything (no "parts not recognised" warning),
+   - FLODE read everything (no "parts not recognised" warning; a flow with a step FLODE
+     keeps verbatim warns on purpose and is listed under `cards` in `known.json` with the reason),
    - every card has a title, none shows `undefined`, `[object Object]`, `NaN` or HA's describe error,
    - with "Card text like Home Assistant", HA's text arrives on the cards.
 4. **roundtrip**: moves one card in every automation (layout only), saves, and compares
    what HA stores with the original — apart from FLODE's layout metadata and HA's own
-   migration of old keys. Accepted differences live in `known.json`, with the reason;
-   a listed automation that saves unchanged again is reported so the entry gets removed.
+   migration of old keys. What "the same" means is defined once, in
+   `packages/transpiler/src/ha-equal.ts` (the unit tests use the same definition). Accepted
+   differences live in `known.json`, with the reason; a listed automation that saves
+   unchanged again is reported so the entry gets removed.
 5. **actions** (Chromium + WebKit, each on its own copy of `flows/scratch.yaml`): select a
    card (HA's editor opens), duplicate, undo, redo, disable (⌘E) and undo, tidy up, minimap,
    branch cards of "Choose", add a step through HA's add dialog and save (HA must store it),
@@ -36,7 +42,7 @@ uncommitted in `packages/`, `custom_components/` or `dev/`.
    compared with the baseline of the last release. Differences never fail the gate; they are
    shown side by side in `.gate/visual/report.html` for a person to look at.
 
-The gate's automations are removed from the test HA at the end. Failure screenshots
+The gate's flows are removed from the test HA at the end. Failure screenshots
 go to `.gate/shots/`, logs to `.gate/logs/`.
 
 ## Setup

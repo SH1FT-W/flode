@@ -20,13 +20,19 @@ import {
   seededFlows,
 } from './lib.mjs';
 
-/** Covers the card kinds: triggers/conditions/delays, a choose with branches, templates, targets. */
+/**
+ * Covers the card kinds: triggers/conditions/delays, a choose with branches, templates,
+ * targets, an or in the middle of a flow, parallel with conditions, a script's start card.
+ */
 const SHOTS = [
   'card_text',
   '04_choose_with_default',
   '09_templates',
   '05_delays_and_waits',
   '38_target_mixed',
+  'or_mid_flow',
+  'parallel_with_conditions',
+  'script_with_fields',
 ];
 const VISUAL_DIR = path.join(OUT_DIR, 'visual');
 const BASELINE_DIR = path.join(VISUAL_DIR, 'baseline');

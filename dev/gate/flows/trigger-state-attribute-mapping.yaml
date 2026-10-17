@@ -1,0 +1,26 @@
+# State triggers on an attribute whose to/from values are not strings.
+alias: State trigger with attribute values
+description: Attribute triggers with a number, a list and a mapping as the value
+triggers:
+  - trigger: state
+    entity_id: light.kitchen_lights
+    attribute: color_temp_kelvin
+    to: 2700
+  - trigger: state
+    entity_id: light.kitchen_lights
+    attribute: rgb_color
+    to:
+      - 255
+      - 0
+      - 0
+  - trigger: state
+    entity_id: light.kitchen_lights
+    attribute: hs_color
+    from:
+      hue: 10
+      saturation: 20
+actions:
+  - action: notify.persistent_notification
+    data:
+      message: "Kitchen light changed: {{ trigger.attribute }}"
+mode: single

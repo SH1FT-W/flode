@@ -1,0 +1,39 @@
+# An if with else nested in a counted repeat, and a choose with default after the loop.
+alias: If else inside repeat
+description: Repeat count with an if/else in its body, then a choose with default
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "on"
+actions:
+  - repeat:
+      count: 3
+      sequence:
+        - if:
+            - condition: state
+              entity_id: light.kitchen_lights
+              state: "on"
+          then:
+            - action: light.turn_off
+              target:
+                entity_id: light.kitchen_lights
+          else:
+            - action: light.turn_on
+              target:
+                entity_id: light.kitchen_lights
+        - delay:
+            seconds: 1
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: sun.sun
+            state: below_horizon
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: light.kitchen_lights
+    default:
+      - action: light.turn_off
+        target:
+          entity_id: light.kitchen_lights
+mode: single

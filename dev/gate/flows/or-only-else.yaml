@@ -1,0 +1,27 @@
+# Only the No paths of several conditions meet: an or with an empty then and an else.
+alias: Or with only an else
+description: If with an or condition, empty then, the work in else
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "off"
+    for:
+      minutes: 5
+actions:
+  - if:
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: light.kitchen_lights
+            state: "off"
+          - condition: state
+            entity_id: light.ceiling_lights
+            state: "off"
+    then: []
+    else:
+      - action: light.turn_off
+        target:
+          entity_id:
+            - light.kitchen_lights
+            - light.ceiling_lights
+mode: single

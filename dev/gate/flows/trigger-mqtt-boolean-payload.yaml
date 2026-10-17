@@ -1,0 +1,12 @@
+# An MQTT trigger whose payload is a YAML boolean, not a string.
+alias: MQTT trigger with boolean payload
+description: MQTT trigger with payload true, kept as it is
+triggers:
+  - trigger: mqtt
+    topic: home/garden/motion
+    payload: true
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.entrance_color_white_lights
+mode: single

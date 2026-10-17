@@ -1,5 +1,10 @@
 {
   "roundtrip": {
     "flode_gate_08_sm_simple_cafe": "C.A.F.E. state-machine flows are saved as plain native HA steps (by design: FLODE unwraps the state machine)."
+  },
+  "cards": {
+    "flode_gate_trigger_offset_mapping": "offset as a mapping of strings is kept verbatim (FLODE's schema wants numbers); FLODE warns that it did not model the trigger",
+    "flode_gate_trigger_mqtt_boolean_payload": "payload: true is kept verbatim (FLODE's schema wants a string); FLODE warns that it did not model the trigger",
+    "flode_gate_trigger_state_attribute_mapping": "from: as a mapping is kept verbatim (FLODE's schema wants a string or list); FLODE warns that it did not model the trigger"
   }
 }

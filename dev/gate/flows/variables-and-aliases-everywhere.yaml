@@ -1,0 +1,106 @@
+# Variables at every level and an alias on every step, including blocks and their inner steps.
+alias: Variables and aliases everywhere
+description: trigger_variables, top-level variables, a variables step, aliases on every step
+trigger_variables:
+  room: kitchen
+variables:
+  target_light: light.kitchen_lights
+  greeting: Hello
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "on"
+    alias: Movement in the garden
+    id: movement
+conditions:
+  - condition: state
+    entity_id: input_boolean.guest_mode
+    state: "off"
+    alias: No guests
+actions:
+  - alias: Remember the brightness
+    variables:
+      brightness: "{{ state_attr(target_light, 'brightness') | int(0) }}"
+  - alias: Switch on
+    action: light.turn_on
+    target:
+      entity_id: "{{ target_light }}"
+    data:
+      brightness_pct: 80
+    continue_on_error: true
+  - alias: Dark enough?
+    if:
+      - condition: state
+        entity_id: sun.sun
+        state: below_horizon
+        alias: Sun is down
+    then:
+      - alias: Say hello
+        action: notify.persistent_notification
+        data:
+          message: "{{ greeting }} from {{ room }}"
+    else:
+      - alias: Count it
+        variables:
+          brightness: "{{ brightness + 1 }}"
+  - alias: Decide
+    choose:
+      - alias: Warm day
+        conditions:
+          - condition: numeric_state
+            entity_id: sensor.outside_temperature
+            above: 25
+            alias: Above 25 degrees
+        sequence:
+          - alias: Open the window
+            action: cover.open_cover
+            target:
+              entity_id: cover.kitchen_window
+    default:
+      - alias: Keep it closed
+        action: cover.close_cover
+        target:
+          entity_id: cover.kitchen_window
+  - alias: Three times
+    repeat:
+      count: 3
+      sequence:
+        - alias: Blink
+          action: light.toggle
+          target:
+            entity_id: "{{ target_light }}"
+        - alias: Short pause
+          delay:
+            seconds: 1
+  - alias: Side by side
+    parallel:
+      - alias: Left
+        action: light.turn_off
+        target:
+          entity_id: light.ceiling_lights
+      - alias: Right
+        action: light.turn_off
+        target:
+          entity_id: light.entrance_color_white_lights
+  - alias: Wait for the door
+    wait_for_trigger:
+      - trigger: state
+        entity_id: binary_sensor.basement_floor_wet
+        to: "on"
+        alias: Water
+    timeout: "00:01:00"
+    continue_on_timeout: true
+  - alias: Ask the weather
+    action: weather.get_forecasts
+    target:
+      entity_id: weather.demo_weather_south
+    data:
+      type: daily
+    response_variable: forecast
+  - alias: Switched off for now
+    action: light.turn_off
+    target:
+      entity_id: "{{ target_light }}"
+    enabled: false
+mode: queued
+max: 5

@@ -12,6 +12,8 @@ import {
 } from '../../packages/transpiler/src/ha-equal.ts';
 import {
   closeFlow,
+  configBody,
+  configRoute,
   gotoPanel,
   inPanel,
   label,
@@ -38,7 +40,7 @@ try {
   for (const flow of flows) {
     const where = `roundtrip · ${flow.name}`;
     errors.length = 0;
-    const before = await rest('GET', `config/automation/config/${flow.id}`);
+    const before = await rest('GET', configRoute(flow));
     try {
       await openFlow(page, flow.name);
       // Move a card a little — a layout-only change. Some cards don't move (a block's lane), so try a few.
@@ -61,7 +63,7 @@ try {
       await waitForPanel(page, (panel) => panel.saveState === 'saved').catch(() =>
         result.fail(`${where}: save did not finish`)
       );
-      const after = await rest('GET', `config/automation/config/${flow.id}`);
+      const after = await rest('GET', configRoute(flow));
       if (!after.variables?._flode_metadata) result.fail(`${where}: saved without FLODE's layout`);
       for (const key of internalKeysIn(after))
         result.fail(`${where}: FLODE-internal key saved at ${key}`);
@@ -76,7 +78,7 @@ try {
       result.fail(`${where}: ${error.message.split('\n')[0]}`);
       await gotoPanel(page, { reload: true });
     } finally {
-      await rest('POST', `config/automation/config/${flow.id}`, before);
+      await rest('POST', configRoute(flow), configBody(flow, before));
     }
   }
 } finally {

@@ -58,7 +58,7 @@ export async function ws(message) {
 }
 
 /**
- * Waits until HA has an entity for each saved automation (`{ id, name, config }`) and returns
+ * Waits until HA has an entity for each saved flow (`{ id, kind, name, config }`) and returns
  * the ones still missing. HA creates the entities a moment after the config is saved (longer
  * right after a restart). On Docker for Mac, HA's reload sometimes catches automations.yaml
  * mid-write and skips one — such an automation is saved again.
@@ -68,7 +68,7 @@ export async function awaitEntities(flows) {
   for (let round = 0; round < 3 && missing.length > 0; round++) {
     if (round > 0) {
       for (const flow of missing)
-        await rest('POST', `config/automation/config/${flow.id}`, { ...flow.config, id: flow.id });
+        await rest('POST', configRoute(flow), configBody(flow, flow.config));
     }
     const deadline = Date.now() + 30000;
     while (Date.now() < deadline) {
@@ -81,6 +81,16 @@ export async function awaitEntities(flows) {
     }
   }
   return missing;
+}
+
+/** HA's config route of a seeded flow (`{ id, kind }`): automations and scripts live in different places. */
+export function configRoute(flow) {
+  return `config/${flow.kind ?? 'automation'}/config/${flow.id}`;
+}
+
+/** The body HA's config API takes for `flow`: an automation carries its id, a script must not. */
+export function configBody(flow, config) {
+  return flow.kind === 'script' ? config : { ...config, id: flow.id };
 }
 
 /** The automations the gate seeded (`seed.mjs` writes this list). */

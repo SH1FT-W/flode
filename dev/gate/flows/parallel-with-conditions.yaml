@@ -1,0 +1,29 @@
+# A parallel block whose branches start with conditions, one bare action branch, a step after.
+alias: Parallel with conditions
+description: Parallel branches guarded by conditions, then a step after the block
+triggers:
+  - trigger: time
+    at: "07:00:00"
+actions:
+  - parallel:
+      - sequence:
+          - condition: state
+            entity_id: binary_sensor.movement_backyard
+            state: "on"
+          - action: light.turn_on
+            target:
+              entity_id: light.kitchen_lights
+      - sequence:
+          - condition: numeric_state
+            entity_id: sensor.outside_temperature
+            above: 20
+          - action: cover.open_cover
+            target:
+              entity_id: cover.kitchen_window
+      - action: notify.persistent_notification
+        data:
+          message: Good morning
+  - action: light.turn_off
+    target:
+      entity_id: light.entrance_color_white_lights
+mode: single

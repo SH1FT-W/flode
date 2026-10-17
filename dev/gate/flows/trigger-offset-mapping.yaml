@@ -1,0 +1,18 @@
+# Sun triggers with offset as a mapping: numbers (FLODE's form) and strings (kept verbatim).
+alias: Trigger offset as mapping
+description: Sun triggers whose offset is a mapping, with numbers and with strings
+triggers:
+  - trigger: sun
+    event: sunset
+    offset:
+      minutes: 30
+  - trigger: sun
+    event: sunrise
+    offset:
+      hours: "1"
+      minutes: "30"
+actions:
+  - action: light.toggle
+    target:
+      entity_id: light.entrance_color_white_lights
+mode: single
