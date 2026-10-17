@@ -35,8 +35,8 @@ import {
   validateGraphStructure,
   withManualStart,
 } from '@flode/shared';
-import { load as yamlLoad } from 'js-yaml';
 import { generateEdgeId, generateGraphId, generateNodeId } from '../utils/generateIds';
+import { loadHaYaml } from '../yaml';
 import { applyHeuristicLayout } from './layout';
 
 // Type guards for Home Assistant objects
@@ -470,7 +470,7 @@ export class YamlParser {
 
     try {
       // Step 1: Parse YAML string
-      let parsed = yamlLoad(yamlString) as Record<string, unknown> | unknown[];
+      let parsed = loadHaYaml(yamlString) as Record<string, unknown> | unknown[];
 
       // Handle array format (list of automations) - use the first one
       if (Array.isArray(parsed)) {

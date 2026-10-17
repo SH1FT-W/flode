@@ -310,7 +310,7 @@ The lane geometry (where a branch's cards sit, where its line turns, how far a b
 
 ### 5.1 Steps
 
-1. **Load.** The YAML is parsed with js-yaml. A list of automations is accepted; only the first one is opened, with a warning.
+1. **Load.** The YAML is parsed with js-yaml under Home Assistant's rules (`loadHaYaml` in `yaml.ts`: YAML 1.1 booleans and numbers, no timestamps, so `2026-10-01 10:00:00` stays the text it is). A list of automations is accepted; only the first one is opened, with a warning.
 2. **Metadata.** `_flode_metadata` (or the legacy `_cafe_metadata`) is read from `variables:` and validated. Everything else in `variables:` becomes `userVariables`.
 3. **Manual start.** An automation without triggers gets the hidden start node (3.7).
 4. **State machine?** If the actions are exactly FLODE's state machine shape (a `variables` step with `current_node` and `flow_context`, then a `repeat` of `choose` entries ending on `current_node == "END"`), and either the metadata says `strategy: state-machine` or the loop condition is FLODE's exact one, the automation is read back as a graph through the dispatcher (6.4). A state machine that was changed outside FLODE (a top-level condition added, another step) is kept as ordinary steps instead, with a note, so nothing is lost.

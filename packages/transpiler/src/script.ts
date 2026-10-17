@@ -1,6 +1,6 @@
 import type { FlowGraph } from '@flode/shared';
 import { automationToScriptConfig, isPlainObject, scriptToAutomationConfig } from '@flode/shared';
-import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
+import { dump as yamlDump } from 'js-yaml';
 import type { FlowTranspiler, YamlOptions } from './FlowTranspiler';
 import type { ParseResult, YamlParserOptions } from './parser/YamlParser';
 import { loadHaYaml } from './yaml';
@@ -38,7 +38,7 @@ export function transpileScript(
   if (!result.success || !result.yaml) {
     return { success: false, errors: result.errors, warnings: result.warnings };
   }
-  const automation = yamlLoad(result.yaml);
+  const automation = loadHaYaml(result.yaml);
   if (!isPlainObject(automation)) {
     return {
       success: false,
