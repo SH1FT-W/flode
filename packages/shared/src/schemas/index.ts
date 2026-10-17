@@ -120,6 +120,7 @@ export {
   CONDITION_STEP_KEY,
   createRawConditionData,
   createRawStepData,
+  createRawTriggerData,
   createShorthandConditionData,
   getRawStep,
   getShorthandCondition,

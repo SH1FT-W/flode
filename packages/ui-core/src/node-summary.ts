@@ -367,8 +367,10 @@ function summarizeScriptStart(data: TriggerNodeData, ctx: SummaryContext): NodeS
   };
 }
 
-export function summarizeTrigger(data: TriggerNodeData, ctx: SummaryContext): NodeSummary {
+export function summarizeTrigger(trigger: TriggerNodeData, ctx: SummaryContext): NodeSummary {
   const { t } = ctx;
+  // A pass-through trigger is described from its original fields
+  const data: TriggerNodeData = { ...getRawStep(trigger), ...trigger };
   const platform = data.trigger;
   if (platform === SCRIPT_START_TRIGGER) return summarizeScriptStart(data, ctx);
   if (isTargetedPlatform(platform)) return summarizeTargeted('trigger', platform, data.target, ctx);

@@ -83,9 +83,9 @@ export function cleanTrigger(data: object): Record<string, unknown> {
   );
 }
 
-/** The trigger a trigger node stands for. */
+/** The trigger a trigger node stands for; a pass-through trigger as it came. */
 export function buildTrigger(node: TriggerNode): Record<string, unknown> {
-  return tagStep(cleanTrigger(node.data), node.id);
+  return tagStep(buildRawStepAction(node.data) ?? cleanTrigger(node.data), node.id);
 }
 
 const INTERNAL_KEYS = new Set<string>(INTERNAL_CONDITION_KEYS);

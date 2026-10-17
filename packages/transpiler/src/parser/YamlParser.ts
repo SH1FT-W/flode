@@ -21,6 +21,7 @@ import {
   CONDITION_STEP_KEY,
   createRawConditionData,
   createRawStepData,
+  createRawTriggerData,
   createShorthandConditionData,
   delayValue,
   FlowGraphMetadataSchema,
@@ -1687,52 +1688,17 @@ export class YamlParser {
   }
 
   /**
-   * Build a best-effort trigger node when HATriggerSchema validation fails.
-   * Always returns type:'trigger' so validateGraphStructure does not fail.
+   * A trigger node for a trigger that failed `HATriggerSchema` validation:
+   * kept verbatim (see createRawTriggerData), so the graph still has its
+   * trigger and the automation is written back unchanged.
    */
   private createFallbackTriggerNode(nodeId: string, originalData: unknown): TriggerNode {
-    const data = (
-      typeof originalData === 'object' && originalData !== null
-        ? (originalData as Record<string, unknown>)
-        : {}
-    ) as Record<string, unknown>;
-
-    // Determine trigger type from various formats:
-    // 1. Modern HA: { trigger: 'state', ... }
-    // 2. Legacy HA: { platform: 'state', ... }
-    // 3. Dict-keyed: { state: { entity_id: '...' } }
-    let triggerType: string;
-    let nestedFields: Record<string, unknown> = {};
-
-    if (typeof data.trigger === 'string') {
-      triggerType = data.trigger;
-      const { platform: _p, trigger: _t, ...rest } = data;
-      nestedFields = rest;
-    } else if (typeof data.platform === 'string') {
-      triggerType = data.platform;
-      const { platform: _p, ...rest } = data;
-      nestedFields = rest;
-    } else {
-      // Dict-keyed format: first key is the trigger type, value contains fields
-      const firstKey = Object.keys(data).find(
-        (k) => !['alias', 'id', 'enabled', 'variables'].includes(k)
-      );
-      if (firstKey && typeof data[firstKey] === 'object' && data[firstKey] !== null) {
-        triggerType = firstKey;
-        nestedFields = data[firstKey] as Record<string, unknown>;
-      } else {
-        triggerType = 'state';
-      }
-    }
-
+    const raw = isPlainObject(originalData) ? originalData : {};
     return {
       id: nodeId,
       type: 'trigger',
       position: { x: 0, y: 0 },
-      data: {
-        trigger: triggerType,
-        ...nestedFields,
-      } as TriggerNode['data'],
+      data: HATriggerSchema.parse(createRawTriggerData(raw)),
     };
   }
 

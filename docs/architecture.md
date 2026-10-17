@@ -126,7 +126,7 @@ The `data` can carry a few FLODE-internal marker keys that are never written to 
 
 | Key | On | Meaning |
 |---|---|---|
-| `_raw` | action, condition | The original HA step, verbatim. See 3.4. |
+| `_raw` | action, condition, trigger | The original HA step, verbatim. See 3.4. |
 | `_shorthand` | condition | Came in as a bare Jinja string (`- "{{ … }}"`) and is written back as one while it is still a plain template condition. |
 | `_step` | condition | Was a `- condition:` step inside the actions, not an entry of the top-level `conditions:`. It is written back as a step as long as it has no No path; once the user connects its No output it becomes an `if` like any other condition (6.3). |
 | `_chooseCase`, `_chooseCaseTotal` | condition | Legacy markers from the expanded choose chains (3.6). |
@@ -149,7 +149,7 @@ A connection that leads back to an earlier card (a loop) is an ordinary edge wit
 
 When the parser meets a step it has no node type for (the `scene:` shorthand, a step from a newer Home Assistant, a step whose `enabled:` is a template) or one of HA's building blocks (4.1), it keeps the whole step under `_raw` in an action node, with `alias` and `enabled: false` mirrored next to it so the card can show them. The transpiler writes `_raw` back exactly as it came, except that switching the card on or off in FLODE overrides the step's `enabled`.
 
-The same exists for conditions FLODE cannot model: the condition is kept verbatim and written back unchanged instead of being replaced by something that means something else to Home Assistant.
+The same exists for conditions and triggers FLODE cannot model (a condition from a newer Home Assistant, a trigger whose `offset` is a mapping of strings HA coerces, an MQTT `payload: true`): the step is kept verbatim, with its type beside it so the card can name it, and written back unchanged instead of being replaced by something that means something else to Home Assistant. HA's editor gets the original step; what comes back from it is kept verbatim again as long as FLODE's schema does not model it.
 
 This is how FLODE keeps the promise of never losing part of an automation it opens. A step it does not understand is still a card, still movable, still enabled or disabled, and still saved as it was.
 

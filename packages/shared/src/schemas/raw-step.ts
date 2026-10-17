@@ -56,6 +56,20 @@ export function createRawConditionData(
 }
 
 /**
+ * Trigger node data for a trigger FLODE cannot model (its fields fail
+ * `HATriggerSchema`, e.g. an `offset` mapping of strings HA coerces). The
+ * trigger is kept verbatim under `RAW_STEP_KEY` and written back unchanged;
+ * its type stays beside it so the card can name it.
+ */
+export function createRawTriggerData(trigger: Record<string, unknown>): Record<string, unknown> {
+  const type = trigger.trigger ?? trigger.platform;
+  return {
+    ...createRawStepData(trigger),
+    ...(typeof type === 'string' ? { trigger: type } : {}),
+  };
+}
+
+/**
  * The HA condition to write for a pass-through condition node — the original
  * unchanged unless its `enabled` state was toggled in FLODE.
  */

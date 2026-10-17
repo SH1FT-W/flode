@@ -25,6 +25,15 @@ describe('ha-step', () => {
     });
   });
 
+  it('keeps a trigger FLODE cannot model verbatim and hands HA the original', () => {
+    const step = { trigger: 'sun', event: 'sunset', offset: { hours: '1' } };
+    const kept = stepToNode('trigger', step);
+    expect(kept.type).toBe('trigger');
+    expect(kept.data.trigger).toBe('sun');
+    expect(kept.data._raw).toEqual(step);
+    expect(nodeToStep(node('trigger', kept.data))).toEqual(step);
+  });
+
   it('drops keys that are present but undefined (HA forms reject them)', () => {
     const step = nodeToStep(node('action', { service: 'light.turn_on', data_template: undefined }));
     expect(Object.keys(step)).toEqual(['action']);

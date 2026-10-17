@@ -91,6 +91,29 @@ describe('shortenMiddle', () => {
   });
 });
 
+describe('a trigger kept verbatim', () => {
+  it('is described from its original fields', () => {
+    const raw = summarizeTrigger(
+      {
+        trigger: 'numeric_state',
+        _raw: {
+          trigger: 'numeric_state',
+          entity_id: 'sensor.power',
+          above: 10.5,
+          for: { hours: '1' },
+        },
+      },
+      makeContext()
+    );
+    const plain = summarizeTrigger(
+      { trigger: 'numeric_state', entity_id: 'sensor.power', above: 10.5, for: { hours: '1' } },
+      makeContext()
+    );
+    expect(raw).toEqual(plain);
+    expect(raw.title).toBe('sensor.power über 10,5 W');
+  });
+});
+
 describe('numbers, units and long names', () => {
   it("thresholds use the entity's unit and the user's number format", () => {
     expect(

@@ -3,9 +3,11 @@ import {
   buildRawStepAction,
   createRawConditionData,
   createRawStepData,
+  createRawTriggerData,
   delayValue,
   type FlowNode,
   HAConditionSchema,
+  HATriggerSchema,
   INTERNAL_CONDITION_KEYS,
   isDeviceAction,
   isPlainObject,
@@ -105,7 +107,7 @@ function rawNodeToStep(node: FlowNode): Record<string, unknown> {
   const data: Record<string, unknown> = isPlainObject(node.data) ? node.data : {};
   switch (node.type) {
     case 'trigger':
-      return data;
+      return buildRawStepAction(data) ?? data;
     case 'condition': {
       const raw = buildRawCondition(data);
       if (raw) return raw;
@@ -131,7 +133,11 @@ export function stepToNode(
   step: Record<string, unknown>,
   previous?: FlowNode
 ): { type: NodeType; data: Record<string, unknown> } {
-  if (kind === 'trigger') return { type: 'trigger', data: step };
+  if (kind === 'trigger') {
+    // A trigger FLODE cannot model stays a pass-through (written back verbatim).
+    const trigger = HATriggerSchema.safeParse(step).success ? step : createRawTriggerData(step);
+    return { type: 'trigger', data: trigger };
+  }
   if (kind === 'condition' || (typeof step.condition === 'string' && !('action' in step))) {
     const kept: Record<string, unknown> = {};
     if (previous?.type === 'condition' && isPlainObject(previous.data)) {
