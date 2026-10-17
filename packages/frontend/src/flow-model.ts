@@ -223,13 +223,7 @@ export function copyNode(
   at?: { x: number; y: number }
 ): { graph: FlowGraph; id: string } {
   const position = freePosition(graph, at ?? { x: node.position.x + 40, y: node.position.y + 40 });
-  return addNode(
-    graph,
-    node.type,
-    position,
-    `${node.type}_${Date.now().toString(36)}`,
-    structuredClone(node.data)
-  );
+  return addNode(graph, node.type, position, undefined, structuredClone(node.data));
 }
 
 /** A real connection of the flow (not a drawing aid like hints or loop-backs). */
@@ -430,17 +424,30 @@ export const NODE_TYPES: readonly NodeType[] = [
   'set_variables',
 ];
 
+/**
+ * The id of a new card of `type`: the time in base 36, with a counter when a
+ * card of the graph has that id already (several cards within one millisecond).
+ */
+export function newNodeId(graph: FlowGraph, type: NodeType): string {
+  const base = `${type}_${Date.now().toString(36)}`;
+  const taken = new Set(graph.nodes.map((n) => n.id));
+  let id = base;
+  for (let n = 1; taken.has(id); n++) id = `${base}_${n}`;
+  return id;
+}
+
 /** Adds a node of `type` at `position` (snapped); returns the new graph and the node's id. */
 export function addNode(
   graph: FlowGraph,
   type: NodeType,
   position: { x: number; y: number },
-  id = `${type}_${Date.now().toString(36)}`,
+  id?: string,
   data: Record<string, unknown> = DEFAULT_DATA[type]
 ): { graph: FlowGraph; id: string } {
-  const parsed = NodeSchema.safeParse({ id, type, position, data });
-  if (!parsed.success) return { graph, id };
-  return { graph: { ...graph, nodes: [...graph.nodes, parsed.data] }, id };
+  const nodeId = id ?? newNodeId(graph, type);
+  const parsed = NodeSchema.safeParse({ id: nodeId, type, position, data });
+  if (!parsed.success) return { graph, id: nodeId };
+  return { graph: { ...graph, nodes: [...graph.nodes, parsed.data] }, id: nodeId };
 }
 
 /** `position`, moved across the flow (down, or right when it runs top to bottom) until the card overlaps no other card. */

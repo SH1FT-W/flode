@@ -341,3 +341,36 @@ describe('lines running back (#31)', () => {
     ).toBe(50);
   });
 });
+
+describe('ids of added cards', () => {
+  const base: FlowGraph = {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    version: 1,
+    name: 'ids',
+    nodes: [
+      {
+        id: 't',
+        type: 'trigger',
+        position: { x: 0, y: 0 },
+        data: { trigger: 'state', entity_id: 'light.a' },
+      },
+    ],
+    edges: [],
+  };
+
+  it('stay unique when many cards are added within the same millisecond', () => {
+    let graph = base;
+    for (let i = 0; i < 100; i++) {
+      graph = addNode(graph, 'action', { x: 0, y: 100 * (i + 1) }).graph;
+    }
+    expect(graph.nodes).toHaveLength(101);
+    expect(new Set(graph.nodes.map((n) => n.id)).size).toBe(101);
+  });
+
+  it('stay unique when a card is duplicated twice in a row', () => {
+    const once = duplicateNode(base, base.nodes[0], { x: 0, y: 200 });
+    const twice = duplicateNode(once.graph, base.nodes[0], { x: 0, y: 400 });
+    expect(twice.graph.nodes).toHaveLength(3);
+    expect(new Set(twice.graph.nodes.map((n) => n.id)).size).toBe(3);
+  });
+});
