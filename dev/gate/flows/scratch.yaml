@@ -1,4 +1,5 @@
 # The gate edits this one (duplicate, delete, undo, save) — never a fixture.
+alias: Scratch
 description: Gate scratch flow for editing checks
 mode: single
 triggers:

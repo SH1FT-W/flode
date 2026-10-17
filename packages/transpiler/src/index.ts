@@ -7,6 +7,7 @@ export type { ValidationError, ValidationResult } from './analyzer/validator';
 export { formatValidationErrors, validateFlowGraph } from './analyzer/validator';
 export type { TranspileResult, YamlOptions } from './FlowTranspiler';
 export { FlowTranspiler, transpiler } from './FlowTranspiler';
+export { firstDifference, internalKeysIn, normalizeHaConfig } from './ha-equal';
 export { applyHeuristicLayout } from './parser/layout';
 export type { ParseResult } from './parser/YamlParser';
 // Parser

@@ -1,4 +1,5 @@
 # Real demo entities, so both card texts (FLODE / like HA) have names to show.
+alias: Card text
 description: Gate check for both card texts
 mode: restart
 triggers:
