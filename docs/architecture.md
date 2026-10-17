@@ -603,11 +603,11 @@ No release goes out without a green run of `dev/gate/gate.sh` for exactly the co
 1. **static**: Biome, type check, all unit tests, build;
 2. **test HA**: copies the build into a Docker Home Assistant, restarts it, and loads every fixture that HA itself accepts plus a few gate flows (automations kept in `dev/gate/flows/` for the browser checks);
 3. **cards** (Chromium and WebKit): opens every automation like a user and checks for console errors, unexpected reloads, warnings about unread parts, and broken card texts;
-4. **roundtrip**: moves one card in every automation, saves, and compares what Home Assistant stores with the original, apart from the metadata block and HA's own key migrations. Accepted differences are listed with a reason in `known.json`. This is the second invariant, stronger than the unit tests' one: not only the graph but the YAML Home Assistant stores must come back unchanged;
+4. **roundtrip**: opens every flow (automations and scripts), saves it once as it is and once after moving one card, and after each save compares what Home Assistant stores with the original, apart from the metadata block and HA's own key migrations (`ha-equal.ts`, the same definition as the unit tests). Accepted differences are listed with a reason in `known.json`. This is the hard rule of 10.2 in the real editor and the real Home Assistant: not only the graph but the config Home Assistant stores must come back unchanged;
 5. **actions**: select, duplicate, undo, redo, disable, tidy up, minimap, branch cards, add a step through HA's dialog and save, the runs view, a phone-sized window, the "What's new" sheet;
 6. **visual**: screenshots of typical automations in both browsers, compared with the last release; differences are shown to a person, never failed automatically.
 
-`gate.sh --only <step>` runs one step while working on something; only the full run counts for a release.
+The result, `.gate/gate-<commit>.json`, lists every test of every step (a fixture in a browser, one editor action, one picture) as `ok`, `failed`, `flaky` (red once, green when run again on its own: not red, but listed so a pattern shows up), `new` (a picture without a baseline yet) or `changed` (a picture for a person to look at), with a log per test that was not ok. Only `failed` makes the gate red. `gate.sh --only <step>` runs one step while working on something; only the full run counts for a release.
 
 ### 10.4 Releases and versions
 

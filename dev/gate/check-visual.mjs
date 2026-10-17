@@ -144,6 +144,7 @@ if (makeBaseline && result.failed()) {
     fs.readFileSync(path.join(OUT_DIR, '../packages/frontend/package.json'), 'utf8')
   ).version;
   fs.writeFileSync(path.join(BASELINE_DIR, 'version.txt'), `${version}\n`);
+  for (const file of files) result.test(file, 'ok');
   result.note(`baseline stored: ${files.length} pictures for ${version}`);
   result.finish();
 } else {
@@ -153,10 +154,26 @@ if (makeBaseline && result.failed()) {
     : 'no baseline yet';
   const rows = files.map(compare);
   writeReport(rows, baselineInfo);
-  const changed = rows.filter((row) => row.status !== 'same');
+  for (const row of rows) {
+    if (row.status === 'same') result.test(row.file, 'ok');
+    else if (row.status === 'new')
+      result.test(row.file, 'new', [
+        'no baseline yet; stored with --baseline after the next release',
+      ]);
+    else
+      result.test(row.file, 'changed', [
+        `${(row.share * 100).toFixed(2)} % of the pixels differ — look at .gate/visual/report.html`,
+      ]);
+  }
+  const fresh = rows.filter((row) => row.status === 'new');
+  const changed = rows.filter((row) => row.status === 'changed');
+  if (fresh.length > 0)
+    result.note(
+      `${fresh.length} new picture(s) without a baseline yet: ${fresh.map((row) => row.file).join(', ')}`
+    );
   result.note(
     changed.length === 0
-      ? `${rows.length} pictures, all as in ${baselineInfo}`
+      ? `${rows.length - fresh.length} pictures as in ${baselineInfo}`
       : `${changed.length} of ${rows.length} pictures differ from ${baselineInfo} — look at .gate/visual/report.html`
   );
   // Differences are for a person to judge, never a failure on their own.

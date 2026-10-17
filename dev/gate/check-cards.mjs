@@ -45,43 +45,38 @@ async function run(engine) {
     await gotoPanel(page);
     for (const flow of flows) {
       const where = `${engine} · ${flow.name}`;
-      errors.length = 0;
-      try {
-        await openFlow(page, flow.name);
-      } catch (error) {
-        result.fail(`${where}: could not open (${error.message.split('\n')[0]})`);
-        await gotoPanel(page, { reload: true });
-        continue;
-      }
-      try {
-        const warnings = await inPanel(page, (panel) => panel.flow?.importWarnings ?? []);
-        if (KNOWN[flow.id] && warnings.length > 0)
-          result.note(`${where}: warns as expected (${KNOWN[flow.id]})`);
-        else if (KNOWN[flow.id])
-          result.fail(
-            `${where}: listed in known.json but opens without a warning now — remove it there`
-          );
-        else for (const warning of warnings) result.fail(`${where}: import warning "${warning}"`);
-        const own = await readCards(page);
-        checkTitles(own, `${where} [FLODE]`);
+      await result.check(
+        where,
+        async () => {
+          errors.length = 0;
+          await openFlow(page, flow.name);
+          const warnings = await inPanel(page, (panel) => panel.flow?.importWarnings ?? []);
+          if (KNOWN[flow.id] && warnings.length > 0)
+            result.note(`${where}: warns as expected (${KNOWN[flow.id]})`);
+          else if (KNOWN[flow.id])
+            result.fail(
+              `${where}: listed in known.json but opens without a warning now — remove it there`
+            );
+          else for (const warning of warnings) result.fail(`${where}: import warning "${warning}"`);
+          const own = await readCards(page);
+          checkTitles(own, `${where} [FLODE]`);
 
-        await toggleCardText(page);
-        let ha = own;
-        for (let i = 0; i < 20; i++) {
-          await page.waitForTimeout(150);
-          ha = await readCards(page);
-          if (ha.some((card, index) => card.title !== own[index]?.title)) break;
-        }
-        checkTitles(ha, `${where} [HA]`);
-        if (own.length > 0 && ha.every((card, index) => card.title === own[index]?.title))
-          result.fail(`${where} [HA]: no card got Home Assistant's text`);
-        await toggleCardText(page);
-        await closeFlow(page);
-      } catch (error) {
-        result.fail(`${where}: ${error.message.split('\n')[0]}`);
-        await gotoPanel(page, { reload: true });
-      }
-      for (const error of errors) result.fail(`${where}: ${error}`);
+          await toggleCardText(page);
+          let ha = own;
+          for (let i = 0; i < 20; i++) {
+            await page.waitForTimeout(150);
+            ha = await readCards(page);
+            if (ha.some((card, index) => card.title !== own[index]?.title)) break;
+          }
+          checkTitles(ha, `${where} [HA]`);
+          if (own.length > 0 && ha.every((card, index) => card.title === own[index]?.title))
+            result.fail(`${where} [HA]: no card got Home Assistant's text`);
+          await toggleCardText(page);
+          await closeFlow(page);
+          for (const error of errors) result.fail(`${where}: ${error}`);
+        },
+        () => gotoPanel(page, { reload: true })
+      );
     }
   } finally {
     await browser.close();

@@ -11,7 +11,8 @@
 # FLODE_GATE_DIR/config (default ../flode-test next to the repo), at FLODE_GATE_URL
 # (default http://localhost:8123); access token in FLODE_GATE_DIR/.claude-token or FLODE_GATE_TOKEN.
 #
-# Writes .gate/gate-<commit>.json (commit, clean tree, result per step) and logs to .gate/logs/.
+# Writes .gate/gate-<commit>.json (commit, clean tree, result per step and per test, flaky
+# tests) and logs to .gate/logs/ (one per step, one per test that was not ok).
 set -u
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO" || exit 2
@@ -40,10 +41,9 @@ CLEAN=true
 [ -z "$(git status --porcelain -- packages custom_components dev hacs.json package.json yarn.lock)" ] || CLEAN=false
 STARTED=$(date +%s)
 mkdir -p "$OUT/logs"
-rm -f "$OUT"/step-*.json
-RESULTS=""
+rm -f "$OUT"/step-*.json "$OUT/steps.txt"
 
-# run NAME COMMAND… — runs one step, logs it, remembers ok/failed.
+# run NAME COMMAND… — runs one step, logs it, records name|status|seconds|log for summary.mjs.
 run() {
   local name="$1"; shift
   [ -n "$ONLY" ] && [ "$ONLY" != "$name" ] && return 0
@@ -51,12 +51,21 @@ run() {
   printf '▶ %-10s' "$name"
   if "$@" >"$log" 2>&1; then echo " ✓ $(( $(date +%s) - t0 )) s"
   else status=failed; echo " ✗ $(( $(date +%s) - t0 )) s — $log"; grep -E '^\s+✗' "$log" | head -15; fi
-  grep -E '^\s+·' "$log" | head -8
-  RESULTS="$RESULTS\"$name\": \"$status\","
+  grep -E '^\s+(·|~)' "$log" | head -8
+  echo "$name|$status|$(( $(date +%s) - t0 ))|${log#"$REPO/"}" >>"$OUT/steps.txt"
 }
 
+# Biome, type check, unit tests, build — each one a test of the step "static".
 static_checks() {
-  yarn biome ci . && yarn typecheck && yarn test --run && yarn build:ha
+  local ok=true tests=""
+  for pair in "biome:yarn biome ci ." "typecheck:yarn typecheck" "unit tests:yarn test --run" "build:yarn build:ha"; do
+    local name="${pair%%:*}" cmd="${pair#*:}" status=ok
+    echo "▶ $name"
+    $cmd || { status=failed; ok=false; }
+    tests="$tests{\"name\":\"$name\",\"status\":\"$status\"},"
+  done
+  printf '{"step":"static","ok":%s,"tests":[%s]}\n' "$ok" "${tests%,}" >"$OUT/step-static.json"
+  [ "$ok" = true ]
 }
 
 prepare_ha() {
@@ -74,8 +83,16 @@ echo "FLODE gate · $COMMIT$([ $CLEAN = true ] || echo ' (uncommitted changes)')
 run static static_checks
 if [ "$ONLY" != static ]; then
   printf '▶ %-10s' "test HA"
-  if prepare_ha >"$OUT/logs/prepare.log" 2>&1; then echo " ✓ ($(grep -E 'ready|seeded' "$OUT/logs/prepare.log" | tr '\n' ' '))"
-  else echo " ✗ — $OUT/logs/prepare.log"; tail -5 "$OUT/logs/prepare.log"; exit 1; fi
+  T0=$(date +%s)
+  if prepare_ha >"$OUT/logs/prepare.log" 2>&1; then
+    echo " ✓ ($(grep -E 'ready|seeded' "$OUT/logs/prepare.log" | tr '\n' ' '))"
+    echo "test HA|ok|$(( $(date +%s) - T0 ))|.gate/logs/prepare.log" >>"$OUT/steps.txt"
+  else
+    echo " ✗ — $OUT/logs/prepare.log"; tail -5 "$OUT/logs/prepare.log"
+    echo "test HA|failed|$(( $(date +%s) - T0 ))|.gate/logs/prepare.log" >>"$OUT/steps.txt"
+    node "$GATE/summary.mjs" --commit "$COMMIT" --clean "$CLEAN" --only "$ONLY" --restart "$RESTART" --seconds $(( $(date +%s) - STARTED ))
+    exit 1
+  fi
   run cards node "$GATE/check-cards.mjs"
   run roundtrip node "$GATE/check-roundtrip.mjs"
   run actions node "$GATE/check-actions.mjs"
@@ -84,23 +101,13 @@ if [ "$ONLY" != static ]; then
   node "$GATE/cleanup.mjs" >/dev/null 2>&1
 fi
 
-OK=true
-echo "$RESULTS" | grep -q failed && OK=false
+# summary.mjs writes gate-<commit>.json (steps, every test, flaky ones) and returns 0 when all steps are ok.
 # A gate only counts for a release when it ran in full, on a clean tree, with the HA restarted.
+echo
+OK=true
+node "$GATE/summary.mjs" --commit "$COMMIT" --clean "$CLEAN" --only "$ONLY" --restart "$RESTART" --seconds $(( $(date +%s) - STARTED )) || OK=false
 COUNTS=false
 [ $OK = true ] && [ -z "$ONLY" ] && [ $RESTART = 1 ] && [ $CLEAN = true ] && COUNTS=true
-cat >"$OUT/gate-$COMMIT.json" <<EOF
-{
-  "commit": "$COMMIT",
-  "clean": $CLEAN,
-  "ok": $OK,
-  "counts_for_release": $COUNTS,
-  "only": "$ONLY",
-  "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "seconds": $(( $(date +%s) - STARTED )),
-  "steps": { ${RESULTS%,} }
-}
-EOF
 echo
 if [ $OK = true ]; then
   echo "✓ gate green · $COMMIT · $(( $(date +%s) - STARTED )) s$([ $COUNTS = true ] || echo ' · does not count for a release (partial run or uncommitted changes)')"

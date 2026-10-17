@@ -40,18 +40,23 @@ async function scratchFor(engine) {
 
 const slug = (text) => text.replace(/[^a-z0-9]+/gi, '-');
 
-/** Runs one check; a thrown error counts as its failure (with a screenshot in .gate/shots). */
-async function step(where, name, fn, page) {
-  try {
-    await fn();
-  } catch (error) {
-    const shot = path.join(OUT_DIR, 'shots', `${slug(`${where}-${name}`)}.png`);
-    fs.mkdirSync(path.dirname(shot), { recursive: true });
-    await page?.screenshot({ path: shot }).catch(() => undefined);
-    result.fail(
-      `${where}: ${name}: ${error.message.split('\n')[0]}${page ? ` (${path.relative(REPO, shot)})` : ''}`
-    );
-  }
+/**
+ * Runs one check as one test of the step; a thrown error is its failure (with a
+ * screenshot in .gate/shots). No second try: the checks build on each other.
+ */
+function step(where, name, fn, page) {
+  return result.check(`${where}: ${name}`, async () => {
+    try {
+      await fn();
+    } catch (error) {
+      const shot = path.join(OUT_DIR, 'shots', `${slug(`${where}-${name}`)}.png`);
+      fs.mkdirSync(path.dirname(shot), { recursive: true });
+      await page?.screenshot({ path: shot }).catch(() => undefined);
+      throw new Error(
+        `${error.message.split('\n')[0]}${page ? ` (${path.relative(REPO, shot)})` : ''}`
+      );
+    }
+  });
 }
 
 function expect(condition, message) {

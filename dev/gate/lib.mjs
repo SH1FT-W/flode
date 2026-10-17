@@ -316,11 +316,30 @@ export function readCards(page) {
   });
 }
 
-/** Result bookkeeping: each check adds lines; `finish` writes them and sets the exit code. */
+/** File name for a test's log: letters and digits of its name. */
+function logName(name) {
+  return name
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+    .slice(0, 100);
+}
+
+/**
+ * Result bookkeeping for one step. Every check is one test with a status:
+ * `ok`, `failed`, `flaky` (red once, green when run again on its own: listed, not red),
+ * `new` / `changed` (pictures without a baseline / for a person to look at). A test that
+ * is not ok gets its lines in `.gate/logs/<step>/<test>.log`. `finish` writes
+ * `.gate/step-<step>.json` for gate.sh and sets the exit code; only `failed` makes it red.
+ */
 export function report(step) {
   const failures = [];
   const notes = [];
-  return {
+  const tests = [];
+  const logDir = path.join(OUT_DIR, 'logs', step);
+  fs.rmSync(logDir, { recursive: true, force: true });
+  fs.mkdirSync(logDir, { recursive: true });
+  const self = {
     fail(message) {
       failures.push(message);
       console.log(`  ✗ ${message}`);
@@ -332,15 +351,69 @@ export function report(step) {
       notes.push(message);
       console.log(`  · ${message}`);
     },
+    /** Records one test; `lines` (what went wrong, or what to look at) go to its log. */
+    test(name, status, lines = []) {
+      const entry = { name, status };
+      if (status !== 'ok' && lines.length > 0) {
+        const file = path.join(logDir, `${logName(name)}.log`);
+        fs.writeFileSync(file, `${name}\n${status}\n\n${lines.join('\n')}\n`);
+        entry.log = path.relative(REPO, file);
+      }
+      tests.push(entry);
+    },
+    /**
+     * Runs `fn` as one test: its `fail` calls and a thrown error are its failures. When it
+     * failed and `retry` is given, `retry()` puts things back and `fn` runs once more on
+     * its own — green then means `flaky` (listed, not red), red again means `failed`.
+     * A flow that opened only on the second try counts as flaky too.
+     */
+    async check(name, fn, retry) {
+      const attempt = async () => {
+        const mark = failures.length;
+        try {
+          await fn();
+        } catch (error) {
+          self.fail(`${name}: ${error.message.split('\n')[0]}`);
+        }
+        return failures.splice(mark);
+      };
+      const opened = retries.length;
+      const first = await attempt();
+      if (first.length === 0) {
+        if (retries.length > opened) self.test(name, 'flaky', ['opened only on the second try']);
+        else self.test(name, 'ok');
+        return;
+      }
+      if (retry) {
+        await retry().catch(() => undefined);
+        const second = await attempt();
+        if (second.length === 0) {
+          console.log(`  ~ ${name}: green on the second try (flaky)`);
+          self.test(name, 'flaky', ['first try:', ...first]);
+          return;
+        }
+        first.push('second try:', ...second);
+      }
+      failures.push(...first);
+      self.test(name, 'failed', first);
+    },
     finish(extra = {}) {
       if (retries.length > 0) this.note(`opened only on the second try: ${retries.join(', ')}`);
+      const flaky = tests.filter((test) => test.status === 'flaky').map((test) => test.name);
+      if (flaky.length > 0)
+        this.note(`flaky (green on the second try, not red): ${flaky.join(', ')}`);
       fs.mkdirSync(OUT_DIR, { recursive: true });
       fs.writeFileSync(
         path.join(OUT_DIR, `step-${step}.json`),
-        JSON.stringify({ step, ok: failures.length === 0, failures, notes, ...extra }, null, 2)
+        JSON.stringify(
+          { step, ok: failures.length === 0, failures, notes, tests, flaky, ...extra },
+          null,
+          2
+        )
       );
       console.log(failures.length === 0 ? `✓ ${step}` : `✗ ${step}: ${failures.length} failure(s)`);
       process.exitCode = failures.length === 0 ? 0 : 1;
     },
   };
+  return self;
 }
