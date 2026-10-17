@@ -577,7 +577,7 @@ actions:
                 - variables:
                     current_node: END
           default:
-            - service: system_log.write
+            - action: system_log.write
               data:
                 message: "FLODE: Unknown state \\"{{ current_node }}\\", ending flow"
                 level: warning
@@ -926,7 +926,7 @@ actions:
                 - variables:
                     current_node: action-sm-1
           default:
-            - service: system_log.write
+            - action: system_log.write
               data:
                 message: "FLODE: Unknown state \\"{{ current_node }}\\", ending flow"
                 level: warning

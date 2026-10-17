@@ -247,7 +247,7 @@ export class StateMachineStrategy extends BaseStrategy {
               choose: chooseBlocks,
               default: [
                 {
-                  service: 'system_log.write',
+                  action: 'system_log.write',
                   data: {
                     message: 'FLODE: Unknown state "{{ current_node }}", ending flow',
                     level: 'warning',
