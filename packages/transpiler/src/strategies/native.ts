@@ -1,7 +1,7 @@
 import type { ConditionNode, FlowGraph, FlowNode, TriggerNode } from '@flode/shared';
 import { getShorthandCondition, isConditionStep } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
-import { findBackEdges } from '../analyzer/topology';
+import { findBackEdges, sharedConditionTarget } from '../analyzer/topology';
 import { BaseStrategy, buildAutomationSettings, type HAYamlOutput } from './base';
 import {
   buildCondition,
@@ -32,6 +32,17 @@ interface RepeatPattern {
   count?: number | string;
   /** The node ID where flow continues after the loop */
   exitNodeId: string | null;
+}
+
+/**
+ * Several conditions written as one `if` with `condition: or`: their Yes
+ * outputs meet at `thenNodeId`, their No outputs at `elseNodeId` (each
+ * `null` when none of the conditions has that output).
+ */
+interface OrPattern {
+  conditions: ConditionNode[];
+  thenNodeId: string | null;
+  elseNodeId: string | null;
 }
 
 /**
@@ -115,19 +126,7 @@ export class NativeStrategy extends BaseStrategy {
       const orPattern = this.detectOrPattern(flow, uniqueFirstActions);
 
       if (orPattern) {
-        // Build OR condition block
-        const orConditions = orPattern.conditions.map((c) => buildCondition(c));
-        const visited = new Set(orPattern.conditions.map((c) => c.id));
-
-        const thenSequence = this.buildSequenceFromNode(flow, orPattern.convergenceNode, visited);
-
-        actions = [
-          {
-            if: [{ condition: 'or', conditions: orConditions }],
-            then: thenSequence,
-            else: [],
-          },
-        ];
+        actions = this.buildOrBlock(flow, orPattern, new Set());
       } else if (uniqueFirstActions.every((nodeId) => this.isTriggerIdCondition(flow, nodeId))) {
         // Each branch is an exclusive trigger-id route: sequential `if:` blocks, not a parallel block.
         actions = uniqueFirstActions.flatMap((nodeId) =>
@@ -181,6 +180,9 @@ export class NativeStrategy extends BaseStrategy {
     if (starts.length <= 1) {
       return starts.flatMap((id) => this.buildSequenceFromNode(flow, id, new Set(visited)));
     }
+    // Several conditions whose outputs meet again: one `or`, not a parallel block
+    const orPattern = this.detectOrPattern(flow, starts);
+    if (orPattern) return this.buildOrBlock(flow, orPattern, visited);
     const merge = this.findConvergencePoint(flow, starts);
     const branches = starts
       .map((id) =>
@@ -612,69 +614,46 @@ export class NativeStrategy extends BaseStrategy {
   }
 
   /**
-   * Detect if multiple first actions form an OR pattern
-   * (all are conditions whose true OR false paths converge to the same node)
+   * The OR pattern these nodes form, if they are conditions whose Yes outputs
+   * all meet at one node, or whose No outputs do, with the other outputs
+   * absent on all of them or meeting at one node too (`isOrConditionGroup`
+   * in the topology analysis is the same rule). Only forward edges count.
    */
-  private detectOrPattern(
-    flow: FlowGraph,
-    firstActionIds: string[]
-  ): { conditions: ConditionNode[]; convergenceNode: string; isFromFalsePaths: boolean } | null {
-    // All first actions must be condition nodes
-    const conditions = firstActionIds.map((id) => this.getNode(flow, id));
-    if (!conditions.every((n): n is ConditionNode => n?.type === 'condition')) {
-      return null;
-    }
+  private detectOrPattern(flow: FlowGraph, nodeIds: string[]): OrPattern | null {
+    if (nodeIds.length < 2) return null;
+    const conditions = nodeIds.map((id) => this.getNode(flow, id));
+    if (!conditions.every((n): n is ConditionNode => n?.type === 'condition')) return null;
+    const forward = { ...flow, edges: flow.edges.filter((e) => !this.backEdgeIds.has(e.id)) };
+    const thenNodeId = sharedConditionTarget(forward, nodeIds, 'true');
+    const elseNodeId = sharedConditionTarget(forward, nodeIds, 'false');
+    if (thenNodeId === undefined || elseNodeId === undefined) return null;
+    if (thenNodeId === null && elseNodeId === null) return null;
+    return { conditions, thenNodeId, elseNodeId };
+  }
 
-    // Collect true and false targets for each condition
-    const trueTargets = new Set<string>();
-    const falseTargets = new Set<string>();
-    let conditionsWithTruePath = 0;
-    let conditionsWithFalsePath = 0;
-
-    for (const cond of conditions) {
-      const trueEdge = flow.edges.find((e) => e.source === cond.id && e.sourceHandle === 'true');
-      const falseEdge = flow.edges.find((e) => e.source === cond.id && e.sourceHandle === 'false');
-      if (trueEdge) {
-        trueTargets.add(trueEdge.target);
-        conditionsWithTruePath++;
-      }
-      if (falseEdge) {
-        falseTargets.add(falseEdge.target);
-        conditionsWithFalsePath++;
-      }
-    }
-
-    // OR via true paths: all conditions have the same true target
-    // AND either no false paths exist OR all false paths also converge (no information loss)
-    if (trueTargets.size === 1 && conditionsWithTruePath === firstActionIds.length) {
-      // Reject if false paths diverge — that would silently drop else-branch actions
-      if (conditionsWithFalsePath > 0 && falseTargets.size > 1) {
-        return null;
-      }
-      const convergenceNode = [...trueTargets][0];
-      return {
-        conditions: conditions as ConditionNode[],
-        convergenceNode,
-        isFromFalsePaths: false,
-      };
-    }
-
-    // OR via false paths: all conditions have the same false target
-    // AND either no true paths exist OR all true paths also converge
-    if (falseTargets.size === 1 && conditionsWithFalsePath === firstActionIds.length) {
-      // Reject if true paths diverge — that would silently drop then-branch actions
-      if (conditionsWithTruePath > 0 && trueTargets.size > 1) {
-        return null;
-      }
-      const convergenceNode = [...falseTargets][0];
-      return {
-        conditions: conditions as ConditionNode[],
-        convergenceNode,
-        isFromFalsePaths: true,
-      };
-    }
-
-    return null;
+  /**
+   * One `if` with `condition: or` for an OR pattern: `then` is the walk down
+   * the shared Yes output, `else` the walk down the shared No output, each
+   * until their merge point, from which the flow continues once after the `if`.
+   */
+  private buildOrBlock(flow: FlowGraph, pattern: OrPattern, visited: Set<string>): unknown[] {
+    for (const condition of pattern.conditions) visited.add(condition.id);
+    const branchStarts = [pattern.thenNodeId, pattern.elseNodeId].filter(
+      (id): id is string => id !== null
+    );
+    const merge = branchStarts.length > 1 ? this.findConvergencePoint(flow, branchStarts) : null;
+    const branch = (startId: string | null): unknown[] => {
+      if (startId === null) return [];
+      return merge
+        ? this.buildSequenceUntilNode(flow, startId, merge, new Set(visited))
+        : this.buildSequenceFromNode(flow, startId, new Set(visited));
+    };
+    const step = {
+      if: [{ condition: 'or', conditions: pattern.conditions.map((c) => buildCondition(c)) }],
+      then: branch(pattern.thenNodeId),
+      else: branch(pattern.elseNodeId),
+    };
+    return merge ? [step, ...this.buildSequenceFromNode(flow, merge, new Set(visited))] : [step];
   }
 
   /**
@@ -752,53 +731,30 @@ export class NativeStrategy extends BaseStrategy {
   }
 
   /**
-   * Find condition nodes whose specified handle (true/false) points to a given target node
-   * Returns the condition sources if there are multiple (OR pattern), empty array otherwise
+   * The OR pattern whose `handleType` outputs meet at `targetNodeId`: two or
+   * more conditions not yet written, with that output leading here.
    */
-  private findOrConditionSources(
+  private findOrPatternInto(
     flow: FlowGraph,
     targetNodeId: string,
     handleType: 'true' | 'false',
     visited: Set<string>
-  ): ConditionNode[] {
-    const sources = flow.edges
+  ): OrPattern | null {
+    const sourceIds = flow.edges
       .filter(
         (e) =>
           e.target === targetNodeId && e.sourceHandle === handleType && !this.backEdgeIds.has(e.id)
       )
-      .map((e) => this.getNode(flow, e.source))
-      .filter((n): n is ConditionNode => n?.type === 'condition' && !visited.has(n.id));
-
-    if (sources.length <= 1) return [];
-
-    // Only treat as OR if the opposite handle (else/then) of each source
-    // either has no edge, or all opposite edges converge to the same target.
-    // This prevents silent data loss when conditions have diverging else/then branches.
-    const oppositeHandle = handleType === 'true' ? 'false' : 'true';
-    const oppositeTargets = new Set<string>();
-    let sourcesWithOpposite = 0;
-    for (const src of sources) {
-      const edge = flow.edges.find(
-        (e) =>
-          e.source === src.id && e.sourceHandle === oppositeHandle && !this.backEdgeIds.has(e.id)
-      );
-      if (edge) {
-        oppositeTargets.add(edge.target);
-        sourcesWithOpposite++;
-      }
-    }
-    // If opposite paths diverge → not a clean OR pattern, skip detection
-    if (sourcesWithOpposite > 0 && oppositeTargets.size > 1) {
-      return [];
-    }
-
-    return sources;
+      .map((e) => e.source)
+      .filter((id) => !visited.has(id));
+    const pattern = this.detectOrPattern(flow, [...new Set(sourceIds)]);
+    const target = handleType === 'true' ? pattern?.thenNodeId : pattern?.elseNodeId;
+    return target === targetNodeId ? pattern : null;
   }
 
   /**
    * Recursively build action sequence from a node
    */
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: recursive graph traversal is inherently complex
   private buildSequenceFromNode(flow: FlowGraph, nodeId: string, visited: Set<string>): unknown[] {
     if (visited.has(nodeId)) {
       return []; // Avoid infinite loops
@@ -811,75 +767,12 @@ export class NativeStrategy extends BaseStrategy {
 
     const sequence: unknown[] = [];
 
-    // Check if this node is an OR convergence point (multiple conditions' true/false paths converge here)
-    const orTrueSources = this.findOrConditionSources(flow, nodeId, 'true', visited);
-    const orFalseSources = this.findOrConditionSources(flow, nodeId, 'false', visited);
-
-    if (orTrueSources.length > 1) {
-      // Multiple conditions' TRUE paths converge here - build OR block
-      const orConditions = orTrueSources.map((c) => buildCondition(c));
-      // Mark these conditions as visited
-      for (const c of orTrueSources) {
-        visited.add(c.id);
-      }
-
-      // Now add the current node to visited and build the then sequence
-      visited.add(nodeId);
-      const thenSequence =
-        node.type === 'condition'
-          ? this.buildSequenceFromNode(flow, nodeId, new Set()) // Process this condition node fresh
-          : this.buildSequenceFromNode(flow, nodeId, new Set(visited));
-
-      // For OR conditions, prepend the current node's action to the then sequence if it's not a condition
-      let finalThenSequence: unknown[];
-      if (node.type !== 'condition') {
-        const currentAction = this.buildNodeAction(node);
-        finalThenSequence = currentAction ? [currentAction, ...thenSequence] : thenSequence;
-      } else {
-        finalThenSequence = thenSequence;
-      }
-
-      sequence.push({
-        if: [{ condition: 'or', conditions: orConditions }],
-        then: finalThenSequence,
-        else: [], // OR conditions don't have a shared else path
-      });
-      return sequence;
-    }
-
-    if (orFalseSources.length > 1) {
-      // Multiple conditions' FALSE paths converge here - build OR block (negated logic)
-      // When false paths converge, it means "if NOT cond1 AND NOT cond2" which is equivalent to "if NOT (cond1 OR cond2)"
-      const orConditions = orFalseSources.map((c) => buildCondition(c));
-      // Mark these conditions as visited
-      for (const c of orFalseSources) {
-        visited.add(c.id);
-      }
-
-      // Now add the current node to visited and build the then sequence
-      visited.add(nodeId);
-      const thenSequence =
-        node.type === 'condition'
-          ? this.buildSequenceFromNode(flow, nodeId, new Set())
-          : this.buildSequenceFromNode(flow, nodeId, new Set(visited));
-
-      // For OR conditions, prepend the current node's action to the then sequence if it's not a condition
-      let finalThenSequence: unknown[];
-      if (node.type !== 'condition') {
-        const currentAction = this.buildNodeAction(node);
-        finalThenSequence = currentAction ? [currentAction, ...thenSequence] : thenSequence;
-      } else {
-        finalThenSequence = thenSequence;
-      }
-
-      // Since false paths converge, we negate by swapping then/else
-      // "if any condition is false, do this" = "if NOT(all conditions true), do this"
-      sequence.push({
-        if: [{ condition: 'or', conditions: orConditions }],
-        then: [], // When OR is true, we don't execute (this is the "else" in normal terms)
-        else: finalThenSequence, // When OR is false (all conditions false), execute
-      });
-      return sequence;
+    // Several conditions' Yes (or No) outputs meet here: one `if` with `condition: or`
+    const orPattern =
+      this.findOrPatternInto(flow, nodeId, 'true', visited) ??
+      this.findOrPatternInto(flow, nodeId, 'false', visited);
+    if (orPattern) {
+      return this.buildOrBlock(flow, orPattern, visited);
     }
 
     // Check if this node is the entry point of a repeat pattern

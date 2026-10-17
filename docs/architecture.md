@@ -401,7 +401,7 @@ On the remaining forward edges it computes:
 Each of them has shapes that look like the property but that Home Assistant can express natively, so they do not count:
 
 - **Cross-links**: parallel branches of different length that converge on one node.
-- **Converging paths**: all sources are triggers (every trigger leads to the same first step); several lines out of one card that meet again (a `parallel` block followed by more steps); several conditions whose Yes outputs, or whose No outputs, meet (an `or` condition); the Yes and the No path of one condition meeting again (an `if/then/else` followed by more steps).
+- **Converging paths**: all sources are triggers (every trigger leads to the same first step); several lines out of one card that meet again (a `parallel` block followed by more steps); several conditions whose Yes outputs, or whose No outputs, meet, while their other outputs are absent on all of them or meet at one node too (an `or` condition with a `then` and an `else`); the Yes and the No path of one condition, or of such an `or`, meeting again (an `if/then/else` followed by more steps).
 - **Divergent trigger paths**: every trigger leads only to `condition: trigger` nodes, which test the trigger id at run time and are written as sequential `if` blocks ("trigger-id routing").
 
 `isTree` is true when none of the four applies. Then the native strategy is used; otherwise the state machine.
@@ -416,7 +416,7 @@ Each of them has shapes that look like the property but that Home Assistant can 
   - an action, delay, wait or variables node becomes its step (`steps.ts`);
   - a condition node that came in as a `- condition:` step (`_step`) and still has no No path is written back as that step;
   - any other condition becomes an `if:` step. Its `then:` is the walk down the Yes output, its `else:` the walk down the No output, each until the **merge point**: the first node reachable from both outputs (`findConvergencePoint`: among the nodes reachable from every branch, the one with the smallest maximum distance from the branch starts). The walk continues after the `if` from that merge point. A condition with only a Yes output has no merge point, so everything after it is nested under `then`;
-  - several conditions whose Yes outputs meet at the same node become one `if` with `condition: or` (No outputs meeting become the `else` of that `or`);
+  - several conditions whose Yes outputs meet at the same node become one `if` with `condition: or`; their No outputs meeting at one node become the `else` of that `or` (only the No outputs meeting: an empty `then` and that `else`). The walk continues after the `if` from the merge point of `then` and `else`. The rule is `isOrConditionGroup` in `topology.ts`, shared with the topology analysis: a No output on only some of the conditions, or No outputs leading to different nodes, is not an `or`, and the state machine writes that flow;
   - a node with several successors becomes a `parallel:` step with one branch per successor, each built until the common merge point;
   - several `condition: trigger` nodes after the triggers become sequential `if` blocks;
   - a block card (`_raw`) is written verbatim.

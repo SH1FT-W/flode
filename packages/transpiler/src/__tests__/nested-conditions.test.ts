@@ -1333,9 +1333,22 @@ describe('Nested Conditions', () => {
       expect(yaml).toContain('condition: state');
       expect(yaml).toContain('condition: numeric_state');
 
-      // Should have the action in the else block (since false paths converge)
-      expect(yaml).toContain('action: notify.mobile_app');
-      expect(yaml).toContain('Both conditions failed');
+      // The action is the else of the or (the false paths converge), the then stays empty
+      expect(result.output?.automation?.actions).toEqual([
+        {
+          if: [
+            {
+              condition: 'or',
+              conditions: [
+                { condition: 'state', entity_id: 'light.living_room', state: 'on' },
+                { condition: 'numeric_state', entity_id: 'sensor.temperature', above: '25' },
+              ],
+            },
+          ],
+          then: [],
+          else: [{ action: 'notify.mobile_app', data: { message: 'Both conditions failed' } }],
+        },
+      ]);
     });
 
     it('should handle three parallel conditions converging to OR', () => {

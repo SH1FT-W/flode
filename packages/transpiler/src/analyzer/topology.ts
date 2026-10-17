@@ -70,6 +70,39 @@ export function findBackEdges(flow: FlowGraph): Set<string> {
 /**
  * Result of topology analysis
  */
+/**
+ * The node every `handle` output of these conditions leads to: `null` when
+ * none of them has that output, `undefined` when only some have it, one has
+ * several, or they lead to different nodes.
+ */
+export function sharedConditionTarget(
+  flow: FlowGraph,
+  conditionIds: string[],
+  handle: 'true' | 'false'
+): string | null | undefined {
+  const targets = conditionIds.map((id) =>
+    flow.edges.filter((e) => e.source === id && e.sourceHandle === handle).map((e) => e.target)
+  );
+  if (targets.every((t) => t.length === 0)) return null;
+  if (!targets.every((t) => t.length === 1)) return undefined;
+  const unique = new Set(targets.map((t) => t[0]));
+  return unique.size === 1 ? targets[0][0] : undefined;
+}
+
+/**
+ * Several conditions that are written as one `condition: or` (Internals 6.3):
+ * their Yes outputs all meet at one node, or their No outputs do, and the
+ * other outputs are either absent on every one of them or meet at one node
+ * too (the `else`, or the `then`, of that `or`). Anything else, e.g. a No
+ * output on only one of them, has no `or` that means the same.
+ */
+export function isOrConditionGroup(flow: FlowGraph, conditionIds: string[]): boolean {
+  if (conditionIds.length < 2) return false;
+  const yes = sharedConditionTarget(flow, conditionIds, 'true');
+  const no = sharedConditionTarget(flow, conditionIds, 'false');
+  return yes !== undefined && no !== undefined && (yes !== null || no !== null);
+}
+
 export interface TopologyAnalysis {
   /**
    * True if the graph is a simple tree (can use native HA YAML)
@@ -473,8 +506,7 @@ function detectConvergingPaths(flow: FlowGraph): boolean {
         const isParallelConvergence = checkParallelConvergence(
           flow,
           [...uniqueSources],
-          outgoingEdges,
-          nodeId
+          outgoingEdges
         );
 
         if (!isParallelConvergence) {
@@ -501,23 +533,16 @@ function detectConvergingPaths(flow: FlowGraph): boolean {
 function checkParallelConvergence(
   flow: FlowGraph,
   convergingSources: string[],
-  _outgoingEdges: Map<string, string[]>,
-  convergenceTargetId: string
+  _outgoingEdges: Map<string, string[]>
 ): boolean {
-  // Check: if all converging sources are conditions and all incoming edges
-  // to the convergence point have the same sourceHandle (all 'true' OR all 'false'),
-  // this is an OR condition pattern that CAN be handled by native strategy.
-  const incomingEdgesToTarget = flow.edges.filter((e) => e.target === convergenceTargetId);
+  // Several conditions whose Yes outputs (or No outputs) all meet here, with
+  // their other outputs absent or meeting at one node too: an OR condition
+  // pattern the native strategy writes as one `condition: or` with then/else.
   const allSourcesAreConditions = convergingSources.every((sourceId) => {
     const node = flow.nodes.find((n) => n.id === sourceId);
     return node?.type === 'condition';
   });
-  const allIncomingFromTruePath = incomingEdgesToTarget.every((e) => e.sourceHandle === 'true');
-  const allIncomingFromFalsePath = incomingEdgesToTarget.every((e) => e.sourceHandle === 'false');
-
-  if (allSourcesAreConditions && (allIncomingFromTruePath || allIncomingFromFalsePath)) {
-    // This is an OR condition pattern (multiple conditions' true/false paths converging)
-    // This CAN be represented as native "condition: or" in Home Assistant YAML
+  if (allSourcesAreConditions && isOrConditionGroup(flow, convergingSources)) {
     return true;
   }
 
@@ -542,8 +567,15 @@ function checkParallelConvergence(
 
     const incomingEdges = flow.edges.filter((e) => e.target === nodeId);
     if (incomingEdges.length === 0) return null;
-    // If multiple predecessors, this node is itself a convergence point — stop tracing
-    if (incomingEdges.length > 1) return null;
+    // Several predecessors: this node is itself a convergence point. Only the
+    // then (or else) of an OR condition group counts as one branch root.
+    if (incomingEdges.length > 1) {
+      const sources = [...new Set(incomingEdges.map((e) => e.source))];
+      const allConditions = sources.every(
+        (id) => flow.nodes.find((n) => n.id === id)?.type === 'condition'
+      );
+      return allConditions && isOrConditionGroup(flow, sources) ? sources.sort().join('+') : null;
+    }
 
     const pred = incomingEdges[0].source;
     const predNode = flow.nodes.find((n) => n.id === pred);
