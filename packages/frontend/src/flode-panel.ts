@@ -1579,11 +1579,16 @@ export class FlodePanel extends LitElement {
    */
   private save(named = false): Promise<void> {
     const tabId = this.activeTabId;
-    return this.saves.enqueue(
-      tabId,
-      () => this.prepareSave(tabId, named),
-      () => this.writeFlow(tabId)
-    );
+    return this.saves
+      .enqueue(
+        tabId,
+        () => this.prepareSave(tabId, named),
+        () => this.writeFlow(tabId)
+      )
+      .catch((error: unknown) => {
+        // The preparation failed (HA's name dialog): shown like any other save error
+        this.notify(`${t(this.language, 'saveFailed')}: ${errorMessage(error)}`);
+      });
   }
 
   /** Whether tab `tabId` is to be written: still shown, has changes, has a name. */
