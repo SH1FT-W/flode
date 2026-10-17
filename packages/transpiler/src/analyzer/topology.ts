@@ -340,11 +340,9 @@ function detectCrossLinks(
     const targetLevel = levelMap.get(edge.target);
 
     if (sourceLevel !== undefined && targetLevel !== undefined) {
-      // Forward edge that skips a level
-      if (targetLevel > sourceLevel + 1) {
-        return true;
-      }
-      // Backward edge (not a full cycle, but goes to earlier level)
+      // A forward edge never skips a level: the BFS gives a node the level of
+      // its first predecessor plus one, so a target is at most one level below
+      // its source. Only an edge back to an earlier level can be a cross-link.
       if (targetLevel < sourceLevel) {
         // Check if this is a parallel branch convergence pattern:
         // The target is a convergence point AND there's a parallel source
