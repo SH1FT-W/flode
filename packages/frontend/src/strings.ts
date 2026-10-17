@@ -67,6 +67,8 @@ const STRINGS = {
     shortcutsView: 'Ansicht',
     copyCard: 'Karte kopieren',
     pasteCard: 'Karte einfügen',
+    pasteNoTriggerInScript:
+      'Ein Skript hat keine Auslöser, die Karte lässt sich hier nicht einfügen',
     duplicateCard: 'Karte duplizieren',
     toggleEnabledCard: 'Karte aktivieren/deaktivieren',
     deleteCard: 'Karte oder Verbindung löschen',
@@ -419,6 +421,7 @@ const STRINGS = {
     shortcutsView: 'View',
     copyCard: 'Copy card',
     pasteCard: 'Paste card',
+    pasteNoTriggerInScript: 'A script has no triggers, so this card cannot be pasted here',
     duplicateCard: 'Duplicate card',
     toggleEnabledCard: 'Enable/disable card',
     deleteCard: 'Delete card or connection',

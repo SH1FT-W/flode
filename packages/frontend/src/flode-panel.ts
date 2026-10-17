@@ -82,8 +82,8 @@ import {
   confirmUnsavedChanges,
   ensureAutomationEditors,
   errorMessage,
-  flowName,
   type FlowKind,
+  flowName,
   getRegistryEntry,
   getRunLogbook,
   type HomeAssistant,
@@ -102,7 +102,15 @@ import {
   usesBlueprint,
   waitForAutomationEntity,
 } from './ha';
-import { completeNewStep, nodeToStep, type StepEdit, type StepKind, stepToNode } from './ha-step';
+import {
+  completeNewStep,
+  nodeToStep,
+  type StepEdit,
+  type StepKind,
+  stepKind,
+  stepKindsFor,
+  stepToNode,
+} from './ha-step';
 import { mapT } from './i18n';
 import { InFlight, Serial } from './in-flight';
 import { LOGBOOK_POLL_MS, type ManualRun } from './manual-runs';
@@ -979,11 +987,7 @@ export class FlodePanel extends LitElement {
           'divider'
         );
       }
-      const kinds =
-        flow.item.kind === 'script'
-          ? (['condition', 'action'] as const)
-          : (['trigger', 'condition', 'action'] as const);
-      for (const kind of kinds) {
+      for (const kind of stepKindsFor(flow.item.kind)) {
         entries.push({
           id: `add-${kind}`,
           icon: NODE_META[kind].icon,
@@ -1158,9 +1162,7 @@ export class FlodePanel extends LitElement {
         this.parkActiveTab();
         this.showHome = true;
       });
-      const kinds: readonly StepKind[] =
-        flow.item.kind === 'script' ? ['condition', 'action'] : ['trigger', 'condition', 'action'];
-      for (const kind of kinds) {
+      for (const kind of stepKindsFor(flow.item.kind)) {
         entries.push({
           id: `add-${kind}`,
           group: 'add',
@@ -2582,6 +2584,11 @@ export class FlodePanel extends LitElement {
   private pasteCard(node: FlowNode, at?: { x: number; y: number }): void {
     const flow = this.flow;
     if (!flow) return;
+    // A trigger card has no place in a script (saving would drop it)
+    if (!stepKindsFor(flow.item.kind).includes(stepKind(node.type))) {
+      this.notify(t(this.language, 'pasteNoTriggerInScript'));
+      return;
+    }
     const card = at ? undefined : this.branchCard(this.selectedId);
     if (card && this.insertAfterBranchCard(card, node)) return;
     const { graph, id } = copyNode(flow.graph, node, at);

@@ -1,6 +1,12 @@
 import type { FlowNode } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
-import { completeNewStep, nodeToStep, platformDescription, stepToNode } from '../ha-step';
+import {
+  completeNewStep,
+  nodeToStep,
+  platformDescription,
+  stepKindsFor,
+  stepToNode,
+} from '../ha-step';
 
 const node = (type: FlowNode['type'], data: Record<string, unknown>) =>
   ({ id: 'n', type, position: { x: 0, y: 0 }, data }) as FlowNode;
@@ -32,6 +38,11 @@ describe('ha-step', () => {
     expect(kept.data.trigger).toBe('sun');
     expect(kept.data._raw).toEqual(step);
     expect(nodeToStep(node('trigger', kept.data))).toEqual(step);
+  });
+
+  it('offers triggers for automations only (a script has no triggers to paste or add)', () => {
+    expect(stepKindsFor('automation')).toEqual(['trigger', 'condition', 'action']);
+    expect(stepKindsFor('script')).toEqual(['condition', 'action']);
   });
 
   it('drops keys that are present but undefined (HA forms reject them)', () => {

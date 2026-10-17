@@ -13,6 +13,7 @@ import {
   isPlainObject,
 } from '@flode/shared';
 import type { NodeType } from './flow-model';
+import type { FlowKind } from './ha';
 import type { PlatformDescriptions } from './platform-descriptions';
 
 /**
@@ -32,6 +33,11 @@ export interface StepEdit {
 
 export function stepKind(type: NodeType): StepKind {
   return type === 'trigger' || type === 'condition' ? type : 'action';
+}
+
+/** The step kinds a flow of this kind takes (to add or paste): a script has no triggers. */
+export function stepKindsFor(kind: FlowKind): readonly StepKind[] {
+  return kind === 'script' ? ['condition', 'action'] : ['trigger', 'condition', 'action'];
 }
 
 function withoutId(data: Record<string, unknown>): Record<string, unknown> {
