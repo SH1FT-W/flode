@@ -24,11 +24,13 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:play-outline', title: 'new261015RunOnlyTitle', text: 'new261015RunOnlyText' },
+  { icon: 'mdi:call-split', title: 'new261016OrTitle', text: 'new261016OrText' },
+  { icon: 'mdi:repeat', title: 'new261016LoopsTitle', text: 'new261016LoopsText' },
+  { icon: 'mdi:shield-check-outline', title: 'new261016KeepTitle', text: 'new261016KeepText' },
   {
-    icon: 'mdi:map-marker-check-outline',
-    title: 'new261014PlacesTitle',
-    text: 'new261014PlacesText',
+    icon: 'mdi:content-save-check-outline',
+    title: 'new261016SaveTitle',
+    text: 'new261016SaveText',
   },
 ];
 

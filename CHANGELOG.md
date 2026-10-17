@@ -6,6 +6,24 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.10.16] — 2026-10-17 — Or branches, loops, verbatim triggers
+
+### Fixed
+- **Or conditions with a shared No path.** Several conditions whose Yes outputs meet still become one `if` with `condition: or`. When their No outputs meet on a card too, that card is now the `else` of the block instead of being dropped; when only the No outputs meet, the steps go into `else` (they used to land in `then`, right after the trigger). After `then` and `else` the flow continues once, at the meeting point. The start and the middle of a flow follow the same rule; the middle no longer writes a `parallel` with one `if` per condition plus another `if`, which ran the opposite branch twice. A No output on only one of the conditions is not an `or`; the state machine writes that flow.
+- **Drawn loops.** A loop back from a condition's No output (`until`) keeps the condition's alias, as `while` did. A loop back from the Yes output of a condition without a counter (`< N` in its template) is written as `until` with the negated condition, instead of a `repeat` with `count:` and no value, which Home Assistant rejects. The counter cards stay ordinary steps before and inside the loop.
+- **Triggers FLODE cannot model stay verbatim.** A trigger outside FLODE's schema (an `offset` written as a mapping of strings, an MQTT `payload: true`, `from`/`to` as mappings with `attribute`) no longer stops the automation from opening. It is kept as it is, with its type and alias on the card, handed to HA's editor as the original and written back unchanged, like a condition FLODE does not know.
+- **The name on open is the alias of the configuration**, not the entity's friendly name. After a rename in the entity registry the two differ, and the first save from FLODE overwrote the alias. Automations and scripts alike.
+- **Card ids stay unique** when several cards are added or copied within one millisecond. Before, two cards could share an id and the flow could not be saved ("duplicate node IDs"). Edge ids are unique the same way, and the structure check now rejects a duplicate edge id.
+- **A trigger card cannot be pasted into a script** any more (⌘V or the context menu), and a hint says why. Before, the card landed in the script tab and the save dropped the triggers without a word. The add menu never offered triggers in scripts.
+- **YAML is read with Home Assistant's rules** (YAML 1.1 like PyYAML, without timestamps) when an automation or script is opened: a date with time stays text instead of becoming `2026-10-01T10:00:00.000Z`, `yes` and `no` become booleans. Pasting and the AI assistant already read this way.
+- **Errors while a save is prepared** (HA's name dialog) are shown like any other save error instead of staying unhandled.
+- The default branch of the state machine writes `action:` instead of the old `service:` key.
+
+### Website
+- The project page uses the shared SH1FT-W design (`theme/v1`): glass navigation, light and dark mode, language switch. Content, colours and pictures are FLODE's own, the look is unchanged.
+
+---
+
 ## [26.10.15] — 2026-10-17 — Run this card
 
 Suggested by Bart ([#35](https://github.com/SH1FT-W/flode/issues/35)).

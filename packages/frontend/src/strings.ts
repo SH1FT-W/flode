@@ -350,12 +350,18 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261015RunOnlyTitle: 'Nur diese Karte ausführen',
-    new261015RunOnlyText:
-      'Im Kartenmenü, in ⌘K und im Editor gibt es neben „Ab hier ausführen“ jetzt „Nur diese Karte ausführen“: ein einzelner Schritt läuft echt in Home Assistant, ohne alles danach. Geht auch für Schritte in einem Wenn-dann- oder Auswählen-Zweig.',
-    new261014PlacesTitle: 'Karten behalten ihren Platz',
-    new261014PlacesText:
-      'Eine gezeichnete Bedingung mit Ja- und Nein-Pfad wird beim Speichern zu einem Wenn-dann-Block. Beim nächsten Öffnen steht der Block jetzt an der Stelle der Bedingung, und die Karten danach bleiben, wo sie waren. Bisher rutschten sie auf den Platz eines Nachbarn.',
+    new261016OrTitle: 'Oder-Bedingungen mit Sonst-Zweig',
+    new261016OrText:
+      'Treffen sich die Ja-Ausgänge mehrerer Bedingungen, entsteht wie bisher ein Wenn-dann mit Oder. Treffen sich auch ihre Nein-Ausgänge auf einer Karte, wird diese Karte jetzt zum Sonst-Zweig statt zu verschwinden. Führt nur der Nein-Pfad weiter, steht er im Sonst und nicht mehr fälschlich im Dann.',
+    new261016LoopsTitle: 'Gezeichnete Schleifen',
+    new261016LoopsText:
+      'Eine Rückkante vom Nein-Ausgang behält den Namen der Bedingung. Eine Rückkante vom Ja-Ausgang ohne Zähler wird als „Bis“-Schleife gespeichert, nicht mehr als Wiederholung ohne Anzahl, die Home Assistant ablehnt.',
+    new261016KeepTitle: 'Beim Öffnen geht nichts verloren',
+    new261016KeepText:
+      'Auslöser, die FLODE nicht kennt, bleiben wörtlich erhalten und werden unverändert zurückgeschrieben, statt das Öffnen zu verhindern. Der Flow heißt wie in der Konfiguration, nicht wie die umbenannte Entität. YAML wird nach den Regeln von Home Assistant gelesen: Datum mit Uhrzeit bleibt Text, ja und nein werden Wahrheitswerte.',
+    new261016SaveTitle: 'Speichern ohne Überraschungen',
+    new261016SaveText:
+      'Mehrere Karten in derselben Millisekunde bekommen verschiedene IDs, der Flow lässt sich wieder speichern. Eine Auslöser-Karte lässt sich nicht mehr in ein Skript einfügen, ein Hinweis sagt warum. Fehler aus dem Namensdialog werden angezeigt statt stillschweigend verschluckt.',
   },
   en: {
     title: 'FLODE',
@@ -699,12 +705,18 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261015RunOnlyTitle: 'Run this card',
-    new261015RunOnlyText:
-      'Next to "Run from here" the card menu, ⌘K and the editor now offer "Run this card": one step runs for real in Home Assistant, without everything after it. Works for steps inside an If-then or Choose branch too.',
-    new261014PlacesTitle: 'Cards keep their place',
-    new261014PlacesText:
-      "A drawn condition with a Yes and a No path becomes an If-then block when saved. On the next open the block now sits where the condition was, and the cards after it stay where they were. Before, they slid onto a neighbour's spot.",
+    new261016OrTitle: 'Or conditions with an Else branch',
+    new261016OrText:
+      'When the Yes outputs of several conditions meet, they still become one If-then with Or. When their No outputs meet on a card too, that card now becomes the Else branch instead of disappearing. When only the No path carries on, it goes into Else, no longer wrongly into Then.',
+    new261016LoopsTitle: 'Drawn loops',
+    new261016LoopsText:
+      'A loop back from the No output keeps the name of the condition. A loop back from the Yes output without a counter is saved as an "Until" loop, no longer as a repeat without a count, which Home Assistant rejects.',
+    new261016KeepTitle: 'Nothing gets lost on open',
+    new261016KeepText:
+      'Triggers FLODE does not know stay verbatim and are written back unchanged instead of stopping the open. The flow takes its name from the configuration, not from a renamed entity. YAML is read with the rules of Home Assistant: a date with time stays text, yes and no become booleans.',
+    new261016SaveTitle: 'Saving without surprises',
+    new261016SaveText:
+      'Several cards within one millisecond get different ids, so the flow saves again. A trigger card can no longer be pasted into a script, a hint says why. Errors from the name dialog are shown instead of silently swallowed.',
   },
 } as const;
 
