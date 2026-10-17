@@ -30,6 +30,8 @@ interface RepeatPattern {
   incrementNodeId?: string;
   /** For count: the count value */
   count?: number | string;
+  /** For until from a Yes loop-back: the body repeats while the condition holds, so `until` tests its negation */
+  negateConditions?: boolean;
   /** The node ID where flow continues after the loop */
   exitNodeId: string | null;
 }
@@ -375,6 +377,22 @@ export class NativeStrategy extends BaseStrategy {
         const falseEdge = flow.edges.find(
           (e) => e.source === condId && e.sourceHandle === 'false' && !this.backEdgeIds.has(e.id)
         );
+        const exitNodeId = falseEdge?.target ?? null;
+
+        if (countValue === undefined) {
+          // Not a counted loop: the body (the counter included) repeats until
+          // the condition is no longer true. HA has no `repeat` without a kind.
+          patterns.set(loopTargetId, {
+            type: 'until',
+            entryNodeId: loopTargetId,
+            conditionNodeIds,
+            bodyNodeIds: this.collectNodesUntil(flow, loopTargetId, new Set([condId])),
+            backEdgeSourceId: condId,
+            negateConditions: true,
+            exitNodeId,
+          });
+          continue;
+        }
 
         // Entry is the init node if it exists, otherwise the first body node
         const entryNodeId = initNodeId ?? loopTargetId;
@@ -388,7 +406,7 @@ export class NativeStrategy extends BaseStrategy {
           initNodeId,
           incrementNodeId,
           count: countValue,
-          exitNodeId: falseEdge?.target ?? null,
+          exitNodeId,
         });
       }
     }
@@ -517,36 +535,20 @@ export class NativeStrategy extends BaseStrategy {
       }
     }
 
-    // Get alias from the first condition (while) or from the init node (count)
+    // Alias from the first condition that has one (while, until) or from the init node (count)
     let alias: string | undefined;
 
-    if (pattern.type === 'while') {
-      // Build while conditions
-      const whileConditions = pattern.conditionNodeIds.map((id) => {
-        const node = this.getNode(flow, id) as ConditionNode;
-        if (!alias && node?.data?.alias) alias = node.data.alias;
-        return buildCondition(node);
-      });
+    if (pattern.type === 'while' || pattern.type === 'until') {
+      const conditionNodes = pattern.conditionNodeIds
+        .map((id) => this.getNode(flow, id))
+        .filter((node): node is ConditionNode => node?.type === 'condition');
+      alias = conditionNodes.find((node) => node.data.alias)?.data.alias;
+      const conditions = conditionNodes.map((node) => buildCondition(node));
+      const tested = pattern.negateConditions ? [{ condition: 'not', conditions }] : conditions;
 
       const result: Record<string, unknown> = {
         repeat: {
-          while: whileConditions,
-          sequence: bodySequence,
-        },
-      };
-      if (alias) result.alias = alias;
-      return result;
-    }
-
-    if (pattern.type === 'until') {
-      const untilConditions = pattern.conditionNodeIds.map((id) => {
-        const node = this.getNode(flow, id) as ConditionNode;
-        return buildCondition(node);
-      });
-
-      const result: Record<string, unknown> = {
-        repeat: {
-          until: untilConditions,
+          [pattern.type]: tested,
           sequence: bodySequence,
         },
       };
