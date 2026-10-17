@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FLODE for Home Assistant</title>
+<title data-de="FLODE für Home Assistant">FLODE for Home Assistant</title>
 <script src="https://sh1ft-w.github.io/bar.js" data-project="flode" defer></script>
 <meta name="description" content="FLODE shows Home Assistant automations and scripts as a flow you can read, test and understand. Built from Home Assistant's own editors, saved as plain Home Assistant YAML.">
 <meta name="color-scheme" content="light dark">
@@ -23,9 +23,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<!-- Shared SH1FT-W design (tokens, glass navigation, light/dark, DE/EN, reveal) -->
+<link rel="stylesheet" href="https://sh1ft-w.github.io/theme/v1/theme.css">
+<script src="https://sh1ft-w.github.io/theme/v1/theme.js"></script>
 <style>
 /* FLODE-Farben aus dem Logo: Navy, Himmelblau, Violett; Dunkel folgt dem System oder dem Schalter oben rechts */
 :root {
+  --accent: var(--sky); --font: var(--body); --nav-gap: 16px;
   --bg: #f5f8fb; --bg-2: #eaf0f6; --card: #ffffff; --card-2: #eef3f8;
   --ink: #0f1a2a; --ink-2: #5a6879; --ink-3: rgba(15,26,42,0.52);
   --sky: #4cc9fb; --sky-text: #0284c7; --sky-tint: rgba(14,165,233,0.12); --sky-glow: rgba(76,201,251,0.35); --on-sky: #0b1220;
@@ -67,16 +71,8 @@
   --blob-1: rgba(76,201,251,0.18); --blob-2: rgba(167,139,250,0.14); --blob-3: rgba(14,165,233,0.1);
 }
 
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 96px; }
-body {
-  margin: 0; background: var(--bg); color: var(--ink);
-  font: 400 17px/1.55 var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden;
-}
-img { display: block; max-width: 100%; height: auto; }
 a { color: var(--sky-text); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; }
-:focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; border-radius: 8px; }
 .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
 .narrow { max-width: 760px; }
 p { margin: 0; }
@@ -85,27 +81,10 @@ p { margin: 0; }
 .center .lead { margin-left: auto; margin-right: auto; max-width: 680px; }
 kbd { font-family: var(--mono); font-size: 12px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); background: var(--chip); color: var(--ink); }
 
-/* Schwebende Glas-Navigation; die Projektleiste von bar.js steht davor im Fluss, sticky folgt ihr von selbst */
-.navwrap { position: sticky; top: 12px; z-index: 10; padding: 0 var(--gutter); pointer-events: none; }
-.nav {
-  pointer-events: auto; max-width: var(--max); margin: 0 auto; height: 56px; padding: 0 10px 0 16px;
-  display: flex; align-items: center; gap: 16px; border-radius: 999px;
-  background: var(--glass); backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4);
-  box-shadow: inset 0 0 0 1px var(--glass-line), var(--shadow);
-}
-.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); font-family: var(--display); font-weight: 800; font-size: 17px; letter-spacing: -0.01em; }
-.brand:hover { text-decoration: none; }
-.brand img { width: 28px; height: 28px; border-radius: 8px; }
-.nav-links { display: flex; gap: 2px; margin-left: auto; font-size: 14px; font-weight: 500; }
-.nav-links a { color: var(--ink-2); padding: 8px 11px; border-radius: 999px; transition: background .2s, color .2s; }
-.nav-links a:hover { color: var(--ink); background: var(--chip); text-decoration: none; }
-.iconbtn { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 0; background: none; color: var(--ink-2); cursor: pointer; display: grid; place-items: center; transition: background .2s, color .2s; }
-.iconbtn:hover { background: var(--chip); color: var(--ink); }
-.iconbtn svg { width: 18px; height: 18px; }
-.iconbtn .sun, :root[data-theme="dark"] .iconbtn .moon { display: none; }
-:root[data-theme="dark"] .iconbtn .sun { display: block; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .iconbtn .moon { display: none; } :root:not([data-theme="light"]) .iconbtn .sun { display: block; } }
-:root[data-theme="light"] .iconbtn .moon { display: block; } :root[data-theme="light"] .iconbtn .sun { display: none; }
+/* Glas-Navigation, Hell/Dunkel-Knopf und Sprachschalter kommen aus theme.css */
+.brand { font-family: var(--display); font-weight: 800; letter-spacing: -0.01em; }
+.nav-links { gap: 2px; }
+.nav-links a { padding: 8px 11px; }
 
 /* Knöpfe */
 .btn {
@@ -134,12 +113,6 @@ section { padding: clamp(72px, 9vw, 128px) 0; position: relative; }
 section.tint { background: var(--bg-2); }
 .head { margin-bottom: clamp(40px, 5.5vw, 64px); }
 .split h2 { font-size: clamp(32px, 4.2vw, 52px); }
-
-/* Einblenden beim Scrollen (?still in der Adresse schaltet es ab, z. B. für Bildschirmfotos) */
-html.still .reveal { opacity: 1; transform: none; transition: none; }
-.reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
-.reveal.in { opacity: 1; transform: none; }
-.reveal.d1 { transition-delay: .08s; } .reveal.d2 { transition-delay: .16s; } .reveal.d3 { transition-delay: .24s; }
 
 /* Bildrahmen */
 .shot { border-radius: var(--radius); overflow: hidden; background: var(--card-2); box-shadow: var(--shadow-lg); position: relative; }
@@ -275,10 +248,6 @@ footer nav a { color: var(--ink-2); font-weight: 500; }
 footer .fine { flex-basis: 100%; }
 
 /* Zweisprachig: Browsersprache entscheidet, Schalter oben rechts merkt sich die Wahl */
-html[lang="de"] .en, html[lang="en"] .de { display: none !important; }
-.lang { flex: none; display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
-.lang button { font: inherit; font-size: 12px; font-weight: 600; border: 0; background: none; color: var(--ink-2); padding: 5px 10px; cursor: pointer; }
-.lang button.on { background: var(--ink); color: var(--bg); }
 
 /* Schmal */
 @media (max-width: 960px) {
@@ -287,15 +256,12 @@ html[lang="de"] .en, html[lang="en"] .de { display: none !important; }
   .tiles { grid-template-columns: 1fr 1fr; }
   .b.s4, .b.s8 { grid-column: span 6; }
   .b.wide { flex-direction: column; }
-  .nav-links a.opt { display: none; }
   .ai-panel .stack { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {
   body { font-size: 16px; }
   :root { --radius: 22px; --radius-lg: 26px; }
-  .navwrap { top: 8px; padding: 0 10px; }
-  .nav { height: 52px; gap: 8px; padding: 0 8px 0 14px; }
-  .nav-links { display: none; }
+  .nav { padding: 0 8px 0 14px; }
   .nav .lang { margin-left: auto; }
   .duo { grid-template-columns: 1fr; }
   .tiles { grid-template-columns: 1fr; gap: 12px; }
@@ -312,23 +278,10 @@ html[lang="de"] .en, html[lang="en"] .de { display: none !important; }
   .code pre { font-size: 12.5px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .btn, .reveal { transition: none; }
-  .reveal { opacity: 1; transform: none; }
   .marquee .track { animation: none; flex-wrap: wrap; width: auto; justify-content: center; }
   .marquee { -webkit-mask-image: none; mask-image: none; }
 }
 </style>
-<script>
-  (function () {
-    var saved = null, theme = null;
-    try { saved = localStorage.getItem("sh1ftw-lang"); theme = localStorage.getItem("sh1ftw-theme"); } catch (e) {}
-    var pref = saved || ((navigator.languages && navigator.languages[0]) || navigator.language || "en");
-    document.documentElement.lang = /^de/i.test(pref) ? "de" : "en";
-    var m = /[?&]theme=(dark|light)\b/.exec(location.search); if (m) theme = m[1];
-    if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
-  })();
-</script>
 </head>
 <body>
 
@@ -737,46 +690,6 @@ html[lang="de"] .en, html[lang="en"] .de { display: none !important; }
 </footer>
 
 <script>
-  // Sprache: Schalter oben rechts, Wahl bleibt gespeichert
-  (function () {
-    var titles = { en: "FLODE for Home Assistant", de: "FLODE für Home Assistant" };
-    function apply(l) {
-      document.documentElement.lang = l;
-      document.title = titles[l];
-      document.querySelectorAll(".lang button").forEach(function (b) { b.classList.toggle("on", b.dataset.l === l); });
-    }
-    document.querySelectorAll(".lang button").forEach(function (b) {
-      b.addEventListener("click", function () {
-        try { localStorage.setItem("sh1ftw-lang", b.dataset.l); } catch (e) {}
-        apply(b.dataset.l);
-      });
-    });
-    apply(document.documentElement.lang);
-  })();
-
-  // Hell/Dunkel: folgt dem System, der Schalter oben rechts überstimmt es und merkt sich die Wahl.
-  // Bilder mit <picture>-Quelle für Dunkel folgen dem Schalter mit.
-  (function () {
-    var mq = window.matchMedia("(prefers-color-scheme: dark)");
-    function effective() {
-      var t = document.documentElement.getAttribute("data-theme");
-      return t === "dark" || t === "light" ? t : (mq.matches ? "dark" : "light");
-    }
-    function pictures() {
-      var forced = document.documentElement.getAttribute("data-theme");
-      document.querySelectorAll("picture > source[srcset]").forEach(function (s) {
-        s.media = forced === "dark" ? "all" : forced === "light" ? "not all" : "(prefers-color-scheme: dark)";
-      });
-    }
-    document.getElementById("theme").addEventListener("click", function () {
-      var next = effective() === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      try { localStorage.setItem("sh1ftw-theme", next); } catch (e) {}
-      pictures();
-    });
-    pictures();
-  })();
-
   // KI-Reiter
   document.querySelectorAll(".tabs button").forEach(function (b) {
     b.addEventListener("click", function () {
@@ -789,19 +702,6 @@ html[lang="de"] .en, html[lang="en"] .de { display: none !important; }
   (function () {
     var t = document.getElementById("track");
     if (t) t.innerHTML += t.innerHTML;
-  })();
-
-  // Einblenden beim Scrollen
-  (function () {
-    var els = document.querySelectorAll(".reveal");
-    if (/[?&]still\b/.test(location.search)) document.documentElement.classList.add("still");
-    if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("still")) {
-      els.forEach(function (e) { e.classList.add("in"); }); return;
-    }
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
-    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
-    els.forEach(function (e) { io.observe(e); });
   })();
 
   // Versionszeile: manifest.json aus dem Repo (ohne API-Limit), sonst das letzte GitHub-Release; der Text oben ist der Fallback.
