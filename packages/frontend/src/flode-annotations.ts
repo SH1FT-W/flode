@@ -16,6 +16,7 @@ import {
   setText,
   snapToGrid,
   textOf,
+  tintOf,
 } from './annotations';
 import { defineElement } from './define-element';
 import { moveSelection, positionsOf } from './selection';
@@ -43,18 +44,14 @@ interface Gesture {
   moved: boolean;
 }
 
+/** A colour picked on the wheel (the named ones are not hex). */
+function isWheelColor(color: string): boolean {
+  return color.startsWith('#');
+}
+
 const CORNERS: readonly Corner[] = ['nw', 'ne', 'sw', 'se'];
 /** Flow units a pointer must travel before a press is a move and no click. */
 const CLICK_DISTANCE = 4;
-
-const FILLS: Record<AnnotationColor, string> = {
-  yellow: '250, 204, 21',
-  blue: '59, 130, 246',
-  green: '34, 197, 94',
-  red: '239, 68, 68',
-  purple: '168, 85, 247',
-  gray: '148, 163, 184',
-};
 
 /**
  * Notes (free text) and frames (a titled box behind cards) on the canvas.
@@ -119,6 +116,12 @@ export class FlodeAnnotations extends LitElement {
     if (event.button !== 0 || this.gesture || this.editing === item.id) return;
     event.preventDefault();
     event.stopPropagation();
+    // Shift adds a note to the selection, Ctrl takes it out; neither starts a move.
+    const mode = event.ctrlKey || event.metaKey ? 'remove' : event.shiftKey ? 'add' : null;
+    if (mode && !corner) {
+      this.emit('annotation-multi', { id: item.id, mode });
+      return;
+    }
     if (event.currentTarget instanceof Element)
       event.currentTarget.setPointerCapture(event.pointerId);
     const inSelection = !corner && this.multiIds.length > 1 && this.multiIds.includes(item.id);
@@ -280,12 +283,28 @@ export class FlodeAnnotations extends LitElement {
       ${COLORS.map(
         (color) => html`<button
           class="swatch ${color === current ? 'current' : ''}"
-          style="--tint:${FILLS[color]}"
+          style="--tint:${tintOf(color, color)}"
           aria-label=${color}
           @click=${() => this.emit('graph-change', { graph: setColor(this.graph, item.id, color) })}
         ></button>`
       )}
+      <label class="wheel" title=${t(this.language, 'colorWheel')}>
+        <input
+          type="color"
+          .value=${isWheelColor(current) ? current : '#3b82f6'}
+          @input=${(e: Event) => this.previewColor(e, item)}
+          @change=${(e: Event) => this.previewColor(e, item, true)}
+        />
+      </label>
     </div>`;
+  }
+
+  /** A colour from the wheel: shown while the pointer moves over it, kept when it is let go. */
+  private previewColor(event: Event, item: Annotation, keep = false): void {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    const graph = setColor(this.graph, item.id, input.value);
+    this.emit(keep ? 'graph-change' : 'graph-preview', { graph });
   }
 
   private renderHandles(item: Annotation) {
@@ -302,8 +321,9 @@ export class FlodeAnnotations extends LitElement {
     const selected = this.selectedId === item.id;
     const inMulti = this.multiIds.includes(item.id);
     const editing = this.editing === item.id;
-    const color = item.color ?? (this.kind === 'notes' ? 'yellow' : 'blue');
-    const box = `left:${item.x}px;top:${item.y}px;width:${item.width}px;height:${item.height}px;--tint:${FILLS[color]}`;
+    const fallback: AnnotationColor = this.kind === 'notes' ? 'yellow' : 'blue';
+    const color = item.color ?? fallback;
+    const box = `left:${item.x}px;top:${item.y}px;width:${item.width}px;height:${item.height}px;--tint:${tintOf(color, fallback)}`;
     if (isNote(item)) {
       const note = item;
       return html`<div
@@ -318,7 +338,7 @@ export class FlodeAnnotations extends LitElement {
       </div>`;
     }
     const frame = item;
-    return html`<div class="frame ${selected ? 'selected' : ''}" style=${box}>
+    return html`<div class="frame ${selected || inMulti ? 'selected' : ''}" style=${box}>
       <div
         class="title"
         @pointerdown=${(e: PointerEvent) => this.begin(e, frame, null)}
@@ -450,6 +470,22 @@ export class FlodeAnnotations extends LitElement {
     .swatch.current {
       outline: 2px solid var(--primary-text-color);
       outline-offset: 1px;
+    }
+    .wheel {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      cursor: pointer;
+      background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+    }
+    .wheel input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
     }
     .handle {
       position: absolute;

@@ -14,6 +14,7 @@ import {
   resizedBox,
   setText,
   textOf,
+  tintOf,
 } from '../annotations';
 
 function graph(): FlowGraph {
@@ -29,6 +30,16 @@ function graph(): FlowGraph {
     edges: [],
   } as FlowGraph;
 }
+
+describe('annotation colours', () => {
+  it('turns a named colour or a wheel colour into r, g, b', () => {
+    expect(tintOf('blue', 'yellow')).toBe('59, 130, 246');
+    expect(tintOf('#ff8000', 'yellow')).toBe('255, 128, 0');
+    // nothing, or something unknown, is the default
+    expect(tintOf(undefined, 'yellow')).toBe('250, 204, 21');
+    expect(tintOf('nonsense', 'green')).toBe('34, 197, 94');
+  });
+});
 
 describe('annotations', () => {
   it('adds notes and frames with unique ids', () => {

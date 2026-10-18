@@ -47,7 +47,7 @@ const frame = {
   width: 800,
   height: 300,
   title: 'Licht',
-  color: 'blue' as const,
+  color: '#ff8000',
 };
 
 describe('notes and frames', () => {

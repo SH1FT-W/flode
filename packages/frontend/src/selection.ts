@@ -2,6 +2,7 @@ import {
   type FlowEdge,
   type FlowGraph,
   type FlowNode,
+  type Frame,
   isFlowStart,
   type Note,
   uniqueId,
@@ -26,12 +27,13 @@ export interface Rect {
   height: number;
 }
 
-/** What a selection holds: the cards (never the hidden start) and the notes. */
+/** What a selection holds: the cards (never the hidden start), the notes and the frames. */
 export function splitSelection(
   graph: FlowGraph,
   ids: readonly string[]
-): { nodes: FlowNode[]; notes: Note[] } {
+): { nodes: FlowNode[]; notes: Note[]; frames: Frame[] } {
   return {
+    frames: (graph.frames ?? []).filter((f) => ids.includes(f.id)),
     nodes: graph.nodes.filter((n) => ids.includes(n.id) && !isFlowStart(n.data)),
     notes: (graph.notes ?? []).filter((n) => ids.includes(n.id)),
   };
@@ -41,7 +43,16 @@ function overlaps(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 }
 
-/** The cards and notes a marquee `box` touches. `height` is a card's drawn height (it varies top to bottom). */
+function contains(outer: Rect, inner: Rect): boolean {
+  return (
+    outer.x <= inner.x &&
+    outer.y <= inner.y &&
+    outer.x + outer.width >= inner.x + inner.width &&
+    outer.y + outer.height >= inner.y + inner.height
+  );
+}
+
+/** The cards, notes and frames a marquee `box` touches. `height` is a card's drawn height (it varies top to bottom). */
 export function idsInBox(
   graph: FlowGraph,
   box: Rect,
@@ -54,15 +65,18 @@ export function idsInBox(
     )
     .map((n) => n.id);
   const notes = (graph.notes ?? []).filter((n) => overlaps(box, n)).map((n) => n.id);
-  return [...cards, ...notes];
+  // A frame is picked when the box takes it in whole — a box inside a frame picks what lies in it, not the frame.
+  const frames = (graph.frames ?? []).filter((f) => contains(box, f)).map((f) => f.id);
+  return [...frames, ...cards, ...notes];
 }
 
 /** The box around the selected cards and notes, or null when none is selected. */
 export function selectionBox(graph: FlowGraph, ids: readonly string[]): Rect | null {
-  const { nodes, notes } = splitSelection(graph, ids);
+  const { nodes, notes, frames } = splitSelection(graph, ids);
   const boxes: Rect[] = [
     ...nodes.map((n) => ({ ...n.position, width: NODE_WIDTH, height: NODE_HEIGHT })),
     ...notes,
+    ...frames,
   ];
   if (boxes.length === 0) return null;
   const x = Math.min(...boxes.map((b) => b.x));
@@ -76,14 +90,16 @@ export function selectionBox(graph: FlowGraph, ids: readonly string[]): Rect | n
 }
 
 export function removeSelection(graph: FlowGraph, ids: readonly string[]): FlowGraph {
-  const { nodes, notes } = splitSelection(graph, ids);
+  const { nodes, notes, frames } = splitSelection(graph, ids);
   const gone = new Set(nodes.map((n) => n.id));
   const noteGone = new Set(notes.map((n) => n.id));
+  const frameGone = new Set(frames.map((f) => f.id));
   return {
     ...graph,
     nodes: graph.nodes.filter((n) => !gone.has(n.id)),
     edges: graph.edges.filter((e) => !gone.has(e.source) && !gone.has(e.target)),
     notes: graph.notes?.filter((n) => !noteGone.has(n.id)),
+    frames: graph.frames?.filter((f) => !frameGone.has(f.id)),
   };
 }
 
@@ -106,10 +122,11 @@ export interface SelectionSnapshot {
   nodes: FlowNode[];
   edges: FlowEdge[];
   notes: Note[];
+  frames: Frame[];
 }
 
 export function snapshotSelection(graph: FlowGraph, ids: readonly string[]): SelectionSnapshot {
-  const { nodes, notes } = splitSelection(graph, ids);
+  const { nodes, notes, frames } = splitSelection(graph, ids);
   const kept = new Set(nodes.map((n) => n.id));
   return structuredClone({
     nodes,
@@ -117,6 +134,7 @@ export function snapshotSelection(graph: FlowGraph, ids: readonly string[]): Sel
       (e) => kept.has(e.source) && kept.has(e.target) && !e.type?.startsWith('choose')
     ),
     notes,
+    frames,
   });
 }
 
@@ -130,11 +148,15 @@ export function pasteSnapshot(
   snapshot: SelectionSnapshot,
   at: { x: number; y: number }
 ): { graph: FlowGraph; ids: string[] } | null {
-  const probe: FlowGraph = { ...graph, nodes: [], notes: [] };
-  const box = selectionBox({ ...probe, nodes: snapshot.nodes, notes: snapshot.notes }, [
-    ...snapshot.nodes.map((n) => n.id),
-    ...snapshot.notes.map((n) => n.id),
-  ]);
+  const probe: FlowGraph = { ...graph, nodes: [], notes: [], frames: [] };
+  const box = selectionBox(
+    { ...probe, nodes: snapshot.nodes, notes: snapshot.notes, frames: snapshot.frames },
+    [
+      ...snapshot.nodes.map((n) => n.id),
+      ...snapshot.notes.map((n) => n.id),
+      ...snapshot.frames.map((f) => f.id),
+    ]
+  );
   if (!box) return null;
   const dx = snapToGrid(at.x) - box.x;
   const dy = snapToGrid(at.y) - box.y;
@@ -168,27 +190,34 @@ export function pasteSnapshot(
     x: n.x + dx,
     y: n.y + dy,
   }));
+  const frames = snapshot.frames.map((f) => ({
+    ...f,
+    id: uniqueId(`frame_${stamp}`, takenAll),
+    x: f.x + dx,
+    y: f.y + dy,
+  }));
   return {
     graph: {
       ...graph,
       nodes: [...graph.nodes, ...nodes],
       edges: [...graph.edges, ...edges],
       ...(notes.length > 0 ? { notes: [...(graph.notes ?? []), ...notes] } : {}),
+      ...(frames.length > 0 ? { frames: [...(graph.frames ?? []), ...frames] } : {}),
     },
-    ids: [...nodes.map((n) => n.id), ...notes.map((n) => n.id)],
+    ids: [...frames.map((f) => f.id), ...nodes.map((n) => n.id), ...notes.map((n) => n.id)],
   };
 }
 
-/** The selected cards and notes moved by (`dx`, `dy`) from where `start` has them. */
-export function moveSelection(
-  graph: FlowGraph,
-  start: {
-    nodes: ReadonlyMap<string, { x: number; y: number }>;
-    notes: ReadonlyMap<string, { x: number; y: number }>;
-  },
-  dx: number,
-  dy: number
-): FlowGraph {
+type Point = { x: number; y: number };
+
+interface Starts {
+  nodes: ReadonlyMap<string, Point>;
+  notes: ReadonlyMap<string, Point>;
+  frames?: ReadonlyMap<string, Point>;
+}
+
+/** The selected cards, notes and frames moved by (`dx`, `dy`) from where `start` has them. */
+export function moveSelection(graph: FlowGraph, start: Starts, dx: number, dy: number): FlowGraph {
   return {
     ...graph,
     nodes: graph.nodes.map((n) => {
@@ -199,17 +228,22 @@ export function moveSelection(
       const from = start.notes.get(n.id);
       return from ? { ...n, x: from.x + dx, y: from.y + dy } : n;
     }),
+    frames: graph.frames?.map((f) => {
+      const from = start.frames?.get(f.id);
+      return from ? { ...f, x: from.x + dx, y: from.y + dy } : f;
+    }),
   };
 }
 
-/** Where each selected card and note is now — the `start` of a move. */
+/** Where each selected card, note and frame is now — the `start` of a move. */
 export function positionsOf(
   graph: FlowGraph,
   ids: readonly string[]
-): { nodes: Map<string, { x: number; y: number }>; notes: Map<string, { x: number; y: number }> } {
-  const { nodes, notes } = splitSelection(graph, ids);
+): { nodes: Map<string, Point>; notes: Map<string, Point>; frames: Map<string, Point> } {
+  const { nodes, notes, frames } = splitSelection(graph, ids);
   return {
     nodes: new Map(nodes.map((n) => [n.id, { ...n.position }])),
     notes: new Map(notes.map((n) => [n.id, { x: n.x, y: n.y }])),
+    frames: new Map(frames.map((f) => [f.id, { x: f.x, y: f.y }])),
   };
 }

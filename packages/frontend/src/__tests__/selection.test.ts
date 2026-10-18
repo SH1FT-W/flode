@@ -28,6 +28,7 @@ function graph(): FlowGraph {
       { id: 'e2', source: 'b', target: 'c' },
     ],
     notes: [{ id: 'n', x: 20, y: 200, width: 200, height: 100, text: 'hi' }],
+    frames: [{ id: 'f', x: -20, y: -20, width: 700, height: 340, title: 'Frame' }],
   } as FlowGraph;
 }
 
@@ -82,6 +83,18 @@ describe('selection', () => {
     const added = next.edges.at(-1)!;
     expect(ids).toContain(added.source);
     expect(ids).toContain(added.target);
+  });
+
+  it('copies, removes and moves frames with the rest', () => {
+    const ids = ['a', 'f'];
+    const snapshot = snapshotSelection(graph(), ids);
+    expect(snapshot.frames).toHaveLength(1);
+    const pasted = pasteSnapshot(graph(), snapshot, { x: 0, y: 600 })!;
+    expect(pasted.graph.frames).toHaveLength(2);
+    expect(pasted.ids).toHaveLength(2);
+    expect(removeSelection(graph(), ['f']).frames).toEqual([]);
+    const moved = moveSelection(graph(), positionsOf(graph(), ids), 20, 40);
+    expect(moved.frames?.[0]).toMatchObject({ x: 0, y: 20 });
   });
 
   it('moves a selection as one', () => {

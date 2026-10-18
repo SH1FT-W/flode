@@ -6,7 +6,11 @@ import { z } from 'zod';
  * Home Assistant never sees them.
  */
 export const ANNOTATION_COLORS = ['yellow', 'blue', 'green', 'red', 'purple', 'gray'] as const;
-export const AnnotationColorSchema = z.enum(ANNOTATION_COLORS);
+/** A colour from the six on offer, or any colour picked on the wheel (`#rrggbb`). */
+export const AnnotationColorSchema = z.union([
+  z.enum(ANNOTATION_COLORS),
+  z.string().regex(/^#[0-9a-fA-F]{6}$/),
+]);
 export type AnnotationColor = z.infer<typeof AnnotationColorSchema>;
 
 const AnnotationBoxSchema = z.object({

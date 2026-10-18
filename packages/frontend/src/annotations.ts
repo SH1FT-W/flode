@@ -35,6 +35,31 @@ export const MIN_SIZE = { width: 80, height: 48 } as const;
 /** The colour names the canvas styles, in the order the menu cycles them. */
 export const COLORS: readonly AnnotationColor[] = ANNOTATION_COLORS;
 
+const FILLS: Record<(typeof ANNOTATION_COLORS)[number], string> = {
+  yellow: '250, 204, 21',
+  blue: '59, 130, 246',
+  green: '34, 197, 94',
+  red: '239, 68, 68',
+  purple: '168, 85, 247',
+  gray: '148, 163, 184',
+};
+
+function isNamedColor(name: string): name is keyof typeof FILLS {
+  return name in FILLS;
+}
+
+/** `r, g, b` of a colour, for CSS `rgba(var(--tint), …)`; a colour that is none of them is the default's. */
+export function tintOf(color: AnnotationColor | undefined, fallback: AnnotationColor): string {
+  const named = (name: string) => (isNamedColor(name) ? FILLS[name] : undefined);
+  const wheel = /^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/.exec(color ?? '');
+  if (wheel)
+    return wheel
+      .slice(1)
+      .map((hex) => Number.parseInt(hex, 16))
+      .join(', ');
+  return named(color ?? fallback) ?? named(fallback) ?? FILLS.blue;
+}
+
 export function kindOf(graph: FlowGraph, id: string): AnnotationKind | null {
   if (graph.notes?.some((n) => n.id === id)) return 'note';
   if (graph.frames?.some((f) => f.id === id)) return 'frame';
@@ -195,10 +220,5 @@ export function moveFrame(
   dx: number,
   dy: number
 ): FlowGraph {
-  return {
-    ...moveSelection(graph, start, dx, dy),
-    frames: graph.frames?.map((f) =>
-      f.id === id ? { ...f, x: start.frame.x + dx, y: start.frame.y + dy } : f
-    ),
-  };
+  return moveSelection(graph, { ...start, frames: new Map([[id, start.frame]]) }, dx, dy);
 }

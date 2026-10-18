@@ -185,6 +185,8 @@ interface DragState {
 /** A selection box being drawn with Shift held, in flow coordinates. */
 interface MarqueeState {
   pointerId: number;
+  /** Shift adds what the box touches to the selection, Ctrl takes it out. */
+  mode: 'add' | 'remove';
   start: { x: number; y: number };
   end: { x: number; y: number };
 }
@@ -232,6 +234,12 @@ const DROP_DISTANCE = 40;
 /** A contextmenu raised by a touch (Android's long press). */
 function isTouchEvent(event: MouseEvent): boolean {
   return event instanceof PointerEvent && event.pointerType === 'touch';
+}
+
+/** Shift adds to the selection, Ctrl (⌘ on a Mac) takes out of it; neither = null. */
+function selectionMode(event: MouseEvent): 'add' | 'remove' | null {
+  if (event.ctrlKey || event.metaKey) return 'remove';
+  return event.shiftKey ? 'add' : null;
 }
 
 function capturePointer(event: PointerEvent): void {
@@ -463,7 +471,7 @@ export class FlodeCanvas extends LitElement {
     this.pane?.addEventListener(
       'mousedown',
       (event) => {
-        if (event.shiftKey && event.button === 0 && this.isEmptyPane(event.target))
+        if (selectionMode(event) && event.button === 0 && this.isEmptyPane(event.target))
           event.stopImmediatePropagation();
       },
       { capture: true }
@@ -826,12 +834,13 @@ export class FlodeCanvas extends LitElement {
   }
 
   private onPanePointerDown(event: PointerEvent): void {
-    if (event.button !== 0 || !event.shiftKey || !this.isEmptyPane(event.target)) return;
+    const mode = selectionMode(event);
+    if (event.button !== 0 || !mode || !this.isEmptyPane(event.target)) return;
     event.preventDefault();
     (event.currentTarget as Element).setPointerCapture(event.pointerId);
     this.pane?.focus({ preventScroll: true });
     const at = this.toFlow(event.clientX, event.clientY);
-    this.marquee = { pointerId: event.pointerId, start: at, end: at };
+    this.marquee = { pointerId: event.pointerId, mode, start: at, end: at };
   }
 
   private onPanePointerMove(event: PointerEvent): void {
@@ -860,14 +869,20 @@ export class FlodeCanvas extends LitElement {
       box.width * this.viewport.zoom < CLICK_DISTANCE &&
       box.height * this.viewport.zoom < CLICK_DISTANCE
     ) {
-      this.emitSelect(null);
+      // A click with Shift or Ctrl held changes nothing — and clears nothing.
+      this.afterMarquee = true;
       return;
     }
     const view = this.view;
     const ids = idsInBox(this.graph, box, (node) => cardShape(view, node).height);
     // The click that follows the release must not clear what was just picked.
     this.afterMarquee = true;
-    this.emitMulti(ids);
+    const base = this.selectionBase();
+    this.emitMulti(
+      marquee.mode === 'add'
+        ? [...base, ...ids.filter((id) => !base.includes(id))]
+        : base.filter((id) => !ids.includes(id))
+    );
   }
 
   private renderMarquee() {
@@ -878,7 +893,7 @@ export class FlodeCanvas extends LitElement {
   }
 
   private renderSelectionBar() {
-    if (this.multiIds.length < 2) return nothing;
+    if (this.multiIds.length < 1) return nothing;
     const language = this.hass?.language ?? 'en';
     const button = (action: SelectionAction, icon: string, label: string) =>
       html`<ha-icon-button .label=${label} @click=${() => this.emitSelectionAction(action)}>
@@ -919,6 +934,11 @@ export class FlodeCanvas extends LitElement {
     this.selectAnnotation(event.detail.id);
   }
 
+  private onAnnotationMulti(event: CustomEvent<{ id: string; mode: 'add' | 'remove' }>): void {
+    event.stopPropagation();
+    this.changeMulti(event.detail.id, event.detail.mode);
+  }
+
   private onAnnotationPreview(event: CustomEvent<{ graph: FlowGraph }>): void {
     event.stopPropagation();
     this.graph = event.detail.graph;
@@ -949,6 +969,7 @@ export class FlodeCanvas extends LitElement {
       .multiIds=${this.multiIds}
       .language=${this.hass?.language ?? 'en'}
       @annotation-select=${this.onAnnotationSelect}
+      @annotation-multi=${this.onAnnotationMulti}
       @graph-preview=${this.onAnnotationPreview}
       @graph-change=${this.onAnnotationChange}
       @annotation-menu=${this.onAnnotationMenu}
@@ -1022,8 +1043,9 @@ export class FlodeCanvas extends LitElement {
     if (!drag || drag.pointerId !== event.pointerId) return;
     this.drag = null;
     if (!drag.moved) {
-      // Shift-click adds a card to the selection or takes it out.
-      if (event.shiftKey && !this.view.cards.has(drag.id)) this.toggleMulti(drag.id);
+      // Shift-click adds a card to the selection, Ctrl-click takes it out.
+      const mode = selectionMode(event);
+      if (mode && !this.view.cards.has(drag.id)) this.changeMulti(drag.id, mode);
       else this.emitSelect(drag.id);
       return;
     }
@@ -1041,11 +1063,16 @@ export class FlodeCanvas extends LitElement {
     if (node) this.emitGraph(this.moved(drag.id, snap(node.position.x), snap(node.position.y)));
   }
 
-  private toggleMulti(id: string): void {
-    // The card that was picked alone before joins the selection it is added to.
-    const base =
-      this.multiIds.length > 0 ? this.multiIds : this.selectedId ? [this.selectedId] : [];
-    this.emitMulti(base.includes(id) ? base.filter((i) => i !== id) : [...base, id]);
+  /** What is picked now: the selection, or the one card or note picked alone. */
+  private selectionBase(): string[] {
+    if (this.multiIds.length > 0) return this.multiIds;
+    return [this.selectedId, this.selectedAnnotation].filter((id) => id !== null);
+  }
+
+  private changeMulti(id: string, mode: 'add' | 'remove'): void {
+    const base = this.selectionBase();
+    if (mode === 'add') this.emitMulti(base.includes(id) ? base : [...base, id]);
+    else this.emitMulti(base.filter((picked) => picked !== id));
   }
 
   /** The browser took the pointer away (system gesture, lost capture …): the drag changes nothing. */
