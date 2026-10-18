@@ -21,6 +21,7 @@ import {
   XYPanZoom,
 } from '@xyflow/system';
 import { css, html, LitElement, nothing, type PropertyValues, svg } from 'lit';
+import { removeAnnotation } from './annotations';
 import {
   adoptIntoBranch,
   type BlockTail,
@@ -34,7 +35,9 @@ import {
   removeBranchStep,
 } from './branch-view';
 import { defineElement } from './define-element';
+import './flode-annotations';
 import { fitViewport } from './fit';
+import type { AnnotationMenuDetail, FlodeAnnotations } from './flode-annotations';
 import {
   ADD_BELOW,
   ADD_BUTTON,
@@ -197,6 +200,8 @@ export interface AddAt {
 /** Right-click on a card (nodeId) or on the empty canvas (null). */
 export interface CanvasMenuDetail {
   nodeId: string | null;
+  /** A note's or frame's menu (its id). */
+  annotationId?: string;
   /** A connection's menu (its id as stored in the graph): just "delete" (#34). */
   edgeId?: string;
   clientX: number;
@@ -306,6 +311,7 @@ export class FlodeCanvas extends LitElement {
     drag: { state: true },
     connecting: { state: true },
     selectedEdgeId: { state: true },
+    selectedAnnotation: { state: true },
   };
 
   declare graph: FlowGraph;
@@ -326,6 +332,8 @@ export class FlodeCanvas extends LitElement {
   declare drag: DragState | null;
   declare connecting: ConnectState | null;
   declare selectedEdgeId: string | null;
+  /** The note or frame picked on the canvas (not a card). */
+  declare selectedAnnotation: string | null;
 
   private readonly haDescriptions = new HaDescriptions(
     () => this.requestUpdate(),
@@ -352,6 +360,7 @@ export class FlodeCanvas extends LitElement {
     this.drag = null;
     this.connecting = null;
     this.selectedEdgeId = null;
+    this.selectedAnnotation = null;
     this.runMarks = null;
     this.activeRunNode = null;
     this.minimap = false;
@@ -748,6 +757,7 @@ export class FlodeCanvas extends LitElement {
 
   private emitSelect(id: string | null): void {
     this.selectedEdgeId = null;
+    this.selectedAnnotation = null;
     this.dispatchEvent(new CustomEvent('select', { detail: { id } }));
   }
 
@@ -759,6 +769,65 @@ export class FlodeCanvas extends LitElement {
       y,
       zoom,
     ]);
+  }
+
+  // ---- notes and frames ----------------------------------------------------
+
+  /** Picks a note or frame, and puts its text in the input when it was just added. */
+  selectAnnotation(id: string, edit = false): void {
+    this.emitSelect(null);
+    this.selectedAnnotation = id;
+    if (!edit) return;
+    void this.updateComplete.then(() => {
+      for (const layer of this.renderRoot.querySelectorAll<FlodeAnnotations>('flode-annotations'))
+        layer.edit(id);
+    });
+  }
+
+  /** Starts editing the text of a note or frame. */
+  editAnnotation(id: string): void {
+    this.selectAnnotation(id, true);
+  }
+
+  private onAnnotationSelect(event: CustomEvent<{ id: string }>): void {
+    event.stopPropagation();
+    this.pane?.focus({ preventScroll: true });
+    this.selectAnnotation(event.detail.id);
+  }
+
+  private onAnnotationPreview(event: CustomEvent<{ graph: FlowGraph }>): void {
+    event.stopPropagation();
+    this.graph = event.detail.graph;
+  }
+
+  private onAnnotationChange(event: CustomEvent<{ graph: FlowGraph }>): void {
+    event.stopPropagation();
+    this.emitGraph(event.detail.graph);
+  }
+
+  private onAnnotationMenu(event: CustomEvent<AnnotationMenuDetail>): void {
+    event.stopPropagation();
+    this.dispatchCanvasMenu({
+      nodeId: null,
+      annotationId: event.detail.id,
+      clientX: event.detail.clientX,
+      clientY: event.detail.clientY,
+    });
+  }
+
+  private renderAnnotations(kind: 'frames' | 'notes') {
+    return html`<flode-annotations
+      class="nopan"
+      .kind=${kind}
+      .graph=${this.graph}
+      .zoom=${this.viewport.zoom}
+      .selectedId=${this.selectedAnnotation}
+      .language=${this.hass?.language ?? 'en'}
+      @annotation-select=${this.onAnnotationSelect}
+      @graph-preview=${this.onAnnotationPreview}
+      @graph-change=${this.onAnnotationChange}
+      @annotation-menu=${this.onAnnotationMenu}
+    ></flode-annotations>`;
   }
 
   // ---- node drag ---------------------------------------------------------
@@ -905,10 +974,16 @@ export class FlodeCanvas extends LitElement {
 
   private onKeyDown(event: KeyboardEvent): void {
     if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+    // A note's or frame's text field keeps its own keys.
+    const typing = event.composedPath()[0];
+    if (typing instanceof HTMLInputElement || typing instanceof HTMLTextAreaElement) return;
     // HA listens for single-key shortcuts on window; keep editing keys to ourselves.
     event.stopPropagation();
     const branchCard = this.selectedId ? this.view.cards.get(this.selectedId) : undefined;
-    if (this.selectedEdgeId) {
+    if (this.selectedAnnotation) {
+      this.emitGraph(removeAnnotation(this.graph, this.selectedAnnotation));
+      this.selectedAnnotation = null;
+    } else if (this.selectedEdgeId) {
       this.emitGraph(removeEdge(this.graph, this.storedEdgeId(this.selectedEdgeId)));
       this.selectedEdgeId = null;
     } else if (branchCard) {
@@ -1229,6 +1304,7 @@ export class FlodeCanvas extends LitElement {
           class="viewport ${zoomClass(zoom)} ${this.view.axis.direction === 'down' ? 'down' : ''}"
           style="transform: translate(${x}px, ${y}px) scale(${zoom}); --zoom: ${zoom}"
         >
+          ${this.graph ? this.renderAnnotations('frames') : nothing}
           <svg class="edges">
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -1243,6 +1319,7 @@ export class FlodeCanvas extends LitElement {
           </svg>
           ${shown?.nodes.map((node) => this.renderNode(node, entries.has(node.id)))}
           ${tails.map(([id, tail]) => this.renderTail(id, tail))}
+          ${this.graph ? this.renderAnnotations('notes') : nothing}
         </div>
         ${
           shown && shown.nodes.length === 0

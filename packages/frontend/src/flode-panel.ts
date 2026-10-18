@@ -26,6 +26,7 @@ import './flode-shortcuts';
 import './flode-ha-list';
 import './flode-progress';
 import { chooseAiTask, keepAiTask, mergeAutomations, randomId } from '@flode/ui-core';
+import { addFrame, addNote, kindOf, nextColor, removeAnnotation, snapToGrid } from './annotations';
 import {
   type BranchCardRef,
   type BranchView,
@@ -910,7 +911,31 @@ export class FlodePanel extends LitElement {
       hint: shortcutHint(id),
     });
     const entries: MenuEntry[] = [];
-    if (menu.edgeId) {
+    if (menu.annotationId) {
+      const id = menu.annotationId;
+      const isNote = kindOf(flow.graph, id) === 'note';
+      entries.push(
+        {
+          id: 'editAnnotation',
+          icon: 'mdi:pencil-outline',
+          label: t(language, 'editAnnotation'),
+          run: () => this.canvas?.editAnnotation(id),
+        },
+        {
+          id: 'changeColor',
+          icon: 'mdi:palette-outline',
+          label: t(language, 'changeColor'),
+          run: () => this.commit(nextColor(flow.graph, id)),
+        },
+        'divider',
+        hinted(
+          'delete',
+          'mdi:delete-outline',
+          t(language, isNote ? 'deleteNote' : 'deleteFrame'),
+          () => this.commit(removeAnnotation(flow.graph, id))
+        )
+      );
+    } else if (menu.edgeId) {
       const edgeId = menu.edgeId;
       entries.push(
         hinted('delete', 'mdi:delete-outline', t(language, 'deleteConnection'), () =>
@@ -997,6 +1022,19 @@ export class FlodePanel extends LitElement {
       }
       entries.push(
         'divider',
+        {
+          id: 'addNote',
+          icon: 'mdi:note-text-outline',
+          label: t(language, 'addNote'),
+          run: () => this.addAnnotation(flow, 'note', menu.position),
+        },
+        {
+          id: 'addFrame',
+          icon: 'mdi:select-drag',
+          label: t(language, 'addFrame'),
+          run: () => this.addAnnotation(flow, 'frame', menu.position),
+        },
+        'divider',
         hinted('fit', 'mdi:fit-to-screen-outline', t(language, 'fit'), () =>
           this.canvas?.fitView()
         ),
@@ -1018,6 +1056,18 @@ export class FlodePanel extends LitElement {
         },
       }
     );
+  }
+
+  /** A new note or frame at `position`, picked and ready for its text. */
+  private addAnnotation(
+    flow: OpenFlow,
+    kind: 'note' | 'frame',
+    position: { x: number; y: number }
+  ) {
+    const at = { x: snapToGrid(position.x), y: snapToGrid(position.y) };
+    const [graph, id] = kind === 'note' ? addNote(flow.graph, at) : addFrame(flow.graph, at);
+    this.commit(graph);
+    this.canvas?.selectAnnotation(id, true);
   }
 
   /**

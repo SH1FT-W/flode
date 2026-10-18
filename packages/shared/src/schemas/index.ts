@@ -1,5 +1,15 @@
 // Type guards
 
+export {
+  ANNOTATION_COLORS,
+  type AnnotationColor,
+  AnnotationColorSchema,
+  type Frame,
+  FrameSchema,
+  lenientList,
+  type Note,
+  NoteSchema,
+} from './annotations';
 // Base schemas
 export {
   type AutomationMode,
