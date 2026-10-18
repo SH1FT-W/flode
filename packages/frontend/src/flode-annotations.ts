@@ -2,6 +2,7 @@ import type { AnnotationColor, FlowGraph, Frame, Note } from '@flode/shared';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import {
   type Annotation,
+  COLORS,
   type Corner,
   findAnnotation,
   frameMembers,
@@ -9,11 +10,13 @@ import {
   moveFrame,
   resizeAnnotation,
   resizedBox,
+  setColor,
   setText,
   snapToGrid,
   textOf,
 } from './annotations';
 import { defineElement } from './define-element';
+import { moveSelection, positionsOf } from './selection';
 import { t } from './strings';
 
 export type AnnotationLayerKind = 'frames' | 'notes';
@@ -33,6 +36,8 @@ interface Gesture {
   corner: Corner | null;
   original: FlowGraph;
   members?: ReturnType<typeof frameMembers>;
+  /** The note was picked from a selection: all of it moves. */
+  group?: ReturnType<typeof positionsOf>;
   moved: boolean;
 }
 
@@ -61,6 +66,7 @@ export class FlodeAnnotations extends LitElement {
     graph: { attribute: false },
     zoom: { attribute: false },
     selectedId: { attribute: false },
+    multiIds: { attribute: false },
     language: { attribute: false },
     editing: { state: true },
   };
@@ -69,6 +75,8 @@ export class FlodeAnnotations extends LitElement {
   declare graph: FlowGraph;
   declare zoom: number;
   declare selectedId: string | null;
+  /** Cards and notes picked together; a note among them moves them all. */
+  declare multiIds: string[];
   declare language: string;
   declare editing: string | null;
   private gesture: Gesture | null = null;
@@ -78,6 +86,7 @@ export class FlodeAnnotations extends LitElement {
     this.kind = 'notes';
     this.zoom = 1;
     this.selectedId = null;
+    this.multiIds = [];
     this.language = 'en';
     this.editing = null;
   }
@@ -109,8 +118,11 @@ export class FlodeAnnotations extends LitElement {
     event.preventDefault();
     event.stopPropagation();
     (event.currentTarget as Element).setPointerCapture(event.pointerId);
-    this.emit('annotation-select', { id: item.id });
+    const inSelection = !corner && this.multiIds.length > 1 && this.multiIds.includes(item.id);
+    // A note of a selection keeps the selection; a click on it (no move) narrows to it.
+    if (!inSelection) this.emit('annotation-select', { id: item.id });
     this.gesture = {
+      group: inSelection ? positionsOf(this.graph, this.multiIds) : undefined,
       id: item.id,
       pointerId: event.pointerId,
       start: { x: event.clientX, y: event.clientY },
@@ -149,6 +161,8 @@ export class FlodeAnnotations extends LitElement {
     }
     const x = round(gesture.box.x + dx);
     const y = round(gesture.box.y + dy);
+    if (gesture.group)
+      return moveSelection(graph, gesture.group, x - gesture.box.x, y - gesture.box.y);
     const members = gesture.members;
     if (!members) return moveAnnotation(graph, gesture.id, x, y);
     // The frame carries its cards and notes by the same (snapped) distance.
@@ -176,7 +190,10 @@ export class FlodeAnnotations extends LitElement {
     const gesture = this.gesture;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
     this.gesture = null;
-    if (!gesture.moved) return;
+    if (!gesture.moved) {
+      if (gesture.group) this.emit('annotation-select', { id: gesture.id });
+      return;
+    }
     const dx = (event.clientX - gesture.start.x) / this.zoom;
     const dy = (event.clientY - gesture.start.y) / this.zoom;
     this.emit('graph-change', { graph: this.applied(gesture, dx, dy, true) });
@@ -250,6 +267,21 @@ export class FlodeAnnotations extends LitElement {
 
   // ---- render --------------------------------------------------------------
 
+  /** The colours to pick from, above the picked note or frame. */
+  private renderSwatches(item: Annotation) {
+    const current = item.color ?? (this.kind === 'notes' ? 'yellow' : 'blue');
+    return html`<div class="swatches" @pointerdown=${(e: Event) => e.stopPropagation()}>
+      ${COLORS.map(
+        (color) => html`<button
+          class="swatch ${color === current ? 'current' : ''}"
+          style="--tint:${FILLS[color]}"
+          aria-label=${color}
+          @click=${() => this.emit('graph-change', { graph: setColor(this.graph, item.id, color) })}
+        ></button>`
+      )}
+    </div>`;
+  }
+
   private renderHandles(item: Annotation) {
     return CORNERS.map(
       (corner) =>
@@ -262,20 +294,21 @@ export class FlodeAnnotations extends LitElement {
 
   private renderItem(item: Annotation) {
     const selected = this.selectedId === item.id;
+    const inMulti = this.multiIds.includes(item.id);
     const editing = this.editing === item.id;
     const color = item.color ?? (this.kind === 'notes' ? 'yellow' : 'blue');
     const box = `left:${item.x}px;top:${item.y}px;width:${item.width}px;height:${item.height}px;--tint:${FILLS[color]}`;
     if (this.kind === 'notes') {
       const note = item as Note;
       return html`<div
-        class="note ${selected ? 'selected' : ''}"
+        class="note ${selected || inMulti ? 'selected' : ''}"
         style=${box}
         @pointerdown=${(e: PointerEvent) => this.begin(e, note, null)}
         @dblclick=${() => this.edit(note.id)}
         @contextmenu=${(e: MouseEvent) => this.onContextMenu(e, note)}
       >
         ${editing ? this.renderField(note) : html`<div class="text">${note.text || html`<span class="empty">${t(this.language, 'notePlaceholder')}</span>`}</div>`}
-        ${selected ? this.renderHandles(note) : nothing}
+        ${selected ? this.renderSwatches(note) : nothing} ${selected ? this.renderHandles(note) : nothing}
       </div>`;
     }
     const frame = item as Frame;
@@ -288,7 +321,7 @@ export class FlodeAnnotations extends LitElement {
       >
         ${editing ? this.renderField(frame) : html`<span>${frame.title || html`<span class="empty">${t(this.language, 'framePlaceholder')}</span>`}</span>`}
       </div>
-      ${selected ? this.renderHandles(frame) : nothing}
+      ${selected ? this.renderSwatches(frame) : nothing} ${selected ? this.renderHandles(frame) : nothing}
     </div>`;
   }
 
@@ -384,6 +417,33 @@ export class FlodeAnnotations extends LitElement {
     }
     input.field {
       height: 26px;
+    }
+    .swatches {
+      position: absolute;
+      left: 0;
+      top: -34px;
+      display: flex;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: var(--card-background-color);
+      border: 1px solid var(--divider-color);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      pointer-events: auto;
+      cursor: default;
+    }
+    .swatch {
+      all: unset;
+      width: 16px;
+      height: 16px;
+      box-sizing: border-box;
+      border-radius: 50%;
+      background: rgb(var(--tint));
+      cursor: pointer;
+    }
+    .swatch.current {
+      outline: 2px solid var(--primary-text-color);
+      outline-offset: 1px;
     }
     .handle {
       position: absolute;

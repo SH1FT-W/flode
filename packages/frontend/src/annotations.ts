@@ -7,17 +7,15 @@ import {
   uniqueId,
 } from '@flode/shared';
 import { NODE_HEIGHT, NODE_WIDTH } from './flow-model';
+import { moveSelection, selectionBox } from './selection';
+
+export { snapToGrid } from './selection';
 
 /**
  * Notes and frames: drawings on the canvas that are no steps. Pure edit
  * operations on the graph, like `flow-model.ts` — the canvas only renders them
  * and turns pointer input into these calls.
  */
-
-/** Annotations snap to the same grid as cards. */
-export function snapToGrid(value: number): number {
-  return Math.round(value / 20) * 20;
-}
 
 export type AnnotationKind = 'note' | 'frame';
 export type Annotation = Note | Frame;
@@ -77,20 +75,20 @@ export function addFrame(
   return [{ ...graph, frames: [...(graph.frames ?? []), frame] }, id];
 }
 
-/** A frame around every card of the flow (the starting point for "frame what I have"). */
+/** A frame around the selected cards and notes, with room for its title; null when nothing is selected. */
 export function addFrameAround(
   graph: FlowGraph,
   ids: readonly string[]
 ): [FlowGraph, string] | null {
-  const nodes = graph.nodes.filter((n) => ids.includes(n.id));
-  if (nodes.length === 0) return null;
+  const box = selectionBox(graph, ids);
+  if (!box) return null;
   const pad = 40;
-  const top = 36; // room for the title
-  const left = Math.min(...nodes.map((n) => n.position.x)) - pad;
-  const upper = Math.min(...nodes.map((n) => n.position.y)) - pad - top;
-  const right = Math.max(...nodes.map((n) => n.position.x + NODE_WIDTH)) + pad;
-  const lower = Math.max(...nodes.map((n) => n.position.y + NODE_HEIGHT)) + pad;
-  return addFrame(graph, { x: left, y: upper }, { width: right - left, height: lower - upper });
+  const title = 36;
+  return addFrame(
+    graph,
+    { x: box.x - pad, y: box.y - pad - title },
+    { width: box.width + pad * 2, height: box.height + pad * 2 + title }
+  );
 }
 
 export function setText(graph: FlowGraph, id: string, text: string): FlowGraph {
@@ -183,24 +181,16 @@ export function moveFrame(
   id: string,
   start: {
     frame: { x: number; y: number };
-    nodes: Map<string, { x: number; y: number }>;
-    notes: Map<string, { x: number; y: number }>;
+    nodes: ReadonlyMap<string, { x: number; y: number }>;
+    notes: ReadonlyMap<string, { x: number; y: number }>;
   },
   dx: number,
   dy: number
 ): FlowGraph {
   return {
-    ...graph,
+    ...moveSelection(graph, start, dx, dy),
     frames: graph.frames?.map((f) =>
       f.id === id ? { ...f, x: start.frame.x + dx, y: start.frame.y + dy } : f
     ),
-    nodes: graph.nodes.map((n) => {
-      const from = start.nodes.get(n.id);
-      return from ? { ...n, position: { x: from.x + dx, y: from.y + dy } } : n;
-    }),
-    notes: graph.notes?.map((n) => {
-      const from = start.notes.get(n.id);
-      return from ? { ...n, x: from.x + dx, y: from.y + dy } : n;
-    }),
   };
 }
