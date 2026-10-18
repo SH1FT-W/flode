@@ -6,6 +6,7 @@ import {
   addNote,
   findAnnotation,
   frameMembers,
+  isFrame,
   kindOf,
   moveFrame,
   nextColor,
@@ -62,8 +63,9 @@ describe('annotations', () => {
   it('a frame carries the cards and notes inside it, and only those', () => {
     const [g1, f] = addFrame(graph(), { x: -40, y: -40 }, { width: 400, height: 300 });
     const [g2, n] = addNote(g1, { x: 20, y: 150 });
-    const frame = findAnnotation(g2, f)!;
-    const members = frameMembers(g2, frame as never);
+    const frame = findAnnotation(g2, f);
+    if (!frame || !isFrame(frame)) throw new Error('no frame');
+    const members = frameMembers(g2, frame);
     expect(members).toEqual({ nodes: ['a'], notes: [n] });
     const moved = moveFrame(
       g2,

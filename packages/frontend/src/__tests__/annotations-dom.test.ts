@@ -5,6 +5,7 @@
  */
 import type { FlowGraph } from '@flode/shared';
 import { afterEach, describe, expect, it } from 'vitest';
+import { FlodeAnnotations } from '../flode-annotations';
 import { FlodeCanvas } from '../flode-canvas';
 
 const graph: FlowGraph = {
@@ -37,12 +38,23 @@ async function mount(): Promise<FlodeCanvas> {
   return canvas;
 }
 
-function layer(canvas: FlodeCanvas, kind: 'frames' | 'notes'): HTMLElement {
-  const el = [...(canvas.shadowRoot?.querySelectorAll('flode-annotations') ?? [])].find(
-    (e) => (e as unknown as { kind: string }).kind === kind
+function layer(canvas: FlodeCanvas, kind: 'frames' | 'notes'): FlodeAnnotations {
+  const found = [...(canvas.shadowRoot?.querySelectorAll('flode-annotations') ?? [])].find(
+    (el) => el instanceof FlodeAnnotations && el.kind === kind
   );
-  if (!(el instanceof HTMLElement)) throw new Error(`no ${kind} layer`);
-  return el;
+  if (!(found instanceof FlodeAnnotations)) throw new Error(`no ${kind} layer`);
+  return found;
+}
+
+/** The next graph the canvas hands to the panel, or null when it stays quiet. */
+function nextGraph(canvas: FlodeCanvas, act: () => void): FlowGraph | null {
+  let next: FlowGraph | null = null;
+  canvas.addEventListener('graph-change', (event) => {
+    if (event instanceof CustomEvent && event.detail && 'graph' in event.detail)
+      next = event.detail.graph;
+  });
+  act();
+  return next;
 }
 
 afterEach(() => {
@@ -53,50 +65,60 @@ describe('notes and frames in the DOM', () => {
   it('draws the frame under the lines and the note over the cards', async () => {
     const canvas = await mount();
     const order = [...(canvas.shadowRoot?.querySelector('.viewport')?.children ?? [])].map((c) =>
-      c.tagName === 'FLODE-ANNOTATIONS' ? (c as unknown as { kind: string }).kind : c.tagName
+      c instanceof FlodeAnnotations ? c.kind : c.tagName
     );
     expect(order[0]).toBe('frames');
     expect(order.indexOf('svg')).toBe(1);
     expect(order.at(-1)).toBe('notes');
-    await (layer(canvas, 'notes') as unknown as { updateComplete: Promise<unknown> })
-      .updateComplete;
-    expect(layer(canvas, 'notes').shadowRoot?.textContent).toContain('Let op');
-    await (layer(canvas, 'frames') as unknown as { updateComplete: Promise<unknown> })
-      .updateComplete;
-    expect(layer(canvas, 'frames').shadowRoot?.textContent).toContain('Licht');
+    const notes = layer(canvas, 'notes');
+    await notes.updateComplete;
+    expect(notes.shadowRoot?.textContent).toContain('Let op');
+    const frames = layer(canvas, 'frames');
+    await frames.updateComplete;
+    expect(frames.shadowRoot?.textContent).toContain('Licht');
   });
 
   it('deletes the picked note with Delete', async () => {
     const canvas = await mount();
     canvas.selectAnnotation('note_1');
     await canvas.updateComplete;
-    let next: FlowGraph | null = null;
-    canvas.addEventListener('graph-change', (e) => {
-      next = (e as CustomEvent).detail.graph;
-    });
-    canvas.shadowRoot
-      ?.querySelector('.pane')
-      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
-    expect((next as FlowGraph | null)?.notes).toEqual([]);
-    expect((next as FlowGraph | null)?.frames).toHaveLength(1);
+    const next = nextGraph(canvas, () =>
+      canvas.shadowRoot
+        ?.querySelector('.pane')
+        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    );
+    expect(next?.notes).toEqual([]);
+    expect(next?.frames).toHaveLength(1);
   });
 
   it('keeps Delete in a text field for the text', async () => {
     const canvas = await mount();
     canvas.selectAnnotation('note_1', true);
     await canvas.updateComplete;
-    await new Promise((r) => setTimeout(r));
+    await new Promise((resolve) => setTimeout(resolve));
     const notes = layer(canvas, 'notes');
-    await (notes as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    await notes.updateComplete;
     const field = notes.shadowRoot?.querySelector('textarea');
     expect(field).toBeTruthy();
-    let next: FlowGraph | null = null;
-    canvas.addEventListener('graph-change', (e) => {
-      next = (e as CustomEvent).detail.graph;
-    });
-    field?.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Delete', bubbles: true, composed: true })
+    const next = nextGraph(canvas, () =>
+      field?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Delete', bubbles: true, composed: true })
+      )
     );
     expect(next).toBeNull();
+  });
+
+  it('asks the panel to delete a selection with Delete, and to clear it with Escape', async () => {
+    const canvas = await mount();
+    canvas.multiIds = ['trigger_1', 'note_1'];
+    await canvas.updateComplete;
+    const actions: unknown[] = [];
+    canvas.addEventListener('selection-action', (event) => {
+      if (event instanceof CustomEvent) actions.push(event.detail);
+    });
+    const pane = canvas.shadowRoot?.querySelector('.pane');
+    pane?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+    pane?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(actions).toEqual(['delete', 'clear']);
   });
 });

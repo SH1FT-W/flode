@@ -880,14 +880,10 @@ export class FlodeCanvas extends LitElement {
   private renderSelectionBar() {
     if (this.multiIds.length < 2) return nothing;
     const language = this.hass?.language ?? 'en';
-    const button = (action: SelectionAction, icon: string, label: string) => html`<button
-      class="nopan"
-      title=${label}
-      aria-label=${label}
-      @click=${() => this.emitSelectionAction(action)}
-    >
-      <ha-icon icon=${icon}></ha-icon>
-    </button>`;
+    const button = (action: SelectionAction, icon: string, label: string) =>
+      html`<ha-icon-button .label=${label} @click=${() => this.emitSelectionAction(action)}>
+        <ha-icon icon=${icon}></ha-icon>
+      </ha-icon-button>`;
     return html`<div class="selection-bar nopan" @pointerdown=${(e: Event) => e.stopPropagation()}>
       <span class="count">${t(language, 'selectedCount').replace('{n}', String(this.multiIds.length))}</span>
       ${button('copy', 'mdi:content-copy', t(language, 'copyCard'))}
@@ -1543,20 +1539,6 @@ export class FlodeCanvas extends LitElement {
       padding: 0 8px;
       font-size: 13px;
       white-space: nowrap;
-    }
-    .selection-bar button {
-      all: unset;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      cursor: pointer;
-      color: var(--primary-text-color);
-    }
-    .selection-bar button:hover {
-      background: color-mix(in srgb, var(--primary-color) 16%, transparent);
     }
     .minimap {
       position: absolute;

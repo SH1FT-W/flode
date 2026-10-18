@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@flode/shared';
+import { type FlowGraph, isPlainObject } from '@flode/shared';
 import { v4 as uuidv4 } from 'uuid';
 import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';
@@ -75,7 +75,8 @@ describe('notes and frames', () => {
     ).config;
     expect(noted?.actions).toEqual(plain?.actions);
     expect(noted?.triggers).toEqual(plain?.triggers);
-    const plainMeta = (plain?.variables as Record<string, unknown>)._flode_metadata as object;
+    const plainMeta = isPlainObject(plain?.variables) ? plain.variables._flode_metadata : undefined;
+    expect(plainMeta).toBeDefined();
     expect(plainMeta).not.toHaveProperty('notes');
     expect(plainMeta).not.toHaveProperty('frames');
   });

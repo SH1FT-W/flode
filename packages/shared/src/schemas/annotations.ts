@@ -25,13 +25,13 @@ export const FrameSchema = AnnotationBoxSchema.extend({ title: z.string().defaul
 export type Frame = z.infer<typeof FrameSchema>;
 
 /** A list of annotations where an entry that fails its schema is dropped, not the whole list. */
-export function lenientList<T extends z.ZodType>(schema: T) {
+export function lenientList<T>(schema: z.ZodType<T>) {
   return z
     .array(z.unknown())
     .transform((items) =>
       items.flatMap((item) => {
         const parsed = schema.safeParse(item);
-        return parsed.success ? [parsed.data as z.infer<T>] : [];
+        return parsed.success ? [parsed.data] : [];
       })
     )
     .optional()

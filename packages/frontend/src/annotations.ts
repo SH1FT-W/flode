@@ -20,6 +20,14 @@ export { snapToGrid } from './selection';
 export type AnnotationKind = 'note' | 'frame';
 export type Annotation = Note | Frame;
 
+export function isNote(item: Annotation): item is Note {
+  return 'text' in item;
+}
+
+export function isFrame(item: Annotation): item is Frame {
+  return 'title' in item;
+}
+
 export const NOTE_SIZE = { width: 220, height: 120 } as const;
 export const FRAME_SIZE = { width: 600, height: 360 } as const;
 export const MIN_SIZE = { width: 80, height: 48 } as const;
@@ -92,11 +100,11 @@ export function addFrameAround(
 }
 
 export function setText(graph: FlowGraph, id: string, text: string): FlowGraph {
-  return update(graph, id, (a) => ('text' in a ? { ...a, text } : { ...a, title: text }));
+  return update(graph, id, (a) => (isNote(a) ? { ...a, text } : { ...a, title: text }));
 }
 
 export function textOf(a: Annotation): string {
-  return 'text' in a ? a.text : a.title;
+  return isNote(a) ? a.text : a.title;
 }
 
 export function nextColor(graph: FlowGraph, id: string): FlowGraph {

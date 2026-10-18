@@ -1,4 +1,4 @@
-import type { AnnotationColor, FlowGraph, Frame, Note } from '@flode/shared';
+import type { AnnotationColor, FlowGraph } from '@flode/shared';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import {
   type Annotation,
@@ -6,6 +6,8 @@ import {
   type Corner,
   findAnnotation,
   frameMembers,
+  isFrame,
+  isNote,
   moveAnnotation,
   moveFrame,
   resizeAnnotation,
@@ -117,7 +119,8 @@ export class FlodeAnnotations extends LitElement {
     if (event.button !== 0 || this.gesture || this.editing === item.id) return;
     event.preventDefault();
     event.stopPropagation();
-    (event.currentTarget as Element).setPointerCapture(event.pointerId);
+    if (event.currentTarget instanceof Element)
+      event.currentTarget.setPointerCapture(event.pointerId);
     const inSelection = !corner && this.multiIds.length > 1 && this.multiIds.includes(item.id);
     // A note of a selection keeps the selection; a click on it (no move) narrows to it.
     if (!inSelection) this.emit('annotation-select', { id: item.id });
@@ -130,8 +133,7 @@ export class FlodeAnnotations extends LitElement {
       corner,
       original: this.graph,
       // Taken now: what a frame carries is what lies in it when it is picked up.
-      members:
-        this.kind === 'frames' && !corner ? frameMembers(this.graph, item as Frame) : undefined,
+      members: isFrame(item) && !corner ? frameMembers(this.graph, item) : undefined,
       moved: false,
     };
   }
@@ -231,11 +233,12 @@ export class FlodeAnnotations extends LitElement {
   private onFieldKey(event: KeyboardEvent, item: Annotation): void {
     // Keys of the field are the field's: no shortcut, no delete of the card behind it.
     event.stopPropagation();
-    const field = event.currentTarget as HTMLTextAreaElement | HTMLInputElement;
+    const field = event.currentTarget;
+    if (!(field instanceof HTMLTextAreaElement || field instanceof HTMLInputElement)) return;
     if (event.key === 'Escape') {
       field.value = textOf(item);
       field.blur();
-    } else if (event.key === 'Enter' && (item as Frame).title !== undefined) {
+    } else if (event.key === 'Enter' && isFrame(item)) {
       // A frame's title is one line.
       event.preventDefault();
       field.blur();
@@ -244,9 +247,12 @@ export class FlodeAnnotations extends LitElement {
 
   private renderField(item: Annotation) {
     const value = textOf(item);
-    const onBlur = (e: FocusEvent) =>
-      this.commitText(item.id, (e.target as HTMLInputElement | HTMLTextAreaElement).value);
-    return 'text' in item
+    const onBlur = (e: FocusEvent) => {
+      const field = e.target;
+      if (field instanceof HTMLTextAreaElement || field instanceof HTMLInputElement)
+        this.commitText(item.id, field.value);
+    };
+    return isNote(item)
       ? html`<textarea
           class="field"
           .value=${value}
@@ -298,8 +304,8 @@ export class FlodeAnnotations extends LitElement {
     const editing = this.editing === item.id;
     const color = item.color ?? (this.kind === 'notes' ? 'yellow' : 'blue');
     const box = `left:${item.x}px;top:${item.y}px;width:${item.width}px;height:${item.height}px;--tint:${FILLS[color]}`;
-    if (this.kind === 'notes') {
-      const note = item as Note;
+    if (isNote(item)) {
+      const note = item;
       return html`<div
         class="note ${selected || inMulti ? 'selected' : ''}"
         style=${box}
@@ -311,7 +317,7 @@ export class FlodeAnnotations extends LitElement {
         ${selected ? this.renderSwatches(note) : nothing} ${selected ? this.renderHandles(note) : nothing}
       </div>`;
     }
-    const frame = item as Frame;
+    const frame = item;
     return html`<div class="frame ${selected ? 'selected' : ''}" style=${box}>
       <div
         class="title"
