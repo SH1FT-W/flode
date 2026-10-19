@@ -1,0 +1,82 @@
+{
+  "title": "Collegamenti",
+  "subtitle": "Chi ascolta cosa e chi attiva cosa – in tutte le automazioni e gli script",
+  "searchPlaceholder": "Dove viene usato …? Entità, automazione o script",
+  "summary": "{{automations}} · {{scripts}} · {{entities}} entità collegate",
+  "automationCount_one": "{{count}} automazione",
+  "automationCount_other": "{{count}} automazioni",
+  "automationCount_many": "{{count}} automazioni",
+  "scriptCount_one": "{{count}} script",
+  "scriptCount_other": "{{count}} script",
+  "scriptCount_many": "{{count}} script",
+  "loading": "Lettura di tutte le automazioni e gli script …",
+  "loadedAt": "Aggiornato alle {{time}}",
+  "reload": "Ricarica",
+  "results_one": "{{count}} risultato",
+  "results_other": "{{count}} risultati",
+  "results_many": "{{count}} risultati",
+  "noResults": "Nessun risultato.",
+  "refCount_one": "{{count}} riferimento",
+  "refCount_other": "{{count}} riferimenti",
+  "refCount_many": "{{count}} riferimenti",
+  "useCount_one": "in {{count}} automazione",
+  "useCount_other": "in {{count}} automazioni",
+  "useCount_many": "in {{count}} automazioni",
+  "open": "Apri",
+  "kind": {
+    "automation": "Automazione",
+    "script": "Script",
+    "entity": "Entità"
+  },
+  "role": {
+    "trigger": "Attivatore",
+    "condition": "Condizione",
+    "action": "Azione",
+    "template": "Modello"
+  },
+  "issues": {
+    "conflicts": {
+      "title": "Possibili conflitti",
+      "hint": "Due controllano lo stesso dispositivo in modo opposto",
+      "empty": "Nessun controllo opposto trovato."
+    },
+    "selfTriggers": {
+      "title": "Si attiva da sola",
+      "hint": "Modifica un'entità che essa stessa ascolta",
+      "empty": "Nessuna automazione si attiva da sola."
+    },
+    "missing": {
+      "title": "Entità mancanti",
+      "hint": "Riferimenti a entità eliminate o rinominate",
+      "empty": "Ogni riferimento punta a un'entità esistente."
+    },
+    "chains": {
+      "title": "Catene",
+      "hint": "Un'automazione ne avvia un'altra",
+      "empty": "Nessuna catena trovata."
+    }
+  },
+  "focus": {
+    "empty": "Scegli a sinistra un'entità, un'automazione o uno script – oppure cercalo sopra.",
+    "triggeredBy": "Avviata da",
+    "listensTo": "Ascolta",
+    "reads": "Verifica / legge",
+    "controls": "Controlla",
+    "triggers": "Avvia",
+    "conflictWith": "Opposta a",
+    "on": "su",
+    "selfTrigger": "Si attiva da sola tramite questa entità:",
+    "missing_one": "{{count}} riferimento punta a un'entità che non esiste.",
+    "missing_other": "{{count}} riferimenti puntano a entità che non esistono.",
+    "missing_many": "{{count}} riferimenti puntano a entità che non esistono.",
+    "entityMissing_one": "Home Assistant non conosce (più) questa entità – rinominata o eliminata? {{count}} automazione vi fa ancora riferimento.",
+    "entityMissing_other": "Home Assistant non conosce (più) questa entità – rinominata o eliminata? {{count}} automazioni vi fanno ancora riferimento.",
+    "entityMissing_many": "Home Assistant non conosce (più) questa entità – rinominata o eliminata? {{count}} automazioni vi fanno ancora riferimento.",
+    "unused": "Nessuna automazione o script usa questa entità.",
+    "usedAsTrigger": "Attiva",
+    "usedAsCondition": "Verificata da",
+    "controlledBy": "Controllata da"
+  },
+  "command": "Collegamenti",
+  "commandHint": "Chi ascolta cosa e chi attiva cosa – incentrato sull'automazione aperta"
+}

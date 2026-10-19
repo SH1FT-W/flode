@@ -1,0 +1,82 @@
+{
+  "title": "Conexiones",
+  "subtitle": "Quién escucha qué y quién controla qué, en todas las automatizaciones y scripts",
+  "searchPlaceholder": "¿Dónde se usa …? Entidad, automatización o script",
+  "summary": "{{automations}} · {{scripts}} · {{entities}} entidades vinculadas",
+  "automationCount_one": "{{count}} automatización",
+  "automationCount_other": "{{count}} automatizaciones",
+  "automationCount_many": "{{count}} automatizaciones",
+  "scriptCount_one": "{{count}} script",
+  "scriptCount_other": "{{count}} scripts",
+  "scriptCount_many": "{{count}} scripts",
+  "loading": "Leyendo todas las automatizaciones y scripts …",
+  "loadedAt": "Estado: {{time}}",
+  "reload": "Recargar",
+  "results_one": "{{count}} resultado",
+  "results_other": "{{count}} resultados",
+  "results_many": "{{count}} resultados",
+  "noResults": "No se encontró nada.",
+  "refCount_one": "{{count}} referencia",
+  "refCount_other": "{{count}} referencias",
+  "refCount_many": "{{count}} referencias",
+  "useCount_one": "en {{count}} automatización",
+  "useCount_other": "en {{count}} automatizaciones",
+  "useCount_many": "en {{count}} automatizaciones",
+  "open": "Abrir",
+  "kind": {
+    "automation": "Automatización",
+    "script": "Script",
+    "entity": "Entidad"
+  },
+  "role": {
+    "trigger": "Disparador",
+    "condition": "Condición",
+    "action": "Acción",
+    "template": "Plantilla"
+  },
+  "issues": {
+    "conflicts": {
+      "title": "Posibles conflictos",
+      "hint": "Dos controlan el mismo dispositivo en sentidos opuestos",
+      "empty": "No se encontró ningún control opuesto."
+    },
+    "selfTriggers": {
+      "title": "Se dispara a sí misma",
+      "hint": "Cambia una entidad que ella misma escucha",
+      "empty": "Ninguna automatización se dispara a sí misma."
+    },
+    "missing": {
+      "title": "Entidades que faltan",
+      "hint": "Referencias a entidades eliminadas o renombradas",
+      "empty": "Todas las referencias apuntan a una entidad existente."
+    },
+    "chains": {
+      "title": "Cadenas",
+      "hint": "Una automatización pone en marcha otra",
+      "empty": "No se encontraron cadenas."
+    }
+  },
+  "focus": {
+    "empty": "Elige una entidad, automatización o script a la izquierda, o busca una arriba.",
+    "triggeredBy": "Puesta en marcha por",
+    "listensTo": "Escucha",
+    "reads": "Comprueba / lee",
+    "controls": "Controla",
+    "triggers": "Pone en marcha",
+    "conflictWith": "Opuesta a",
+    "on": "en",
+    "selfTrigger": "Se dispara a sí misma a través de esta entidad:",
+    "missing_one": "{{count}} referencia apunta a una entidad que no existe.",
+    "missing_other": "{{count}} referencias apuntan a entidades que no existen.",
+    "missing_many": "{{count}} referencias apuntan a entidades que no existen.",
+    "entityMissing_one": "Home Assistant no conoce (ya) esta entidad: ¿renombrada o eliminada? {{count}} automatización todavía hace referencia a ella.",
+    "entityMissing_other": "Home Assistant no conoce (ya) esta entidad: ¿renombrada o eliminada? {{count}} automatizaciones todavía hacen referencia a ella.",
+    "entityMissing_many": "Home Assistant no conoce (ya) esta entidad: ¿renombrada o eliminada? {{count}} automatizaciones todavía hacen referencia a ella.",
+    "unused": "Ninguna automatización ni script usa esta entidad.",
+    "usedAsTrigger": "Dispara",
+    "usedAsCondition": "Comprobada por",
+    "controlledBy": "Controlada por"
+  },
+  "command": "Conexiones",
+  "commandHint": "Quién escucha qué y quién controla qué, centrado en la automatización abierta"
+}

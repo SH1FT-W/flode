@@ -1,6 +1,13 @@
+import { es } from './locales/es.ts';
+import { fr } from './locales/fr.ts';
+import { it } from './locales/it.ts';
+import { nl } from './locales/nl.ts';
+import { pt } from './locales/pt.ts';
+
 /**
- * FLODE's own UI strings (German + English). Card texts and the dependency
- * map come from `@flode/ui-core`'s i18next files; everything else from Home Assistant.
+ * FLODE's own UI strings: German and English here, the other languages in
+ * `locales/`. Card texts and the dependency map come from `@flode/ui-core`'s
+ * i18next files (same languages); everything else from Home Assistant.
  */
 const STRINGS = {
   de: {
@@ -364,18 +371,18 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261016OrTitle: 'Oder-Bedingungen mit Sonst-Zweig',
-    new261016OrText:
-      'Treffen sich die Ja-Ausgänge mehrerer Bedingungen, entsteht wie bisher ein Wenn-dann mit Oder. Treffen sich auch ihre Nein-Ausgänge auf einer Karte, wird diese Karte jetzt zum Sonst-Zweig statt zu verschwinden. Führt nur der Nein-Pfad weiter, steht er im Sonst und nicht mehr fälschlich im Dann.',
-    new261016LoopsTitle: 'Gezeichnete Schleifen',
-    new261016LoopsText:
-      'Eine Rückkante vom Nein-Ausgang behält den Namen der Bedingung. Eine Rückkante vom Ja-Ausgang ohne Zähler wird als „Bis“-Schleife gespeichert, nicht mehr als Wiederholung ohne Anzahl, die Home Assistant ablehnt.',
-    new261016KeepTitle: 'Beim Öffnen geht nichts verloren',
-    new261016KeepText:
-      'Auslöser, die FLODE nicht kennt, bleiben wörtlich erhalten und werden unverändert zurückgeschrieben, statt das Öffnen zu verhindern. Der Flow heißt wie in der Konfiguration, nicht wie die umbenannte Entität. YAML wird nach den Regeln von Home Assistant gelesen: Datum mit Uhrzeit bleibt Text, ja und nein werden Wahrheitswerte.',
-    new261016SaveTitle: 'Speichern ohne Überraschungen',
-    new261016SaveText:
-      'Mehrere Karten in derselben Millisekunde bekommen verschiedene IDs, der Flow lässt sich wieder speichern. Eine Auslöser-Karte lässt sich nicht mehr in ein Skript einfügen, ein Hinweis sagt warum. Fehler aus dem Namensdialog werden angezeigt statt stillschweigend verschluckt.',
+    new261017NotesTitle: 'Notizen auf der Fläche',
+    new261017NotesText:
+      'Rechtsklick auf die leere Fläche → „Notiz hier hinzufügen“. Doppelklick bearbeitet den Text, die Farbe wählst du über der Notiz.',
+    new261017FramesTitle: 'Rahmen um zusammengehörige Karten',
+    new261017FramesText:
+      'Ein Rahmen mit Titel liegt hinter den Karten. Ziehst du ihn an der Titelleiste, wandern die Karten darin mit.',
+    new261017SelectTitle: 'Mehrere Karten auf einmal',
+    new261017SelectText:
+      'Shift + Ziehen wählt aus, Shift-Klick fügt hinzu, ⌘/Strg-Klick nimmt heraus. Die Auswahl verschiebst, kopierst, schaltest oder löschst du gemeinsam.',
+    new261017LangTitle: 'FLODE spricht jetzt 7 Sprachen',
+    new261017LangText:
+      'Neu: Niederländisch, Französisch, Spanisch, Italienisch und Portugiesisch. FLODE folgt der Sprache, die du in Home Assistant eingestellt hast.',
   },
   en: {
     title: 'FLODE',
@@ -733,24 +740,50 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261016OrTitle: 'Or conditions with an Else branch',
-    new261016OrText:
-      'When the Yes outputs of several conditions meet, they still become one If-then with Or. When their No outputs meet on a card too, that card now becomes the Else branch instead of disappearing. When only the No path carries on, it goes into Else, no longer wrongly into Then.',
-    new261016LoopsTitle: 'Drawn loops',
-    new261016LoopsText:
-      'A loop back from the No output keeps the name of the condition. A loop back from the Yes output without a counter is saved as an "Until" loop, no longer as a repeat without a count, which Home Assistant rejects.',
-    new261016KeepTitle: 'Nothing gets lost on open',
-    new261016KeepText:
-      'Triggers FLODE does not know stay verbatim and are written back unchanged instead of stopping the open. The flow takes its name from the configuration, not from a renamed entity. YAML is read with the rules of Home Assistant: a date with time stays text, yes and no become booleans.',
-    new261016SaveTitle: 'Saving without surprises',
-    new261016SaveText:
-      'Several cards within one millisecond get different ids, so the flow saves again. A trigger card can no longer be pasted into a script, a hint says why. Errors from the name dialog are shown instead of silently swallowed.',
+    new261017NotesTitle: 'Notes on the canvas',
+    new261017NotesText:
+      'Right-click the empty canvas → "Add note here". Double-click edits the text, the colour is picked above the note.',
+    new261017FramesTitle: 'Frames around cards that belong together',
+    new261017FramesText:
+      'A titled frame sits behind the cards. Drag it by its title bar and the cards inside move along.',
+    new261017SelectTitle: 'Several cards at once',
+    new261017SelectText:
+      'Shift + drag selects, Shift-click adds, ⌘/Ctrl-click takes out. Move, copy, switch or delete the selection together.',
+    new261017LangTitle: 'FLODE now speaks 7 languages',
+    new261017LangText:
+      'New: Dutch, French, Spanish, Italian and Portuguese. FLODE follows the language set in your Home Assistant profile.',
   },
 } as const;
 
 export type StringKey = keyof (typeof STRINGS)['en'];
+/** A complete table of FLODE's UI strings in one language. */
+export type Strings = Record<StringKey, string>;
+
+/** The languages FLODE speaks; any other HA language gets English. */
+export const LANGUAGES = ['de', 'en', 'nl', 'fr', 'es', 'it', 'pt'] as const;
+export type Language = (typeof LANGUAGES)[number];
+
+function isLanguage(value: string): value is Language {
+  return LANGUAGES.some((language) => language === value);
+}
+
+/** HA's language ("de", "nl", "pt-BR" …) as the FLODE language to show. */
+export function uiLanguage(language: string | undefined): Language {
+  const base = (language ?? 'en').split('-')[0].toLowerCase();
+  return isLanguage(base) ? base : 'en';
+}
+
+/** Every language's table (the tests compare them with English). */
+export const STRING_TABLES: Readonly<Record<Language, Strings>> = {
+  de: STRINGS.de,
+  en: STRINGS.en,
+  nl,
+  fr,
+  es,
+  it,
+  pt,
+};
 
 export function t(language: string, key: StringKey): string {
-  const table = language.startsWith('de') ? STRINGS.de : STRINGS.en;
-  return table[key];
+  return STRING_TABLES[uiLanguage(language)][key];
 }

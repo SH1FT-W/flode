@@ -1,0 +1,214 @@
+{
+  "buttons": {
+    "save": "Salvar",
+    "saveAsCopy": "Salvar como cópia",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "delete": "Excluir",
+    "update": "Atualizar",
+    "refresh": "Atualizar",
+    "copy": "Copiar",
+    "use": "Usar",
+    "add": "Adicionar",
+    "addTrigger": "Adicionar gatilho",
+    "openAutomation": "Abrir automação",
+    "newAutomation": "Nova automação",
+    "importJson": "Importar de JSON",
+    "importYaml": "Importar de YAML",
+    "testConnection": "Testar conexão",
+    "disconnect": "Desconectar"
+  },
+  "labels": {
+    "automationName": "Nome da automação",
+    "properties": "Propriedades",
+    "yaml": "YAML",
+    "debug": "Depuração",
+    "enabled": "Habilitado",
+    "alias": "Alias (nome de exibição)",
+    "id": "ID",
+    "strategy": "Estratégia",
+    "speed": "Velocidade",
+    "quickHelp": "Ajuda rápida",
+    "debugControls": "Controles de depuração",
+    "addNode": "Adicionar nó",
+    "yamlOutput": "Saída YAML",
+    "automationTrace": "Trace da automação",
+    "selectTraceRun": "Selecionar execução do trace:",
+    "traceDetails": "Detalhes do trace:",
+    "trigger": "Gatilho:",
+    "timestamp": "Data e hora:",
+    "duration": "Duração:",
+    "lastStep": "Última etapa:",
+    "executionPath": "Caminho da execução:",
+    "notApplicable": "N/D",
+    "device": "Dispositivo",
+    "triggerType": "Tipo de gatilho",
+    "entityId": "ID da entidade",
+    "warning": "Aviso",
+    "requiredAsterisk": "*",
+    "automations": "Automações",
+    "nodes": "Nós",
+    "areas": "Áreas",
+    "zones": "Zonas",
+    "unassigned": "Sem atribuição",
+    "workspaceSources": "Fontes mescladas",
+    "automationNameScript": "Nome do script"
+  },
+  "status": {
+    "connecting": "Conectando...",
+    "connected": "Conectado",
+    "connectedTo": "Conectado a {{hostname}}",
+    "connectionError": "Erro de conexão",
+    "saving": "Salvando...",
+    "updating": "Atualizando...",
+    "testing": "Testando...",
+    "loadingTraces": "Carregando traces...",
+    "loadingTriggers": "Carregando gatilhos..."
+  },
+  "placeholders": {
+    "automationName": "Nome da automação",
+    "optionalDisplayName": "Nome de exibição opcional",
+    "optionalUniqueId": "ID único opcional",
+    "enterAutomationName": "Digite o nome da automação...",
+    "describeAutomation": "Descreva o que esta automação faz...",
+    "searchAutomations": "Pesquisar automações...",
+    "selectTrace": "Selecione um trace...",
+    "addNodesForYaml": "# Adicione nós para ver a saída YAML",
+    "selectDevice": "Selecione o dispositivo...",
+    "selectTriggerType": "Selecione o tipo de gatilho...",
+    "selectEntity": "Selecione a entidade...",
+    "selectEntities": "Selecione as entidades...",
+    "duration": "00:05:00",
+    "enterTemplate": "Digite o template Jinja2...",
+    "jsonExample": "{ \"key\": \"value\" }",
+    "none": "Nenhum",
+    "addValue": "Adicionar valor...",
+    "select": "Selecionar...",
+    "enterAutomationNameScript": "Digite o nome do script",
+    "describeAutomationScript": "Descreva o que este script faz…"
+  },
+  "help": {
+    "clickNodesToAdd": "Clique nos nós para adicionar",
+    "dragToConnect": "Arraste para conectar",
+    "deleteToRemove": "Delete para remover",
+    "backspaceDeleteKey": "Tecla Backspace/Delete"
+  },
+  "titles": {
+    "appName": "FLODE",
+    "appFullName": "Editor de fluxos de automação complexos",
+    "settings": "Configurações",
+    "updateAutomation": "Atualizar automação no Home Assistant",
+    "saveAutomation": "Salvar automação no Home Assistant",
+    "clearAutomation": "Limpar automação atual",
+    "exportJson": "Exportar fluxo como JSON",
+    "clickToConfigure": "Clique para configurar a conexão com o Home Assistant",
+    "exit": "Sair",
+    "openDetached": "Abrir em janela separada",
+    "removeSource": "Remover fonte do espaço de trabalho mesclado"
+  },
+  "strategy": {
+    "auto": "Auto",
+    "native": "Nativa",
+    "stateMachine": "Máquina de estados"
+  },
+  "defaults": {
+    "newAutomation": "Nova automação",
+    "newScript": "Novo script"
+  },
+  "boolean": {
+    "true": "Verdadeiro",
+    "false": "Falso"
+  },
+  "theme": {
+    "toggleLabel": "Tema",
+    "auto": "Auto",
+    "light": "Claro",
+    "dark": "Escuro"
+  },
+  "combobox": {
+    "select": "Selecionar...",
+    "noOptions": "Nenhuma opção encontrada."
+  },
+  "dynamicField": {
+    "enabled": "Habilitado",
+    "disabled": "Desabilitado",
+    "selectItems": "Selecionar itens...",
+    "itemsSelected": "{{count}} itens selecionados",
+    "selectEntities": "Selecione as entidades...",
+    "selectEntity": "Selecione a entidade...",
+    "selectZone": "Selecione a zona...",
+    "formatHMS": "Formato: HH:MM:SS",
+    "enterValue": "Digite {{name}}..."
+  },
+  "deviceSelector": {
+    "enterId": "Digitar o ID do dispositivo manualmente",
+    "noDevices": "Nenhum dispositivo encontrado. Digite o ID do dispositivo manualmente ou verifique a conexão com o Home Assistant."
+  },
+  "automationSettings": {
+    "title": "Configurações da automação",
+    "description": "Descrição",
+    "mode": "Modo",
+    "modeDescription": "Controla o que acontece quando a automação é acionada enquanto ainda está em execução.",
+    "modes": {
+      "single": "Único",
+      "restart": "Reiniciar",
+      "queued": "Fila",
+      "parallel": "Paralelo"
+    },
+    "modeDescriptions": {
+      "single": "Não iniciar uma nova execução se já estiver em execução",
+      "restart": "Parar a execução atual e iniciar uma nova",
+      "queued": "Colocar novas execuções na fila para rodar após a atual terminar",
+      "parallel": "Iniciar uma nova execução independente em paralelo"
+    },
+    "max": "Máx. de execuções",
+    "maxDescription": "Número máximo de execuções simultâneas ou na fila.",
+    "maxExceeded": "Máximo excedido",
+    "maxExceededDescription": "O que fazer quando o número máximo de execuções é excedido.",
+    "maxExceededOptions": {
+      "silent": "Silencioso",
+      "warning": "Aviso",
+      "critical": "Crítico"
+    },
+    "titleScript": "Configurações do script"
+  },
+  "toolbar": {
+    "runAction": "Executar ação",
+    "undo": "Desfazer",
+    "redo": "Refazer",
+    "cut": "Recortar",
+    "copy": "Copiar",
+    "paste": "Colar",
+    "duplicate": "Duplicar",
+    "toggleEnabled": "Habilitar/desabilitar",
+    "enable": "Habilitar",
+    "disable": "Desabilitar",
+    "disconnect": "Desconectar",
+    "alignLeft": "Alinhar à esquerda",
+    "alignCenter": "Centralizar",
+    "alignRight": "Alinhar à direita",
+    "alignTop": "Alinhar ao topo",
+    "alignBottom": "Alinhar à base",
+    "deleteNode": "Excluir nó",
+    "duplicateNode": "Duplicar nó",
+    "selectAll": "Selecionar tudo",
+    "tidy": "Organizar",
+    "tidied": "Organizado — {{shortcut}} desfaz",
+    "align": "Alinhar",
+    "runFrom": "Executar a partir daqui"
+  },
+  "shortcuts": {
+    "cmd": "Cmd",
+    "ctrl": "Ctrl",
+    "shift": "Shift",
+    "alt": "Alt",
+    "arrowUp": "Seta para cima",
+    "arrowDown": "Seta para baixo",
+    "arrowLeft": "Seta para a esquerda",
+    "arrowRight": "Seta para a direita",
+    "delete": "Del"
+  },
+  "stateTrigger": {
+    "useValue": "Usar valor"
+  }
+}

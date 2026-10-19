@@ -1,0 +1,75 @@
+{
+  "title": "Verbindingen",
+  "subtitle": "Wie luistert naar wat en wie schakelt wat – over alle automatiseringen en scripts heen",
+  "searchPlaceholder": "Waar wordt … gebruikt? Entiteit, automatisering of script",
+  "summary": "{{automations}} · {{scripts}} · {{entities}} gekoppelde entiteiten",
+  "automationCount_one": "{{count}} automatisering",
+  "automationCount_other": "{{count}} automatiseringen",
+  "scriptCount_one": "{{count}} script",
+  "scriptCount_other": "{{count}} scripts",
+  "loading": "Alle automatiseringen en scripts lezen …",
+  "loadedAt": "Stand van {{time}}",
+  "reload": "Opnieuw laden",
+  "results_one": "{{count}} resultaat",
+  "results_other": "{{count}} resultaten",
+  "noResults": "Niets gevonden.",
+  "refCount_one": "{{count}} verwijzing",
+  "refCount_other": "{{count}} verwijzingen",
+  "useCount_one": "in {{count}} automatisering",
+  "useCount_other": "in {{count}} automatiseringen",
+  "open": "Openen",
+  "kind": {
+    "automation": "Automatisering",
+    "script": "Script",
+    "entity": "Entiteit"
+  },
+  "role": {
+    "trigger": "Trigger",
+    "condition": "Voorwaarde",
+    "action": "Actie",
+    "template": "Sjabloon"
+  },
+  "issues": {
+    "conflicts": {
+      "title": "Mogelijke conflicten",
+      "hint": "Twee sturen hetzelfde apparaat tegengesteld aan",
+      "empty": "Geen tegengestelde aansturing gevonden."
+    },
+    "selfTriggers": {
+      "title": "Triggert zichzelf",
+      "hint": "Wijzigt een entiteit waar ze zelf naar luistert",
+      "empty": "Geen automatisering triggert zichzelf."
+    },
+    "missing": {
+      "title": "Ontbrekende entiteiten",
+      "hint": "Verwijzingen naar verwijderde of hernoemde entiteiten",
+      "empty": "Elke verwijzing wijst naar een bestaande entiteit."
+    },
+    "chains": {
+      "title": "Ketens",
+      "hint": "De ene automatisering zet een andere in gang",
+      "empty": "Geen ketens gevonden."
+    }
+  },
+  "focus": {
+    "empty": "Kies links een entiteit, automatisering of script – of zoek er hierboven een.",
+    "triggeredBy": "In gang gezet door",
+    "listensTo": "Luistert naar",
+    "reads": "Controleert / leest",
+    "controls": "Stuurt aan",
+    "triggers": "Zet in gang",
+    "conflictWith": "Tegengesteld aan",
+    "on": "op",
+    "selfTrigger": "Triggert zichzelf via deze entiteit:",
+    "missing_one": "{{count}} verwijzing wijst naar een entiteit die niet bestaat.",
+    "missing_other": "{{count}} verwijzingen wijzen naar entiteiten die niet bestaan.",
+    "entityMissing_one": "Home Assistant kent deze entiteit (niet meer) – hernoemd of verwijderd? {{count}} automatisering verwijst er nog naar.",
+    "entityMissing_other": "Home Assistant kent deze entiteit (niet meer) – hernoemd of verwijderd? {{count}} automatiseringen verwijzen er nog naar.",
+    "unused": "Geen automatisering of script gebruikt deze entiteit.",
+    "usedAsTrigger": "Triggert",
+    "usedAsCondition": "Gecontroleerd door",
+    "controlledBy": "Aangestuurd door"
+  },
+  "command": "Verbindingen",
+  "commandHint": "Wie luistert naar wat en wie schakelt wat – gericht op de geopende automatisering"
+}

@@ -1,0 +1,82 @@
+{
+  "title": "Connexions",
+  "subtitle": "Qui écoute quoi et qui commande quoi – dans toutes les automatisations et tous les scripts",
+  "searchPlaceholder": "Où … est-il utilisé ? Entité, automatisation ou script",
+  "summary": "{{automations}} · {{scripts}} · {{entities}} entités liées",
+  "automationCount_one": "{{count}} automatisation",
+  "automationCount_other": "{{count}} automatisations",
+  "automationCount_many": "{{count}} automatisations",
+  "scriptCount_one": "{{count}} script",
+  "scriptCount_other": "{{count}} scripts",
+  "scriptCount_many": "{{count}} scripts",
+  "loading": "Lecture de toutes les automatisations et de tous les scripts …",
+  "loadedAt": "État au {{time}}",
+  "reload": "Actualiser",
+  "results_one": "{{count}} résultat",
+  "results_other": "{{count}} résultats",
+  "results_many": "{{count}} résultats",
+  "noResults": "Aucun résultat.",
+  "refCount_one": "{{count}} référence",
+  "refCount_other": "{{count}} références",
+  "refCount_many": "{{count}} références",
+  "useCount_one": "dans {{count}} automatisation",
+  "useCount_other": "dans {{count}} automatisations",
+  "useCount_many": "dans {{count}} automatisations",
+  "open": "Ouvrir",
+  "kind": {
+    "automation": "Automatisation",
+    "script": "Script",
+    "entity": "Entité"
+  },
+  "role": {
+    "trigger": "Déclencheur",
+    "condition": "Condition",
+    "action": "Action",
+    "template": "Modèle"
+  },
+  "issues": {
+    "conflicts": {
+      "title": "Conflits possibles",
+      "hint": "Deux automatisations commandent le même appareil en sens inverse",
+      "empty": "Aucune commande contraire trouvée."
+    },
+    "selfTriggers": {
+      "title": "Se déclenche elle-même",
+      "hint": "Modifie une entité qu'elle écoute elle-même",
+      "empty": "Aucune automatisation ne se déclenche elle-même."
+    },
+    "missing": {
+      "title": "Entités manquantes",
+      "hint": "Références à des entités supprimées ou renommées",
+      "empty": "Chaque référence pointe vers une entité existante."
+    },
+    "chains": {
+      "title": "Chaînes",
+      "hint": "Une automatisation en déclenche une autre",
+      "empty": "Aucune chaîne trouvée."
+    }
+  },
+  "focus": {
+    "empty": "Choisissez une entité, une automatisation ou un script à gauche – ou recherchez-le ci-dessus.",
+    "triggeredBy": "Déclenchée par",
+    "listensTo": "Écoute",
+    "reads": "Vérifie / lit",
+    "controls": "Commande",
+    "triggers": "Déclenche",
+    "conflictWith": "Contraire à",
+    "on": "sur",
+    "selfTrigger": "Se déclenche elle-même via cette entité :",
+    "missing_one": "{{count}} référence pointe vers une entité qui n'existe pas.",
+    "missing_other": "{{count}} références pointent vers des entités qui n'existent pas.",
+    "missing_many": "{{count}} références pointent vers des entités qui n'existent pas.",
+    "entityMissing_one": "Home Assistant ne connaît pas (ou plus) cette entité – renommée ou supprimée ? {{count}} automatisation y fait encore référence.",
+    "entityMissing_other": "Home Assistant ne connaît pas (ou plus) cette entité – renommée ou supprimée ? {{count}} automatisations y font encore référence.",
+    "entityMissing_many": "Home Assistant ne connaît pas (ou plus) cette entité – renommée ou supprimée ? {{count}} automatisations y font encore référence.",
+    "unused": "Aucune automatisation ni aucun script n'utilise cette entité.",
+    "usedAsTrigger": "Déclenche",
+    "usedAsCondition": "Vérifiée par",
+    "controlledBy": "Commandée par"
+  },
+  "command": "Connexions",
+  "commandHint": "Qui écoute quoi et qui commande quoi – centré sur l'automatisation ouverte"
+}

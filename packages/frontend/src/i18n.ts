@@ -1,11 +1,7 @@
-import {
-  type CoreLanguage,
-  coreResources,
-  createSummaryContext,
-  type SummaryContext,
-} from '@flode/ui-core';
+import { coreResources, createSummaryContext, type SummaryContext } from '@flode/ui-core';
 import i18next from 'i18next';
 import { type HassServiceField, type HomeAssistant, serviceInfo } from './ha';
+import { uiLanguage } from './strings';
 
 /**
  * FLODE 3's i18next instance: the shared `common` + `nodes` namespaces from
@@ -21,11 +17,6 @@ void i18n.init({
   interpolation: { escapeValue: false },
   initAsync: false,
 });
-
-function coreLanguage(language: string | undefined): CoreLanguage {
-  const base = (language ?? 'en').split('-')[0];
-  return base === 'de' ? 'de' : 'en';
-}
 
 /** A service field, also when HA groups it into a section (`advanced_fields`). */
 function findServiceField(
@@ -116,7 +107,7 @@ export function summaryContext(
   const cached = contexts.get(hass);
   if (cached) return cached;
   const context = createSummaryContext({
-    t: i18n.getFixedT(coreLanguage(hass.language), ['nodes', 'common']),
+    t: i18n.getFixedT(uiLanguage(hass.language), ['nodes', 'common']),
     localize: (key) => hass.localize(key) || undefined,
     friendlyName: (entityId) => {
       const name = hass.states[entityId]?.attributes.friendly_name;
@@ -149,5 +140,5 @@ export function mapT(
   key: string,
   options?: Record<string, unknown>
 ): string {
-  return i18n.getFixedT(coreLanguage(language), 'map')(key, options);
+  return i18n.getFixedT(uiLanguage(language), 'map')(key, options);
 }

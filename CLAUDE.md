@@ -51,7 +51,7 @@ In addition to strict TypeScript rules:
 - **Zod for Schema Validation**: All data structures use Zod schemas in `@flode/shared`
 - **HA-native UI**: Use Home Assistant's own elements and dialogs wherever one exists; no own design system. Minimum HA version is in `hacs.json` — check new HA internals against it
 - **Lit Patterns**: One element per file (`flode-*.ts`), state via reactive properties, the panel (`flode-panel.ts`) owns the open flows and undo history
-- **Strings**: UI text lives in `packages/frontend/src/strings.ts` (de + en); card texts in `@flode/ui-core` locales
+- **Strings**: UI text lives in `packages/frontend/src/strings.ts` (de + en) and `packages/frontend/src/locales/<lang>.ts` (nl, fr, es, it, pt); card texts in `@flode/ui-core` locales (same seven languages); HA's config flow in `custom_components/flode/translations`. A new key goes into every language — `strings.test.ts` and `locales.test.ts` check keys, placeholders and plural forms
 - **Import Aliases**: `@flode/*` for packages
 
 # Common Commands
@@ -146,7 +146,7 @@ To cut a new release, follow these steps:
 
 0. **Update the "What's new" sheet** (`packages/frontend/src/flode-welcome.ts`)
 
-- Replace `WHATS_NEW` with this release's user-facing features (icon + title + text, 2–4 entries); add their `newXYZ…` strings in `strings.ts` (de + en) and drop the previous release's.
+- Replace `WHATS_NEW` with this release's user-facing features (icon + title + text, 2–4 entries); add their `newXYZ…` strings in every language (`strings.ts` + `locales/*.ts`) and drop the previous release's.
 - Bump `version` in `packages/frontend/package.json` together with `manifest.json` — the sheet shows once per version to everyone who used an older one.
 
 1. **Commit your changes**

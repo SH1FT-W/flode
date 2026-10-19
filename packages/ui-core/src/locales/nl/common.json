@@ -1,0 +1,214 @@
+{
+  "buttons": {
+    "save": "Opslaan",
+    "saveAsCopy": "Opslaan als kopie",
+    "cancel": "Annuleren",
+    "close": "Sluiten",
+    "delete": "Verwijderen",
+    "update": "Bijwerken",
+    "refresh": "Opnieuw laden",
+    "copy": "Kopiëren",
+    "use": "Gebruiken",
+    "add": "Toevoegen",
+    "addTrigger": "Trigger toevoegen",
+    "openAutomation": "Automatisering openen",
+    "newAutomation": "Nieuwe automatisering",
+    "importJson": "Importeren uit JSON",
+    "importYaml": "Importeren uit YAML",
+    "testConnection": "Verbinding testen",
+    "disconnect": "Verbinding verbreken"
+  },
+  "labels": {
+    "automationName": "Naam van de automatisering",
+    "properties": "Eigenschappen",
+    "yaml": "YAML",
+    "debug": "Debuggen",
+    "enabled": "Ingeschakeld",
+    "alias": "Alias (weergavenaam)",
+    "id": "ID",
+    "strategy": "Strategie",
+    "speed": "Snelheid",
+    "quickHelp": "Snelle hulp",
+    "debugControls": "Debugbediening",
+    "addNode": "Blok toevoegen",
+    "yamlOutput": "YAML-uitvoer",
+    "automationTrace": "Tracering van de automatisering",
+    "selectTraceRun": "Kies een uitvoering:",
+    "traceDetails": "Details van de tracering:",
+    "trigger": "Trigger:",
+    "timestamp": "Tijdstip:",
+    "duration": "Duur:",
+    "lastStep": "Laatste stap:",
+    "executionPath": "Uitvoeringspad:",
+    "notApplicable": "n.v.t.",
+    "device": "Apparaat",
+    "triggerType": "Type trigger",
+    "entityId": "Entiteit-ID",
+    "warning": "Waarschuwing",
+    "requiredAsterisk": "*",
+    "automations": "Automatiseringen",
+    "nodes": "Blokken",
+    "areas": "Ruimtes",
+    "zones": "Zones",
+    "unassigned": "Niet toegewezen",
+    "workspaceSources": "Samengevoegde bronnen",
+    "automationNameScript": "Naam van het script"
+  },
+  "status": {
+    "connecting": "Verbinden...",
+    "connected": "Verbonden",
+    "connectedTo": "Verbonden met {{hostname}}",
+    "connectionError": "Verbindingsfout",
+    "saving": "Opslaan...",
+    "updating": "Bijwerken...",
+    "testing": "Testen...",
+    "loadingTraces": "Traceringen laden...",
+    "loadingTriggers": "Triggers laden..."
+  },
+  "placeholders": {
+    "automationName": "Naam van de automatisering",
+    "optionalDisplayName": "Optionele weergavenaam",
+    "optionalUniqueId": "Optionele unieke ID",
+    "enterAutomationName": "Voer de naam van de automatisering in...",
+    "describeAutomation": "Beschrijf wat deze automatisering doet...",
+    "searchAutomations": "Automatiseringen zoeken...",
+    "selectTrace": "Kies een tracering...",
+    "addNodesForYaml": "# Voeg blokken toe om de YAML-uitvoer te zien",
+    "selectDevice": "Kies een apparaat...",
+    "selectTriggerType": "Kies een type trigger...",
+    "selectEntity": "Kies een entiteit...",
+    "selectEntities": "Kies entiteiten...",
+    "duration": "00:05:00",
+    "enterTemplate": "Voer een Jinja2-sjabloon in...",
+    "jsonExample": "{ \"key\": \"value\" }",
+    "none": "Geen",
+    "addValue": "Waarde toevoegen...",
+    "select": "Kiezen...",
+    "enterAutomationNameScript": "Voer de naam van het script in",
+    "describeAutomationScript": "Beschrijf wat dit script doet…"
+  },
+  "help": {
+    "clickNodesToAdd": "Klik op blokken om ze toe te voegen",
+    "dragToConnect": "Sleep om te verbinden",
+    "deleteToRemove": "Delete om te verwijderen",
+    "backspaceDeleteKey": "Backspace-/Delete-toets"
+  },
+  "titles": {
+    "appName": "FLODE",
+    "appFullName": "Editor voor complexe automatiseringsflows",
+    "settings": "Instellingen",
+    "updateAutomation": "Automatisering bijwerken in Home Assistant",
+    "saveAutomation": "Automatisering opslaan in Home Assistant",
+    "clearAutomation": "Huidige automatisering wissen",
+    "exportJson": "Flow exporteren als JSON",
+    "clickToConfigure": "Klik om de verbinding met Home Assistant in te stellen",
+    "exit": "Afsluiten",
+    "openDetached": "Openen in apart venster",
+    "removeSource": "Bron uit de samengevoegde werkruimte verwijderen"
+  },
+  "strategy": {
+    "auto": "Automatisch",
+    "native": "Native",
+    "stateMachine": "Toestandsmachine"
+  },
+  "defaults": {
+    "newAutomation": "Nieuwe automatisering",
+    "newScript": "Nieuw script"
+  },
+  "boolean": {
+    "true": "Waar",
+    "false": "Onwaar"
+  },
+  "theme": {
+    "toggleLabel": "Thema",
+    "auto": "Automatisch",
+    "light": "Licht",
+    "dark": "Donker"
+  },
+  "combobox": {
+    "select": "Kiezen...",
+    "noOptions": "Geen opties gevonden."
+  },
+  "dynamicField": {
+    "enabled": "Ingeschakeld",
+    "disabled": "Uitgeschakeld",
+    "selectItems": "Items kiezen...",
+    "itemsSelected": "{{count}} items gekozen",
+    "selectEntities": "Kies entiteiten...",
+    "selectEntity": "Kies een entiteit...",
+    "selectZone": "Kies een zone...",
+    "formatHMS": "Formaat: UU:MM:SS",
+    "enterValue": "Voer {{name}} in..."
+  },
+  "deviceSelector": {
+    "enterId": "Apparaat-ID handmatig invoeren",
+    "noDevices": "Geen apparaten gevonden. Voer de apparaat-ID handmatig in of controleer je verbinding met Home Assistant."
+  },
+  "automationSettings": {
+    "title": "Instellingen van de automatisering",
+    "description": "Beschrijving",
+    "mode": "Modus",
+    "modeDescription": "Bepaalt wat er gebeurt als de automatisering wordt getriggerd terwijl ze al loopt.",
+    "modes": {
+      "single": "Enkelvoudig",
+      "restart": "Herstarten",
+      "queued": "In de wachtrij",
+      "parallel": "Parallel"
+    },
+    "modeDescriptions": {
+      "single": "Geen nieuwe uitvoering starten als er al een loopt",
+      "restart": "De huidige uitvoering stoppen en een nieuwe starten",
+      "queued": "Nieuwe uitvoeringen in de wachtrij zetten tot de huidige klaar is",
+      "parallel": "Een nieuwe, onafhankelijke uitvoering parallel starten"
+    },
+    "max": "Max. uitvoeringen",
+    "maxDescription": "Maximaal aantal gelijktijdige of wachtende uitvoeringen.",
+    "maxExceeded": "Maximum overschreden",
+    "maxExceededDescription": "Wat er moet gebeuren als het maximale aantal uitvoeringen wordt overschreden.",
+    "maxExceededOptions": {
+      "silent": "Stil",
+      "warning": "Waarschuwing",
+      "critical": "Kritiek"
+    },
+    "titleScript": "Instellingen van het script"
+  },
+  "toolbar": {
+    "runAction": "Actie uitvoeren",
+    "undo": "Ongedaan maken",
+    "redo": "Opnieuw uitvoeren",
+    "cut": "Knippen",
+    "copy": "Kopiëren",
+    "paste": "Plakken",
+    "duplicate": "Dupliceren",
+    "toggleEnabled": "Inschakelen/uitschakelen",
+    "enable": "Inschakelen",
+    "disable": "Uitschakelen",
+    "disconnect": "Loskoppelen",
+    "alignLeft": "Links uitlijnen",
+    "alignCenter": "Centreren",
+    "alignRight": "Rechts uitlijnen",
+    "alignTop": "Boven uitlijnen",
+    "alignBottom": "Onder uitlijnen",
+    "deleteNode": "Blok verwijderen",
+    "duplicateNode": "Blok dupliceren",
+    "selectAll": "Alles selecteren",
+    "tidy": "Opruimen",
+    "tidied": "Opgeruimd — {{shortcut}} maakt ongedaan",
+    "align": "Uitlijnen",
+    "runFrom": "Vanaf hier uitvoeren"
+  },
+  "shortcuts": {
+    "cmd": "Cmd",
+    "ctrl": "Ctrl",
+    "shift": "Shift",
+    "alt": "Alt",
+    "arrowUp": "Pijl omhoog",
+    "arrowDown": "Pijl omlaag",
+    "arrowLeft": "Pijl links",
+    "arrowRight": "Pijl rechts",
+    "delete": "Del"
+  },
+  "stateTrigger": {
+    "useValue": "Waarde gebruiken"
+  }
+}
