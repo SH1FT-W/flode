@@ -32,6 +32,8 @@ export function flodeMetadata(
     ...(Object.keys(offsets).length > 0 ? { branch_offsets: offsets } : {}),
     ...(Object.keys(steps).length > 0 ? { steps } : {}),
     ...(graph.direction ? { direction: graph.direction } : {}),
+    ...(graph.notes?.length ? { notes: graph.notes } : {}),
+    ...(graph.frames?.length ? { frames: graph.frames } : {}),
     graph_id: graph.id,
     graph_version: graph.version,
     strategy,

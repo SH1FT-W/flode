@@ -600,6 +600,9 @@ export class YamlParser {
         branchOffsets: savedLayout ? metadata?.branch_offsets : undefined,
         // The way the flow runs outlives a recomputed layout (it was laid out that way again).
         ...(metadata?.direction ? { direction: metadata.direction } : {}),
+        // Notes and frames are drawings of their own: they stay where they were put.
+        ...(metadata?.notes?.length ? { notes: metadata.notes } : {}),
+        ...(metadata?.frames?.length ? { frames: metadata.frames } : {}),
         // Preserve user-defined variables for round-trip
         userVariables: Object.keys(userVariables).length > 0 ? userVariables : undefined,
         userTriggerVariables:

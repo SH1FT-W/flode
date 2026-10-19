@@ -27,6 +27,15 @@ import './flode-ha-list';
 import './flode-progress';
 import { chooseAiTask, keepAiTask, mergeAutomations, randomId } from '@flode/ui-core';
 import {
+  addFrame,
+  addFrameAround,
+  addNote,
+  kindOf,
+  nextColor,
+  removeAnnotation,
+  snapToGrid,
+} from './annotations';
+import {
   type BranchCardRef,
   type BranchView,
   branchInsertAt,
@@ -42,7 +51,7 @@ import {
   withoutStaleOffsets,
 } from './branch-view';
 import { defineElement } from './define-element';
-import type { AddAt, CanvasMenuDetail, FlodeCanvas } from './flode-canvas';
+import type { AddAt, CanvasMenuDetail, FlodeCanvas, SelectionAction } from './flode-canvas';
 import { type FlodeHaList, HA_LIST_TAGS } from './flode-ha-list';
 import { downloadFlowJson, type ImportedFlow, pickFlowJson } from './flode-io';
 import type { PaletteEntry } from './flode-palette';
@@ -123,6 +132,14 @@ import {
   type SaveProblem,
   SaveProblemError,
 } from './save-errors';
+import {
+  pasteSnapshot,
+  removeSelection,
+  type SelectionSnapshot,
+  selectionBox,
+  snapshotSelection,
+  toggleSelectionEnabled,
+} from './selection';
 import {
   haDialogShowing,
   isInDialog,
@@ -336,6 +353,7 @@ export class FlodePanel extends LitElement {
     query: { state: true },
     flow: { state: true },
     selectedId: { state: true },
+    multiIds: { state: true },
     saveState: { state: true },
     message: { state: true },
     saveProblem: { state: true },
@@ -380,6 +398,8 @@ export class FlodePanel extends LitElement {
   declare query: string;
   declare flow: OpenFlow | null;
   declare selectedId: string | null;
+  /** Cards and notes picked together on the canvas (marquee, Shift-click). */
+  declare multiIds: string[];
   declare saveState: SaveState;
   declare message: string | null;
   /** Why the active tab's last save failed (its bar and the red card). */
@@ -417,6 +437,8 @@ export class FlodePanel extends LitElement {
   declare canvasMenu: CanvasMenuDetail | null;
   /** ⌘C/⌘V — FLODE's own card clipboard (works across tabs). */
   private copiedNode: FlowNode | null = null;
+  /** Several cards copied together (with the connections between them) — pasted instead of `copiedNode`. */
+  private copiedSelection: SelectionSnapshot | null = null;
   declare templatesOpen: boolean;
   /** The block "run from here" was chosen for (its confirmation is open). */
   declare runFromId: string | null;
@@ -455,6 +477,7 @@ export class FlodePanel extends LitElement {
     this.query = '';
     this.flow = null;
     this.selectedId = null;
+    this.multiIds = [];
     this.saveState = 'saved';
     this.message = null;
     this.saveProblem = null;
@@ -910,17 +933,67 @@ export class FlodePanel extends LitElement {
       hint: shortcutHint(id),
     });
     const entries: MenuEntry[] = [];
-    if (menu.edgeId) {
+    if (menu.annotationId) {
+      const id = menu.annotationId;
+      const isNote = kindOf(flow.graph, id) === 'note';
+      entries.push(
+        {
+          id: 'editAnnotation',
+          icon: 'mdi:pencil-outline',
+          label: t(language, 'editAnnotation'),
+          run: () => this.canvas?.editAnnotation(id),
+        },
+        {
+          id: 'changeColor',
+          icon: 'mdi:palette-outline',
+          label: t(language, 'changeColor'),
+          run: () => this.commit(nextColor(flow.graph, id)),
+        },
+        'divider',
+        hinted(
+          'delete',
+          'mdi:delete-outline',
+          t(language, isNote ? 'deleteNote' : 'deleteFrame'),
+          () => this.commit(removeAnnotation(flow.graph, id))
+        )
+      );
+    } else if (menu.edgeId) {
       const edgeId = menu.edgeId;
       entries.push(
         hinted('delete', 'mdi:delete-outline', t(language, 'deleteConnection'), () =>
           this.commit(removeEdge(flow.graph, edgeId))
         )
       );
+    } else if (menu.nodeId && this.multiIds.length > 1 && this.multiIds.includes(menu.nodeId)) {
+      const pick = (action: SelectionAction) => () => this.selectionAction(action);
+      entries.push(
+        hinted('copy', 'mdi:content-copy', t(language, 'copyCard'), pick('copy')),
+        hinted(
+          'duplicate',
+          'mdi:content-duplicate',
+          t(language, 'duplicateCard'),
+          pick('duplicate')
+        ),
+        hinted(
+          'toggleEnabled',
+          'mdi:toggle-switch-outline',
+          t(language, 'toggleSelection'),
+          pick('toggle')
+        ),
+        {
+          id: 'frameSelection',
+          icon: 'mdi:select-drag',
+          label: t(language, 'frameSelection'),
+          run: pick('frame'),
+        },
+        'divider',
+        hinted('delete', 'mdi:delete-outline', t(language, 'delete'), pick('delete'))
+      );
     } else if (node && !isScriptStart(node.data)) {
       const off = 'enabled' in node.data && node.data.enabled === false;
       entries.push(
         hinted('copy', 'mdi:content-copy', t(language, 'copyCard'), () => {
+          this.copiedSelection = null;
           this.copiedNode = structuredClone(node);
         }),
         hinted('duplicate', 'mdi:content-duplicate', t(language, 'duplicateCard'), () =>
@@ -979,7 +1052,15 @@ export class FlodePanel extends LitElement {
       entries.push(...this.addAfterEntries(flow, menu.after));
     } else {
       const copied = this.copiedNode;
-      if (copied) {
+      const group = this.copiedSelection;
+      if (group) {
+        entries.push(
+          hinted('paste', 'mdi:content-paste', t(language, 'pasteCard'), () =>
+            this.pasteSelection(group, menu.position)
+          ),
+          'divider'
+        );
+      } else if (copied) {
         entries.push(
           hinted('paste', 'mdi:content-paste', t(language, 'pasteCard'), () =>
             this.pasteCard(copied, menu.position)
@@ -996,6 +1077,19 @@ export class FlodePanel extends LitElement {
         });
       }
       entries.push(
+        'divider',
+        {
+          id: 'addNote',
+          icon: 'mdi:note-text-outline',
+          label: t(language, 'addNote'),
+          run: () => this.addAnnotation(flow, 'note', menu.position),
+        },
+        {
+          id: 'addFrame',
+          icon: 'mdi:select-drag',
+          label: t(language, 'addFrame'),
+          run: () => this.addAnnotation(flow, 'frame', menu.position),
+        },
         'divider',
         hinted('fit', 'mdi:fit-to-screen-outline', t(language, 'fit'), () =>
           this.canvas?.fitView()
@@ -1018,6 +1112,18 @@ export class FlodePanel extends LitElement {
         },
       }
     );
+  }
+
+  /** A new note or frame at `position`, picked and ready for its text. */
+  private addAnnotation(
+    flow: OpenFlow,
+    kind: 'note' | 'frame',
+    position: { x: number; y: number }
+  ) {
+    const at = { x: snapToGrid(position.x), y: snapToGrid(position.y) };
+    const [graph, id] = kind === 'note' ? addNote(flow.graph, at) : addFrame(flow.graph, at);
+    this.commit(graph);
+    this.canvas?.selectAnnotation(id, true);
   }
 
   /**
@@ -1905,6 +2011,7 @@ export class FlodePanel extends LitElement {
     this.future = tab.future;
     this.saveState = tab.saveState;
     this.selectedId = tab.selectedId;
+    this.multiIds = [];
     this.message = tab.message ?? null;
     this.saveProblem = tab.saveProblem ?? null;
     this.inspectorError = null;
@@ -2419,10 +2526,13 @@ export class FlodePanel extends LitElement {
           this.addOpen = true;
         };
       case 'copy': {
+        if (this.multiIds.length > 1 && !window.getSelection()?.toString())
+          return () => this.selectionAction('copy');
         // A text selection on the page keeps the browser's own copy.
         const card = this.selectedAnyCard();
         if (!card || window.getSelection()?.toString()) return null;
         return () => {
+          this.copiedSelection = null;
           this.copiedNode = structuredClone(card);
           this.notify(
             t(this.language, 'cardCopied').replace('{keys}', shortcutKeys('paste') ?? '')
@@ -2430,15 +2540,19 @@ export class FlodePanel extends LitElement {
         };
       }
       case 'paste': {
+        const group = this.copiedSelection;
+        if (group) return () => this.pasteSelection(group);
         const copied = this.copiedNode;
         if (!copied) return null;
         return () => this.pasteCard(copied);
       }
       case 'duplicate': {
+        if (this.multiIds.length > 1) return () => this.selectionAction('duplicate');
         const card = this.selectedAnyCard();
         return card ? () => this.duplicateCard(card) : null;
       }
       case 'toggleEnabled': {
+        if (this.multiIds.length > 1) return () => this.selectionAction('toggle');
         const card = this.selectedAnyCard();
         return card ? () => this.toggleCard(card) : null;
       }
@@ -2542,6 +2656,75 @@ export class FlodePanel extends LitElement {
     if (graph.direction || !this.verticalDefault) return graph;
     if (visibleGraph(graph).nodes.length === 0) return { ...graph, direction: 'down' };
     return layoutGraph(graph, 'down');
+  }
+
+  /** Carries out what the bar over a selection (or its shortcut) asks for. */
+  private selectionAction(action: SelectionAction): void {
+    const flow = this.flow;
+    if (!flow) return;
+    const ids = this.multiIds;
+    switch (action) {
+      case 'clear':
+        this.multiIds = [];
+        return;
+      case 'copy':
+        this.copiedNode = null;
+        this.copiedSelection = snapshotSelection(flow.graph, ids);
+        this.notify(t(this.language, 'selectionCopied'));
+        return;
+      case 'duplicate': {
+        const box = selectionBox(flow.graph, ids);
+        if (!box) return;
+        // The copy lands below the selection, connections among the copies kept.
+        this.pasteSelection(snapshotSelection(flow.graph, ids), {
+          x: box.x,
+          y: box.y + box.height + 40,
+        });
+        return;
+      }
+      case 'toggle':
+        this.commit(toggleSelectionEnabled(flow.graph, ids));
+        return;
+      case 'frame': {
+        const framed = addFrameAround(flow.graph, ids);
+        if (!framed) return;
+        this.commit(framed[0]);
+        this.multiIds = [];
+        this.selectedId = null;
+        // The title is waiting to be typed.
+        this.canvas?.selectAnnotation(framed[1], true);
+        return;
+      }
+      case 'delete':
+        this.commit(removeSelection(flow.graph, ids));
+        this.multiIds = [];
+        this.selectedId = null;
+        return;
+    }
+  }
+
+  /** Copied cards and notes added to the flow at `at`, or beside where they were; the copies are the new selection. */
+  private pasteSelection(snapshot: SelectionSnapshot, at?: { x: number; y: number }): void {
+    const flow = this.flow;
+    if (!flow) return;
+    const home = selectionBox({ ...flow.graph, nodes: snapshot.nodes, notes: snapshot.notes }, [
+      ...snapshot.nodes.map((n) => n.id),
+      ...snapshot.notes.map((n) => n.id),
+    ]);
+    if (!home) return;
+    const pasted = pasteSnapshot(flow.graph, snapshot, at ?? { x: home.x + 40, y: home.y + 40 });
+    if (!pasted) return;
+    // A trigger has no place in a script (saving would drop it).
+    if (
+      flow.item.kind === 'script' &&
+      snapshot.nodes.some((n) => !stepKindsFor('script').includes(stepKind(n.type)))
+    ) {
+      this.notify(t(this.language, 'pasteNoTriggerInScript'));
+      return;
+    }
+    this.commit(pasted.graph);
+    this.selectedId = null;
+    this.multiIds = pasted.ids;
   }
 
   /** The selected card — never the hidden script start. */
@@ -3139,6 +3322,7 @@ export class FlodePanel extends LitElement {
             .haText=${this.haCardText}
             .hass=${this.hass}
             .selectedId=${this.selectedId}
+            .multiIds=${this.multiIds}
             .runMarks=${this.debugOpen ? this.runMarks : null}
             .activeRunNode=${this.debugOpen ? this.activeRunNode : null}
             .saveIssue=${this.saveProblem?.issue ?? null}
@@ -3150,7 +3334,14 @@ export class FlodePanel extends LitElement {
             @canvas-menu=${(e: CustomEvent<CanvasMenuDetail>) => {
               this.canvasMenu = e.detail;
             }}
+            @multi-select=${(e: CustomEvent<{ ids: string[] }>) => {
+              this.multiIds = e.detail.ids;
+              this.selectedId = null;
+              this.inspectorError = null;
+            }}
+            @selection-action=${(e: CustomEvent<SelectionAction>) => this.selectionAction(e.detail)}
             @select=${(e: CustomEvent<{ id: string | null }>) => {
+              this.multiIds = [];
               this.selectedId = e.detail.id;
               this.inspectorError = null;
             }}

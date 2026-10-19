@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { FrameSchema, lenientList, NoteSchema } from './annotations';
 import { FlowDirectionSchema, MaxExceededSchema, PositionSchema } from './base';
 import { type TargetIds, TargetIdsSchema } from './ha-entities';
 
@@ -321,6 +322,9 @@ export const FlodeMetadataSchema = z.object({
    * right. An unknown value is dropped, not the whole layout.
    */
   direction: FlowDirectionSchema.optional().catch(undefined),
+  /** Notes and frames drawn on the canvas (`FlowGraph.notes`, `FlowGraph.frames`). */
+  notes: lenientList(NoteSchema),
+  frames: lenientList(FrameSchema),
 });
 export type FlodeMetadata = z.infer<typeof FlodeMetadataSchema>;
 

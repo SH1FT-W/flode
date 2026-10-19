@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { FrameSchema, NoteSchema } from './annotations';
 import {
   AutomationModeSchema,
   FlowDirectionSchema,
@@ -125,6 +126,10 @@ export const FlowGraphSchema = z.object({
   branchOffsets: z.record(z.string(), PositionSchema).optional(),
   /** Which way the cards were laid out; none = left to right. An unknown value counts as none. */
   direction: FlowDirectionSchema.optional().catch(undefined),
+  /** Free text on the canvas (saved in `_flode_metadata.notes`). */
+  notes: z.array(NoteSchema).optional(),
+  /** Titled boxes behind cards (saved in `_flode_metadata.frames`). */
+  frames: z.array(FrameSchema).optional(),
 });
 export type FlowGraph = z.infer<typeof FlowGraphSchema>;
 
