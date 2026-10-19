@@ -24,14 +24,10 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:call-split', title: 'new261016OrTitle', text: 'new261016OrText' },
-  { icon: 'mdi:repeat', title: 'new261016LoopsTitle', text: 'new261016LoopsText' },
-  { icon: 'mdi:shield-check-outline', title: 'new261016KeepTitle', text: 'new261016KeepText' },
-  {
-    icon: 'mdi:content-save-check-outline',
-    title: 'new261016SaveTitle',
-    text: 'new261016SaveText',
-  },
+  { icon: 'mdi:note-text-outline', title: 'new261017NotesTitle', text: 'new261017NotesText' },
+  { icon: 'mdi:select-drag', title: 'new261017FramesTitle', text: 'new261017FramesText' },
+  { icon: 'mdi:selection-multiple', title: 'new261017SelectTitle', text: 'new261017SelectText' },
+  { icon: 'mdi:translate', title: 'new261017LangTitle', text: 'new261017LangText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';
