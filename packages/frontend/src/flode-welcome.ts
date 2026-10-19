@@ -28,6 +28,7 @@ const WHATS_NEW: Feature[] = [
   { icon: 'mdi:select-drag', title: 'new261017FramesTitle', text: 'new261017FramesText' },
   { icon: 'mdi:selection-multiple', title: 'new261017SelectTitle', text: 'new261017SelectText' },
   { icon: 'mdi:translate', title: 'new261017LangTitle', text: 'new261017LangText' },
+  { icon: 'mdi:stop-circle-outline', title: 'new261017StopTitle', text: 'new261017StopText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';
