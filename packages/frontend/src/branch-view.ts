@@ -11,6 +11,7 @@ import {
   NodeSchema,
   RAW_STEP_KEY,
 } from '@flode/shared';
+import { stepIsOn, stopKind } from '@flode/ui-core';
 import {
   addNode,
   byFlowOrder,
@@ -96,6 +97,8 @@ export interface BranchView {
   tails: ReadonlyMap<string, BlockTail>;
   /** Drawn lines that begin at a block's "+" instead of at a card's output. */
   start: ReadonlyMap<string, Point>;
+  /** Branch cards that end the run (a stop last in its branch, #38) and how. */
+  ends: ReadonlyMap<string, 'done' | 'error'>;
 }
 
 /** The end of a block nothing follows yet (see `BranchView.tails`). */
@@ -129,6 +132,17 @@ function cardSize(axis: Axis, outputs: number): { width: number; height: number 
   return { width: NODE_WIDTH, height: Math.max(NODE_HEIGHT, (outputs + 1) * HANDLE_SPACING) };
 }
 
+/**
+ * A stop card nothing follows (last in its branch, or with no line out): the
+ * run ends there, so it has no output and no "+" (#38). A stop with steps
+ * after it keeps its output — those steps are still in the automation.
+ * Says how the run ends, null for any other card.
+ */
+export function endsRun(view: BranchView, node: FlowNode): 'done' | 'error' | null {
+  if (view.cards.has(node.id)) return view.ends.get(node.id) ?? null;
+  return outgoing(view.graph, node.id, null).length === 0 ? stopKind(node.data) : null;
+}
+
 /** A card's outputs and height as drawn: one output per branch on an expanded block, one on a branch card. */
 export function cardShape(
   view: BranchView,
@@ -139,6 +153,7 @@ export function cardShape(
     const { height } = cardSize(view.axis, branches.length);
     return { handles: branches.map((b) => b.handle), height };
   }
+  if (endsRun(view, node)) return { handles: [], height: NODE_HEIGHT };
   if (view.cards.has(node.id)) return { handles: [null], height: NODE_HEIGHT };
   const handles = sourceHandles(node.type);
   // A condition's Yes / No: named outputs, so top to bottom a row for the names.
@@ -191,6 +206,27 @@ function branchingStep(node: FlowNode): Record<string, unknown> | null {
 
 function stepList(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
+}
+
+/** Steps that end every run through them: a stop, or a block whose branches all do. */
+function alwaysStops(steps: readonly unknown[]): boolean {
+  return steps.some(
+    (step) =>
+      stopKind(step) !== null ||
+      (isBranching(step) &&
+        stepIsOn(step) &&
+        blockBranches('', step, []).every((b) => alwaysStops(stepList(valueAt(step, b.path)))))
+  );
+}
+
+/**
+ * Whether the stops in a block may end their branches (#38): not when the
+ * block does not run, nor when every branch stops but a step still follows —
+ * that step could never run, and its line stays drawn so it can be seen and
+ * removed.
+ */
+function stopsEnd(step: unknown, followed: boolean): boolean {
+  return stepIsOn(step) && !(followed && alwaysStops([getRawStep(step) ?? step]));
 }
 
 /**
@@ -331,6 +367,7 @@ class BranchLayout {
   /** Blocks last in a branch: their "+" for a step after them, still in that branch. */
   readonly tails = new Map<string, BlockTail>();
   readonly start = new Map<string, Point>();
+  readonly ends = new Map<string, 'done' | 'error'>();
 
   constructor(
     private readonly axis: Axis,
@@ -339,8 +376,18 @@ class BranchLayout {
     private readonly root: Record<string, unknown>
   ) {}
 
-  /** Lays out the branches of the block card `id` (its step at `at`), drawn at `origin`; returns its exits. */
-  block(id: string, step: Record<string, unknown>, at: StepPath, origin: Point): Exit[] {
+  /**
+   * Lays out the branches of the block card `id` (its step at `at`), drawn at
+   * `origin`; returns its exits. `ending`: its stops may end their branches
+   * (see `stopsEnd`).
+   */
+  block(
+    id: string,
+    step: Record<string, unknown>,
+    at: StepPath,
+    origin: Point,
+    ending: boolean
+  ): Exit[] {
     const axis = this.axis;
     const { column, row } = SPACING[axis.direction];
     const list = blockBranches(this.blockId, step, at);
@@ -379,8 +426,10 @@ class BranchLayout {
         const position = this.position(card);
         const into = axis.cross(position) + axis.breadth(size) / 2;
         for (const exit of from) this.line(i === 0 ? laneAt(axis, exit, into) : exit, card);
+        const last = i === branch.cards.length - 1;
+        // Last in its branch, a block that always stops ends the branch too.
         from = nested
-          ? this.block(card, nested, path, position)
+          ? this.block(card, nested, path, position, ending && stopsEnd(nested, !last))
           : [
               {
                 source: card,
@@ -391,9 +440,16 @@ class BranchLayout {
                 ),
               },
             ];
+        // A stop last in its branch ends the run there: nothing leads on from it (#38).
+        const ends = ending && last ? stopKind(raw) : null;
+        if (ends) {
+          this.ends.set(card, ends);
+          from = [];
+        }
         // A block last in its branch: its branches meet at its "+" for a step
-        // after it, and from there the line goes on to what follows the outer block.
-        if (nested && i === branch.cards.length - 1) {
+        // after it, and from there the line goes on to what follows the outer
+        // block — unless every branch of it stopped.
+        if (nested && last && from.length > 0) {
           const outputs = this.branches.get(card)?.length ?? 0;
           const tail = nestedTail(axis, position, outputs, from);
           this.tails.set(card, tail);
@@ -459,6 +515,7 @@ export function branchView(graph: FlowGraph): BranchView {
       via: new Map(),
       tails: new Map(),
       start: new Map(),
+      ends: new Map(),
     };
   }
 
@@ -486,18 +543,20 @@ export function branchView(graph: FlowGraph): BranchView {
   const via = new Map<string, Point[]>();
   const tails = new Map<string, BlockTail>();
   const start = new Map<string, Point>();
+  const ends = new Map<string, 'done' | 'error'>();
   for (const { node, step } of blocks) {
     const layout = new BranchLayout(axis, graph.branchOffsets ?? {}, node.id, step);
     const origin = at(node);
-    const exits = layout.block(node.id, step, [], origin);
     // Every branch ends where the block continues.
     const next = graph.edges.filter((e) => e.source === node.id);
+    const followed = next.some(isDrawnEdge);
+    const exits = layout.block(node.id, step, [], origin, stopsEnd(node.data, followed));
     for (const edge of next) {
       for (const exit of exits) layout.line(exit, edge.target, edge.id);
     }
     const outputs = layout.branches.get(node.id)?.length ?? 0;
     // A hint edge (the transpiler's, not drawn) is no step after the block.
-    if (!next.some(isDrawnEdge) && exits.length > 0) {
+    if (!followed && exits.length > 0) {
       tails.set(node.id, blockTail(axis, origin, outputs, exits));
     }
     nodes.push(...layout.nodes);
@@ -509,6 +568,7 @@ export function branchView(graph: FlowGraph): BranchView {
     for (const [id, points] of layout.via) via.set(id, points);
     for (const [id, tail] of layout.tails) tails.set(id, tail);
     for (const [id, point] of layout.start) start.set(id, point);
+    for (const [id, kind] of layout.ends) ends.set(id, kind);
   }
   const blockIds = new Set(blocks.map((b) => b.node.id));
   return {
@@ -526,6 +586,7 @@ export function branchView(graph: FlowGraph): BranchView {
     via,
     tails,
     start,
+    ends,
   };
 }
 

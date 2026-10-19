@@ -5,7 +5,9 @@ import {
   branchCardId,
   branchInsertAt,
   branchView,
+  cardShape,
   detachBranchStep,
+  endsRun,
   insertBranchStep,
   moveBranchCard,
   removeBranchStep,
@@ -373,5 +375,122 @@ describe('branch view (#27)', () => {
     expect(saved.config?.variables).toMatchObject({
       _flode_metadata: { branch_offsets: { [inner]: { x: 40, y: 200 } } },
     });
+  });
+});
+
+describe('stop in a branch (#38)', () => {
+  /** The automation from #38: option 1 stops the run, the default goes on to what follows. */
+  const stopping = (stop: Record<string, unknown>) => ({
+    choose: [
+      {
+        conditions: [{ condition: 'state', entity_id: 'switch.pump', state: 'on' }],
+        sequence: [{ action: 'notify.notify' }, stop],
+      },
+    ],
+  });
+  const stopCard = branchCardId('b', ['choose', 0, 'sequence', 1]);
+  const lines = (graph: FlowGraph) =>
+    graph.edges.map((e) => [e.source, e.sourceHandle ?? null, e.target]);
+  const cardIn = (graph: FlowGraph, id: string) => {
+    const card = graph.nodes.find((n) => n.id === id);
+    if (!card) throw new Error(`no card ${id}`);
+    return card;
+  };
+  /** The flow with the node `id` replaced by an action with `data`. */
+  const withData = (block: Record<string, unknown>, id: string, data: Record<string, unknown>) => {
+    const graph = flow(block);
+    return {
+      ...graph,
+      nodes: graph.nodes.map((n) =>
+        n.id === id ? { id, type: 'action' as const, position: n.position, data } : n
+      ),
+    };
+  };
+
+  it('draws no line from a stop last in its branch, the other branch still meets what follows', () => {
+    const view = branchView(flow(stopping({ stop: 'Pump already on' })));
+    expect(lines(view.graph).filter(([source]) => source === stopCard)).toEqual([]);
+    expect(lines(view.graph)).toEqual(expect.arrayContaining([['b', 'b1', 'n']]));
+    const card = cardIn(view.graph, stopCard);
+    expect(endsRun(view, card)).toBe('done');
+    expect(cardShape(view, card).handles).toEqual([]);
+  });
+
+  it('tells a stop with error: true apart', () => {
+    const view = branchView(flow(stopping({ stop: 'Failed', error: true })));
+    expect(endsRun(view, cardIn(view.graph, stopCard))).toBe('error');
+  });
+
+  it('keeps the line from a disabled stop: the run goes on', () => {
+    const view = branchView(flow(stopping({ stop: 'Pump already on', enabled: false })));
+    expect(lines(view.graph)).toEqual(expect.arrayContaining([[stopCard, null, 'n']]));
+    expect(endsRun(view, cardIn(view.graph, stopCard))).toBeNull();
+  });
+
+  it('keeps the lines of a stop inside a disabled block', () => {
+    const view = branchView(
+      withData(choose, 'b', { _raw: stopping({ stop: 'x' }), enabled: false })
+    );
+    expect(lines(view.graph)).toEqual(expect.arrayContaining([[stopCard, null, 'n']]));
+  });
+
+  it('keeps the line from a stop with steps after it in its branch', () => {
+    const block = stopping({ stop: 'early' });
+    block.choose[0]?.sequence.push({ action: 'notify.notify' });
+    const view = branchView(flow(block));
+    expect(lines(view.graph)).toEqual(
+      expect.arrayContaining([[stopCard, null, branchCardId('b', ['choose', 0, 'sequence', 2])]])
+    );
+  });
+
+  it('ends an outer branch whose last block stops in every branch, without a "+" after it', () => {
+    const block = stopping({ if: [], then: [{ stop: 'a' }], else: [{ stop: 'b' }] });
+    const view = branchView(flow(block));
+    const nested = stopCard;
+    // Only the lines into its own branches leave it, none on to what follows.
+    expect(lines(view.graph).filter(([source, handle]) => source === nested && !handle)).toEqual(
+      []
+    );
+    expect(view.tails.has(nested)).toBe(false);
+    expect(lines(view.graph)).toEqual(expect.arrayContaining([['b', 'b1', 'n']]));
+    for (const tail of view.tails.values()) expect(Number.isFinite(tail.at.x)).toBe(true);
+  });
+
+  it('keeps the lines when every branch stops but a step still follows the block', () => {
+    const block = {
+      if: [{ condition: 'state', entity_id: 'switch.pump', state: 'on' }],
+      then: [{ stop: 'a' }],
+      else: [{ stop: 'b' }],
+    };
+    const view = branchView(flow(block));
+    expect(lines(view.graph)).toEqual(
+      expect.arrayContaining([
+        [branchCardId('b', ['then', 0]), null, 'n'],
+        [branchCardId('b', ['else', 0]), null, 'n'],
+      ])
+    );
+    expect(view.ends.size).toBe(0);
+  });
+
+  it('reads a pass-through stop switched back on as ending the run', () => {
+    const graph = withData(choose, 'n', { _raw: { stop: 'done', enabled: false } });
+    const view = branchView(graph);
+    expect(endsRun(view, cardIn(view.graph, 'n'))).toBe('done');
+    const off = branchView(withData(choose, 'n', { _raw: { stop: 'done' }, enabled: false }));
+    expect(endsRun(off, cardIn(off.graph, 'n'))).toBeNull();
+  });
+
+  it('saves the block unchanged', async () => {
+    const block = stopping({ stop: 'Pump already on', error: true });
+    const yaml = await flowYaml(flow(block), 'automation');
+    expect(yaml).toContain('stop: Pump already on');
+    expect(yaml).toContain('error: true');
+  });
+
+  it('ends a flow card stop nothing follows, not one with a line out', () => {
+    const view = branchView(withData(choose, 'n', { stop: 'done' }));
+    expect(endsRun(view, cardIn(view.graph, 'n'))).toBe('done');
+    const early = branchView(withData(choose, 'b', { stop: 'early' }));
+    expect(endsRun(early, cardIn(early.graph, 'b'))).toBeNull();
   });
 });

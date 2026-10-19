@@ -283,6 +283,8 @@ export const fr: Strings = {
   branchThen: 'Alors',
   branchElse: 'Sinon',
   addInBranch: 'Ajouter une action à cette branche',
+  endsHere: "S'arrête ici",
+  endsWithError: "S'arrête avec une erreur",
   insertBetween: 'Insérer entre les deux',
   insertConditionBetween: 'Insérer une condition entre les deux',
   insertActionBetween: 'Insérer une action entre les deux',
@@ -378,4 +380,7 @@ export const fr: Strings = {
   new261017LangTitle: 'FLODE parle désormais 7 langues',
   new261017LangText:
     'Nouveau : néerlandais, français, espagnol, italien et portugais. FLODE suit la langue définie dans votre profil Home Assistant.',
+  new261017StopTitle: 'Un arrêt termine sa branche',
+  new261017StopText:
+    'Une carte d’arrêt que rien ne suit n’a plus de ligne qui continue ni de « + ». Elle indique « S’arrête ici » ou, avec « error: true », « S’arrête avec une erreur ». Le YAML enregistré ne change pas ; le flux montre simplement que l’exécution s’arrête là.',
 };

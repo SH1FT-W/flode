@@ -10,6 +10,7 @@ export * from './node-data';
 export * from './node-summary';
 export * from './random-id';
 export * from './step-issues';
+export * from './stop-step';
 export * from './summary-context';
 export * from './template-preview';
 export * from './trace-mapping';

@@ -30,6 +30,7 @@ import {
   branchLabelText,
   cachedBranchView,
   cardShape,
+  endsRun,
   moveBranchCard,
   type Point,
   removeBranchStep,
@@ -1412,9 +1413,11 @@ export class FlodeCanvas extends LitElement {
     ];
     // HA's `enabled: false` — the step stays in the flow but is skipped.
     const off = 'enabled' in node.data && node.data.enabled === false;
+    // A stop nothing follows: the run ends here, said in words under its edge (#38).
+    const ends = endsRun(this.view, node);
     return html`
       <div
-        class="node nopan ${branches ? 'branching' : ''} ${handles.includes('true') ? 'two-way' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${this.runClass(node.id)}"
+        class="node nopan ${branches ? 'branching' : ''} ${handles.includes('true') ? 'two-way' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${ends ? `ends ${ends}` : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${this.runClass(node.id)}"
         style="transform: translate(${node.position.x}px, ${node.position.y}px); height: ${height}px; --node-color: ${meta.color}"
         data-node-id=${node.id}
         title=${[
@@ -1441,6 +1444,7 @@ export class FlodeCanvas extends LitElement {
           ${summary.detail ? html`<span class="detail">${detailText(summary.detail)}</span>` : nothing}
         </span>
         ${hasTargetHandle(node.type) ? html`<span class="handle target"></span>` : nothing}
+        ${ends ? html`<span class="end-note">${t(language, ends === 'error' ? 'endsWithError' : 'endsHere')}</span>` : nothing}
         ${handles.map((handle, index) => {
           const branch = branches?.[index];
           const name = branch
@@ -1710,6 +1714,59 @@ export class FlodeCanvas extends LitElement {
       width: 3px;
       border-radius: 0 3px 3px 0;
       background: var(--node-color);
+    }
+    /* A stop nothing follows (#38): its outgoing edge closed off by a bar, and a word on why no line leaves it. */
+    .node.ends {
+      --end-color: var(--secondary-text-color);
+    }
+    .node.ends.error {
+      --end-color: var(--error-color, #db4437);
+    }
+    /* Red text mixed toward the text colour, like a condition's "No", so it stays readable on dark themes. */
+    .node.ends.error .end-note {
+      color: color-mix(in srgb, var(--error-color, #db4437) 70%, var(--primary-text-color));
+    }
+    .node.ends::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: 12px;
+      bottom: 12px;
+      width: 3px;
+      border-radius: 3px 0 0 3px;
+      background: var(--end-color);
+    }
+    .end-note {
+      position: absolute;
+      left: calc(100% + 10px);
+      top: 50%;
+      transform: translateY(-50%);
+      white-space: nowrap;
+      font-size: 11px;
+      line-height: 1.25;
+      color: var(--end-color);
+      pointer-events: none;
+    }
+    /* Zoomed out it grows like the card's detail line; farthest out, where the text goes, it goes too. */
+    .far .end-note {
+      font-size: 16px;
+    }
+    .farthest .end-note {
+      display: none;
+    }
+    .down .node.ends::after {
+      right: 12px;
+      left: 12px;
+      top: auto;
+      bottom: -1px;
+      width: auto;
+      height: 3px;
+      border-radius: 3px 3px 0 0;
+    }
+    .down .end-note {
+      left: 50%;
+      top: calc(100% + 8px);
+      transform: translateX(-50%);
     }
     .node.selected {
       border-color: var(--primary-color);

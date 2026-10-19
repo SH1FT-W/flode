@@ -288,6 +288,8 @@ const STRINGS = {
     branchThen: 'Dann',
     branchElse: 'Sonst',
     addInBranch: 'Aktion in diesem Zweig hinzufügen',
+    endsHere: 'Endet hier',
+    endsWithError: 'Endet mit Fehler',
     insertBetween: 'Dazwischen einfügen',
     insertConditionBetween: 'Bedingung dazwischen einfügen',
     insertActionBetween: 'Aktion dazwischen einfügen',
@@ -383,6 +385,9 @@ const STRINGS = {
     new261017LangTitle: 'FLODE spricht jetzt 7 Sprachen',
     new261017LangText:
       'Neu: Niederländisch, Französisch, Spanisch, Italienisch und Portugiesisch. FLODE folgt der Sprache, die du in Home Assistant eingestellt hast.',
+    new261017StopTitle: 'Ein Stopp beendet den Zweig',
+    new261017StopText:
+      'Nach einer Stopp-Karte, nach der nichts mehr kommt, geht keine Linie mehr weiter, und es gibt dort kein „+“. Sie sagt „Endet hier“ oder, mit „error: true“, „Endet mit Fehler“. Das gespeicherte YAML bleibt gleich, nur der Flow zeigt jetzt richtig, dass der Lauf dort aufhört.',
   },
   en: {
     title: 'FLODE',
@@ -657,6 +662,8 @@ const STRINGS = {
     branchThen: 'Then',
     branchElse: 'Else',
     addInBranch: 'Add action to this branch',
+    endsHere: 'Ends here',
+    endsWithError: 'Ends with an error',
     insertBetween: 'Insert in between',
     insertConditionBetween: 'Insert condition in between',
     insertActionBetween: 'Insert action in between',
@@ -752,6 +759,9 @@ const STRINGS = {
     new261017LangTitle: 'FLODE now speaks 7 languages',
     new261017LangText:
       'New: Dutch, French, Spanish, Italian and Portuguese. FLODE follows the language set in your Home Assistant profile.',
+    new261017StopTitle: 'A stop ends its branch',
+    new261017StopText:
+      'A stop card that nothing follows no longer has a line leading on and no “+” after it. It says “Ends here”, or “Ends with an error” with “error: true”. The saved YAML stays the same; the flow now just shows correctly that the run ends there.',
   },
 } as const;
 

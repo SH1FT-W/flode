@@ -280,6 +280,8 @@ export const nl: Strings = {
   branchThen: 'Dan',
   branchElse: 'Anders',
   addInBranch: 'Actie toevoegen aan deze tak',
+  endsHere: 'Eindigt hier',
+  endsWithError: 'Eindigt met een fout',
   insertBetween: 'Ertussen invoegen',
   insertConditionBetween: 'Voorwaarde ertussen invoegen',
   insertActionBetween: 'Actie ertussen invoegen',
@@ -375,4 +377,7 @@ export const nl: Strings = {
   new261017LangTitle: 'FLODE spreekt nu 7 talen',
   new261017LangText:
     'Nieuw: Nederlands, Frans, Spaans, Italiaans en Portugees. FLODE volgt de taal die je in Home Assistant hebt ingesteld.',
+  new261017StopTitle: 'Een stop beëindigt de tak',
+  new261017StopText:
+    'Een stopkaart waarop niets meer volgt, heeft geen lijn meer die verder loopt en geen “+”. Ze zegt “Eindigt hier” of, met “error: true”, “Eindigt met een fout”. De opgeslagen YAML blijft gelijk; de flow toont nu alleen correct dat de uitvoering daar stopt.',
 };

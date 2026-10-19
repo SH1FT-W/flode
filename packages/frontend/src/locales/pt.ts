@@ -279,6 +279,8 @@ export const pt: Strings = {
   branchThen: 'Então',
   branchElse: 'Se não',
   addInBranch: 'Adicionar ação a este ramo',
+  endsHere: 'Termina aqui',
+  endsWithError: 'Termina com um erro',
   insertBetween: 'Inserir entre',
   insertConditionBetween: 'Inserir condição entre',
   insertActionBetween: 'Inserir ação entre',
@@ -374,4 +376,7 @@ export const pt: Strings = {
   new261017LangTitle: 'O FLODE agora fala 7 idiomas',
   new261017LangText:
     'Novo: holandês, francês, espanhol, italiano e português. O FLODE segue o idioma definido no seu perfil do Home Assistant.',
+  new261017StopTitle: 'Uma parada encerra o ramo',
+  new261017StopText:
+    'Um cartão de parada sem nada depois não tem mais uma linha que continua nem um “+”. Ele mostra “Termina aqui” ou, com “error: true”, “Termina com um erro”. O YAML salvo não muda; o fluxo agora só mostra corretamente que a execução termina ali.',
 };
