@@ -1045,8 +1045,10 @@ export class FlodeCanvas extends LitElement {
     if (!drag.moved) {
       // Shift-click adds a card to the selection, Ctrl-click takes it out.
       const mode = selectionMode(event);
-      if (mode && !this.view.cards.has(drag.id)) this.changeMulti(drag.id, mode);
-      else this.emitSelect(drag.id);
+      const branchCard = this.view.cards.has(drag.id);
+      if (mode && !branchCard) this.changeMulti(drag.id, mode);
+      // A branch card can't join a selection: Shift/Ctrl-click on one keeps the selection as it is.
+      else if (!mode || this.multiIds.length === 0) this.emitSelect(drag.id);
       return;
     }
     if (drag.group) {
