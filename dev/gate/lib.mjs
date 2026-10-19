@@ -7,7 +7,7 @@ import { t } from '../../packages/frontend/src/strings.ts';
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const HA_URL = process.env.FLODE_GATE_URL ?? 'http://localhost:8123';
-/** Folder of the Docker test HA (holds `config/` and the access token file). */
+/** Folder of the test HA (tools/ha-venv.sh) (holds `config/` and the access token file). */
 export const TEST_DIR = path.resolve(
   process.env.FLODE_GATE_DIR ?? path.join(REPO, '../flode-test')
 );
@@ -60,7 +60,7 @@ export async function ws(message) {
 /**
  * Waits until HA has an entity for each saved flow (`{ id, kind, name, config }`) and returns
  * the ones still missing. HA creates the entities a moment after the config is saved (longer
- * right after a restart). On Docker for Mac, HA's reload sometimes catches automations.yaml
+ * right after a restart). Sometimes HA's reload sometimes catches automations.yaml
  * mid-write and skips one — such an automation is saved again.
  */
 export async function awaitEntities(flows) {

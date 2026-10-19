@@ -7,9 +7,10 @@
 #   dev/gate/gate.sh --no-restart   don't restart the test HA (only frontend changes; doesn't count)
 #   dev/gate/gate.sh --baseline     after a release: store the visual baseline for the next one
 #
-# Test HA: Docker container FLODE_GATE_CONTAINER (default flode-test) with its config in
-# FLODE_GATE_DIR/config (default ../flode-test next to the repo), at FLODE_GATE_URL
-# (default http://localhost:8123); access token in FLODE_GATE_DIR/.claude-token or FLODE_GATE_TOKEN.
+# Test HA: HA Core from a venv (tools/ha-venv.sh, no Docker) with its config in FLODE_GATE_DIR/config
+# (default ../flode-test next to the repo), on port FLODE_GATE_PORT (default 8123) of FLODE_GATE_URL
+# (default http://localhost:8123), HA version FLODE_GATE_HA_VERSION (default: the one in ha-venv.sh);
+# access token in FLODE_GATE_DIR/.claude-token or FLODE_GATE_TOKEN.
 #
 # Writes .gate/gate-<commit>.json (commit, clean tree, result per step and per test, flaky
 # tests) and logs to .gate/logs/ (one per step, one per test that was not ok).
@@ -18,8 +19,10 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO" || exit 2
 GATE="$REPO/dev/gate"
 OUT="$REPO/.gate"
-CONTAINER="${FLODE_GATE_CONTAINER:-flode-test}"
 TEST_DIR="${FLODE_GATE_DIR:-$REPO/../flode-test}"
+HA_VENV="$REPO/tools/ha-venv.sh"
+PORT="${FLODE_GATE_PORT:-8123}"
+HA_VERSION_ARG="${FLODE_GATE_HA_VERSION:-}"
 
 ONLY=""; RESTART=1; BASELINE=0
 while [ $# -gt 0 ]; do
@@ -28,7 +31,7 @@ while [ $# -gt 0 ]; do
     --only=*) ONLY="${1#--only=}" ;;
     --no-restart) RESTART=0 ;;
     --baseline) BASELINE=1 ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -71,10 +74,10 @@ static_checks() {
 prepare_ha() {
   [ -d "$GATE/node_modules" ] || (cd "$GATE" && npm ci --no-audit --no-fund) || return 1
   rsync -a --delete custom_components/flode/ "$TEST_DIR/config/custom_components/flode/" || return 1
-  if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)" != true ]; then
-    docker start "$CONTAINER" || return 1
+  if ! "$HA_VENV" laeuft "$TEST_DIR/config"; then
+    "$HA_VENV" start "$TEST_DIR/config" "$PORT" $HA_VERSION_ARG || return 1
   elif [ $RESTART = 1 ]; then
-    docker restart "$CONTAINER" || return 1
+    "$HA_VENV" restart "$TEST_DIR/config" "$PORT" $HA_VERSION_ARG || return 1
   fi
   node "$GATE/ready.mjs" 180 && node "$GATE/seed.mjs"
 }

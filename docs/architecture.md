@@ -585,7 +585,7 @@ This is also why FLODE needs no update for a new Home Assistant release as long 
 
 ### 10.1 Running it locally
 
-FLODE runs only inside Home Assistant; there is no standalone dev server. The setup is described in `CONTRIBUTING.md`: `yarn install`, then `yarn dev`, which rebuilds the panel into `custom_components/flode/www` on every change. That folder is mounted or copied into a test Home Assistant (a Docker instance works well); reloading the browser picks up the new build. `yarn build:ha` builds everything once; `yarn test`, `yarn typecheck` and `yarn lint:biome` are the checks. The coding rules (strict TypeScript, no `any` or `as`, HA's own elements, no duplicated logic, no IIFEs) are in `CLAUDE.md` and `CONTRIBUTING.md`.
+FLODE runs only inside Home Assistant; there is no standalone dev server. The setup is described in `CONTRIBUTING.md`: `yarn install`, then `yarn dev`, which rebuilds the panel into `custom_components/flode/www` on every change. That folder is mounted or copied into a test Home Assistant (`tools/ha-venv.sh` runs one from a venv); reloading the browser picks up the new build. `yarn build:ha` builds everything once; `yarn test`, `yarn typecheck` and `yarn lint:biome` are the checks. The coding rules (strict TypeScript, no `any` or `as`, HA's own elements, no duplicated logic, no IIFEs) are in `CLAUDE.md` and `CONTRIBUTING.md`.
 
 ### 10.2 Tests
 
@@ -601,7 +601,7 @@ The fixtures in `__tests__/yaml-automation-fixtures` (39 at the time of writing)
 No release goes out without a green run of `dev/gate/gate.sh` for exactly the commit that is released. The gate takes about three minutes and runs, in order:
 
 1. **static**: Biome, type check, all unit tests, build;
-2. **test HA**: copies the build into a Docker Home Assistant, restarts it, and loads every fixture that HA itself accepts plus a few gate flows (automations kept in `dev/gate/flows/` for the browser checks);
+2. **test HA**: copies the build into a test Home Assistant (`tools/ha-venv.sh`), restarts it, and loads every fixture that HA itself accepts plus a few gate flows (automations kept in `dev/gate/flows/` for the browser checks);
 3. **cards** (Chromium and WebKit): opens every automation like a user and checks for console errors, unexpected reloads, warnings about unread parts, and broken card texts;
 4. **roundtrip**: opens every flow (automations and scripts), saves it once as it is and once after moving one card, and after each save compares what Home Assistant stores with the original, apart from the metadata block and HA's own key migrations (`ha-equal.ts`, the same definition as the unit tests). Accepted differences are listed with a reason in `known.json`. This is the hard rule of 10.2 in the real editor and the real Home Assistant: not only the graph but the config Home Assistant stores must come back unchanged;
 5. **actions**: select, duplicate, undo, redo, disable, tidy up, minimap, branch cards, add a step through HA's dialog and save, the runs view, a phone-sized window, the "What's new" sheet;

@@ -36,7 +36,7 @@ output ends with one line per step and the totals (`102 tests in all: 101 ok, 1 
 ## What it checks
 
 1. **static**: Biome, type check, all unit tests (incl. the YAML round-trip fixtures), build.
-2. **test HA**: copies the build into the Docker test HA, restarts it, waits until HA runs
+2. **test HA**: copies the build into the test HA, restarts it, waits until HA runs
    and serves FLODE's panel, then puts the gate's flows in: every fixture from
    `__tests__/yaml-automation-fixtures` that HA itself accepts, plus `dev/gate/flows/`
    (one pattern per file, named after it; a file with `sequence:` is seeded as a script).
@@ -71,10 +71,12 @@ actions step go to `.gate/shots/`.
 
 ## Setup
 
-- Docker test HA (default container `flode-test`, config in `../flode-test/config`, URL
-  `http://localhost:8123`); a long-lived access token in `../flode-test/.claude-token`.
-  Override with `FLODE_GATE_CONTAINER`, `FLODE_GATE_DIR`, `FLODE_GATE_URL`,
-  `FLODE_GATE_TOKEN` / `FLODE_GATE_TOKEN_FILE`.
+- Test HA without Docker: HA Core from a shared venv per version (`tools/ha-venv.sh`, needs
+  `uv`), config in `../flode-test/config`, port 8123, URL `http://localhost:8123`; a long-lived
+  access token in `../flode-test/.claude-token`. The gate starts it when it is not running and
+  restarts it otherwise. Override with `FLODE_GATE_DIR`, `FLODE_GATE_PORT`, `FLODE_GATE_URL`,
+  `FLODE_GATE_HA_VERSION` (e.g. `beta`), `FLODE_GATE_TOKEN` / `FLODE_GATE_TOKEN_FILE`.
+  `tools/ha-venv.sh stop ../flode-test/config` stops it.
 - Playwright browsers for the pinned version (`npx playwright@1.61.1 install chromium webkit`).
   `gate.sh` installs the gate's own `node_modules` on first run.
 - `FLODE_GATE_ENGINES=chromium` runs a step in one browser only (for debugging).

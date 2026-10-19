@@ -63,7 +63,7 @@ yarn build:ha     # Build + copy to custom_components
 yarn test         # Run tests
 yarn typecheck    # Type checking
 yarn lint:biome   # Linting
-dev/gate/gate.sh  # Release gate: browser checks against the Docker test HA (before every release, always in full)
+dev/gate/gate.sh  # Release gate: browser checks against the test HA (tools/ha-venv.sh, no Docker) (before every release, always in full)
 dev/next-version  # Next release version (calendar version YY.M.N)
 ```
 
