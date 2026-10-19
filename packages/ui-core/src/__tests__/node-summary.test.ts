@@ -406,4 +406,11 @@ describe('HA building blocks (kept as one block)', () => {
     });
     expect(raw({ parallel: [{}, {}] })).toEqual({ kind: 'Parallel ausführen', title: '2 Zweige' });
   });
+
+  it('names a stop kept in a branch like a stop card of its own (#38)', () => {
+    const own = (step: Record<string, unknown>) => summarizeAction(step, makeContext());
+    expect(raw({ stop: 'Pumpe läuft schon' })).toEqual(own({ stop: 'Pumpe läuft schon' }));
+    expect(raw({ stop: 'x', error: true })).toEqual(own({ stop: 'x', error: true }));
+    expect(raw({ stop: '' }).title).toBe(own({ stop: '' }).title);
+  });
 });

@@ -890,9 +890,18 @@ function summarizeHaBlock(
   }
 }
 
+/** HA's `stop:` step — as a card of its own or kept verbatim in a branch of a block (#38). */
+function summarizeStop(step: Record<string, unknown>, ctx: SummaryContext): NodeSummary {
+  return {
+    title: ctx.t(step.error === true ? 'nodes:actions.stopError' : 'nodes:actions.stopExecution'),
+    detail: asString(step.stop),
+  };
+}
+
 function summarizeRawStep(step: Record<string, unknown>, ctx: SummaryContext): NodeSummary {
   const block = haBlockType(step);
   if (block) return summarizeHaBlock(block, step, ctx);
+  if (typeof step.stop === 'string') return summarizeStop(step, ctx);
   const entry = Object.entries(step).find(([key]) => key !== 'alias' && key !== 'enabled');
   const [key, value] = entry ?? ['', undefined];
   const text = asString(value);
@@ -908,12 +917,7 @@ export function summarizeAction(data: ActionNodeData, ctx: SummaryContext): Node
   const { t } = ctx;
   const rawStep = getRawStep(data);
   if (rawStep) return summarizeRawStep(rawStep, ctx);
-  if (typeof data.stop === 'string') {
-    return {
-      title: data.error === true ? t('nodes:actions.stopError') : t('nodes:actions.stopExecution'),
-      detail: asString(data.stop),
-    };
-  }
+  if (typeof data.stop === 'string') return summarizeStop(data, ctx);
   const repeat = isPlainObject(data.repeat) ? data.repeat : null;
   if (repeat !== null && repeat.count !== undefined) {
     const bodyLength = Array.isArray(repeat.sequence) ? repeat.sequence.length : 0;
