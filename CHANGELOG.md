@@ -6,6 +6,31 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.10.17] — 2026-10-23 — Parallel branches, notes, colours and lines
+
+Contributions and reports by Bram ([#37](https://github.com/SH1FT-W/flode/issues/37)), JoHeyr ([#39](https://github.com/SH1FT-W/flode/issues/39)), jlpnea ([#38](https://github.com/SH1FT-W/flode/issues/38)), Bart ([#26](https://github.com/SH1FT-W/flode/issues/26)) and Daniel-wendan ([#28](https://github.com/SH1FT-W/flode/issues/28)).
+
+### Added
+- **Parallel actions as cards of their own** ([#39](https://github.com/SH1FT-W/flode/issues/39)). A `parallel` block gets one output per action ("Parallel 1", "Parallel 2" …), each action is drawn as its own card in its own lane, and the lanes meet again at the next step, like the branches of Choose and If-then. A `sequence` inside the block becomes a chain of cards. Adding a step after a single action turns it into a `sequence`; removing the last step of a lane removes that lane. Runs mark the cards that ran. The saved YAML is still a plain `parallel`.
+- **Notes, frames and multi-select** ([#37](https://github.com/SH1FT-W/flode/issues/37), built by Bram). Right-click the empty canvas to add a note or a titled frame; a frame takes the cards inside along when it is moved. Shift + drag selects several cards and notes, Shift-click adds, ⌘/Ctrl-click takes out; the selection moves, copies, switches on/off or deletes together. Saved in `_flode_metadata` only.
+- **Colour cards** ([#28](https://github.com/SH1FT-W/flode/issues/28)). Right-click a card → "Colour card" (or "Colour cards" for a selection): the card is tinted in one of the six note colours or any colour from the wheel, "No colour" takes it off. Works for cards inside branches too. Saved in `_flode_metadata.card_colors`.
+- **Lay lines yourself** ([#28](https://github.com/SH1FT-W/flode/issues/28)). Click a connection and drag the faint point in its middle: the line gets a bend and runs at right angles through it (along the flow out of the card, across to the bend, along into the next card). Every run gets its own point for the next bend; double-click removes a bend, right-click → "Remove bends" removes all of them, "Tidy up" lays every line itself again. Bends of a line between two selected cards move with the selection. Saved in `_flode_metadata.line_bends`.
+- **Side panel only for a selection** ([#28](https://github.com/SH1FT-W/flode/issues/28)): a setting (right-click the empty canvas or ⌘K) that hides the side panel while nothing is picked, so the canvas gets the full width.
+- **Seven languages.** Dutch, French, Spanish, Italian and Portuguese join German and English; FLODE follows the language of the Home Assistant profile.
+
+### Changed
+- **Building blocks in indigo** ([#28](https://github.com/SH1FT-W/flode/issues/28)). If-then, Choose, Parallel, Repeat and Sequence cards are indigo instead of the actions' green, so they stand out.
+- **A single target by name** ([#26](https://github.com/SH1FT-W/flode/issues/26)). A step aimed at exactly one device or area shows its name ("Smartphone Bart") instead of "1 device".
+- **Home Assistant wording without the eyebrow** ([#26](https://github.com/SH1FT-W/flode/issues/26)). With the card text in HA's own words, the small type line above it is left out; HA's sentence already says it.
+- **A stop ends its branch** ([#38](https://github.com/SH1FT-W/flode/issues/38)). A stop card nothing follows has no line leading on and no "+" after it; it says "Ends here", or "Ends with an error" with `error: true`. Inside a branch it is labelled like on the main line.
+- Dutch wording: "Actie" instead of "Dienst", "Selectie omkaderen". "Kiezen" and "Tracering" stay, as Home Assistant uses them.
+
+### Fixed
+- **Lines after nested blocks.** Blocks nested in each other at the end of a branch (an If-then holding a Choose, say) each put their "+" half a gap further out, until the line to the next card had to run back around it. The "+" now stay clear of the next card at any depth.
+- Shift/Ctrl-click on a card inside a branch keeps the current selection.
+
+---
+
 ## [26.10.16] — 2026-10-17 — Or branches, loops, verbatim triggers
 
 ### Fixed
