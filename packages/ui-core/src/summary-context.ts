@@ -53,6 +53,11 @@ const PLATFORM_TRANSLATION_PREFIX: Record<PlatformKind, string> = {
 
 const COUNTED_TARGET_KEYS = ['area_id', 'device_id', 'floor_id', 'label_id'] as const;
 
+/** Target kinds a single one of is named instead of counted ("Smartphone Bart", not "1 device"). */
+const NAMED_TARGET: Partial<
+  Record<(typeof COUNTED_TARGET_KEYS)[number], 'deviceName' | 'areaName'>
+> = { device_id: 'deviceName', area_id: 'areaName' };
+
 /** `turn_on` → `Turn on` */
 export function humanize(value: string): string {
   const text = value.replace(/_/g, ' ');
@@ -96,9 +101,12 @@ export function platformLabel(
   return host.t(`${PLATFORM_TRANSLATION_PREFIX[kind]}.${type}`, { defaultValue: type });
 }
 
-/** Short target description: entity names, or counts of areas/devices/floors/labels. */
+/**
+ * Short target description: entity names, or counts of areas/devices/floors/labels
+ * — a single device or area by its name (#26).
+ */
 export function targetSummary(
-  host: Pick<SummaryHost, 't' | 'friendlyName'>,
+  host: Pick<SummaryHost, 't' | 'friendlyName' | 'deviceName' | 'areaName'>,
   target: unknown
 ): string {
   const parsed = TargetIdsSchema.safeParse(target);
@@ -109,8 +117,12 @@ export function targetSummary(
   );
   if (entityNames.length > 0) parts.push(entityNames.join(', '));
   for (const key of COUNTED_TARGET_KEYS) {
-    const count = toIdList(parsed.data[key]).length;
-    if (count > 0) parts.push(host.t(`nodes:targeted.summary.${key}`, { count }));
+    const ids = toIdList(parsed.data[key]);
+    const namer = NAMED_TARGET[key];
+    const name = ids.length === 1 && ids[0] && namer ? host[namer](ids[0]) : null;
+    if (name) parts.push(name);
+    else if (ids.length > 0)
+      parts.push(host.t(`nodes:targeted.summary.${key}`, { count: ids.length }));
   }
   return parts.join(' · ');
 }

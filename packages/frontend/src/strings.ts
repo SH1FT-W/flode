@@ -61,6 +61,7 @@ const STRINGS = {
     disableCard: 'Karte deaktivieren',
     disconnectCard: 'Verbindungen trennen',
     deleteConnection: 'Verbindung löschen',
+    resetLine: 'Knickpunkte entfernen',
     addHere: '{type} hier hinzufügen',
     addNote: 'Notiz hier hinzufügen',
     addFrame: 'Rahmen hier hinzufügen',
@@ -68,6 +69,9 @@ const STRINGS = {
     framePlaceholder: 'Kommentar …',
     editAnnotation: 'Text bearbeiten',
     changeColor: 'Farbe wechseln',
+    tintCard: 'Karte einfärben',
+    tintCards: 'Karten einfärben',
+    noColor: 'Keine Farbe',
     deleteNote: 'Notiz löschen',
     deleteFrame: 'Rahmen löschen',
     selectedCount: '{n} ausgewählt',
@@ -284,6 +288,7 @@ const STRINGS = {
     emptyScriptHint: 'Was soll das Skript tun?',
     entry: 'Beginn',
     branchOption: 'Option {n}',
+    branchParallel: 'Parallel {n}',
     branchDefault: 'Standard',
     branchThen: 'Dann',
     branchElse: 'Sonst',
@@ -312,6 +317,7 @@ const STRINGS = {
     tidyRight: 'Waagerecht anordnen',
     tidyDown: 'Senkrecht anordnen',
     verticalDefault: 'Flows standardmäßig senkrecht öffnen',
+    autoSide: 'Seitenleiste nur bei Auswahl zeigen',
     directionRight: 'Richtung: waagerecht',
     directionDown: 'Richtung: senkrecht',
     mode: 'Modus',
@@ -373,21 +379,21 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261017NotesTitle: 'Notizen auf der Fläche',
+    new261017NotesTitle: 'Notizen, Rahmen, Mehrfachauswahl',
     new261017NotesText:
-      'Rechtsklick auf die leere Fläche → „Notiz hier hinzufügen“. Doppelklick bearbeitet den Text, die Farbe wählst du über der Notiz.',
-    new261017FramesTitle: 'Rahmen um zusammengehörige Karten',
-    new261017FramesText:
-      'Ein Rahmen mit Titel liegt hinter den Karten. Ziehst du ihn an der Titelleiste, wandern die Karten darin mit.',
-    new261017SelectTitle: 'Mehrere Karten auf einmal',
-    new261017SelectText:
-      'Shift + Ziehen wählt aus, Shift-Klick fügt hinzu, ⌘/Strg-Klick nimmt heraus. Die Auswahl verschiebst, kopierst, schaltest oder löschst du gemeinsam.',
+      'Rechtsklick auf die leere Fläche → „Notiz hier hinzufügen“ oder „Rahmen hier hinzufügen“. Shift + Ziehen wählt mehrere Karten aus, die du gemeinsam verschiebst, kopierst oder löschst.',
+    new261017ParallelTitle: 'Parallele Aktionen als eigene Karten',
+    new261017ParallelText:
+      'Ein Parallel-Block hat jetzt einen Ausgang je Aktion („Parallel 1“, „Parallel 2“ …), jede Aktion ist eine eigene Karte. Gespeichert wird weiter ein normales parallel.',
+    new261017ColorTitle: 'Karten einfärben',
+    new261017ColorText:
+      'Rechtsklick auf eine Karte → „Karte einfärben“. Wenn-dann, Auswählen und die anderen Blöcke sind jetzt indigo statt grün und heben sich von den Aktionen ab.',
+    new261017LinesTitle: 'Linien selbst verlegen',
+    new261017LinesText:
+      'Linie anklicken und den Punkt in ihrer Mitte ziehen: Die Linie läuft rechtwinklig durch deine Knickpunkte. Doppelklick entfernt einen, „Aufräumen“ alle.',
     new261017LangTitle: 'FLODE spricht jetzt 7 Sprachen',
     new261017LangText:
       'Neu: Niederländisch, Französisch, Spanisch, Italienisch und Portugiesisch. FLODE folgt der Sprache, die du in Home Assistant eingestellt hast.',
-    new261017StopTitle: 'Ein Stopp beendet den Zweig',
-    new261017StopText:
-      'Nach einer Stopp-Karte, nach der nichts mehr kommt, geht keine Linie mehr weiter, und es gibt dort kein „+“. Sie sagt „Endet hier“ oder, mit „error: true“, „Endet mit Fehler“. Das gespeicherte YAML bleibt gleich, nur der Flow zeigt jetzt richtig, dass der Lauf dort aufhört.',
   },
   en: {
     title: 'FLODE',
@@ -440,6 +446,7 @@ const STRINGS = {
     disableCard: 'Disable card',
     disconnectCard: 'Disconnect',
     deleteConnection: 'Delete connection',
+    resetLine: 'Remove bends',
     addHere: 'Add {type} here',
     addNote: 'Add note here',
     addFrame: 'Add frame here',
@@ -447,6 +454,9 @@ const STRINGS = {
     framePlaceholder: 'Comment …',
     editAnnotation: 'Edit text',
     changeColor: 'Change colour',
+    tintCard: 'Colour card',
+    tintCards: 'Colour cards',
+    noColor: 'No colour',
     deleteNote: 'Delete note',
     deleteFrame: 'Delete frame',
     selectedCount: '{n} selected',
@@ -658,6 +668,7 @@ const STRINGS = {
     emptyScriptHint: 'What should the script do?',
     entry: 'Start',
     branchOption: 'Option {n}',
+    branchParallel: 'Parallel {n}',
     branchDefault: 'Default',
     branchThen: 'Then',
     branchElse: 'Else',
@@ -686,6 +697,7 @@ const STRINGS = {
     tidyRight: 'Arrange left to right',
     tidyDown: 'Arrange top to bottom',
     verticalDefault: 'Open flows top to bottom by default',
+    autoSide: 'Show the side panel only for a selection',
     directionRight: 'Direction: left to right',
     directionDown: 'Direction: top to bottom',
     mode: 'Mode',
@@ -747,21 +759,21 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261017NotesTitle: 'Notes on the canvas',
+    new261017NotesTitle: 'Notes, frames, multi-select',
     new261017NotesText:
-      'Right-click the empty canvas → "Add note here". Double-click edits the text, the colour is picked above the note.',
-    new261017FramesTitle: 'Frames around cards that belong together',
-    new261017FramesText:
-      'A titled frame sits behind the cards. Drag it by its title bar and the cards inside move along.',
-    new261017SelectTitle: 'Several cards at once',
-    new261017SelectText:
-      'Shift + drag selects, Shift-click adds, ⌘/Ctrl-click takes out. Move, copy, switch or delete the selection together.',
+      'Right-click the empty canvas → "Add note here" or "Add frame here". Shift + drag selects several cards to move, copy or delete together.',
+    new261017ParallelTitle: 'Parallel actions as cards',
+    new261017ParallelText:
+      'A parallel block now has one output per action ("Parallel 1", "Parallel 2" …), and each action is a card of its own. It is still saved as a plain parallel.',
+    new261017ColorTitle: 'Colour cards',
+    new261017ColorText:
+      'Right-click a card → "Colour card". If-then, Choose and the other blocks are now indigo instead of green, so they stand out from the actions.',
+    new261017LinesTitle: 'Lay lines yourself',
+    new261017LinesText:
+      'Click a line and drag the point in its middle: the line runs at right angles through your bends. Double-click removes one, "Tidy up" all of them.',
     new261017LangTitle: 'FLODE now speaks 7 languages',
     new261017LangText:
       'New: Dutch, French, Spanish, Italian and Portuguese. FLODE follows the language set in your Home Assistant profile.',
-    new261017StopTitle: 'A stop ends its branch',
-    new261017StopText:
-      'A stop card that nothing follows no longer has a line leading on and no “+” after it. It says “Ends here”, or “Ends with an error” with “error: true”. The saved YAML stays the same; the flow now just shows correctly that the run ends there.',
   },
 } as const;
 

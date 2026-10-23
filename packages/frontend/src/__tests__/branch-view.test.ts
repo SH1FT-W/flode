@@ -1,4 +1,5 @@
 import type { FlowGraph } from '@flode/shared';
+import { flowAxis } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
 import {
   adoptIntoBranch,
@@ -13,9 +14,10 @@ import {
   removeBranchStep,
   setBranchStep,
   storedPosition,
+  tintCards,
   withoutStaleOffsets,
 } from '../branch-view';
-import { NODE_WIDTH, withEnabledToggled } from '../flow-model';
+import { NODE_WIDTH, runsBack, withEnabledToggled } from '../flow-model';
 import { flowYaml } from '../flow-yaml';
 import { nodeToStep } from '../ha-step';
 import { type HaTrace, nodeForPath, runMarks } from '../trace';
@@ -492,5 +494,224 @@ describe('stop in a branch (#38)', () => {
     expect(endsRun(view, cardIn(view.graph, 'n'))).toBe('done');
     const early = branchView(withData(choose, 'b', { stop: 'early' }));
     expect(endsRun(early, cardIn(early.graph, 'b'))).toBeNull();
+  });
+});
+
+describe('parallel block (#39)', () => {
+  /** The automation from #39: one step of its own, a sequence, another step. */
+  const parallel = {
+    parallel: [
+      { action: 'light.turn_on', target: { entity_id: 'light.bed_light' } },
+      { sequence: [{ delay: { seconds: 2 } }, { action: 'light.turn_on' }], alias: 'Küche' },
+      { action: 'notify.notify' },
+    ],
+  };
+  const single = branchCardId('b', ['parallel', 0]);
+  const sequenceFirst = branchCardId('b', ['parallel', 1, 'sequence', 0]);
+  const sequenceSecond = branchCardId('b', ['parallel', 1, 'sequence', 1]);
+  const third = branchCardId('b', ['parallel', 2]);
+
+  it('draws each parallel item as its own branch, meeting again after the block', () => {
+    const view = branchView(flow(parallel));
+    expect(view.branches.get('b')?.map((b) => b.label)).toEqual([
+      { kind: 'parallel', number: 1 },
+      { kind: 'parallel', number: 2, alias: 'Küche' },
+      { kind: 'parallel', number: 3 },
+    ]);
+    expect(view.branches.get('b')?.map((b) => b.cards)).toEqual([
+      [single],
+      [sequenceFirst, sequenceSecond],
+      [third],
+    ]);
+    expect(view.graph.nodes.find((n) => n.id === single)?.data).toMatchObject({
+      service: 'light.turn_on',
+    });
+    // Every branch leads on to the step after the block.
+    const intoNext = view.graph.edges.filter((e) => e.target === 'n').map((e) => e.source);
+    expect(intoNext.sort()).toEqual([sequenceSecond, single, third].sort());
+    const block = view.graph.nodes.find((n) => n.id === 'b');
+    if (!block) throw new Error('no block');
+    expect(cardShape(view, block).handles).toEqual(['b0', 'b1', 'b2']);
+  });
+
+  it('leaves a parallel without a list as one card', () => {
+    const graph = flow({ parallel: { action: 'light.turn_on' } });
+    expect(branchView(graph).graph).toBe(graph);
+  });
+
+  it('writes an edited step back and saves the parallel block unchanged otherwise', async () => {
+    const graph = flow(parallel);
+    const ref = branchView(graph).cards.get(single);
+    if (!ref) throw new Error('no card');
+    const edited = setBranchStep(graph, ref, { action: 'light.turn_off' });
+    expect(edited.error).toBeNull();
+    expect(edited.graph.nodes[1]?.data).toMatchObject({
+      _raw: {
+        parallel: [{ action: 'light.turn_off' }, parallel.parallel[1], parallel.parallel[2]],
+      },
+    });
+    const yaml = await flowYaml(flow(parallel), 'automation');
+    expect(yaml).toContain('parallel:');
+    expect(yaml).toContain('sequence:');
+  });
+
+  it('turns a single step into a sequence when a step is added after it', () => {
+    const graph = flow(parallel);
+    const view = branchView(graph);
+    const at = branchInsertAt(view, single, null);
+    const added = at && insertBranchStep(graph, at, { delay: 1 });
+    expect(added?.id).toBe(branchCardId('b', ['parallel', 0, 'sequence', 1]));
+    expect(added?.graph.nodes[1]?.data).toMatchObject({
+      _raw: {
+        parallel: [{ sequence: [parallel.parallel[0], { delay: 1 }] }, {}, {}],
+      },
+    });
+  });
+
+  it('drops a branch whose last step is removed, the ones after move up', () => {
+    const view = branchView(flow(parallel));
+    const graph = {
+      ...flow(parallel),
+      branchOffsets: { [single]: { x: 0, y: 50 }, [third]: { x: 10, y: 0 } },
+    };
+    const ref = view.cards.get(single);
+    if (!ref) throw new Error('no card');
+    const removed = removeBranchStep(graph, ref);
+    expect(removed.nodes[1]?.data).toMatchObject({
+      _raw: {
+        parallel: [parallel.parallel[1], parallel.parallel[2]],
+      },
+    });
+    expect(removed.branchOffsets).toEqual({
+      [branchCardId('b', ['parallel', 1])]: { x: 10, y: 0 },
+    });
+  });
+
+  it('keeps a moved single step where it was when it becomes a sequence', () => {
+    const graph = { ...flow(parallel), branchOffsets: { [single]: { x: 0, y: 50 } } };
+    const at = branchInsertAt(branchView(graph), 'b', 'b0');
+    const added = at && insertBranchStep(graph, at, { delay: 1 });
+    expect(added?.graph.branchOffsets).toEqual({
+      [branchCardId('b', ['parallel', 0, 'sequence', 1])]: { x: 0, y: 50 },
+    });
+  });
+
+  it('pulls a chain of free cards into a single step as one sequence', () => {
+    const graph = flow(parallel);
+    const free: FlowGraph = {
+      ...graph,
+      nodes: [
+        ...graph.nodes,
+        { id: 'f', type: 'action', position: { x: 0, y: 400 }, data: { service: 'a.one' } },
+        { id: 'g', type: 'action', position: { x: 400, y: 400 }, data: { service: 'a.two' } },
+      ],
+      edges: [...graph.edges, { id: 'fg', source: 'f', target: 'g' }],
+    };
+    const at = branchInsertAt(branchView(free), single, null);
+    const adopted = at && adoptIntoBranch(free, at, 'f');
+    expect(adopted?.nodes.find((n) => n.id === 'b')?.data).toMatchObject({
+      _raw: {
+        parallel: [
+          {
+            sequence: [parallel.parallel[0], { action: 'a.one' }, { action: 'a.two' }],
+          },
+          {},
+          {},
+        ],
+      },
+    });
+  });
+
+  it('marks the parallel steps a run went through', () => {
+    const trace: HaTrace = {
+      run_id: '1',
+      state: 'stopped',
+      timestamp: { start: '' },
+      context: { id: 'c' },
+      config: {},
+      trace: {
+        'trigger/0': [{ path: 'trigger/0', timestamp: '' }],
+        'action/0': [{ path: 'action/0', timestamp: '' }],
+        'action/0/parallel/0': [{ path: 'action/0/parallel/0', timestamp: '' }],
+        'action/0/parallel/1/sequence/0': [
+          { path: 'action/0/parallel/1/sequence/0', timestamp: '' },
+        ],
+      },
+    };
+    const marks = runMarks(flow(parallel), 'automation', trace);
+    expect(marks.get(single)).toBe('done');
+    expect(marks.get(sequenceFirst)).toBe('done');
+    expect(marks.has(sequenceSecond)).toBe(false);
+    expect(marks.get('b')).toBe('done');
+  });
+});
+
+describe('blocks nested at the end of a branch (#28)', () => {
+  /** From "Bug Report FLODE Parsing Test Ultimate Complex": choose → if → choose, each last in its branch. */
+  const deep = {
+    choose: [
+      { conditions: [], sequence: [{ action: 'script.turn_on' }] },
+      {
+        conditions: [],
+        sequence: [
+          {
+            if: [],
+            then: [{ choose: [{ conditions: [], sequence: [{ action: 'script.deep' }] }] }],
+            else: [{ action: 'light.turn_off' }],
+          },
+        ],
+      },
+    ],
+  };
+
+  it('keeps every line into the next card a plain curve, however deep', () => {
+    for (const block of [
+      deep,
+      { if: [], then: [deep] },
+      { if: [], then: [{ if: [], then: [deep] }] },
+    ]) {
+      const view = branchView(flow(block));
+      const next = view.graph.nodes.find((n) => n.id === 'n');
+      if (!next) throw new Error('no card');
+      const starts = view.graph.edges
+        .filter((e) => e.target === 'n')
+        .map((e) => view.start.get(e.id))
+        .filter((p) => p !== undefined);
+      expect(starts.length).toBeGreaterThan(0);
+      for (const start of starts)
+        expect(runsBack(flowAxis(view.graph), start, next.position)).toBe(false);
+    }
+  });
+
+  it('puts the "+" of each nested block after the one inside it', () => {
+    const view = branchView(flow(deep));
+    const inner = view.tails.get(branchCardId('b', ['choose', 1, 'sequence', 0, 'then', 0]));
+    const outer = view.tails.get(branchCardId('b', ['choose', 1, 'sequence', 0]));
+    expect(inner && outer && outer.at.x > inner.at.x).toBe(true);
+  });
+});
+
+describe('tinted cards (#28)', () => {
+  it('tints flow and branch cards, and takes the colour off again', () => {
+    const tinted = tintCards(flow(), ['n', option], 'purple');
+    expect(tinted.cardColors).toEqual({ n: 'purple', [option]: 'purple' });
+    expect(tintCards(tinted, ['n', option], null).cardColors).toBeUndefined();
+  });
+
+  it('moves a branch card’s colour along when a step is added before it, and drops it with the step', () => {
+    const graph = tintCards(flow(), [option], 'red');
+    const at = branchInsertAt(branchView(graph), 'b', 'b0');
+    const added = at && insertBranchStep(graph, at, { delay: 1 });
+    expect(added?.graph.cardColors).toEqual({
+      [branchCardId('b', ['choose', 0, 'sequence', 1])]: 'red',
+    });
+    const ref = branchView(graph).cards.get(option);
+    if (!ref) throw new Error('no card');
+    expect(removeBranchStep(graph, ref).cardColors).toBeUndefined();
+  });
+
+  it('forgets colours of cards that are gone when saving', () => {
+    const graph = tintCards(flow(), ['n', 'gone'], 'blue');
+    expect(withoutStaleOffsets(graph).cardColors).toEqual({ n: 'blue' });
   });
 });

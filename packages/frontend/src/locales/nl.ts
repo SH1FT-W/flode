@@ -52,6 +52,7 @@ export const nl: Strings = {
   disableCard: 'Kaart uitschakelen',
   disconnectCard: 'Loskoppelen',
   deleteConnection: 'Verbinding verwijderen',
+  resetLine: 'Knikpunten verwijderen',
   addHere: '{type} hier toevoegen',
   addNote: 'Notitie hier toevoegen',
   addFrame: 'Kader hier toevoegen',
@@ -59,11 +60,14 @@ export const nl: Strings = {
   framePlaceholder: 'Opmerking …',
   editAnnotation: 'Tekst bewerken',
   changeColor: 'Kleur wijzigen',
+  tintCard: 'Kaart inkleuren',
+  tintCards: 'Kaarten inkleuren',
+  noColor: 'Geen kleur',
   deleteNote: 'Notitie verwijderen',
   deleteFrame: 'Kader verwijderen',
   selectedCount: '{n} geselecteerd',
   toggleSelection: 'Inschakelen / uitschakelen',
-  frameSelection: 'Kader om de selectie',
+  frameSelection: 'Selectie omkaderen',
   clearSelection: 'Selectie opheffen',
   selectionCopied: 'Selectie gekopieerd',
   colorWheel: 'Kies een kleur',
@@ -212,7 +216,7 @@ export const nl: Strings = {
   assistPrivacy:
     'De huidige versie en passende entiteiten gaan naar de AI van je Home Assistant. Er wordt niets opgeslagen zonder jou.',
   disabledGroup: 'Uitgeschakeld',
-  issueService: '⚠ Deze dienst bestaat niet',
+  issueService: '⚠ Deze actie bestaat niet',
   issueEntity: '⚠ Deze entiteit bestaat niet',
   aiButton: 'Maken met AI',
   aiTitle: 'Maken met AI',
@@ -276,6 +280,7 @@ export const nl: Strings = {
   emptyScriptHint: 'Wat moet het script doen?',
   entry: 'Start',
   branchOption: 'Optie {n}',
+  branchParallel: 'Parallel {n}',
   branchDefault: 'Standaard',
   branchThen: 'Dan',
   branchElse: 'Anders',
@@ -304,6 +309,7 @@ export const nl: Strings = {
   tidyRight: 'Van links naar rechts ordenen',
   tidyDown: 'Van boven naar beneden ordenen',
   verticalDefault: 'Flows standaard van boven naar beneden openen',
+  autoSide: 'Zijpaneel alleen bij een selectie tonen',
   directionRight: 'Richting: van links naar rechts',
   directionDown: 'Richting: van boven naar beneden',
   mode: 'Modus',
@@ -324,7 +330,7 @@ export const nl: Strings = {
   saveErrEntity: 'Ongeldige entiteit voor "{field}".',
   saveErrGeneric: 'Home Assistant heeft de instellingen niet geaccepteerd.',
   saveErrOrphan: 'De kaart is met geen enkele trigger verbonden – verbind of verwijder hem.',
-  saveErrService: 'De actie is geen geldige dienst (vorm: domein.dienst).',
+  saveErrService: 'Dit is geen geldige actie (vorm: domein.actie).',
   saveErrDetail: 'Melding van Home Assistant',
   saveErrShow: 'Naar kaart',
   conflictTitle: 'Gewijzigd in Home Assistant',
@@ -365,19 +371,19 @@ export const nl: Strings = {
   whatsNewTitle: 'Nieuw in FLODE {version}',
   whatsNewAll: 'Alle wijzigingen',
   continue: 'Doorgaan',
-  new261017NotesTitle: 'Notities op het canvas',
+  new261017NotesTitle: 'Notities, kaders, meervoudige selectie',
   new261017NotesText:
-    'Klik met rechts op het lege canvas → "Notitie hier toevoegen". Dubbelklikken bewerkt de tekst, de kleur kies je boven de notitie.',
-  new261017FramesTitle: 'Kaders om kaarten die bij elkaar horen',
-  new261017FramesText:
-    'Een kader met titel ligt achter de kaarten. Sleep het aan de titelbalk en de kaarten erin bewegen mee.',
-  new261017SelectTitle: 'Meerdere kaarten tegelijk',
-  new261017SelectText:
-    'Shift + slepen selecteert, Shift-klik voegt toe, ⌘/Ctrl-klik haalt eruit. Verplaats, kopieer, schakel of verwijder de selectie in één keer.',
+    'Rechtsklik op het lege canvas → „Notitie hier toevoegen” of „Kader hier toevoegen”. Shift + slepen selecteert meerdere kaarten om samen te verplaatsen, kopiëren of verwijderen.',
+  new261017ParallelTitle: 'Parallelle acties als eigen kaarten',
+  new261017ParallelText:
+    'Een parallel-blok heeft nu één uitgang per actie („Parallel 1”, „Parallel 2” …) en elke actie is een eigen kaart. Opgeslagen wordt nog steeds een gewone parallel.',
+  new261017ColorTitle: 'Kaarten inkleuren',
+  new261017ColorText:
+    'Rechtsklik op een kaart → „Kaart inkleuren”. Als-dan, Kiezen en de andere blokken zijn nu indigo in plaats van groen en vallen op tussen de acties.',
+  new261017LinesTitle: 'Lijnen zelf leggen',
+  new261017LinesText:
+    'Klik op een lijn en sleep het punt in het midden: de lijn loopt haaks door je knikpunten. Dubbelklik verwijdert er één, „Opruimen” ze allemaal.',
   new261017LangTitle: 'FLODE spreekt nu 7 talen',
   new261017LangText:
     'Nieuw: Nederlands, Frans, Spaans, Italiaans en Portugees. FLODE volgt de taal die je in Home Assistant hebt ingesteld.',
-  new261017StopTitle: 'Een stop beëindigt de tak',
-  new261017StopText:
-    'Een stopkaart waarop niets meer volgt, heeft geen lijn meer die verder loopt en geen “+”. Ze zegt “Eindigt hier” of, met “error: true”, “Eindigt met een fout”. De opgeslagen YAML blijft gelijk; de flow toont nu alleen correct dat de uitvoering daar stopt.',
 };

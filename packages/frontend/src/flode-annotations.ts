@@ -19,6 +19,8 @@ import {
   tintOf,
 } from './annotations';
 import { defineElement } from './define-element';
+import type { ColorPick } from './flode-swatches';
+import './flode-swatches';
 import { moveSelection, positionsOf } from './selection';
 import { t } from './strings';
 
@@ -42,11 +44,6 @@ interface Gesture {
   /** The note was picked from a selection: all of it moves. */
   group?: ReturnType<typeof positionsOf>;
   moved: boolean;
-}
-
-/** A colour picked on the wheel (the named ones are not hex). */
-function isWheelColor(color: string): boolean {
-  return color.startsWith('#');
 }
 
 const CORNERS: readonly Corner[] = ['nw', 'ne', 'sw', 'se'];
@@ -276,35 +273,18 @@ export class FlodeAnnotations extends LitElement {
 
   // ---- render --------------------------------------------------------------
 
-  /** The colours to pick from, above the picked note or frame. */
+  /** The colours to pick from, above the picked note or frame; the wheel previews while it moves. */
   private renderSwatches(item: Annotation) {
-    const current = item.color ?? (this.kind === 'notes' ? 'yellow' : 'blue');
-    return html`<div class="swatches" @pointerdown=${(e: Event) => e.stopPropagation()}>
-      ${COLORS.map(
-        (color) => html`<button
-          class="swatch ${color === current ? 'current' : ''}"
-          style="--tint:${tintOf(color, color)}"
-          aria-label=${color}
-          @click=${() => this.emit('graph-change', { graph: setColor(this.graph, item.id, color) })}
-        ></button>`
-      )}
-      <label class="wheel" title=${t(this.language, 'colorWheel')}>
-        <input
-          type="color"
-          .value=${isWheelColor(current) ? current : '#3b82f6'}
-          @input=${(e: Event) => this.previewColor(e, item)}
-          @change=${(e: Event) => this.previewColor(e, item, true)}
-        />
-      </label>
-    </div>`;
-  }
-
-  /** A colour from the wheel: shown while the pointer moves over it, kept when it is let go. */
-  private previewColor(event: Event, item: Annotation, keep = false): void {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement)) return;
-    const graph = setColor(this.graph, item.id, input.value);
-    this.emit(keep ? 'graph-change' : 'graph-preview', { graph });
+    return html`<flode-swatches
+      class="swatches"
+      .current=${item.color ?? (this.kind === 'notes' ? 'yellow' : 'blue')}
+      .language=${this.language}
+      @color-pick=${(e: CustomEvent<ColorPick>) => {
+        e.stopPropagation();
+        const graph = setColor(this.graph, item.id, e.detail.color ?? COLORS[0]);
+        this.emit(e.detail.final ? 'graph-change' : 'graph-preview', { graph });
+      }}
+    ></flode-swatches>`;
   }
 
   private renderHandles(item: Annotation) {
@@ -448,44 +428,6 @@ export class FlodeAnnotations extends LitElement {
       position: absolute;
       left: 0;
       top: -34px;
-      display: flex;
-      gap: 6px;
-      padding: 5px 8px;
-      border-radius: 999px;
-      background: var(--card-background-color);
-      border: 1px solid var(--divider-color);
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-      pointer-events: auto;
-      cursor: default;
-    }
-    .swatch {
-      all: unset;
-      width: 16px;
-      height: 16px;
-      box-sizing: border-box;
-      border-radius: 50%;
-      background: rgb(var(--tint));
-      cursor: pointer;
-    }
-    .swatch.current {
-      outline: 2px solid var(--primary-text-color);
-      outline-offset: 1px;
-    }
-    .wheel {
-      position: relative;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      cursor: pointer;
-      background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
-    }
-    .wheel input {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      cursor: pointer;
     }
     .handle {
       position: absolute;

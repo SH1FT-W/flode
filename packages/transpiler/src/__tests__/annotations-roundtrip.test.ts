@@ -107,3 +107,23 @@ variables:
     expect(parsed.graph?.frames).toBeUndefined();
   });
 });
+
+describe('tinted cards and laid lines (#28)', () => {
+  it('keep their colour and bends in the layout only, through saving and opening again', async () => {
+    const transpiler = new FlowTranspiler();
+    const graph = flow({
+      cardColors: { a1: 'purple', t1: '#112233' },
+      lineBends: { 't1||a1': [{ x: 200, y: -60 }] },
+    });
+    const saved = buildAutomationSaveConfig(transpiler, graph, { alias: 'Notes', description: '' });
+    const plain = buildAutomationSaveConfig(transpiler, flow(), {
+      alias: 'Notes',
+      description: '',
+    });
+    expect(saved.config?.actions).toEqual(plain.config?.actions);
+    const yaml = (await import('js-yaml')).dump(saved.config);
+    const parsed = await new YamlParser().parse(yaml);
+    expect(parsed.graph?.cardColors).toEqual({ a1: 'purple', t1: '#112233' });
+    expect(parsed.graph?.lineBends).toEqual({ 't1||a1': [{ x: 200, y: -60 }] });
+  });
+});

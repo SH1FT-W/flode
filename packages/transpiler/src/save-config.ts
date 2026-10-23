@@ -24,12 +24,16 @@ export function flodeMetadata(
   steps: Record<string, string> = {}
 ): FlodeMetadata {
   const offsets = graph.branchOffsets ?? {};
+  const colors = graph.cardColors ?? {};
+  const bends = graph.lineBends ?? {};
   return {
     version: 1,
     nodes: Object.fromEntries(
       graph.nodes.map((node) => [node.id, { x: node.position.x, y: node.position.y }])
     ),
     ...(Object.keys(offsets).length > 0 ? { branch_offsets: offsets } : {}),
+    ...(Object.keys(colors).length > 0 ? { card_colors: colors } : {}),
+    ...(Object.keys(bends).length > 0 ? { line_bends: bends } : {}),
     ...(Object.keys(steps).length > 0 ? { steps } : {}),
     ...(graph.direction ? { direction: graph.direction } : {}),
     ...(graph.notes?.length ? { notes: graph.notes } : {}),

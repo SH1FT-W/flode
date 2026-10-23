@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FrameSchema, NoteSchema } from './annotations';
+import { AnnotationColorSchema, FrameSchema, NoteSchema } from './annotations';
 import {
   AutomationModeSchema,
   FlowDirectionSchema,
@@ -124,6 +124,16 @@ export const FlowGraphSchema = z.object({
    * branch card id (`<block>::else.1`), relative to where they'd be drawn.
    */
   branchOffsets: z.record(z.string(), PositionSchema).optional(),
+  /**
+   * Cards the user tinted, per card id (a flow card's, or a branch card's
+   * like `branchOffsets`) — a colour of the notes' palette (#28).
+   */
+  cardColors: z.record(z.string(), AnnotationColorSchema).optional(),
+  /**
+   * Bends the user dragged into a line, in flow coordinates, per drawn line
+   * (`<source>|<output>|<target>`, see `lineKey` in the frontend) (#28).
+   */
+  lineBends: z.record(z.string(), z.array(PositionSchema)).optional(),
   /** Which way the cards were laid out; none = left to right. An unknown value counts as none. */
   direction: FlowDirectionSchema.optional().catch(undefined),
   /** Free text on the canvas (saved in `_flode_metadata.notes`). */

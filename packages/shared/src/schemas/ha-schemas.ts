@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FrameSchema, lenientList, NoteSchema } from './annotations';
+import { AnnotationColorSchema, FrameSchema, lenientList, NoteSchema } from './annotations';
 import { FlowDirectionSchema, MaxExceededSchema, PositionSchema } from './base';
 import { type TargetIds, TargetIdsSchema } from './ha-entities';
 
@@ -322,6 +322,10 @@ export const FlodeMetadataSchema = z.object({
    * right. An unknown value is dropped, not the whole layout.
    */
   direction: FlowDirectionSchema.optional().catch(undefined),
+  /** Tinted cards (`FlowGraph.cardColors`); an unreadable entry drops them, not the layout. */
+  card_colors: z.record(z.string(), AnnotationColorSchema).optional().catch(undefined),
+  /** Lines laid by hand (`FlowGraph.lineBends`); an unreadable entry drops them, not the layout. */
+  line_bends: z.record(z.string(), z.array(PositionSchema)).optional().catch(undefined),
   /** Notes and frames drawn on the canvas (`FlowGraph.notes`, `FlowGraph.frames`). */
   notes: lenientList(NoteSchema),
   frames: lenientList(FrameSchema),

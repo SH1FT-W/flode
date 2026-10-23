@@ -21,7 +21,7 @@ import {
   XYPanZoom,
 } from '@xyflow/system';
 import { css, html, LitElement, nothing, type PropertyValues, svg } from 'lit';
-import { removeAnnotation } from './annotations';
+import { removeAnnotation, tintOf } from './annotations';
 import {
   adoptIntoBranch,
   type BlockTail,
@@ -34,12 +34,15 @@ import {
   moveBranchCard,
   type Point,
   removeBranchStep,
+  tintCards,
 } from './branch-view';
 import { defineElement } from './define-element';
-import { idsInBox, moveSelection, positionsOf, type Rect } from './selection';
+import { bendSlots, laidRoute, lineKey, roundedPath, withLineBends } from './line-bends';
+import { idsInBox, moveSelection, positionsOf, type Rect, snapToGrid } from './selection';
 import './flode-annotations';
 import { fitViewport } from './fit';
 import type { AnnotationMenuDetail, FlodeAnnotations } from './flode-annotations';
+import type { ColorPick } from './flode-swatches';
 import {
   ADD_BELOW,
   ADD_BUTTON,
@@ -71,12 +74,13 @@ import {
   visibleGraph,
 } from './flow-model';
 import type { HomeAssistant } from './ha';
-import { HaDescriptions } from './ha-describe';
+import { HaDescriptions, isHaSummary } from './ha-describe';
+import './flode-swatches';
 import { watchHold } from './hold';
 import { HA_ICON_ELEMENTS, nodeIconTemplate } from './node-icon';
 import {
   issueLines,
-  NODE_META,
+  nodeColor,
   nodeEyebrow,
   nodeIssues,
   nodeTypeLine,
@@ -220,6 +224,8 @@ export interface CanvasMenuDetail {
   annotationId?: string;
   /** A connection's menu (its id as stored in the graph): just "delete" (#34). */
   edgeId?: string;
+  /** The line right-clicked, when the user laid it by hand (#28): its bends can go. */
+  laidLine?: string;
   clientX: number;
   clientY: number;
   /** Flow position of the click — where "add here" puts a card. */
@@ -336,6 +342,7 @@ export class FlodeCanvas extends LitElement {
     selectedAnnotation: { state: true },
     multiIds: { attribute: false },
     marquee: { state: true },
+    tinting: { state: true },
   };
 
   declare graph: FlowGraph;
@@ -361,6 +368,8 @@ export class FlodeCanvas extends LitElement {
   /** The cards and notes picked together (marquee, Shift-click): they move and are acted on as one. */
   declare multiIds: string[];
   declare marquee: MarqueeState | null;
+  /** Cards "Karte einfärben" shows the colours for (#28); empty = none. */
+  declare tinting: string[];
 
   private readonly haDescriptions = new HaDescriptions(
     () => this.requestUpdate(),
@@ -368,6 +377,15 @@ export class FlodeCanvas extends LitElement {
   );
   /** A selection box was just released; its click is not an empty-canvas click. */
   private afterMarquee = false;
+  /** A bend of a line being dragged (#28): the flow before, the bends as they are now. */
+  private bendDrag: {
+    key: string;
+    index: number;
+    pointerId: number;
+    original: FlowGraph;
+    bends: Point[];
+    moved: boolean;
+  } | null = null;
   private panZoom: PanZoomInstance | null = null;
   private minimapControl: XYMinimapInstance | null = null;
   /** Flow units per minimap pixel — XYMinimap needs it for dragging. */
@@ -392,6 +410,7 @@ export class FlodeCanvas extends LitElement {
     this.selectedAnnotation = null;
     this.multiIds = [];
     this.marquee = null;
+    this.tinting = [];
     this.runMarks = null;
     this.activeRunNode = null;
     this.minimap = false;
@@ -632,7 +651,7 @@ export class FlodeCanvas extends LitElement {
           height=${cardShape(this.view, node).height}
           rx=${12}
           stroke-width=${3 * scale}
-          fill=${NODE_META[node.type].color}
+          fill=${this.cardColor(node).color}
         ></rect>`
       )}
       <path
@@ -785,7 +804,103 @@ export class FlodeCanvas extends LitElement {
 
   private openEdgeMenu(id: string, clientX: number, clientY: number): void {
     this.selectEdge(id);
-    this.dispatchCanvasMenu({ nodeId: null, edgeId: this.storedEdgeId(id), clientX, clientY });
+    const edge = this.view.graph.edges.find((e) => e.id === id);
+    const key = edge ? lineKey(edge) : undefined;
+    this.dispatchCanvasMenu({
+      nodeId: null,
+      edgeId: this.storedEdgeId(id),
+      ...(key && this.graph.lineBends?.[key] ? { laidLine: key } : {}),
+      clientX,
+      clientY,
+    });
+  }
+
+  // ---- lines laid by hand (#28) --------------------------------------------
+
+  /**
+   * Starts dragging bend `index` of line `key`; `insert`: a new bend at `at`
+   * (dragged out of the middle of a run). The flow previews while it moves.
+   */
+  private startBendDrag(
+    event: PointerEvent,
+    key: string,
+    index: number,
+    insert: { at: Point } | null
+  ): void {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.preventDefault();
+    if (event.currentTarget instanceof Element)
+      event.currentTarget.setPointerCapture(event.pointerId);
+    const bends = [...(this.graph.lineBends?.[key] ?? [])];
+    if (insert) bends.splice(index, 0, insert.at);
+    this.bendDrag = {
+      key,
+      index,
+      pointerId: event.pointerId,
+      original: this.graph,
+      bends,
+      moved: false,
+    };
+  }
+
+  private onBendMove(event: PointerEvent): void {
+    const drag = this.bendDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const at = this.toFlow(event.clientX, event.clientY);
+    drag.bends[drag.index] = { x: snapToGrid(at.x), y: snapToGrid(at.y) };
+    drag.moved = true;
+    this.graph = withLineBends(drag.original, drag.key, drag.bends);
+  }
+
+  private onBendUp(event: PointerEvent): void {
+    const drag = this.bendDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    this.bendDrag = null;
+    // Pressed without moving: nothing changes (a new bend only comes with a drag).
+    if (drag.moved) this.emitGraph(this.graph);
+    else this.graph = drag.original;
+  }
+
+  private removeBend(event: Event, key: string, index: number): void {
+    event.stopPropagation();
+    const bends = (this.graph.lineBends?.[key] ?? []).filter((_, i) => i !== index);
+    this.emitGraph(withLineBends(this.graph, key, bends));
+  }
+
+  /**
+   * On a picked line: its bends to drag (double-click removes one), and in the
+   * middle of each run a faint point that drags a new bend out of it.
+   */
+  private renderBendHandles(key: string, from: Point, bends: readonly Point[], to: Point) {
+    const slots = bendSlots(this.view.axis, from, bends, to).map((at, i) =>
+      this.renderBend('add', at, (e) => this.startBendDrag(e, key, i, { at }))
+    );
+    const handles = bends.map((at, i) =>
+      this.renderBend(
+        'bent',
+        at,
+        (e) => this.startBendDrag(e, key, i, null),
+        (e) => this.removeBend(e, key, i)
+      )
+    );
+    return svg`${slots}${handles}`;
+  }
+
+  /** One bend handle; the drag goes on on it (it holds the pointer). */
+  private renderBend(
+    kind: 'add' | 'bent',
+    at: Point,
+    down: (event: PointerEvent) => void,
+    remove?: (event: Event) => void
+  ) {
+    return svg`<circle class="bend ${kind} nopan" cx=${at.x} cy=${at.y} r=${kind === 'add' ? 5 : 6}
+      @pointerdown=${down}
+      @pointermove=${(e: PointerEvent) => this.onBendMove(e)}
+      @pointerup=${(e: PointerEvent) => this.onBendUp(e)}
+      @pointercancel=${(e: PointerEvent) => this.onBendUp(e)}
+      @click=${(e: Event) => e.stopPropagation()}
+      @dblclick=${(e: Event) => remove?.(e)}></circle>`;
   }
 
   private onContextMenu(event: MouseEvent, node: FlowNode | null): void {
@@ -805,6 +920,7 @@ export class FlodeCanvas extends LitElement {
   private emitSelect(id: string | null): void {
     this.selectedEdgeId = null;
     this.selectedAnnotation = null;
+    this.tinting = [];
     this.dispatchEvent(new CustomEvent('select', { detail: { id } }));
   }
 
@@ -927,6 +1043,48 @@ export class FlodeCanvas extends LitElement {
   /** Starts editing the text of a note or frame. */
   editAnnotation(id: string): void {
     this.selectAnnotation(id, true);
+  }
+
+  /** Shows the colours above the first of `ids` — "Karte einfärben" (#28). */
+  showTintPicker(ids: readonly string[]): void {
+    this.tinting = [...ids];
+  }
+
+  /** A colour picked for the cards: the wheel previews while it moves, a pick is one undo step. */
+  private onTintPick(event: CustomEvent<ColorPick>): void {
+    event.stopPropagation();
+    const graph = tintCards(this.graph, this.tinting, event.detail.color);
+    if (!event.detail.final) {
+      this.graph = graph;
+      return;
+    }
+    this.tinting = [];
+    this.emitGraph(graph);
+  }
+
+  /** The colours above the first card being tinted, its colour marked if they all share it. */
+  private renderTintPicker() {
+    const [first] = this.tinting;
+    const node = first ? this.drawnNode(first) : undefined;
+    if (!node) return nothing;
+    const colors = new Set(this.tinting.map((id) => this.graph.cardColors?.[id]));
+    const [shared] = colors.size === 1 ? [...colors] : [];
+    return html`<flode-swatches
+      class="tint-picker nopan"
+      clearable
+      style="transform: translate(${node.position.x}px, ${node.position.y - 38}px)"
+      .current=${shared}
+      .language=${this.hass?.language ?? 'en'}
+      @color-pick=${this.onTintPick}
+    ></flode-swatches>`;
+  }
+
+  /** The card's colour: the one the user tinted it with, or its type's / block's. */
+  private cardColor(node: FlowNode): { color: string; tint?: string } {
+    const picked = this.graph?.cardColors?.[node.id];
+    if (!picked) return { color: nodeColor(node) };
+    const tint = tintOf(picked, picked);
+    return { color: `rgb(${tint})`, tint };
   }
 
   private onAnnotationSelect(event: CustomEvent<{ id: string }>): void {
@@ -1265,18 +1423,23 @@ export class FlodeCanvas extends LitElement {
     // Lines into and between a branch's steps aren't connections of their own.
     const selectable =
       edgeOrigin.has(edge.id) || (!cards.has(edge.source) && !cards.has(edge.target));
+    const key = lineKey(edge);
+    // Laid by hand (#28): at right angles through its bends, whatever FLODE would draw.
+    const laid = selectable ? (this.graph.lineBends?.[key] ?? []) : [];
     const bends = via.get(edge.id) ?? this.detourOf(edge.id, from, to, [source.id, target.id]);
     const isLoop = edge.type === 'loop-back';
     const axis = this.view.axis;
     const path =
-      !isLoop && runsBack(axis, from, to)
-        ? backPath(
-            axis,
-            from,
-            to,
-            backCrossing(axis, from, to, this.cardBounds(source), this.cardBounds(target))
-          )
-        : linePath([from, ...bends, to], axis, merge, isLoop);
+      laid.length > 0
+        ? roundedPath(laidRoute(axis, from, laid, to))
+        : !isLoop && runsBack(axis, from, to)
+          ? backPath(
+              axis,
+              from,
+              to,
+              backCrossing(axis, from, to, this.cardBounds(source), this.cardBounds(target))
+            )
+          : linePath([from, ...bends, to], axis, merge, isLoop);
     const selected = this.selectedEdgeId === edge.id;
     const isNo = edge.sourceHandle === 'false';
     const faulty = (this.issues.get(edge.target)?.length ?? 0) > 0;
@@ -1300,6 +1463,7 @@ export class FlodeCanvas extends LitElement {
               );
           }}></path>
         <path class="edge-line" d=${path} marker-end=${faulty ? 'url(#arrow-faulty)' : 'url(#arrow)'}></path>
+        ${selected && selectable ? this.renderBendHandles(key, from, laid, to) : nothing}
       </g>`;
   }
 
@@ -1396,7 +1560,7 @@ export class FlodeCanvas extends LitElement {
   }
 
   private renderNode(node: FlowNode, isEntry = false) {
-    const meta = NODE_META[node.type];
+    const { color, tint } = this.cardColor(node);
     const language = this.hass?.language ?? 'en';
     const { handles, height } = cardShape(this.view, node);
     // Top to bottom, many outputs share the card's width: an option's name shrinks to its number.
@@ -1417,8 +1581,8 @@ export class FlodeCanvas extends LitElement {
     const ends = endsRun(this.view, node);
     return html`
       <div
-        class="node nopan ${branches ? 'branching' : ''} ${handles.includes('true') ? 'two-way' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${ends ? `ends ${ends}` : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${this.runClass(node.id)}"
-        style="transform: translate(${node.position.x}px, ${node.position.y}px); height: ${height}px; --node-color: ${meta.color}"
+        class="node nopan ${branches ? 'branching' : ''} ${handles.includes('true') ? 'two-way' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${ends ? `ends ${ends}` : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${tint ? 'tinted' : ''} ${this.runClass(node.id)}"
+        style="transform: translate(${node.position.x}px, ${node.position.y}px); height: ${height}px; --node-color: ${color}${tint ? `; --card-tint: ${tint}` : ''}"
         data-node-id=${node.id}
         title=${[
           nodeTypeLine(node, summary, language),
@@ -1439,7 +1603,7 @@ export class FlodeCanvas extends LitElement {
         ${isEntry ? html`<span class="entry"><ha-icon icon="mdi:play"></ha-icon>${t(language, 'entry')}</span>` : nothing}
         <span class="icon">${nodeIconTemplate(node, summary, this.hass)}</span>
         <span class="text">
-          <span class="type">${nodeEyebrow(node, summary, language)}</span>
+          ${isHaSummary(summary) ? nothing : html`<span class="type">${nodeEyebrow(node, summary, language)}</span>`}
           <span class="title">${summary.title}</span>
           ${summary.detail ? html`<span class="detail">${detailText(summary.detail)}</span>` : nothing}
         </span>
@@ -1526,6 +1690,7 @@ export class FlodeCanvas extends LitElement {
           ${shown?.nodes.map((node) => this.renderNode(node, entries.has(node.id)))}
           ${tails.map(([id, tail]) => this.renderTail(id, tail))}
           ${this.graph ? this.renderAnnotations('notes') : nothing} ${this.renderMarquee()}
+          ${this.renderTintPicker()}
         </div>
         ${
           shown && shown.nodes.length === 0
@@ -1663,6 +1828,22 @@ export class FlodeCanvas extends LitElement {
     .edge.loop .edge-line {
       stroke-dasharray: 2 4;
     }
+    /* A picked line's bends (#28): drag to move, double-click to remove; faint ones add a bend. */
+    .bend {
+      fill: var(--card-background-color);
+      stroke: var(--primary-color);
+      stroke-width: 2.5px;
+      pointer-events: all;
+      cursor: move;
+    }
+    .bend.add {
+      opacity: 0.55;
+      stroke-width: 1.5px;
+      cursor: copy;
+    }
+    .bend.add:hover {
+      opacity: 1;
+    }
     .edge.selected .edge-line {
       stroke: var(--primary-color);
       stroke-width: 2.4px;
@@ -1704,6 +1885,16 @@ export class FlodeCanvas extends LitElement {
       cursor: pointer;
       user-select: none;
       transition: box-shadow 0.15s;
+    }
+    /* Tinted by the user (#28): the whole card in a light wash of its colour. */
+    .node.tinted {
+      background: color-mix(in srgb, rgb(var(--card-tint)) 18%, var(--card-background-color));
+    }
+    .tint-picker {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 5;
     }
     .node::before {
       content: '';

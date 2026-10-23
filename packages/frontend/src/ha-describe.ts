@@ -11,6 +11,15 @@ import { summaryContext } from './i18n';
  * row off-screen and reads it: the wording is always that of the running HA.
  */
 
+/** A card text read from HA's row (its eyebrow would only repeat HA's first words, #26). */
+export interface HaSummary extends NodeSummary {
+  fromHa: true;
+}
+
+export function isHaSummary(summary: NodeSummary): summary is HaSummary {
+  return 'fromHa' in summary;
+}
+
 /** Where the text sits in HA's row: its `<h3>` header, or the condition summary's `label`. */
 function readRowText(row: Element): string {
   const root = row.shadowRoot;
@@ -78,7 +87,11 @@ export class HaDescriptions {
    * Names and language come from `hass`, so the texts are read again after a
    * rename or a language switch.
    */
-  summary(node: FlowNode, hass: HomeAssistant | undefined, own: NodeSummary): NodeSummary {
+  summary(
+    node: FlowNode,
+    hass: HomeAssistant | undefined,
+    own: NodeSummary
+  ): NodeSummary | HaSummary {
     if (!hass || isScriptStart(node.data)) return own;
     if (hass.language !== this.language || hass.entities !== this.entities) {
       this.language = hass.language;
@@ -92,7 +105,7 @@ export class HaDescriptions {
     if (text) {
       const target = stepTarget(step);
       const detail = target && summaryContext(hass)?.targetSummary(target);
-      return { ...own, title: text, detail: detail || undefined };
+      return { ...own, title: text, detail: detail || undefined, fromHa: true };
     }
     if (!this.texts.has(key)) this.request({ key, kind, step }, hass);
     return own;

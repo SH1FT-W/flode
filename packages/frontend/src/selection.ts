@@ -8,6 +8,7 @@ import {
   uniqueId,
 } from '@flode/shared';
 import { NODE_HEIGHT, NODE_WIDTH, toggleNodeEnabled } from './flow-model';
+import { bendsBetween } from './line-bends';
 
 /**
  * A selection of several cards and notes (marquee, shift-click): the pure
@@ -214,6 +215,8 @@ interface Starts {
   nodes: ReadonlyMap<string, Point>;
   notes: ReadonlyMap<string, Point>;
   frames?: ReadonlyMap<string, Point>;
+  /** Bends of lines between two of the cards: they move along (#28). */
+  lines?: ReadonlyMap<string, readonly Point[]>;
 }
 
 /** The selected cards, notes and frames moved by (`dx`, `dy`) from where `start` has them. */
@@ -232,18 +235,26 @@ export function moveSelection(graph: FlowGraph, start: Starts, dx: number, dy: n
       const from = start.frames?.get(f.id);
       return from ? { ...f, x: from.x + dx, y: from.y + dy } : f;
     }),
+    ...(graph.lineBends
+      ? {
+          lineBends: Object.fromEntries(
+            Object.entries(graph.lineBends).map(([key, bends]) => [
+              key,
+              start.lines?.get(key)?.map((p) => ({ x: p.x + dx, y: p.y + dy })) ?? bends,
+            ])
+          ),
+        }
+      : {}),
   };
 }
 
 /** Where each selected card, note and frame is now — the `start` of a move. */
-export function positionsOf(
-  graph: FlowGraph,
-  ids: readonly string[]
-): { nodes: Map<string, Point>; notes: Map<string, Point>; frames: Map<string, Point> } {
+export function positionsOf(graph: FlowGraph, ids: readonly string[]): Required<Starts> {
   const { nodes, notes, frames } = splitSelection(graph, ids);
   return {
     nodes: new Map(nodes.map((n) => [n.id, { ...n.position }])),
     notes: new Map(notes.map((n) => [n.id, { x: n.x, y: n.y }])),
     frames: new Map(frames.map((f) => [f.id, { x: f.x, y: f.y }])),
+    lines: bendsBetween(graph, new Set(nodes.map((n) => n.id))),
   };
 }

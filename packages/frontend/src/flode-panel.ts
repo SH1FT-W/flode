@@ -122,6 +122,7 @@ import {
 } from './ha-step';
 import { mapT } from './i18n';
 import { InFlight, Serial } from './in-flight';
+import { withLineBends } from './line-bends';
 import { LOGBOOK_POLL_MS, type ManualRun } from './manual-runs';
 import { mergeWarningsHeading, mergeWarningText } from './merge-warnings';
 import { NODE_META, nodeTitle, summarize, typeLabel } from './node-meta';
@@ -183,6 +184,8 @@ const MINIMAP_KEY = 'flode3.minimap';
 const HA_CARD_TEXT_KEY = 'flode3.haCardText';
 /** Flows without a saved direction open top to bottom (#29). */
 const VERTICAL_KEY = 'flode3.vertical';
+/** The side panel shows only while a card, the assistant or the runs are open (#28). */
+const AUTO_SIDE_KEY = 'flode3.autoSide';
 const DIRECTION_ICON: Record<FlowDirection, string> = {
   right: 'mdi:arrow-right',
   down: 'mdi:arrow-down',
@@ -282,8 +285,8 @@ function isTyping(event: KeyboardEvent): boolean {
  */
 async function layoutGraph(graph: FlowGraph, turnTo?: FlowDirection): Promise<FlowGraph> {
   const { applyHeuristicLayout } = await loadTranspiler();
-  // Moved branch steps go back into their lanes too.
-  const { branchOffsets: _moved, ...rest } = graph;
+  // Moved branch steps go back into their lanes too, lines laid by hand are laid anew.
+  const { branchOffsets: _moved, lineBends: _laid, ...rest } = graph;
   // Turned on purpose, the direction is kept — left to right too, so a flow
   // arranged so stays so when flows open top to bottom by default.
   const turned: FlowGraph = turnTo ? { ...rest, direction: turnTo } : rest;
@@ -375,6 +378,7 @@ export class FlodePanel extends LitElement {
     minimapVisible: { state: true },
     haCardText: { state: true },
     verticalDefault: { state: true },
+    autoSide: { state: true },
     yamlViewOpen: { state: true },
     canvasMenu: { state: true },
     templatesOpen: { state: true },
@@ -432,6 +436,8 @@ export class FlodePanel extends LitElement {
   declare haCardText: boolean;
   /** Flows without a saved direction open top to bottom (#29). */
   declare verticalDefault: boolean;
+  /** The side panel shows only while something in it is open (#28). */
+  declare autoSide: boolean;
   declare yamlViewOpen: boolean;
   /** Right-click menu on the canvas (null = closed). */
   declare canvasMenu: CanvasMenuDetail | null;
@@ -498,6 +504,7 @@ export class FlodePanel extends LitElement {
     this.minimapVisible = readFlag(MINIMAP_KEY);
     this.haCardText = readFlag(HA_CARD_TEXT_KEY);
     this.verticalDefault = readFlag(VERTICAL_KEY);
+    this.autoSide = readFlag(AUTO_SIDE_KEY);
     this.yamlViewOpen = false;
     this.canvasMenu = null;
     this.templatesOpen = false;
@@ -859,14 +866,41 @@ export class FlodePanel extends LitElement {
     ];
   }
 
+  /** "Karte einfärben": the colours above the cards among `ids` (notes picked with them keep theirs) (#28). */
+  private tintEntry(id: 'tintCard' | 'tintCards', ids: readonly string[]): MenuItem {
+    return {
+      id,
+      icon: 'mdi:palette-outline',
+      label: t(this.language, id),
+      run: () => {
+        const flow = this.flow;
+        if (!flow) return;
+        const drawn = new Set(cachedBranchView(flow.graph).graph.nodes.map((n) => n.id));
+        this.canvas?.showTintPicker(ids.filter((card) => drawn.has(card)));
+      },
+    };
+  }
+
+  /** A setting in a menu, ticked while on. */
+  private flagEntry(id: 'verticalDefault' | 'autoSide', on: boolean, run: () => void): MenuItem {
+    return {
+      id,
+      icon: on ? 'mdi:checkbox-marked-outline' : 'mdi:checkbox-blank-outline',
+      label: t(this.language, id),
+      run,
+    };
+  }
+
   /** "Flows immer senkrecht öffnen", ticked while on. */
   private verticalDefaultEntry(): MenuItem {
-    return {
-      id: 'verticalDefault',
-      icon: this.verticalDefault ? 'mdi:checkbox-marked-outline' : 'mdi:checkbox-blank-outline',
-      label: t(this.language, 'verticalDefault'),
-      run: () => this.toggleVerticalDefault(),
-    };
+    return this.flagEntry('verticalDefault', this.verticalDefault, () =>
+      this.toggleVerticalDefault()
+    );
+  }
+
+  /** "Seitenleiste nur bei Auswahl zeigen", ticked while on (#28). */
+  private autoSideEntry(): MenuItem {
+    return this.flagEntry('autoSide', this.autoSide, () => this.toggleAutoSide());
   }
 
   /**
@@ -959,6 +993,18 @@ export class FlodePanel extends LitElement {
       );
     } else if (menu.edgeId) {
       const edgeId = menu.edgeId;
+      const laid = menu.laidLine;
+      if (laid) {
+        entries.push(
+          {
+            id: 'resetLine',
+            icon: 'mdi:vector-polyline-remove',
+            label: t(language, 'resetLine'),
+            run: () => this.commit(withLineBends(flow.graph, laid, [])),
+          },
+          'divider'
+        );
+      }
       entries.push(
         hinted('delete', 'mdi:delete-outline', t(language, 'deleteConnection'), () =>
           this.commit(removeEdge(flow.graph, edgeId))
@@ -986,6 +1032,7 @@ export class FlodePanel extends LitElement {
           label: t(language, 'frameSelection'),
           run: pick('frame'),
         },
+        this.tintEntry('tintCards', this.multiIds),
         'divider',
         hinted('delete', 'mdi:delete-outline', t(language, 'delete'), pick('delete'))
       );
@@ -1004,7 +1051,8 @@ export class FlodePanel extends LitElement {
           off ? 'mdi:toggle-switch-outline' : 'mdi:toggle-switch-off-outline',
           t(language, off ? 'enableCard' : 'disableCard'),
           () => this.toggleCard(node)
-        )
+        ),
+        this.tintEntry('tintCard', [node.id])
       );
       const disconnect = (run: () => void): MenuItem => ({
         id: 'disconnect',
@@ -1094,7 +1142,9 @@ export class FlodePanel extends LitElement {
         hinted('fit', 'mdi:fit-to-screen-outline', t(language, 'fit'), () =>
           this.canvas?.fitView()
         ),
-        ...this.tidyEntries(flow)
+        ...this.tidyEntries(flow),
+        'divider',
+        this.autoSideEntry()
       );
     }
     return this.renderMenu(
@@ -1233,6 +1283,7 @@ export class FlodePanel extends LitElement {
       command('haCardText', t(language, 'haCardText'), 'mdi:home-assistant', () =>
         this.toggleHaCardText()
       );
+      command('autoSide', t(language, 'autoSide'), 'mdi:dock-right', () => this.toggleAutoSide());
       const selected = this.selectedCard();
       if (selected) {
         command('duplicate', t(language, 'duplicateCard'), 'mdi:content-duplicate', () =>
@@ -2643,6 +2694,11 @@ export class FlodePanel extends LitElement {
     writeFlag(HA_CARD_TEXT_KEY, this.haCardText);
   }
 
+  private toggleAutoSide(): void {
+    this.autoSide = !this.autoSide;
+    writeFlag(AUTO_SIDE_KEY, this.autoSide);
+  }
+
   private toggleVerticalDefault(): void {
     this.verticalDefault = !this.verticalDefault;
     writeFlag(VERTICAL_KEY, this.verticalDefault);
@@ -3111,6 +3167,9 @@ export class FlodePanel extends LitElement {
     // Branch cards (steps inside a choose / if) can be opened like any card.
     const view = cachedBranchView(flow.graph);
     const selected = view.graph.nodes.find((n) => n.id === this.selectedId) ?? null;
+    const sideOpen = this.assistOpen || this.debugOpen || selected !== null;
+    // On a phone the side is a sheet that opens anyway; on a wide screen it goes when not needed.
+    const sideHidden = this.autoSide && !sideOpen;
     return html`
       <div class="editor">
         <header class="toolbar">
@@ -3364,7 +3423,7 @@ export class FlodePanel extends LitElement {
           </flode-canvas>
           ${this.renderCanvasMenu(flow)}
           <div
-            class="resizer"
+            class="resizer ${sideHidden ? 'hidden' : ''}"
             title=${t(language, 'resize')}
             @pointerdown=${this.onResizeStart}
             @dblclick=${() => {
@@ -3372,7 +3431,7 @@ export class FlodePanel extends LitElement {
               storeInspectorWidth(null);
             }}
           ></div>
-          <div class="side ${this.assistOpen || this.debugOpen || selected ? 'open' : ''}">
+          <div class="side ${sideOpen ? 'open' : ''} ${sideHidden ? 'hidden' : ''}">
           <div class="sheet-bar">
             <ha-icon-button .label=${t(language, 'close')} @click=${() => this.closeSheet()}>
               <ha-icon icon="mdi:close"></ha-icon>
@@ -4241,6 +4300,10 @@ export class FlodePanel extends LitElement {
     }
     .side {
       display: contents;
+    }
+    .side.hidden,
+    .resizer.hidden {
+      display: none;
     }
     .sheet-bar {
       display: none;

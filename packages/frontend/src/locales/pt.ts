@@ -52,6 +52,7 @@ export const pt: Strings = {
   disableCard: 'Desabilitar cartão',
   disconnectCard: 'Desconectar',
   deleteConnection: 'Excluir conexão',
+  resetLine: 'Remover os pontos de curva',
   addHere: 'Adicionar {type} aqui',
   addNote: 'Adicionar nota aqui',
   addFrame: 'Adicionar moldura aqui',
@@ -59,6 +60,9 @@ export const pt: Strings = {
   framePlaceholder: 'Comentário …',
   editAnnotation: 'Editar texto',
   changeColor: 'Alterar cor',
+  tintCard: 'Colorir cartão',
+  tintCards: 'Colorir cartões',
+  noColor: 'Sem cor',
   deleteNote: 'Excluir nota',
   deleteFrame: 'Excluir moldura',
   selectedCount: '{n} selecionado(s)',
@@ -275,6 +279,7 @@ export const pt: Strings = {
   emptyScriptHint: 'O que o script deve fazer?',
   entry: 'Início',
   branchOption: 'Opção {n}',
+  branchParallel: 'Paralelo {n}',
   branchDefault: 'Padrão',
   branchThen: 'Então',
   branchElse: 'Se não',
@@ -303,6 +308,7 @@ export const pt: Strings = {
   tidyRight: 'Organizar da esquerda para a direita',
   tidyDown: 'Organizar de cima para baixo',
   verticalDefault: 'Abrir fluxos de cima para baixo por padrão',
+  autoSide: 'Mostrar o painel lateral só com uma seleção',
   directionRight: 'Direção: da esquerda para a direita',
   directionDown: 'Direção: de cima para baixo',
   mode: 'Modo',
@@ -364,19 +370,19 @@ export const pt: Strings = {
   whatsNewTitle: 'Novidades no FLODE {version}',
   whatsNewAll: 'Todas as alterações',
   continue: 'Continuar',
-  new261017NotesTitle: 'Notas na tela',
+  new261017NotesTitle: 'Notas, molduras, seleção múltipla',
   new261017NotesText:
-    'Clique com o botão direito na tela vazia → "Adicionar nota aqui". Um clique duplo edita o texto; a cor é escolhida acima da nota.',
-  new261017FramesTitle: 'Molduras em volta de cartões que pertencem juntos',
-  new261017FramesText:
-    'Uma moldura com título fica atrás dos cartões. Arraste-a pela barra de título e os cartões dentro dela se movem junto.',
-  new261017SelectTitle: 'Vários cartões de uma vez',
-  new261017SelectText:
-    'Shift + arrastar seleciona, Shift-clique adiciona, ⌘/Ctrl-clique remove. Mova, copie, ative/desative ou exclua a seleção de uma vez.',
+    'Clique direito na tela vazia → «Adicionar nota aqui» ou «Adicionar moldura aqui». Shift + arrastar seleciona vários cartões para mover, copiar ou apagar juntos.',
+  new261017ParallelTitle: 'Ações paralelas como cartões',
+  new261017ParallelText:
+    'Um bloco paralelo tem agora uma saída por ação («Paralelo 1», «Paralelo 2» …) e cada ação é um cartão próprio. Continua a ser guardado como um parallel normal.',
+  new261017ColorTitle: 'Colorir cartões',
+  new261017ColorText:
+    'Clique direito num cartão → «Colorir cartão». Se-então, Escolher e os outros blocos são agora índigo em vez de verde e destacam-se das ações.',
+  new261017LinesTitle: 'Traçar as linhas você mesmo',
+  new261017LinesText:
+    'Clique numa linha e arraste o ponto no meio: a linha passa em ângulo reto pelos seus pontos de curva. Duplo clique remove um, «Organizar» remove todos.',
   new261017LangTitle: 'O FLODE agora fala 7 idiomas',
   new261017LangText:
     'Novo: holandês, francês, espanhol, italiano e português. O FLODE segue o idioma definido no seu perfil do Home Assistant.',
-  new261017StopTitle: 'Uma parada encerra o ramo',
-  new261017StopText:
-    'Um cartão de parada sem nada depois não tem mais uma linha que continua nem um “+”. Ele mostra “Termina aqui” ou, com “error: true”, “Termina com um erro”. O YAML salvo não muda; o fluxo agora só mostra corretamente que a execução termina ali.',
 };

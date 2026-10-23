@@ -52,6 +52,7 @@ export const it: Strings = {
   disableCard: 'Disabilita scheda',
   disconnectCard: 'Scollega',
   deleteConnection: 'Elimina collegamento',
+  resetLine: 'Rimuovi i punti di piega',
   addHere: 'Aggiungi {type} qui',
   addNote: 'Aggiungi nota qui',
   addFrame: 'Aggiungi cornice qui',
@@ -59,6 +60,9 @@ export const it: Strings = {
   framePlaceholder: 'Commento …',
   editAnnotation: 'Modifica testo',
   changeColor: 'Cambia colore',
+  tintCard: 'Colora la scheda',
+  tintCards: 'Colora le schede',
+  noColor: 'Nessun colore',
   deleteNote: 'Elimina nota',
   deleteFrame: 'Elimina cornice',
   selectedCount: '{n} selezionati',
@@ -273,6 +277,7 @@ export const it: Strings = {
   emptyScriptHint: 'Cosa deve fare lo script?',
   entry: 'Inizio',
   branchOption: 'Opzione {n}',
+  branchParallel: 'Parallelo {n}',
   branchDefault: 'Predefinito',
   branchThen: 'Allora',
   branchElse: 'Altrimenti',
@@ -301,6 +306,7 @@ export const it: Strings = {
   tidyRight: 'Disponi da sinistra a destra',
   tidyDown: "Disponi dall'alto in basso",
   verticalDefault: "Apri i flussi dall'alto in basso per impostazione predefinita",
+  autoSide: 'Mostra il pannello laterale solo con una selezione',
   directionRight: 'Direzione: da sinistra a destra',
   directionDown: "Direzione: dall'alto in basso",
   mode: 'Modalità',
@@ -362,19 +368,19 @@ export const it: Strings = {
   whatsNewTitle: 'Novità in FLODE {version}',
   whatsNewAll: 'Tutte le modifiche',
   continue: 'Continua',
-  new261017NotesTitle: "Note nell'area di lavoro",
+  new261017NotesTitle: 'Note, cornici, selezione multipla',
   new261017NotesText:
-    'Clic destro sull\'area di lavoro vuota → "Aggiungi nota qui". Il doppio clic modifica il testo, il colore si sceglie sopra la nota.',
-  new261017FramesTitle: 'Cornici attorno alle schede che vanno insieme',
-  new261017FramesText:
-    'Una cornice con titolo sta dietro le schede. Trascinala dalla barra del titolo e le schede al suo interno si spostano con lei.',
-  new261017SelectTitle: 'Più schede insieme',
-  new261017SelectText:
-    'Maiusc + trascina seleziona, Maiusc-clic aggiunge, ⌘/Ctrl-clic toglie. Sposta, copia, attiva/disattiva o elimina la selezione tutta insieme.',
+    'Clic destro sulla tela vuota → «Aggiungi nota qui» o «Aggiungi cornice qui». Maiusc + trascina seleziona più schede da spostare, copiare o eliminare insieme.',
+  new261017ParallelTitle: 'Azioni parallele come schede',
+  new261017ParallelText:
+    'Un blocco parallelo ha ora un’uscita per azione («Parallelo 1», «Parallelo 2» …) e ogni azione è una scheda a sé. Viene comunque salvato come un normale parallel.',
+  new261017ColorTitle: 'Colorare le schede',
+  new261017ColorText:
+    'Clic destro su una scheda → «Colora la scheda». Se-allora, Scegli e gli altri blocchi ora sono indaco invece che verdi e si distinguono dalle azioni.',
+  new261017LinesTitle: 'Tracciare le linee da sé',
+  new261017LinesText:
+    'Fai clic su una linea e trascina il punto al centro: la linea passa ad angolo retto per i tuoi punti di piega. Doppio clic ne rimuove uno, «Riordina» tutti.',
   new261017LangTitle: 'FLODE ora parla 7 lingue',
   new261017LangText:
     'Novità: olandese, francese, spagnolo, italiano e portoghese. FLODE segue la lingua impostata nel tuo profilo di Home Assistant.',
-  new261017StopTitle: 'Uno stop chiude il suo ramo',
-  new261017StopText:
-    'Una scheda di stop a cui non segue nulla non ha più una linea che prosegue né un «+». Mostra «Termina qui» oppure, con «error: true», «Termina con un errore». Lo YAML salvato non cambia; il flusso ora mostra correttamente che l’esecuzione finisce lì.',
 };

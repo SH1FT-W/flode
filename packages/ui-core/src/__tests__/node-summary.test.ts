@@ -15,6 +15,7 @@ import {
   summarizeVariables,
   summarizeWait,
 } from '../node-summary';
+import { targetSummary } from '../summary-context';
 
 const NAMESPACES: ['nodes', 'common'] = ['nodes', 'common'];
 
@@ -412,5 +413,25 @@ describe('HA building blocks (kept as one block)', () => {
     expect(raw({ stop: 'Pumpe läuft schon' })).toEqual(own({ stop: 'Pumpe läuft schon' }));
     expect(raw({ stop: 'x', error: true })).toEqual(own({ stop: 'x', error: true }));
     expect(raw({ stop: '' }).title).toBe(own({ stop: '' }).title);
+  });
+});
+
+describe('targetSummary (#26)', () => {
+  const host = {
+    t: i18n.getFixedT('en', NAMESPACES),
+    friendlyName: (id: string) => FRIENDLY_NAMES[id] ?? null,
+    deviceName: (id: string) => (id === 'phone' ? 'Smartphone Bart' : null),
+    areaName: (id: string) => (id === 'kueche' ? 'Küche' : null),
+  };
+
+  it('names a single device or area instead of counting it', () => {
+    expect(targetSummary(host, { device_id: 'phone' })).toBe('Smartphone Bart');
+    expect(targetSummary(host, { area_id: ['kueche'] })).toBe('Küche');
+  });
+
+  it('counts several, and one it has no name for', () => {
+    expect(targetSummary(host, { device_id: ['phone', 'tablet'] })).toBe('2 devices');
+    expect(targetSummary(host, { device_id: 'gone' })).toBe('1 device');
+    expect(targetSummary(host, { floor_id: 'og' })).toBe('1 floor');
   });
 });

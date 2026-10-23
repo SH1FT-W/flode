@@ -1,4 +1,5 @@
 import {
+  type AnnotationColor,
   type Axis,
   type FlowEdge,
   type FlowGraph,
@@ -18,6 +19,7 @@ import {
   CARD_SIZE,
   incoming,
   isDrawnEdge,
+  lineRoom,
   NODE_HEIGHT,
   NODE_WIDTH,
   outgoing,
@@ -27,10 +29,11 @@ import {
   updateNodeData,
 } from './flow-model';
 import { nodeToStep, stepToNode } from './ha-step';
+import { lineKey, withLinesKept } from './line-bends';
 import { t } from './strings';
 
 /**
- * HA's branching blocks (`choose`, `if`) drawn with their branches (#27): the
+ * HA's branching blocks (`choose`, `if`, `parallel` #39) drawn with their branches (#27): the
  * block stays ONE card in the graph — its HA step is the only truth and is
  * saved unchanged — but the canvas shows one output per branch, the steps of
  * each branch as cards, and the branches meeting again at whatever follows
@@ -41,7 +44,7 @@ import { t } from './strings';
 export type StepPath = readonly (string | number)[];
 
 export type BranchLabel =
-  | { kind: 'option'; number: number; alias?: string }
+  | { kind: 'option' | 'parallel'; number: number; alias?: string }
   | { kind: 'default' | 'then' | 'else' };
 
 /** One output of a block: a branch and the steps in it. */
@@ -53,6 +56,11 @@ export interface Branch {
   label: BranchLabel;
   /** Path of the branch's step list inside the block's step. */
   path: StepPath;
+  /**
+   * A `parallel` item that is one step of its own, not a `sequence`: `path`
+   * is that step's, and a second step makes it a `sequence` (#39).
+   */
+  single: boolean;
   /** Card ids of the branch's steps, in order. */
   cards: string[];
 }
@@ -64,7 +72,7 @@ export interface BranchCardRef {
   /** The card it is drawn from — the flow card, or a block nested in a branch. */
   parentId: string;
   branch: Branch;
-  /** Path of the step itself (`[...branch.path, index]`). */
+  /** Path of the step itself (`[...branch.path, index]`, a single `parallel` item's own path). */
   path: StepPath;
   index: number;
 }
@@ -164,14 +172,17 @@ export function cardShape(
 }
 
 /**
- * "Option 2 · Licht an" / "Standard" / "Dann" / "Sonst" — the name of a
- * branch's output; `short`, where many sit side by side, an option is just "2".
+ * "Option 2 · Licht an" / "Parallel 1" / "Standard" / "Dann" / "Sonst" — the
+ * name of a branch's output; `short`, where many sit side by side, a numbered
+ * one is just "2".
  */
 export function branchLabelText(language: string, label: BranchLabel, short = false): string {
   switch (label.kind) {
-    case 'option': {
+    case 'option':
+    case 'parallel': {
       if (short) return String(label.number);
-      const name = t(language, 'branchOption').replace('{n}', String(label.number));
+      const key = label.kind === 'option' ? 'branchOption' : 'branchParallel';
+      const name = t(language, key).replace('{n}', String(label.number));
       return label.alias ? `${name} · ${label.alias}` : name;
     }
     case 'default':
@@ -192,9 +203,12 @@ export function isBranchCardId(id: string | null | undefined): boolean {
   return !!id?.includes(SEPARATOR);
 }
 
-/** A `choose` / `if` step — what the canvas expands, also inside a branch. */
+/** A `choose` / `if` / `parallel` step — what the canvas expands, also inside a branch. */
 function isBranching(step: unknown): step is Record<string, unknown> {
-  return isPlainObject(step) && ('choose' in step || 'if' in step);
+  return (
+    isPlainObject(step) &&
+    ('choose' in step || 'if' in step || ('parallel' in step && Array.isArray(step.parallel)))
+  );
 }
 
 /** The HA step of a flow card that the canvas expands, if it is one. */
@@ -208,6 +222,30 @@ function stepList(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
+/** The steps of `branch` in `root` (the block's step, or the flow card's that holds it). */
+function branchSteps(root: unknown, branch: Pick<Branch, 'path' | 'single'>): unknown[] {
+  const value = valueAt(root, branch.path);
+  return branch.single ? [value] : stepList(value);
+}
+
+/** Path of the step at `index` of `branch`. */
+function stepPath(branch: Pick<Branch, 'path' | 'single'>, index: number): StepPath {
+  return branch.single ? branch.path : [...branch.path, index];
+}
+
+/** Where a `parallel` branch's item sits: the block's `parallel` list and its index there. */
+function parallelItem(branch: Branch): { list: StepPath; index: number } | null {
+  if (branch.label.kind !== 'parallel') return null;
+  const index = branch.label.number - 1;
+  const item = branch.single ? branch.path : branch.path.slice(0, -1);
+  return { list: item.slice(0, -1), index };
+}
+
+/** Path of a branch's step list once written (a single `parallel` item becomes a `sequence`). */
+function listPath(branch: Branch): StepPath {
+  return branch.single ? [...branch.path, 'sequence'] : branch.path;
+}
+
 /** Steps that end every run through them: a stop, or a block whose branches all do. */
 function alwaysStops(steps: readonly unknown[]): boolean {
   return steps.some(
@@ -215,7 +253,7 @@ function alwaysStops(steps: readonly unknown[]): boolean {
       stopKind(step) !== null ||
       (isBranching(step) &&
         stepIsOn(step) &&
-        blockBranches('', step, []).every((b) => alwaysStops(stepList(valueAt(step, b.path)))))
+        blockBranches('', step, []).every((b) => alwaysStops(branchSteps(step, b))))
   );
 }
 
@@ -230,20 +268,39 @@ function stopsEnd(step: unknown, followed: boolean): boolean {
 }
 
 /**
- * The branches of a `choose` (options + default) or an `if` (then + else)
- * sitting at `at` inside the HA step of flow card `blockId`.
+ * The branches of a `choose` (options + default), an `if` (then + else) or a
+ * `parallel` (one per item) sitting at `at` inside the HA step of flow card `blockId`.
  */
 function blockBranches(blockId: string, step: Record<string, unknown>, at: StepPath): Branch[] {
-  const make = (label: BranchLabel, rel: StepPath, steps: unknown[], index: number): Branch => {
+  const make = (
+    label: BranchLabel,
+    rel: StepPath,
+    steps: unknown[],
+    index: number,
+    single = false
+  ): Branch => {
     const path = [...at, ...rel];
     return {
       blockId,
       handle: `b${index}`,
       label,
       path,
-      cards: steps.map((_, i) => branchCardId(blockId, [...path, i])),
+      single,
+      cards: steps.map((_, i) => branchCardId(blockId, stepPath({ path, single }, i))),
     };
   };
+  if ('parallel' in step) {
+    // Each item runs at the same time as the others: a `sequence` of steps, or one step.
+    return stepList(step.parallel).map((item, i) => {
+      const sequence = isPlainObject(item) && Array.isArray(item.sequence);
+      const alias =
+        sequence && typeof item.alias === 'string' && item.alias ? { alias: item.alias } : {};
+      const label: BranchLabel = { kind: 'parallel', number: i + 1, ...alias };
+      return sequence
+        ? make(label, ['parallel', i, 'sequence'], stepList(item.sequence), i)
+        : make(label, ['parallel', i], [item], i, true);
+    });
+  }
   if ('if' in step) {
     return [
       make({ kind: 'then' }, ['then'], stepList(step.then), 0),
@@ -275,7 +332,7 @@ interface Extent {
 function stepExtent(step: unknown): Extent {
   if (!isBranching(step)) return { columns: 1, rows: 1 };
   const branches = blockBranches('', step, []).map((branch) =>
-    stepList(valueAt(step, branch.path)).map(stepExtent)
+    branchSteps(step, branch).map(stepExtent)
   );
   return {
     columns: 1 + Math.max(0, ...branches.map((steps) => steps.reduce((n, e) => n + e.columns, 0))),
@@ -393,7 +450,7 @@ class BranchLayout {
     const list = blockBranches(this.blockId, step, at);
     this.branches.set(id, list);
     const rows = list.map((branch) =>
-      Math.max(1, ...stepList(valueAt(this.root, branch.path)).map((s) => stepExtent(s).rows))
+      Math.max(1, ...branchSteps(this.root, branch).map((s) => stepExtent(s).rows))
     );
     // Lines leave the block only past its widest branch, each in its own lane until then.
     const columns = stepExtent(step).columns;
@@ -417,7 +474,7 @@ class BranchLayout {
       ];
       let main = start + column;
       branch.cards.forEach((card, i) => {
-        const path = [...branch.path, i];
+        const path = stepPath(branch, i);
         const raw = valueAt(this.root, path);
         const nested = isBranching(raw) ? raw : null;
         const size = nested ? cardSize(axis, blockBranches('', nested, []).length) : CARD_SIZE;
@@ -451,7 +508,8 @@ class BranchLayout {
         // block — unless every branch of it stopped.
         if (nested && last && from.length > 0) {
           const outputs = this.branches.get(card)?.length ?? 0;
-          const tail = nestedTail(axis, position, outputs, from);
+          const limit = main + stepExtent(raw).columns * column;
+          const tail = nestedTail(axis, position, outputs, from, limit);
           this.tails.set(card, tail);
           from = [{ source: card, start: tail.at, via: [], end: tail.at }];
         }
@@ -603,14 +661,27 @@ function blockTail(axis: Axis, origin: Point, outputs: number, exits: readonly E
 }
 
 /**
- * The "+" after a block last in a branch: halfway into the gap past it (what
- * follows the outer block may start soon after), where its branches meet.
+ * The "+" after a block last in a branch, where its branches meet: halfway
+ * from its branch ends to where a line from it still reaches `limit` (the
+ * start of a next step in that branch) as a plain curve. Blocks nested in
+ * each other that all end their branch get their "+" one after the other and
+ * never closer to what follows than that — not half a gap each, piling up
+ * until the line has to run back around the next card (#28).
  */
-function nestedTail(axis: Axis, origin: Point, outputs: number, exits: readonly Exit[]): BlockTail {
+function nestedTail(
+  axis: Axis,
+  origin: Point,
+  outputs: number,
+  exits: readonly Exit[],
+  limit: number
+): BlockTail {
   const { column } = SPACING[axis.direction];
   const { at } = blockTail(axis, origin, outputs, exits);
-  const back = (column - axis.length(CARD_SIZE)) / 2;
-  return { at: axis.at(axis.main(at) - back, axis.cross(at)), exits, through: true };
+  const end = Math.max(...exits.map((exit) => axis.main(exit.end)));
+  // A branch card moved past the limit: half a gap past the branch ends, as before.
+  const reach = limit - lineRoom(axis);
+  const main = reach > end ? (end + reach) / 2 : end + (column - axis.length(CARD_SIZE)) / 2;
+  return { at: axis.at(main, axis.cross(at)), exits, through: true };
 }
 
 /** Like `branchView`, but computed once per graph (the canvas and panel both ask on every render). */
@@ -624,17 +695,34 @@ export function cachedBranchView(graph: FlowGraph): BranchView {
   return view;
 }
 
-/** Replaces the block's branch list at `path` (validated like any card edit). */
+/** Replaces the steps of `branch` (validated like any card edit). */
 function setBranchList(
   graph: FlowGraph,
-  blockId: string,
-  path: StepPath,
+  branch: Branch,
   change: (steps: unknown[]) => unknown[]
 ): { graph: FlowGraph; error: string | null } {
+  const { blockId, path } = branch;
   const block = graph.nodes.find((n) => n.id === blockId);
   const step = block ? getRawStep(block.data) : null;
   if (!block || !step) return { graph, error: 'missing' };
-  const steps = change(stepList(valueAt(step, path)));
+  const steps = change(branchSteps(step, branch));
+  const item = parallelItem(branch);
+  if (item && steps.length === 0) {
+    // An emptied `parallel` branch goes: nothing would run in it.
+    const items = stepList(valueAt(step, item.list)).filter((_, i) => i !== item.index);
+    return updateNodeData(graph, blockId, {
+      ...block.data,
+      [RAW_STEP_KEY]: withValueAt(step, item.list, items),
+    });
+  }
+  if (branch.single) {
+    // One step stays a `parallel` item of its own, more become a `sequence`.
+    const value = steps.length === 1 ? steps[0] : { sequence: steps };
+    return updateNodeData(graph, blockId, {
+      ...block.data,
+      [RAW_STEP_KEY]: withValueAt(step, path, value),
+    });
+  }
   // An emptied `else` / `default` is left out, as HA's own editor does.
   const key = path.at(-1);
   const owner = path.slice(0, -1);
@@ -655,7 +743,7 @@ export function setBranchStep(
   ref: BranchCardRef,
   step: Record<string, unknown>
 ): { graph: FlowGraph; error: string | null } {
-  return setBranchList(graph, ref.blockId, ref.branch.path, (steps) =>
+  return setBranchList(graph, ref.branch, (steps) =>
     steps.map((s, i) => (i === ref.index ? step : s))
   );
 }
@@ -675,9 +763,14 @@ export function detachBranchStep(graph: FlowGraph, ref: BranchCardRef, drawn: Fl
 }
 
 export function removeBranchStep(graph: FlowGraph, ref: BranchCardRef): FlowGraph {
-  const result = setBranchList(graph, ref.blockId, ref.branch.path, (steps) =>
+  const result = setBranchList(graph, ref.branch, (steps) =>
     steps.filter((_, i) => i !== ref.index)
   );
+  // The last step of a `parallel` branch takes the branch with it: the ones after move up.
+  const item = parallelItem(ref.branch);
+  if (item && ref.branch.cards.length === 1) {
+    return renumberOffsets(result.graph, ref.blockId, item.list, item.index, -1);
+  }
   return renumberOffsets(result.graph, ref.blockId, ref.branch.path, ref.index, -1);
 }
 
@@ -688,10 +781,40 @@ function withOffsets(graph: FlowGraph, offsets: Offsets): FlowGraph {
   return Object.keys(offsets).length > 0 ? { ...rest, branchOffsets: offsets } : rest;
 }
 
+/** `record` with its ids changed by `rekey` (`null`: the entry goes); `undefined` once empty. */
+function rekeyed<T>(
+  record: Readonly<Record<string, T>> | undefined,
+  rekey: (id: string) => string | null
+): Record<string, T> | undefined {
+  if (!record) return undefined;
+  const next: Record<string, T> = {};
+  for (const [id, value] of Object.entries(record)) {
+    const to = rekey(id);
+    if (to !== null) next[to] = value;
+  }
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
+/**
+ * What the flow keeps per drawn card id — where a branch card was moved to
+ * and a card's colour (#28) — with the ids changed by `rekey`.
+ */
+function withCardsRekeyed(graph: FlowGraph, rekey: (id: string) => string | null): FlowGraph {
+  const { branchOffsets, cardColors, ...rest } = graph;
+  const offsets = rekeyed(branchOffsets, rekey);
+  const colors = rekeyed(cardColors, rekey);
+  return {
+    ...rest,
+    ...(offsets ? { branchOffsets: offsets } : {}),
+    ...(colors ? { cardColors: colors } : {}),
+  };
+}
+
 /**
  * Branch card ids are their place in the block, so a step added to or removed
- * from a branch renumbers the moved cards after it (`delta` +1 / -1); a
- * removed card's offsets — and those of steps nested in it — go with it.
+ * from a branch renumbers the cards after it (`delta` +1 / -1) — their
+ * offsets and colours with them; a removed card's — and those of steps nested
+ * in it — go with it.
  */
 function renumberOffsets(
   graph: FlowGraph,
@@ -700,20 +823,38 @@ function renumberOffsets(
   index: number,
   delta: 1 | -1
 ): FlowGraph {
-  const offsets = graph.branchOffsets;
-  if (!offsets) return graph;
+  if (!graph.branchOffsets && !graph.cardColors) return graph;
   const prefix = `${branchCardId(blockId, path)}.`;
-  const next: Offsets = {};
-  for (const [id, offset] of Object.entries(offsets)) {
+  return withCardsRekeyed(graph, (id) => {
     const [number = '', ...rest] = id.startsWith(prefix) ? id.slice(prefix.length).split('.') : [];
     const n = Number(number);
-    if (number === '' || !Number.isInteger(n) || n < index) {
-      next[id] = offset;
-    } else if (delta === 1 || n > index) {
-      next[`${prefix}${[n + delta, ...rest].join('.')}`] = offset;
-    }
+    if (number === '' || !Number.isInteger(n) || n < index) return id;
+    if (delta === -1 && n === index) return null;
+    return `${prefix}${[n + delta, ...rest].join('.')}`;
+  });
+}
+
+/** Offsets and colours of card `from` and the cards nested in it, moved to card `to` (its step moved there). */
+function movedOffsets(graph: FlowGraph, from: string, to: string): FlowGraph {
+  if (!graph.branchOffsets && !graph.cardColors) return graph;
+  return withCardsRekeyed(graph, (id) =>
+    id === from || id.startsWith(`${from}.`) ? `${to}${id.slice(from.length)}` : id
+  );
+}
+
+/** The flow with cards `ids` tinted `color`, or back to their own colour (`null`) (#28). */
+export function tintCards(
+  graph: FlowGraph,
+  ids: readonly string[],
+  color: AnnotationColor | null
+): FlowGraph {
+  const { cardColors, ...rest } = graph;
+  const colors = { ...cardColors };
+  for (const id of ids) {
+    if (color) colors[id] = color;
+    else delete colors[id];
   }
-  return withOffsets(graph, next);
+  return Object.keys(colors).length > 0 ? { ...rest, cardColors: colors } : rest;
 }
 
 /** The flow with branch card `id` moved so it is drawn at `drawn`. */
@@ -731,14 +872,18 @@ export function moveBranchCard(
   return withOffsets(graph, x === 0 && y === 0 ? offsets : { ...offsets, [id]: { x, y } });
 }
 
-/** The flow without offsets of branch cards it no longer has (the block was edited or removed). */
+/**
+ * The flow without offsets, colours and bends of cards and lines it no longer
+ * has (a block was edited, a card removed).
+ */
 export function withoutStaleOffsets(graph: FlowGraph): FlowGraph {
-  const offsets = graph.branchOffsets;
-  if (!offsets) return graph;
-  const { cards } = cachedBranchView(graph);
-  return withOffsets(
-    graph,
-    Object.fromEntries(Object.entries(offsets).filter(([id]) => cards.has(id)))
+  if (!graph.branchOffsets && !graph.cardColors && !graph.lineBends) return graph;
+  const view = cachedBranchView(graph);
+  const drawn = new Set(view.graph.nodes.map((node) => node.id));
+  const lines = new Set(view.graph.edges.map(lineKey));
+  return withLinesKept(
+    withCardsRekeyed(graph, (id) => (drawn.has(id) ? id : null)),
+    lines
   );
 }
 
@@ -767,14 +912,33 @@ export function insertBranchStep(
   at: BranchInsert,
   step: Record<string, unknown>
 ): { graph: FlowGraph; id: string } {
-  const result = setBranchList(graph, at.blockId, at.branch.path, (steps) => [
-    ...steps.slice(0, at.index),
-    step,
-    ...steps.slice(at.index),
+  return insertBranchSteps(graph, at, [step]);
+}
+
+/** Adds `added` to a branch one after the other; returns the new graph and the first new card's id. */
+function insertBranchSteps(
+  graph: FlowGraph,
+  at: BranchInsert,
+  added: readonly unknown[]
+): { graph: FlowGraph; id: string } {
+  const { blockId, branch, index } = at;
+  const result = setBranchList(graph, branch, (steps) => [
+    ...steps.slice(0, index),
+    ...added,
+    ...steps.slice(index),
   ]);
+  const list = listPath(branch);
+  // A single `parallel` step that became a `sequence` keeps its offset as the sequence's first step.
+  const moved = branch.single
+    ? movedOffsets(
+        result.graph,
+        branchCardId(blockId, branch.path),
+        branchCardId(blockId, [...list, 0])
+      )
+    : result.graph;
   return {
-    graph: renumberOffsets(result.graph, at.blockId, at.branch.path, at.index, 1),
-    id: branchCardId(at.blockId, [...at.branch.path, at.index]),
+    graph: added.reduce<FlowGraph>((g) => renumberOffsets(g, blockId, list, index, 1), moved),
+    id: branchCardId(blockId, [...list, index]),
   };
 }
 
@@ -788,10 +952,8 @@ export function insertBranchStep(
 export function adoptIntoBranch(graph: FlowGraph, at: BranchInsert, id: string): FlowGraph | null {
   const chain = adoptableChain(graph, at.blockId, id);
   if (!chain) return null;
-  const inserted = chain.reduce(
-    (g, node, i) => insertBranchStep(g, { ...at, index: at.index + i }, nodeToStep(node)).graph,
-    graph
-  );
+  // All in one go: a single `parallel` step turns into a `sequence` with the first one.
+  const inserted = insertBranchSteps(graph, at, chain.map(nodeToStep)).graph;
   return chain.reduce((g, node) => removeNode(g, node.id), inserted);
 }
 
@@ -851,7 +1013,7 @@ export function storedPosition(
   return axis.at(axis.main(drawn) - (view.shift.get(id) ?? 0), axis.cross(drawn));
 }
 
-const BRANCH_KEYS: ReadonlySet<string> = new Set(['choose', 'default', 'then', 'else']);
+const BRANCH_KEYS: ReadonlySet<string> = new Set(['choose', 'default', 'then', 'else', 'parallel']);
 
 /**
  * The branch card a trace path is about: `action/1/choose/0/sequence/2` →

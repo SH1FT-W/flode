@@ -39,6 +39,18 @@ function blockOf(node: FlowNode): HaBlockType | undefined {
   return raw ? haBlockType(raw) : undefined;
 }
 
+/**
+ * HA's building blocks (Wenn-dann, Auswählen, Parallel …) steer the flow
+ * instead of acting: a colour of their own, so they stand out from the
+ * actions around them (#28).
+ */
+const BLOCK_COLOR = 'var(--indigo-color, #3f51b5)';
+
+/** Card colour: the node type's, or the building blocks' own. */
+export function nodeColor(node: FlowNode): string {
+  return blockOf(node) ? BLOCK_COLOR : NODE_META[node.type].color;
+}
+
 /** Card icon: the node type's, or HA's block icon for a Wenn-dann / Auswählen … block. */
 export function nodeIcon(node: FlowNode): string {
   const block = blockOf(node);

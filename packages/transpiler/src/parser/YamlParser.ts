@@ -598,6 +598,10 @@ export class YamlParser {
         version: 1 as const,
         // Moved branch steps belong to the saved layout — gone when it is recomputed.
         branchOffsets: savedLayout ? metadata?.branch_offsets : undefined,
+        // Tinted cards by id: the ids are only the same with the saved layout.
+        ...(savedLayout && metadata?.card_colors ? { cardColors: metadata.card_colors } : {}),
+        // Bends lie between cards where they were: only with the saved layout.
+        ...(savedLayout && metadata?.line_bends ? { lineBends: metadata.line_bends } : {}),
         // The way the flow runs outlives a recomputed layout (it was laid out that way again).
         ...(metadata?.direction ? { direction: metadata.direction } : {}),
         // Notes and frames are drawings of their own: they stay where they were put.

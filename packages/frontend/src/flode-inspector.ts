@@ -19,7 +19,7 @@ import {
   stepKind,
 } from './ha-step';
 import { nodeIconTemplate } from './node-icon';
-import { NODE_META, nodeTitle, summarize } from './node-meta';
+import { nodeColor, nodeTitle, summarize } from './node-meta';
 import { PlatformDescriptionsController } from './platform-descriptions';
 import { t } from './strings';
 import { TriggerIdsContext } from './trigger-ids-context';
@@ -389,10 +389,9 @@ export class FlodeInspector extends LitElement {
         <p>${t(language, 'inspectorEmpty')}</p>
       </div>`;
     }
-    const meta = NODE_META[node.type];
     const summary = summarize(node, this.hass);
     return html`
-      <div class="head" style="--node-color: ${meta.color}">
+      <div class="head" style="--node-color: ${nodeColor(node)}">
         <span class="icon">${nodeIconTemplate(node, summary, this.hass)}</span>
         <div class="titles">
           <span class="type">${nodeTitle(node, this.hass)}</span>

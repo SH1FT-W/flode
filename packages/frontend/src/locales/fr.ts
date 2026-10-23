@@ -52,6 +52,7 @@ export const fr: Strings = {
   disableCard: 'Désactiver la carte',
   disconnectCard: 'Déconnecter',
   deleteConnection: 'Supprimer la connexion',
+  resetLine: 'Supprimer les coudes',
   addHere: 'Ajouter {type} ici',
   addNote: 'Ajouter une note ici',
   addFrame: 'Ajouter un cadre ici',
@@ -59,6 +60,9 @@ export const fr: Strings = {
   framePlaceholder: 'Commentaire …',
   editAnnotation: 'Modifier le texte',
   changeColor: 'Changer la couleur',
+  tintCard: 'Colorer la carte',
+  tintCards: 'Colorer les cartes',
+  noColor: 'Aucune couleur',
   deleteNote: 'Supprimer la note',
   deleteFrame: 'Supprimer le cadre',
   selectedCount: '{n} sélectionné(s)',
@@ -279,6 +283,7 @@ export const fr: Strings = {
   emptyScriptHint: 'Que doit faire le script ?',
   entry: 'Début',
   branchOption: 'Option {n}',
+  branchParallel: 'Parallèle {n}',
   branchDefault: 'Par défaut',
   branchThen: 'Alors',
   branchElse: 'Sinon',
@@ -307,6 +312,7 @@ export const fr: Strings = {
   tidyRight: 'Disposer de gauche à droite',
   tidyDown: 'Disposer de haut en bas',
   verticalDefault: 'Ouvrir les flux de haut en bas par défaut',
+  autoSide: 'Afficher le panneau latéral seulement pour une sélection',
   directionRight: 'Sens : de gauche à droite',
   directionDown: 'Sens : de haut en bas',
   mode: 'Mode',
@@ -368,19 +374,19 @@ export const fr: Strings = {
   whatsNewTitle: 'Nouveau dans FLODE {version}',
   whatsNewAll: 'Tous les changements',
   continue: 'Continuer',
-  new261017NotesTitle: 'Notes sur le canevas',
+  new261017NotesTitle: 'Notes, cadres, sélection multiple',
   new261017NotesText:
-    'Clic droit sur le canevas vide → « Ajouter une note ici ». Un double-clic modifie le texte, la couleur se choisit au-dessus de la note.',
-  new261017FramesTitle: 'Cadres autour des cartes qui vont ensemble',
-  new261017FramesText:
-    "Un cadre avec titre se place derrière les cartes. Faites-le glisser par sa barre de titre et les cartes à l'intérieur suivent.",
-  new261017SelectTitle: 'Plusieurs cartes à la fois',
-  new261017SelectText:
-    'Maj + glisser sélectionne, Maj-clic ajoute, ⌘/Ctrl-clic retire. Déplacez, copiez, activez/désactivez ou supprimez la sélection ensemble.',
+    'Clic droit sur le canevas vide → « Ajouter une note ici » ou « Ajouter un cadre ici ». Maj + glisser sélectionne plusieurs cartes à déplacer, copier ou supprimer ensemble.',
+  new261017ParallelTitle: 'Actions parallèles en cartes',
+  new261017ParallelText:
+    'Un bloc parallèle a maintenant une sortie par action (« Parallèle 1 », « Parallèle 2 » …) et chaque action est sa propre carte. Il est toujours enregistré comme un parallel normal.',
+  new261017ColorTitle: 'Colorer les cartes',
+  new261017ColorText:
+    'Clic droit sur une carte → « Colorer la carte ». Si-alors, Choisir et les autres blocs sont maintenant indigo au lieu de vert et se distinguent des actions.',
+  new261017LinesTitle: 'Tracer les lignes soi-même',
+  new261017LinesText:
+    'Cliquez sur une ligne et faites glisser le point en son milieu : la ligne passe à angle droit par vos coudes. Un double-clic en supprime un, « Ranger » les supprime tous.',
   new261017LangTitle: 'FLODE parle désormais 7 langues',
   new261017LangText:
     'Nouveau : néerlandais, français, espagnol, italien et portugais. FLODE suit la langue définie dans votre profil Home Assistant.',
-  new261017StopTitle: 'Un arrêt termine sa branche',
-  new261017StopText:
-    'Une carte d’arrêt que rien ne suit n’a plus de ligne qui continue ni de « + ». Elle indique « S’arrête ici » ou, avec « error: true », « S’arrête avec une erreur ». Le YAML enregistré ne change pas ; le flux montre simplement que l’exécution s’arrête là.',
 };

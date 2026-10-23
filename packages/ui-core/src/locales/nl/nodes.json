@@ -129,10 +129,10 @@
     }
   },
   "actions": {
-    "serviceLabel": "Dienst",
+    "serviceLabel": "Actie",
     "actionTypeLabel": "Type actie",
     "actionTypes": {
-      "service": "Dienst aanroepen",
+      "service": "Actie uitvoeren",
       "event": "Gebeurtenis afvuren",
       "stop": "Uitvoering stoppen"
     },
@@ -195,7 +195,7 @@
     "currentNodeWarning": "'current_node' is gereserveerd voor de toestandsmachine-strategie. Deze naam gebruiken kan onverwacht gedrag veroorzaken."
   },
   "serviceDataFields": {
-    "heading": "Dienstgegevens"
+    "heading": "Actiegegevens"
   },
   "setVariablesFields": {
     "empty": "Geen variabelen gedefinieerd. Klik op de knop hieronder om er een toe te voegen.",
@@ -535,7 +535,7 @@
   "descriptions": {
     "trigger": "Start de automatisering",
     "condition": "Alleen doorgaan als …",
-    "action": "Een apparaat aansturen, een dienst aanroepen",
+    "action": "Een apparaat aansturen, een actie uitvoeren",
     "delay": "Een vaste tijd wachten",
     "wait": "Wachten tot er iets gebeurt",
     "set_variables": "Waarden onthouden voor later",

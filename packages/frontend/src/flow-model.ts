@@ -708,6 +708,11 @@ export function acrossPoints(
   return [from, ...middle, to];
 }
 
+/** How far along the flow a line needs past its start to reach its target as a plain curve. */
+export function lineRoom(axis: Axis): number {
+  return axis.direction === 'down' ? OUT_STRAIGHT + MERGE_ABOVE : 2 * INTO_LEFT;
+}
+
 /**
  * Along the flow, a line runs back when its target's input is not clearly past
  * its source's output (#31: a branch step dragged beside or before its block).
@@ -718,8 +723,7 @@ export function runsBack(
   from: { x: number; y: number },
   to: { x: number; y: number }
 ): boolean {
-  const room = axis.direction === 'down' ? OUT_STRAIGHT + MERGE_ABOVE : 2 * INTO_LEFT;
-  return axis.main(to) < axis.main(from) + room;
+  return axis.main(to) < axis.main(from) + lineRoom(axis);
 }
 
 /**
