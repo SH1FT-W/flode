@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-dark.png" />
-  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-light.png" alt="FLODE: See your automations. The editor inside Home Assistant with a flow of two triggers, a condition and actions." />
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-dark.webp" />
+  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-light.webp" alt="FLODE: See your automations. The editor inside Home Assistant with a flow of two triggers, a condition and actions." />
 </picture>
 
 <p>FLODE shows Home Assistant automations and scripts as a flow you can read, test and understand.<br/>
@@ -22,10 +22,12 @@ Edited with Home Assistant's own editors, saved as plain Home Assistant YAML. No
 
 The last releases opened up the blocks: Choose and If-then show their branches as cards, flows can run top to bottom, and touch screens got menus of their own.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-cards-new-dark.png" />
-  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-cards-new-light.png" alt="Top to bottom (3.4.0): every flow runs left to right or top to bottom, the direction is saved with the flow. Branches as cards (3.2.0): Choose and If-then draw each branch as cards, nested as deep as you like, in YAML it stays a plain choose or if. Run this card (26.10.15): runs one step for real in Home Assistant, without everything after it, inside branches too. Made for fingers (26.10.11): press and hold opens a card's menu on touch screens, on the iPhone too." />
-</picture>
+<!-- cards:new -->
+<table>
+<tr><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/arrow-down-dark.svg"><img src="docs/images/icons/arrow-down-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Top to bottom</b> <code>3.4.0</code><br>Every flow runs left to right or top to bottom. The direction is saved with the flow.</td><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/source-branch-dark.svg"><img src="docs/images/icons/source-branch-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Branches as cards</b> <code>3.2.0</code><br>Choose and If-then draw each branch as cards, nested as deep as you like. In YAML it stays a plain choose or if.</td></tr>
+<tr><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/play-circle-outline-dark.svg"><img src="docs/images/icons/play-circle-outline-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Run this card</b> <code>26.10.15</code><br>Runs one step for real in Home Assistant, without everything after it. Inside branches too.</td><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/gesture-tap-dark.svg"><img src="docs/images/icons/gesture-tap-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Made for fingers</b> <code>26.10.11</code><br>Press and hold opens a card's menu on touch screens, on the iPhone too.</td></tr>
+</table>
+<!-- /cards:new -->
 
 Also new: a "+" on an output that already leads on asks whether the step goes **in between or in parallel**, dragging a connection onto a free card **pulls it into the branch**, a toolbar toggle shows **card text in Home Assistant's own wording**, and when Home Assistant refuses to save, FLODE **marks the card red and takes you there**. Every change, release by release, in the [changelog](CHANGELOG.md).
 
@@ -37,10 +39,12 @@ Also new: a "+" on an output that already leads on asks whether the step goes **
 
 Every trigger, condition and action opens in Home Assistant's own editor, with the same forms, pickers and dialogs as in Settings. FLODE adds the canvas, so you see how it all connects. *Repeat* and *Parallel* stay single blocks; *Choose* and *If-then* show their branches as cards.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-cards-made-dark.png" />
-  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-cards-made-light.png" alt="Home Assistant's editors: every step opens in Home Assistant's own editor, with the same forms, pickers and dialogs as in Settings. Your icons, language, theme: cards show the entity's own icon with its live state, light or dark, on desktop, tablet and phone. Plain YAML, both ways: open any automation, change it visually, save it back, it stays editable in Home Assistant's own editor. Home Assistant's table: the start page is the same table as under Settings, with filters, grouping, labels and bulk actions." />
-</picture>
+<!-- cards:made -->
+<table>
+<tr><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/form-select-dark.svg"><img src="docs/images/icons/form-select-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Home Assistant's editors</b><br>Every step opens in Home Assistant's own editor, with the same forms, pickers and dialogs as in Settings.</td><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/palette-outline-dark.svg"><img src="docs/images/icons/palette-outline-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Your icons, language, theme</b><br>Cards show the entity's own icon with its live state. Light or dark, on desktop, tablet and phone.</td></tr>
+<tr><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/code-braces-dark.svg"><img src="docs/images/icons/code-braces-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Plain YAML, both ways</b><br>Open any automation, change it visually, save it back. It stays editable in Home Assistant's own editor.</td><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/table-large-dark.svg"><img src="docs/images/icons/table-large-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Home Assistant's table</b><br>The start page is the same table as under Settings: filters, grouping, labels and bulk actions.</td></tr>
+</table>
+<!-- /cards:made -->
 
 <details>
 <summary><b>What a flow looks like in YAML</b></summary>
@@ -111,10 +115,14 @@ If you have set up an AI in Home Assistant (Anthropic, OpenAI, Google Gemini, Ol
 <sub><b>EVERYTHING ELSE</b></sub>
 ## Small things that add up.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-cards-else-dark.png" />
-  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-cards-else-light.png" alt="Scripts, too: with fields, a run button that asks for them, and Run from here for any step. Template workshop (⌘J): Jinja rendered live by Home Assistant, with the result type and the variables of a real run. Commands and shortcuts (⌘K): everything in one search, right-click menus, copy, paste, duplicate, and an overview on ?. Tabs and minimap: several flows open at once, each with its own undo, a minimap for big ones, tidy up in one click. Import, export, merge: paste YAML, save as copy, FLODE files, and merge several automations into one. Careful with your data: warns when it cannot read part of an automation, keeps unknown fields as written, opens blueprints read-only. Readable zoomed out: below 60 percent the cards show icon, title and one line in large type, below 35 percent just the icon. On the go: on a phone the tools move into a swipeable strip and the editor slides up as a sheet." />
-</picture>
+<!-- cards:else -->
+<table>
+<tr><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/script-text-outline-dark.svg"><img src="docs/images/icons/script-text-outline-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Scripts, too</b><br>With fields, a run button that asks for them, and Run from here for any step.</td><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/code-tags-dark.svg"><img src="docs/images/icons/code-tags-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Template workshop</b> <code>⌘J</code><br>Jinja rendered live by Home Assistant, with the result type and the variables of a real run.</td></tr>
+<tr><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/keyboard-outline-dark.svg"><img src="docs/images/icons/keyboard-outline-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Commands and shortcuts</b> <code>⌘K</code><br>Everything in one search, right-click menus, copy, paste, duplicate, and an overview on ?.</td><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/tab-dark.svg"><img src="docs/images/icons/tab-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Tabs and minimap</b><br>Several flows open at once, each with its own undo. A minimap for big ones, tidy up in one click.</td></tr>
+<tr><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/swap-horizontal-dark.svg"><img src="docs/images/icons/swap-horizontal-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Import, export, merge</b><br>Paste YAML, save as copy, FLODE files, and merge several automations into one.</td><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/shield-check-outline-dark.svg"><img src="docs/images/icons/shield-check-outline-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Careful with your data</b><br>Warns when it cannot read part of an automation, keeps unknown fields as written, opens blueprints read-only.</td></tr>
+<tr><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/magnify-minus-outline-dark.svg"><img src="docs/images/icons/magnify-minus-outline-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>Readable zoomed out</b><br>Below 60 percent the cards show icon, title and one line in large type; below 35 percent just the icon.</td><td width="34" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/icons/cellphone-dark.svg"><img src="docs/images/icons/cellphone-light.svg" width="26" height="26" alt=""></picture></td><td width="46%" valign="top"><b>On the go</b><br>On a phone the tools move into a swipeable strip and the editor slides up as a sheet.</td></tr>
+</table>
+<!-- /cards:else -->
 
 <details>
 <summary><b>More screenshots</b></summary>

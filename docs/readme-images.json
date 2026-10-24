@@ -5,11 +5,40 @@
     "eyebrow": "Flow editor for Home Assistant",
     "lead": "See your <em>automations.</em>",
     "sub": "Automations and scripts as a flow you can read, test and understand. Edited with Home Assistant's own editors, saved as plain YAML.",
-    "pills": [["100 % HA YAML"], ["No lock-in", "v"], ["HACS"]],
+    "pills": [
+      [
+        "100 % HA YAML"
+      ],
+      [
+        "No lock-in",
+        "v"
+      ],
+      [
+        "HACS"
+      ]
+    ],
     "logo": "docs/images/flode.svg",
     "grid": true,
-    "shot": { "light": "docs/images/flode-editor-light.png", "dark": "docs/images/flode-editor-dark.png", "srcW": 2000, "winW": 1440, "s": 0.68,
-      "strips": [[0, 130], [470, 1030]], "bar": "Home Assistant › FLODE", "left": 600, "top": 96 }
+    "shot": {
+      "light": "docs/images/flode-editor-light.png",
+      "dark": "docs/images/flode-editor-dark.png",
+      "srcW": 2000,
+      "winW": 1440,
+      "s": 0.68,
+      "strips": [
+        [
+          0,
+          130
+        ],
+        [
+          470,
+          1030
+        ]
+      ],
+      "bar": "Home Assistant › FLODE",
+      "left": 600,
+      "top": 96
+    }
   },
   "fonts": {
     "display": "\"Bricolage Grotesque\", system-ui, sans-serif",
@@ -18,33 +47,133 @@
     "google": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap"
   },
   "colors": {
-    "light": { "bg": "#f5f7fb", "bg2": "#ffffff", "ink": "#0b1220", "ink2": "#3c4859", "ink3": "#6b7786", "accentText": "#0284c7", "accent": "#4cc9fb", "accent2": "#a78bfa",
-      "glow1": "rgba(76,201,251,0.22)", "glow2": "rgba(167,139,250,0.20)", "frame": "rgba(11,18,32,0.10)", "pillBg": "#ffffff", "pillLine": "rgba(11,18,32,0.08)", "win": "#ffffff", "bar": "linear-gradient(#fff, #f6f7f9)" },
-    "dark": { "bg": "#0b1220", "bg2": "#132036", "ink": "#eef3fa", "ink2": "#b7c3d3", "ink3": "#7f8da0", "accentText": "#4cc9fb", "accent": "#4cc9fb", "accent2": "#a78bfa",
-      "glow1": "rgba(76,201,251,0.22)", "glow2": "rgba(167,139,250,0.20)", "frame": "rgba(255,255,255,0.10)", "pillBg": "rgba(255,255,255,0.06)", "pillLine": "rgba(255,255,255,0.10)", "win": "#131d30", "bar": "linear-gradient(#1a2539, #131d30)" }
+    "light": {
+      "bg": "#f5f7fb",
+      "bg2": "#ffffff",
+      "ink": "#0b1220",
+      "ink2": "#3c4859",
+      "ink3": "#6b7786",
+      "accentText": "#0284c7",
+      "accent": "#4cc9fb",
+      "accent2": "#a78bfa",
+      "glow1": "rgba(76,201,251,0.22)",
+      "glow2": "rgba(167,139,250,0.20)",
+      "frame": "rgba(11,18,32,0.10)",
+      "pillBg": "#ffffff",
+      "pillLine": "rgba(11,18,32,0.08)",
+      "win": "#ffffff",
+      "bar": "linear-gradient(#fff, #f6f7f9)"
+    },
+    "dark": {
+      "bg": "#0b1220",
+      "bg2": "#132036",
+      "ink": "#eef3fa",
+      "ink2": "#b7c3d3",
+      "ink3": "#7f8da0",
+      "accentText": "#4cc9fb",
+      "accent": "#4cc9fb",
+      "accent2": "#a78bfa",
+      "glow1": "rgba(76,201,251,0.22)",
+      "glow2": "rgba(167,139,250,0.20)",
+      "frame": "rgba(255,255,255,0.10)",
+      "pillBg": "rgba(255,255,255,0.06)",
+      "pillLine": "rgba(255,255,255,0.10)",
+      "win": "#131d30",
+      "bar": "linear-gradient(#1a2539, #131d30)"
+    }
   },
   "cards": {
     "new": [
-      { "icon": "arrow-down", "title": "Top to bottom", "ver": "3.4.0", "text": "Every flow runs left to right or top to bottom. The direction is saved with the flow." },
-      { "icon": "source-branch", "title": "Branches as cards", "ver": "3.2.0", "text": "Choose and If-then draw each branch as cards, nested as deep as you like. In YAML it stays a plain choose or if." },
-      { "icon": "play-circle-outline", "title": "Run this card", "ver": "26.10.15", "text": "Runs one step for real in Home Assistant, without everything after it. Inside branches too." },
-      { "icon": "gesture-tap", "title": "Made for fingers", "ver": "26.10.11", "text": "Press and hold opens a card's menu on touch screens, on the iPhone too." }
+      {
+        "icon": "arrow-down",
+        "title": "Top to bottom",
+        "ver": "3.4.0",
+        "text": "Every flow runs left to right or top to bottom. The direction is saved with the flow."
+      },
+      {
+        "icon": "source-branch",
+        "title": "Branches as cards",
+        "ver": "3.2.0",
+        "text": "Choose and If-then draw each branch as cards, nested as deep as you like. In YAML it stays a plain choose or if."
+      },
+      {
+        "icon": "play-circle-outline",
+        "title": "Run this card",
+        "ver": "26.10.15",
+        "text": "Runs one step for real in Home Assistant, without everything after it. Inside branches too."
+      },
+      {
+        "icon": "gesture-tap",
+        "title": "Made for fingers",
+        "ver": "26.10.11",
+        "text": "Press and hold opens a card's menu on touch screens, on the iPhone too."
+      }
     ],
     "made": [
-      { "icon": "form-select", "title": "Home Assistant's editors", "text": "Every step opens in Home Assistant's own editor, with the same forms, pickers and dialogs as in Settings." },
-      { "icon": "palette-outline", "title": "Your icons, language, theme", "text": "Cards show the entity's own icon with its live state. Light or dark, on desktop, tablet and phone." },
-      { "icon": "code-braces", "title": "Plain YAML, both ways", "text": "Open any automation, change it visually, save it back. It stays editable in Home Assistant's own editor." },
-      { "icon": "table-large", "title": "Home Assistant's table", "text": "The start page is the same table as under Settings: filters, grouping, labels and bulk actions." }
+      {
+        "icon": "form-select",
+        "title": "Home Assistant's editors",
+        "text": "Every step opens in Home Assistant's own editor, with the same forms, pickers and dialogs as in Settings."
+      },
+      {
+        "icon": "palette-outline",
+        "title": "Your icons, language, theme",
+        "text": "Cards show the entity's own icon with its live state. Light or dark, on desktop, tablet and phone."
+      },
+      {
+        "icon": "code-braces",
+        "title": "Plain YAML, both ways",
+        "text": "Open any automation, change it visually, save it back. It stays editable in Home Assistant's own editor."
+      },
+      {
+        "icon": "table-large",
+        "title": "Home Assistant's table",
+        "text": "The start page is the same table as under Settings: filters, grouping, labels and bulk actions."
+      }
     ],
     "else": [
-      { "icon": "script-text-outline", "title": "Scripts, too", "text": "With fields, a run button that asks for them, and Run from here for any step." },
-      { "icon": "code-tags", "title": "Template workshop", "ver": "⌘J", "text": "Jinja rendered live by Home Assistant, with the result type and the variables of a real run." },
-      { "icon": "keyboard-outline", "title": "Commands and shortcuts", "ver": "⌘K", "text": "Everything in one search, right-click menus, copy, paste, duplicate, and an overview on ?." },
-      { "icon": "tab", "title": "Tabs and minimap", "text": "Several flows open at once, each with its own undo. A minimap for big ones, tidy up in one click." },
-      { "icon": "swap-horizontal", "title": "Import, export, merge", "text": "Paste YAML, save as copy, FLODE files, and merge several automations into one." },
-      { "icon": "shield-check-outline", "title": "Careful with your data", "text": "Warns when it cannot read part of an automation, keeps unknown fields as written, opens blueprints read-only." },
-      { "icon": "magnify-minus-outline", "title": "Readable zoomed out", "text": "Below 60 percent the cards show icon, title and one line in large type; below 35 percent just the icon." },
-      { "icon": "cellphone", "title": "On the go", "text": "On a phone the tools move into a swipeable strip and the editor slides up as a sheet." }
+      {
+        "icon": "script-text-outline",
+        "title": "Scripts, too",
+        "text": "With fields, a run button that asks for them, and Run from here for any step."
+      },
+      {
+        "icon": "code-tags",
+        "title": "Template workshop",
+        "ver": "⌘J",
+        "text": "Jinja rendered live by Home Assistant, with the result type and the variables of a real run."
+      },
+      {
+        "icon": "keyboard-outline",
+        "title": "Commands and shortcuts",
+        "ver": "⌘K",
+        "text": "Everything in one search, right-click menus, copy, paste, duplicate, and an overview on ?."
+      },
+      {
+        "icon": "tab",
+        "title": "Tabs and minimap",
+        "text": "Several flows open at once, each with its own undo. A minimap for big ones, tidy up in one click."
+      },
+      {
+        "icon": "swap-horizontal",
+        "title": "Import, export, merge",
+        "text": "Paste YAML, save as copy, FLODE files, and merge several automations into one."
+      },
+      {
+        "icon": "shield-check-outline",
+        "title": "Careful with your data",
+        "text": "Warns when it cannot read part of an automation, keeps unknown fields as written, opens blueprints read-only."
+      },
+      {
+        "icon": "magnify-minus-outline",
+        "title": "Readable zoomed out",
+        "text": "Below 60 percent the cards show icon, title and one line in large type; below 35 percent just the icon."
+      },
+      {
+        "icon": "cellphone",
+        "title": "On the go",
+        "text": "On a phone the tools move into a swipeable strip and the editor slides up as a sheet."
+      }
     ]
   }
 }
