@@ -10,7 +10,7 @@ Edited with Home Assistant's own editors, saved as plain Home Assistant YAML. No
 
 [![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FSH1FT-W%2Fflode%2Fmain%2Fcustom_components%2Fflode%2Fmanifest.json&query=%24.version&label=version&style=flat-square&color=4CC9FB&labelColor=0B1220)](https://github.com/SH1FT-W/flode/releases/latest) [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.3%2B-4CC9FB?style=flat-square&labelColor=0B1220&logo=homeassistant&logoColor=white)](https://www.home-assistant.io) [![HACS](https://img.shields.io/badge/HACS-default-4CC9FB?style=flat-square&labelColor=0B1220)](https://hacs.xyz) [![License](https://img.shields.io/badge/license-Apache%202.0-4CC9FB?style=flat-square&labelColor=0B1220)](LICENSE)
 
-<p><a href="https://sh1ft-w.github.io/flode"><b>Website</b></a> &nbsp;·&nbsp; <a href="#new">New</a> &nbsp;·&nbsp; <a href="#how-it-works">How it works</a> &nbsp;·&nbsp; <a href="#runs-and-relations">Runs</a> &nbsp;·&nbsp; <a href="#ai-help">AI</a> &nbsp;·&nbsp; <a href="#everything-else">Features</a> &nbsp;·&nbsp; <a href="#install">Install</a> &nbsp;·&nbsp; <a href="docs/architecture.md">Internals</a> &nbsp;·&nbsp; <a href="CHANGELOG.md">Changelog</a></p>
+<p><a href="https://sh1ft-w.github.io/flode"><b>Website</b></a> &nbsp;·&nbsp; <a href="#new">New</a> &nbsp;·&nbsp; <a href="#how-it-works">How it works</a> &nbsp;·&nbsp; <a href="#runs-and-relations">Runs</a> &nbsp;·&nbsp; <a href="#ai-help">AI</a> &nbsp;·&nbsp; <a href="#everything-else">Features</a> &nbsp;·&nbsp; <a href="#install">Install</a> &nbsp;·&nbsp; <a href="#thanks">Thanks</a> &nbsp;·&nbsp; <a href="docs/architecture.md">Internals</a> &nbsp;·&nbsp; <a href="CHANGELOG.md">Changelog</a></p>
 
 </div>
 
@@ -163,6 +163,23 @@ Since October 2026 FLODE uses calendar versions **`YY.M.N`**: year, month, and t
 Coming from FLODE 2.x? Your automations open and save as before. FLODE 3 replaced the old editor: the simulation gave way to real runs and *Run from here*, and FLODE follows Home Assistant's language and theme instead of its own settings. Details in the [changelog](CHANGELOG.md).
 
 </details>
+
+<br/>
+
+<a id="thanks"></a>
+<sub><b>HALL OF FAME</b></sub>
+## Made better by you.
+
+FLODE gets better with every bug report and every idea. A big thank you to everyone who tests, reports and keeps asking for more:
+
+- [**@bartbutenaers**](https://github.com/bartbutenaers): the most reports of all, from wires and branch dragging to touch and context menus, always with precise steps.
+- [**@Hedda**](https://github.com/Hedda): the push to English as the main language, the Lit rebuild and the labels like Home Assistant.
+- [**@srsly88**](https://github.com/srsly88): nested AND/OR conditions, the save dialog and the sidebar editor.
+- [**@jlpnea**](https://github.com/jlpnea): `choose` blocks that render all the way down and `script.stop`.
+- [**@NullScope**](https://github.com/NullScope), [**@pkejval**](https://github.com/pkejval): parallel steps after `scene.create` and the vertical flow.
+- [**@Home-Wizz**](https://github.com/Home-Wizz), [**@JoHeyr**](https://github.com/JoHeyr), [**@oscarallo**](https://github.com/oscarallo), [**@HL-Apprentice**](https://github.com/HL-Apprentice), [**@DeKaN**](https://github.com/DeKaN), [**@Daniel-wendan**](https://github.com/Daniel-wendan), [**@bramcardon-alt**](https://github.com/bramcardon-alt), [**@dgarrison63**](https://github.com/dgarrison63): reports and ideas that made it into FLODE.
+
+Found something or missing a feature? [Open an issue](https://github.com/SH1FT-W/flode/issues/new/choose). You might be next on this list.
 
 <br/>
 
