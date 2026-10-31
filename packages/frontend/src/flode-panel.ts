@@ -3705,7 +3705,7 @@ export class FlodePanel extends LitElement {
          the editor to its content — size to the viewport like HA's own panels. */
       height: 100vh;
       height: 100dvh;
-      background: var(--primary-background-color);
+      /* No background of its own: since HA 2026.11 the theme's background is painted behind panels. */
       color: var(--primary-text-color);
       font-family: var(--ha-font-family-body, Roboto, sans-serif);
     }

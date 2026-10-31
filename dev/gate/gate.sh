@@ -7,9 +7,10 @@
 #   dev/gate/gate.sh --no-restart   don't restart the test HA (only frontend changes; doesn't count)
 #   dev/gate/gate.sh --baseline     after a release: store the visual baseline for the next one
 #
-# Test HA: HA Core from a venv (tools/ha-venv.sh, no Docker) with its config in FLODE_GATE_DIR/config
-# (default ../flode-test next to the repo), on port FLODE_GATE_PORT (default 8123) of FLODE_GATE_URL
-# (default http://localhost:8123), HA version FLODE_GATE_HA_VERSION (default: the one in ha-venv.sh);
+# Test HA: in Docker (tools/ha-docker.sh), or HA Core from a venv with FLODE_HA_BACKEND=venv (tools/ha-venv.sh),
+# with its config in FLODE_GATE_DIR/config (default ../flode-test next to the repo), on port FLODE_GATE_PORT
+# (default 8123) of FLODE_GATE_URL (default http://localhost:8123), HA version FLODE_GATE_HA_VERSION (default:
+# the one in ha-venv.sh; "beta" takes the newest beta);
 # access token in FLODE_GATE_DIR/.claude-token or FLODE_GATE_TOKEN.
 #
 # Writes .gate/gate-<commit>.json (commit, clean tree, result per step and per test, flaky
@@ -20,7 +21,7 @@ cd "$REPO" || exit 2
 GATE="$REPO/dev/gate"
 OUT="$REPO/.gate"
 TEST_DIR="${FLODE_GATE_DIR:-$REPO/../flode-test}"
-HA_VENV="$REPO/tools/ha-venv.sh"
+HA_TOOL="$REPO/tools/ha-${FLODE_HA_BACKEND:-docker}.sh"
 PORT="${FLODE_GATE_PORT:-8123}"
 HA_VERSION_ARG="${FLODE_GATE_HA_VERSION:-}"
 
@@ -74,10 +75,10 @@ static_checks() {
 prepare_ha() {
   [ -d "$GATE/node_modules" ] || (cd "$GATE" && npm ci --no-audit --no-fund) || return 1
   rsync -a --delete custom_components/flode/ "$TEST_DIR/config/custom_components/flode/" || return 1
-  if ! "$HA_VENV" laeuft "$TEST_DIR/config"; then
-    "$HA_VENV" start "$TEST_DIR/config" "$PORT" $HA_VERSION_ARG || return 1
+  if ! "$HA_TOOL" laeuft "$TEST_DIR/config"; then
+    "$HA_TOOL" start "$TEST_DIR/config" "$PORT" $HA_VERSION_ARG || return 1
   elif [ $RESTART = 1 ]; then
-    "$HA_VENV" restart "$TEST_DIR/config" "$PORT" $HA_VERSION_ARG || return 1
+    "$HA_TOOL" restart "$TEST_DIR/config" "$PORT" $HA_VERSION_ARG || return 1
   fi
   node "$GATE/ready.mjs" 180 && node "$GATE/seed.mjs"
 }

@@ -6,6 +6,20 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.10.18] — 2026-10-31 — Conditions as in Home Assistant
+
+Reported by jlpnea ([#40](https://github.com/SH1FT-W/flode/issues/40)).
+
+### Changed
+- **No "No" output where Home Assistant has no else** ([#40](https://github.com/SH1FT-W/flode/issues/40)). A condition right after the triggers (the automation's `conditions:`, also several in a row through Yes) and a condition step among the actions now have one output only. Home Assistant stops the run there when the condition is false; there is no else to connect. Connecting No used to move the condition silently out of `conditions:` into an `if` among the actions, so the automation counted as triggered every time. Flows that already have something on No keep both outputs. For an else, use the If-then block.
+- **Theme backgrounds behind the panel.** FLODE's panel no longer paints its own background, so the theme background Home Assistant draws behind all panels from 2026.11 on shows through, like on HA's own pages. The canvas keeps its own background. Older Home Assistant versions look as before.
+
+### Tested with Home Assistant 2026.11 beta
+- The full release gate ran against 2026.11.0b2: all green. Card texts in Home Assistant's own words are shorter there ("Turn on light" instead of "The action 'Turn on light' …"); that comes from Home Assistant.
+- New in 2026.11: `exclude:` in a target and "Is not" in the state trigger (`not_from` / `not_to`) are kept unchanged when FLODE saves.
+
+---
+
 ## [26.10.17] — 2026-10-23 — Parallel branches, notes, colours and lines
 
 Contributions and reports by Bram ([#37](https://github.com/SH1FT-W/flode/issues/37)), JoHeyr ([#39](https://github.com/SH1FT-W/flode/issues/39)), jlpnea ([#38](https://github.com/SH1FT-W/flode/issues/38)), Bart ([#26](https://github.com/SH1FT-W/flode/issues/26)) and Daniel-wendan ([#28](https://github.com/SH1FT-W/flode/issues/28)).

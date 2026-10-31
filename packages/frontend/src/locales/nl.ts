@@ -371,19 +371,7 @@ export const nl: Strings = {
   whatsNewTitle: 'Nieuw in FLODE {version}',
   whatsNewAll: 'Alle wijzigingen',
   continue: 'Doorgaan',
-  new261017NotesTitle: 'Notities, kaders, meervoudige selectie',
-  new261017NotesText:
-    'Rechtsklik op het lege canvas → „Notitie hier toevoegen” of „Kader hier toevoegen”. Shift + slepen selecteert meerdere kaarten om samen te verplaatsen, kopiëren of verwijderen.',
-  new261017ParallelTitle: 'Parallelle acties als eigen kaarten',
-  new261017ParallelText:
-    'Een parallel-blok heeft nu één uitgang per actie („Parallel 1”, „Parallel 2” …) en elke actie is een eigen kaart. Opgeslagen wordt nog steeds een gewone parallel.',
-  new261017ColorTitle: 'Kaarten inkleuren',
-  new261017ColorText:
-    'Rechtsklik op een kaart → „Kaart inkleuren”. Als-dan, Kiezen en de andere blokken zijn nu indigo in plaats van groen en vallen op tussen de acties.',
-  new261017LinesTitle: 'Lijnen zelf leggen',
-  new261017LinesText:
-    'Klik op een lijn en sleep het punt in het midden: de lijn loopt haaks door je knikpunten. Dubbelklik verwijdert er één, „Opruimen” ze allemaal.',
-  new261017LangTitle: 'FLODE spreekt nu 7 talen',
-  new261017LangText:
-    'Nieuw: Nederlands, Frans, Spaans, Italiaans en Portugees. FLODE volgt de taal die je in Home Assistant hebt ingesteld.',
+  new261018GateTitle: 'Voorwaarden zoals in Home Assistant',
+  new261018GateText:
+    'Een voorwaarde direct na de triggers en een voorwaardestap tussen de acties hebben nu nog maar één uitgang: Home Assistant kent daar geen “anders”. Gebruik voor een anders het blok Als-dan.',
 };

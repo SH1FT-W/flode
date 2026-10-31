@@ -374,19 +374,7 @@ export const fr: Strings = {
   whatsNewTitle: 'Nouveau dans FLODE {version}',
   whatsNewAll: 'Tous les changements',
   continue: 'Continuer',
-  new261017NotesTitle: 'Notes, cadres, sélection multiple',
-  new261017NotesText:
-    'Clic droit sur le canevas vide → « Ajouter une note ici » ou « Ajouter un cadre ici ». Maj + glisser sélectionne plusieurs cartes à déplacer, copier ou supprimer ensemble.',
-  new261017ParallelTitle: 'Actions parallèles en cartes',
-  new261017ParallelText:
-    'Un bloc parallèle a maintenant une sortie par action (« Parallèle 1 », « Parallèle 2 » …) et chaque action est sa propre carte. Il est toujours enregistré comme un parallel normal.',
-  new261017ColorTitle: 'Colorer les cartes',
-  new261017ColorText:
-    'Clic droit sur une carte → « Colorer la carte ». Si-alors, Choisir et les autres blocs sont maintenant indigo au lieu de vert et se distinguent des actions.',
-  new261017LinesTitle: 'Tracer les lignes soi-même',
-  new261017LinesText:
-    'Cliquez sur une ligne et faites glisser le point en son milieu : la ligne passe à angle droit par vos coudes. Un double-clic en supprime un, « Ranger » les supprime tous.',
-  new261017LangTitle: 'FLODE parle désormais 7 langues',
-  new261017LangText:
-    'Nouveau : néerlandais, français, espagnol, italien et portugais. FLODE suit la langue définie dans votre profil Home Assistant.',
+  new261018GateTitle: 'Conditions comme dans Home Assistant',
+  new261018GateText:
+    'Une condition juste après les déclencheurs et une étape de condition parmi les actions n’ont plus qu’une sortie : Home Assistant n’y connaît pas de « sinon ». Pour un sinon, utilisez le bloc Si-alors.',
 };

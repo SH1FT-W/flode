@@ -371,19 +371,7 @@ export const es: Strings = {
   whatsNewTitle: 'Novedades en FLODE {version}',
   whatsNewAll: 'Todos los cambios',
   continue: 'Continuar',
-  new261017NotesTitle: 'Notas, marcos, selección múltiple',
-  new261017NotesText:
-    'Clic derecho en el lienzo vacío → «Añadir nota aquí» o «Añadir marco aquí». Mayús + arrastrar selecciona varias tarjetas para moverlas, copiarlas o borrarlas juntas.',
-  new261017ParallelTitle: 'Acciones paralelas como tarjetas',
-  new261017ParallelText:
-    'Un bloque paralelo tiene ahora una salida por acción («Paralelo 1», «Paralelo 2» …) y cada acción es una tarjeta propia. Se sigue guardando como un parallel normal.',
-  new261017ColorTitle: 'Colorear tarjetas',
-  new261017ColorText:
-    'Clic derecho en una tarjeta → «Colorear tarjeta». Si-entonces, Elegir y los demás bloques son ahora índigo en vez de verde y destacan entre las acciones.',
-  new261017LinesTitle: 'Trazar las líneas uno mismo',
-  new261017LinesText:
-    'Haz clic en una línea y arrastra el punto de su centro: la línea pasa en ángulo recto por tus puntos de giro. Doble clic quita uno, «Ordenar» los quita todos.',
-  new261017LangTitle: 'FLODE ya habla 7 idiomas',
-  new261017LangText:
-    'Novedad: neerlandés, francés, español, italiano y portugués. FLODE usa el idioma configurado en tu perfil de Home Assistant.',
+  new261018GateTitle: 'Condiciones como en Home Assistant',
+  new261018GateText:
+    'Una condición justo después de los desencadenantes y un paso de condición entre las acciones ahora solo tienen una salida: Home Assistant no conoce ahí un «si no». Para un si no, usa el bloque Si-entonces.',
 };

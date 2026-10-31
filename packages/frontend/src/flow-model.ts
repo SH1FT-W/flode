@@ -8,6 +8,7 @@ import {
   FlowMetadataSchema,
   type FlowNode,
   flowAxis,
+  isConditionStep,
   isFlowStart,
   LAYER_GAP,
   NODE_GAP,
@@ -37,6 +38,39 @@ export const CARD_SIZE = { width: NODE_WIDTH, height: NODE_HEIGHT } as const;
 /** Output handles per node type: conditions branch into yes/no. */
 export function sourceHandles(type: NodeType): readonly (string | null)[] {
   return type === 'condition' ? ['true', 'false'] : [null];
+}
+
+/**
+ * A condition Home Assistant reads as a gate: one in the automation's
+ * `conditions:` (reached from the triggers through Yes only) or a condition
+ * step of the actions. HA has no "else" there, a false one just ends the run,
+ * so while nothing hangs on its No the card offers only one output (#40).
+ */
+export function isGateCondition(graph: FlowGraph, node: FlowNode): boolean {
+  return isGate(graph, node, new Set());
+}
+
+function isGate(graph: FlowGraph, node: FlowNode, seen: Set<string>): boolean {
+  if (node.type !== 'condition' || seen.has(node.id)) return false;
+  seen.add(node.id);
+  if (graph.edges.some((e) => e.source === node.id && e.sourceHandle === 'false')) return false;
+  if (isConditionStep(node.data)) return true;
+  const into = graph.edges.filter((e) => e.target === node.id);
+  return (
+    into.length > 0 &&
+    into.every((edge) => {
+      const source = graph.nodes.find((n) => n.id === edge.source);
+      return (
+        source?.type === 'trigger' ||
+        (!!source && edge.sourceHandle === 'true' && isGate(graph, source, seen))
+      );
+    })
+  );
+}
+
+/** A card's outputs as drawn: a gate condition (`isGateCondition`) only goes on. */
+export function cardHandles(graph: FlowGraph, node: FlowNode): readonly (string | null)[] {
+  return isGateCondition(graph, node) ? ['true'] : sourceHandles(node.type);
 }
 
 /** Triggers start the flow — nothing connects into them. */

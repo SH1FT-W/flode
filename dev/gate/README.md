@@ -71,12 +71,13 @@ actions step go to `.gate/shots/`.
 
 ## Setup
 
-- Test HA without Docker: HA Core from a shared venv per version (`tools/ha-venv.sh`, needs
-  `uv`), config in `../flode-test/config`, port 8123, URL `http://localhost:8123`; a long-lived
-  access token in `../flode-test/.claude-token`. The gate starts it when it is not running and
-  restarts it otherwise. Override with `FLODE_GATE_DIR`, `FLODE_GATE_PORT`, `FLODE_GATE_URL`,
+- Test HA in Docker (`tools/ha-docker.sh`, one container per config folder; `FLODE_HA_BACKEND=venv`
+  takes HA Core from a shared venv per version instead, `tools/ha-venv.sh`, needs `uv`), config in
+  `../flode-test/config`, port 8123, URL `http://localhost:8123`; a long-lived access token in
+  `../flode-test/.claude-token`. The gate starts it when it is not running and restarts it
+  otherwise. Override with `FLODE_GATE_DIR`, `FLODE_GATE_PORT`, `FLODE_GATE_URL`,
   `FLODE_GATE_HA_VERSION` (e.g. `beta`), `FLODE_GATE_TOKEN` / `FLODE_GATE_TOKEN_FILE`.
-  `tools/ha-venv.sh stop ../flode-test/config` stops it.
+  `tools/ha-docker.sh stop ../flode-test/config` stops it.
 - Playwright browsers for the pinned version (`npx playwright@1.61.1 install chromium webkit`).
   `gate.sh` installs the gate's own `node_modules` on first run.
 - `FLODE_GATE_ENGINES=chromium` runs a step in one browser only (for debugging).

@@ -368,19 +368,7 @@ export const it: Strings = {
   whatsNewTitle: 'Novità in FLODE {version}',
   whatsNewAll: 'Tutte le modifiche',
   continue: 'Continua',
-  new261017NotesTitle: 'Note, cornici, selezione multipla',
-  new261017NotesText:
-    'Clic destro sulla tela vuota → «Aggiungi nota qui» o «Aggiungi cornice qui». Maiusc + trascina seleziona più schede da spostare, copiare o eliminare insieme.',
-  new261017ParallelTitle: 'Azioni parallele come schede',
-  new261017ParallelText:
-    'Un blocco parallelo ha ora un’uscita per azione («Parallelo 1», «Parallelo 2» …) e ogni azione è una scheda a sé. Viene comunque salvato come un normale parallel.',
-  new261017ColorTitle: 'Colorare le schede',
-  new261017ColorText:
-    'Clic destro su una scheda → «Colora la scheda». Se-allora, Scegli e gli altri blocchi ora sono indaco invece che verdi e si distinguono dalle azioni.',
-  new261017LinesTitle: 'Tracciare le linee da sé',
-  new261017LinesText:
-    'Fai clic su una linea e trascina il punto al centro: la linea passa ad angolo retto per i tuoi punti di piega. Doppio clic ne rimuove uno, «Riordina» tutti.',
-  new261017LangTitle: 'FLODE ora parla 7 lingue',
-  new261017LangText:
-    'Novità: olandese, francese, spagnolo, italiano e portoghese. FLODE segue la lingua impostata nel tuo profilo di Home Assistant.',
+  new261018GateTitle: 'Condizioni come in Home Assistant',
+  new261018GateText:
+    'Una condizione subito dopo gli attivatori e un passo di condizione tra le azioni ora hanno una sola uscita: lì Home Assistant non conosce un «altrimenti». Per un altrimenti usa il blocco Se-allora.',
 };

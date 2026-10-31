@@ -7,7 +7,7 @@ import { t } from '../../packages/frontend/src/strings.ts';
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const HA_URL = process.env.FLODE_GATE_URL ?? 'http://localhost:8123';
-/** Folder of the test HA (tools/ha-venv.sh) (holds `config/` and the access token file). */
+/** Folder of the test HA (tools/ha-docker.sh or ha-venv.sh) (holds `config/` and the access token file). */
 export const TEST_DIR = path.resolve(
   process.env.FLODE_GATE_DIR ?? path.join(REPO, '../flode-test')
 );

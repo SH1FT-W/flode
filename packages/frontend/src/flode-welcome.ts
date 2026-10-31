@@ -24,11 +24,7 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:call-split', title: 'new261017ParallelTitle', text: 'new261017ParallelText' },
-  { icon: 'mdi:palette-outline', title: 'new261017ColorTitle', text: 'new261017ColorText' },
-  { icon: 'mdi:vector-polyline', title: 'new261017LinesTitle', text: 'new261017LinesText' },
-  { icon: 'mdi:note-text-outline', title: 'new261017NotesTitle', text: 'new261017NotesText' },
-  { icon: 'mdi:translate', title: 'new261017LangTitle', text: 'new261017LangText' },
+  { icon: 'mdi:source-branch', title: 'new261018GateTitle', text: 'new261018GateText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

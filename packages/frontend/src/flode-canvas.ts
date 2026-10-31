@@ -1566,6 +1566,8 @@ export class FlodeCanvas extends LitElement {
     // Top to bottom, many outputs share the card's width: an option's name shrinks to its number.
     const down = this.view.axis.direction === 'down';
     const crowded = down && handles.length >= CROWDED_OUTPUTS;
+    // Yes and No side by side; a gate condition's one output needs no name (#40).
+    const twoWay = handles.includes('true') && handles.includes('false');
     const branches = this.view.branches.get(node.id);
     const inBranch = !!branches || this.view.cards.has(node.id);
     const addLabel = inBranch ? t(language, 'addInBranch') : addNextLabel(language, node);
@@ -1581,7 +1583,7 @@ export class FlodeCanvas extends LitElement {
     const ends = endsRun(this.view, node);
     return html`
       <div
-        class="node nopan ${branches ? 'branching' : ''} ${handles.includes('true') ? 'two-way' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${ends ? `ends ${ends}` : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${tint ? 'tinted' : ''} ${this.runClass(node.id)}"
+        class="node nopan ${branches ? 'branching' : ''} ${twoWay ? 'two-way' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${ends ? `ends ${ends}` : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${tint ? 'tinted' : ''} ${this.runClass(node.id)}"
         style="transform: translate(${node.position.x}px, ${node.position.y}px); height: ${height}px; --node-color: ${color}${tint ? `; --card-tint: ${tint}` : ''}"
         data-node-id=${node.id}
         title=${[
@@ -1613,7 +1615,9 @@ export class FlodeCanvas extends LitElement {
           const branch = branches?.[index];
           const name = branch
             ? branchLabelText(language, branch.label)
-            : outputLabel(language, handle);
+            : twoWay
+              ? outputLabel(language, handle)
+              : '';
           // Top to bottom a named option shows just its name ("Morgens"); crowded, its number.
           const alias = branch?.label.kind === 'option' ? branch.label.alias : undefined;
           const shown =

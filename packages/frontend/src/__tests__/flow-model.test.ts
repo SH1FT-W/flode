@@ -1,9 +1,10 @@
-import { axisOf, type FlowGraph } from '@flode/shared';
+import { axisOf, CONDITION_STEP_KEY, type FlowGraph } from '@flode/shared';
 import { describe, expect, it } from 'vitest';
 import {
   acrossPoints,
   addNode,
   backCrossing,
+  cardHandles,
   connect,
   connectionError,
   duplicateNode,
@@ -372,5 +373,46 @@ describe('ids of added cards', () => {
     const twice = duplicateNode(once.graph, base.nodes[0], { x: 0, y: 400 });
     expect(twice.graph.nodes).toHaveLength(3);
     expect(new Set(twice.graph.nodes.map((n) => n.id)).size).toBe(3);
+  });
+});
+
+describe('gate conditions: no No where HA has no else (#40)', () => {
+  const handlesOf = (graph: FlowGraph, id: string) => {
+    const node = graph.nodes.find((n) => n.id === id);
+    return node ? cardHandles(graph, node) : [];
+  };
+  const chain = connect(base, { source: 'c', sourceHandle: 'true', target: 'a' });
+
+  it('a condition right after the triggers only goes on', () => {
+    expect(handlesOf(chain, 'c')).toEqual(['true']);
+  });
+
+  it('so does one after another gate condition, through its Yes', () => {
+    const added = addNode(chain, 'condition', { x: 0, y: 400 }, 'c2').graph;
+    const graph = insertBetween(added, 'c', 'true', 'c2');
+    expect(handlesOf(graph, 'c2')).toEqual(['true']);
+  });
+
+  it('keeps Yes and No once No leads somewhere (an if / else, or an inverted one)', () => {
+    const added = addNode(chain, 'action', { x: 0, y: 400 }, 'n').graph;
+    const graph = connect(added, { source: 'c', sourceHandle: 'false', target: 'n' });
+    expect(handlesOf(graph, 'c')).toEqual(['true', 'false']);
+  });
+
+  it('a condition step of the actions is a gate, an if among the actions is not', () => {
+    const step = addNode(chain, 'condition', { x: 900, y: 0 }, 's').graph;
+    const after = connect(step, { source: 'a', sourceHandle: null, target: 's' });
+    expect(handlesOf(after, 's')).toEqual(['true', 'false']);
+    const asStep = updateNodeData(after, 's', {
+      condition: 'state',
+      entity_id: 'light.a',
+      state: 'on',
+      [CONDITION_STEP_KEY]: true,
+    }).graph;
+    expect(handlesOf(asStep, 's')).toEqual(['true']);
+  });
+
+  it('only conditions are gates', () => {
+    expect(handlesOf(chain, 'a')).toEqual([null]);
   });
 });

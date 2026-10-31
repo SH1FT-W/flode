@@ -17,6 +17,7 @@ import {
   addNode,
   byFlowOrder,
   CARD_SIZE,
+  cardHandles,
   incoming,
   isDrawnEdge,
   lineRoom,
@@ -163,7 +164,7 @@ export function cardShape(
   }
   if (endsRun(view, node)) return { handles: [], height: NODE_HEIGHT };
   if (view.cards.has(node.id)) return { handles: [null], height: NODE_HEIGHT };
-  const handles = sourceHandles(node.type);
+  const handles = cardHandles(view.graph, node);
   // A condition's Yes / No: named outputs, so top to bottom a row for the names.
   return {
     handles,

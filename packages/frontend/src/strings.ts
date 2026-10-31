@@ -379,21 +379,9 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261017NotesTitle: 'Notizen, Rahmen, Mehrfachauswahl',
-    new261017NotesText:
-      'Rechtsklick auf die leere Fläche → „Notiz hier hinzufügen“ oder „Rahmen hier hinzufügen“. Shift + Ziehen wählt mehrere Karten aus, die du gemeinsam verschiebst, kopierst oder löschst.',
-    new261017ParallelTitle: 'Parallele Aktionen als eigene Karten',
-    new261017ParallelText:
-      'Ein Parallel-Block hat jetzt einen Ausgang je Aktion („Parallel 1“, „Parallel 2“ …), jede Aktion ist eine eigene Karte. Gespeichert wird weiter ein normales parallel.',
-    new261017ColorTitle: 'Karten einfärben',
-    new261017ColorText:
-      'Rechtsklick auf eine Karte → „Karte einfärben“. Wenn-dann, Auswählen und die anderen Blöcke sind jetzt indigo statt grün und heben sich von den Aktionen ab.',
-    new261017LinesTitle: 'Linien selbst verlegen',
-    new261017LinesText:
-      'Linie anklicken und den Punkt in ihrer Mitte ziehen: Die Linie läuft rechtwinklig durch deine Knickpunkte. Doppelklick entfernt einen, „Aufräumen“ alle.',
-    new261017LangTitle: 'FLODE spricht jetzt 7 Sprachen',
-    new261017LangText:
-      'Neu: Niederländisch, Französisch, Spanisch, Italienisch und Portugiesisch. FLODE folgt der Sprache, die du in Home Assistant eingestellt hast.',
+    new261018GateTitle: 'Bedingungen wie in Home Assistant',
+    new261018GateText:
+      'Eine Bedingung direkt nach den Auslösern und ein Bedingungs-Schritt in den Aktionen haben nur noch einen Ausgang: Home Assistant kennt dort kein „Sonst“. Für ein Sonst nimm den Baustein „Wenn-dann“.',
   },
   en: {
     title: 'FLODE',
@@ -759,21 +747,9 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261017NotesTitle: 'Notes, frames, multi-select',
-    new261017NotesText:
-      'Right-click the empty canvas → "Add note here" or "Add frame here". Shift + drag selects several cards to move, copy or delete together.',
-    new261017ParallelTitle: 'Parallel actions as cards',
-    new261017ParallelText:
-      'A parallel block now has one output per action ("Parallel 1", "Parallel 2" …), and each action is a card of its own. It is still saved as a plain parallel.',
-    new261017ColorTitle: 'Colour cards',
-    new261017ColorText:
-      'Right-click a card → "Colour card". If-then, Choose and the other blocks are now indigo instead of green, so they stand out from the actions.',
-    new261017LinesTitle: 'Lay lines yourself',
-    new261017LinesText:
-      'Click a line and drag the point in its middle: the line runs at right angles through your bends. Double-click removes one, "Tidy up" all of them.',
-    new261017LangTitle: 'FLODE now speaks 7 languages',
-    new261017LangText:
-      'New: Dutch, French, Spanish, Italian and Portuguese. FLODE follows the language set in your Home Assistant profile.',
+    new261018GateTitle: 'Conditions as in Home Assistant',
+    new261018GateText:
+      'A condition right after the triggers and a condition step among the actions now have one output only: Home Assistant has no “else” there. For an else, use the If-then block.',
   },
 } as const;
 
