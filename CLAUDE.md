@@ -1,10 +1,3 @@
-## Coding Guidelines
-
-- **Never use IIFEs (Immediately Invoked Function Expressions) in TypeScript files.**
-  - Always extract logic into a named helper function, method or element instead of using IIFEs.
-  - Use plain variables or helper functions for local logic, but prefer separate elements for UI logic.
-  - IIFEs are forbidden in all TypeScript code.
-
 # Project Overview
 
 **FLODE** (Flow + Node Editor) is a visual flow editor for Home Assistant automations, inspired by Node-RED. It allows users to design automations as diagrams and transpiles them to 100% native Home Assistant YAML—no vendor lock-in. Automations remain editable in HA's built-in editor.
@@ -67,133 +60,33 @@ dev/gate/gate.sh  # Release gate: browser checks against the test HA (Docker via
 dev/next-version  # Next release version (calendar version YY.M.N)
 ```
 
-# Development Guidelines
+# Rules
 
-## Release and Commit Policy
+- **Ask before** commits, pushes, version bumps, tags, releases or any other git operation that changes the repository.
+- **TypeScript:** strict, zero errors. No `any` (use `unknown` + type guards), no `as` casts except at external API
+  boundaries, no `@ts-ignore`/`@ts-expect-error`, no IIFEs (use a named helper, method or element).
+- **No duplication:** search for existing logic before writing code and extend it. Same logic twice → shared helper;
+  shared types/schemas only in `@flode/shared`; framework-free logic in `@flode/ui-core`; a UI pattern used twice →
+  reusable element; constants defined once. Duplication found while working → refactor it first.
 
-**IMPORTANT**: Never cut a new release or commit changes without first asking the user for permission.
+# Cutting a Release
 
-Always ask before:
+Only with explicit user approval.
 
-- Creating git commits
-- Pushing changes to the repository
-- Bumping version numbers
-- Creating new releases/tags
-- Running any git operations that modify the repository
+- **Version:** calendar version `YY.M.N` from `dev/next-version` (rules in the global CLAUDE.md), no leading zeros
+  (they break `package.json`), tags and titles without "v".
+- **Notes:** compiled from user-facing changes in the git history since the last release (features, fixes, breaking
+  changes), in English, without asking the user for them. Changelog only in the GitHub release, **no CHANGELOG.md file**.
 
-The user should have full control over when changes are committed and released.
-
-## TypeScript Code Quality
-
-**STRICT TYPING REQUIRED**: Always maintain strict TypeScript types throughout the codebase.
-
-**FORBIDDEN PRACTICES**:
-
-- Never use `as` type assertions unless absolutely necessary for external API boundaries
-- Never use `any` type - use proper type definitions or `unknown` with type guards
-- Avoid type casting hacks or workarounds
-- Don't suppress TypeScript errors with `@ts-ignore` or `@ts-expect-error`
-
-**REQUIRED PRACTICES**:
-
-- Define proper interfaces and types for all data structures
-- Use type guards for runtime type checking
-- Leverage TypeScript's strict mode features
-- Create proper type definitions for external libraries if needed
-- Use generic types appropriately for reusable components
-
-The codebase should compile with zero TypeScript errors and maintain type safety throughout.
-
-# Best Practices
-
-## Code Reusability (DRY) - VITAL AND MANDATORY
-
-**⚠️ THIS IS A NON-NEGOTIABLE REQUIREMENT ⚠️**
-
-**ZERO TOLERANCE FOR CODE DUPLICATION.** Every single piece of duplicated code is a violation of this project's core principles. Before writing ANY code, you MUST check if similar logic already exists and reuse it.
-
-**MANDATORY PRACTICES**:
-
-- **Helper Functions/Utilities**: Extract common logic into reusable helper functions or utility modules. If you write the same logic twice, you have failed.
-- **Generic Elements**: Design Lit elements and helpers to be as generic and reusable as possible, accepting properties to customize behavior and appearance. They MUST be designed for reuse from the start.
-- **Shared Types/Schemas**: Leverage `@flode/shared` for all common types, interfaces, and Zod schemas to ensure consistency and avoid duplication across `frontend` and `transpiler`.
-- **Shared Logic**: Logic both the panel and tests need, and anything framework-free, belongs in `@flode/ui-core`. ANY repeated stateful pattern MUST become a shared helper.
-- **Before Writing Code**: ALWAYS search the codebase first to check if similar functionality exists. Reuse and extend existing code rather than creating new duplicates.
-- **Refactor Immediately**: If you discover existing duplication while working, refactor it into a shared abstraction before proceeding.
-
-**ABSOLUTELY FORBIDDEN - VIOLATIONS WILL NOT BE ACCEPTED**:
-
-- **Copy-pasting code**: NEVER duplicate blocks of code under any circumstances. If you find yourself copying and pasting, STOP and create a reusable function or element instead.
-- **Redundant Type Definitions**: NEVER redefine types or interfaces that already exist in `@flode/shared` or can be derived from existing schemas.
-- **Similar but slightly different implementations**: If two pieces of code do similar things, they MUST be unified into a single parameterized implementation.
-- **Duplicated constants or configuration**: All shared values MUST be defined once and imported where needed.
-- **Repeated UI patterns**: Any UI pattern used more than once MUST be extracted into a reusable component.
-
-**THE RULE IS SIMPLE: If code appears more than once, it's wrong. No exceptions.**
-
-# Cutting a New Release
-
-To cut a new release, follow these steps:
-
-**Important:** Before tagging and releasing, always bump the version in `custom_components/flode/manifest.json` to match the new release version.
-
-**All information for the release (version number and release notes) must be automatically derived from the git commit history since the last release.**
-
-**Release gate (mandatory):** after the release commit (version bump, "What's new", changelog) and before tagging or pushing, run `dev/gate/gate.sh` (see `dev/gate/README.md`). Release only if `.gate/gate-<commit>.json` says `"counts_for_release": true` for exactly that commit. The JSON lists every test; `flaky` ones (green on the second try) and `new` pictures are not red, but mention them. If the visual step reports differences, show `.gate/visual/report.html` to the user first. After the release is out, run `dev/gate/gate.sh --baseline` so the next release is compared with this one.
-
-- **Versions are calendar versions `YY.M.N`** (since October 2026, after 3.4.1): `YY` = two-digit year, `M` = month without leading zero, `N` = number of the release within that month, starting at 1 (every GitHub release published in that month counts, old X.Y.Z ones too; bare tags without a release do not). Every release — feature or bugfix — gets the next number; there is no patch/minor/major distinction any more. Get it with `dev/next-version` (e.g. `26.10.11`; a new month starts at `.1` again). Never use leading zeros (`26.3.1`, not `26.03.1`) — they are invalid semver and break `package.json`.
-- The release notes should be compiled from user-facing changes in the commit history (new features, bug fixes, breaking changes), without requiring user input.
-
-0. **Update the "What's new" sheet** (`packages/frontend/src/flode-welcome.ts`)
-
-- Replace `WHATS_NEW` with this release's user-facing features (icon + title + text, 2–4 entries); add their `newXYZ…` strings in every language (`strings.ts` + `locales/*.ts`) and drop the previous release's.
-- Bump `version` in `packages/frontend/package.json` together with `manifest.json` — the sheet shows once per version to everyone who used an older one.
-
-1. **Commit your changes**
-
-- Ensure all changes are staged and committed with a clear message.
-- Bump the version in `custom_components/flode/manifest.json` to the new release version from `dev/next-version` (e.g., "26.10.11").
-- Example:
-  ```bash
-  # Edit manifest.json and update the version field
-  git add .
-  git commit -m "Release: 26.10.11 - <short description>"
-  ```
-
-2. **Create a new git tag**
-
-- Use the calendar version from `dev/next-version`, **without a leading "v"** (e.g., 26.10.11) — since 3.0.8 tags, release titles and the version badge are just the number.
-- Example:
-  ```bash
-  git tag "$(dev/next-version)"
-  ```
-
-3. **Push changes to remote**
-
-- Push your commits and tags to the remote repository.
-- Example:
-  ```bash
-  git push origin main
-  git push origin --tags
-  ```
-
-4. **Create a GitHub release**
-
-- Use the GitHub CLI (`gh`) to create a release.
-- **Include the changelog in the GitHub release notes. Do NOT create a literal CHANGELOG.md file.**
-- The changelog must be compiled automatically from the git commit history since the last release, focusing on user-facing changes:
-  - New features
-  - Bug fixes
-  - Breaking changes
-- Example:
-
-```bash
-# IMPORTANT: Use real newlines in the --notes argument, not literal \n. For multiline notes, write each line on a new line inside the string.
-gh release create 26.10.11 --title "26.10.11" --notes "<release notes>"
-```
-
-5. **Verify release on GitHub**
-
-- Check the Releases page to confirm the new release is published.
-
-**Note:** Do not cut a release without explicit user approval. Always confirm before pushing tags or creating releases.
+1. **"What's new"** (`packages/frontend/src/flode-welcome.ts`): replace `WHATS_NEW` with 2–4 entries (icon + title +
+   text), add their `newXYZ…` strings in every language (`strings.ts` + `locales/*.ts`), drop the previous ones.
+2. **Version** in `custom_components/flode/manifest.json` and `packages/frontend/package.json` (the sheet shows once
+   per version), commit `Release: <version> - <short description>`.
+3. **Release gate (mandatory):** after the release commit, before tagging or pushing, run `dev/gate/gate.sh` (see
+   `dev/gate/README.md`). Release only if `.gate/gate-<commit>.json` says `"counts_for_release": true` for exactly
+   that commit. `flaky` tests (green on the second try) and `new` pictures are not red, but mention them. Visual
+   differences → show `.gate/visual/report.html` to the user first.
+4. `git tag "$(dev/next-version)"`, `git push origin main && git push origin --tags`.
+5. `gh release create <version> --title "<version>" --notes "<notes>"` (real newlines, not literal `\n`), then check
+   the Releases page.
+6. After the release: `dev/gate/gate.sh --baseline` so the next release is compared with this one.
