@@ -8,7 +8,7 @@
 <p>FLODE shows Home Assistant automations and scripts as a flow you can read, test and understand.<br/>
 Edited with Home Assistant's own editors, saved as plain Home Assistant YAML. No server, no lock-in.</p>
 
-[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FSH1FT-W%2Fflode%2Fmain%2Fcustom_components%2Fflode%2Fmanifest.json&query=%24.version&label=version&style=flat-square&color=4CC9FB&labelColor=0B1220)](https://github.com/SH1FT-W/flode/releases/latest) [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.3%2B-4CC9FB?style=flat-square&labelColor=0B1220&logo=homeassistant&logoColor=white)](https://www.home-assistant.io) [![HACS](https://img.shields.io/badge/HACS-default-4CC9FB?style=flat-square&labelColor=0B1220)](https://hacs.xyz) [![License](https://img.shields.io/badge/license-Apache%202.0-4CC9FB?style=flat-square&labelColor=0B1220)](LICENSE)
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FSH1FT-W%2Fflode%2Fmain%2Fcustom_components%2Fflode%2Fmanifest.json&query=%24.version&label=version&style=flat-square&color=4CC9FB&labelColor=0B1220)](https://github.com/SH1FT-W/flode/releases/latest) [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.3%2B-4CC9FB?style=flat-square&labelColor=0B1220&logo=homeassistant&logoColor=white)](https://www.home-assistant.io) [![Marketplace](https://img.shields.io/badge/Marketplace-default-4CC9FB?style=flat-square&labelColor=0B1220)](https://hacs.xyz) [![License](https://img.shields.io/badge/license-Apache%202.0-4CC9FB?style=flat-square&labelColor=0B1220)](LICENSE)
 
 <p><a href="https://sh1ft-w.github.io/flode"><b>Website</b></a> &nbsp;·&nbsp; <a href="#new">New</a> &nbsp;·&nbsp; <a href="#how-it-works">How it works</a> &nbsp;·&nbsp; <a href="#runs-and-relations">Runs</a> &nbsp;·&nbsp; <a href="#ai-help">AI</a> &nbsp;·&nbsp; <a href="#everything-else">Features</a> &nbsp;·&nbsp; <a href="#install">Install</a> &nbsp;·&nbsp; <a href="#thanks">Thanks</a> &nbsp;·&nbsp; <a href="docs/architecture.md">Internals</a> &nbsp;·&nbsp; <a href="CHANGELOG.md">Changelog</a></p>
 
@@ -146,9 +146,11 @@ If you have set up an AI in Home Assistant (Anthropic, OpenAI, Google Gemini, Ol
 <sub><b>INSTALL</b></sub>
 ## Three steps. Then it's in your sidebar.
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
+[![Open in the Marketplace](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
 
-1. HACS → search for **FLODE** → Download.
+The Marketplace is under Settings → Marketplace. On Home Assistant before 2026.11 it is still called HACS.
+
+1. Marketplace → search for **FLODE** → Download.
 2. Restart Home Assistant.
 3. Settings → Devices & services → Add integration → **FLODE**. It appears in the sidebar (admins only).
 
@@ -158,7 +160,7 @@ Requires **Home Assistant 2026.3** or newer. To install by hand, unzip `flode.zi
 <summary><b>Versions and coming from 2.x</b></summary>
 <br/>
 
-Since October 2026 FLODE uses calendar versions **`YY.M.N`**: year, month, and the number of the release within that month. `26.10.15` is the 15th release of October 2026. Every release, feature or fix, gets the next number. Tags, release titles and the version badge are just the number, without a leading "v". Calendar versions count as newer than every 3.x version, so updates through HACS work as before.
+Since October 2026 FLODE uses calendar versions **`YY.M.N`**: year, month, and the number of the release within that month. `26.10.15` is the 15th release of October 2026. Every release, feature or fix, gets the next number. Tags, release titles and the version badge are just the number, without a leading "v". Calendar versions count as newer than every 3.x version, so updates through the Marketplace work as before.
 
 Coming from FLODE 2.x? Your automations open and save as before. FLODE 3 replaced the old editor: the simulation gave way to real runs and *Run from here*, and FLODE follows Home Assistant's language and theme instead of its own settings. Details in the [changelog](CHANGELOG.md).
 
