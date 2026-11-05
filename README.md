@@ -2,7 +2,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-dark.webp" />
-  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-light.webp" alt="FLODE: See your automations. The editor inside Home Assistant with a flow of two triggers, a condition and actions." />
+  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-light.webp" alt="FLODE: See your automations." />
 </picture>
 
 [![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FSH1FT-W%2Fflode%2Fmain%2Fcustom_components%2Fflode%2Fmanifest.json&query=%24.version&label=version&style=flat-square&color=4CC9FB&labelColor=0B1220)](https://github.com/SH1FT-W/flode/releases/latest)
