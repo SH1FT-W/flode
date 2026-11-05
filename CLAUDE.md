@@ -17,7 +17,7 @@ Yarn 4 workspaces + Turbo, TypeScript strict, Vite, Vitest (always with `--run`,
 - **Zod for Schema Validation**: all data structures use Zod schemas in `@flode/shared`
 - **HA-native UI**: use Home Assistant's own elements and dialogs wherever one exists (`ha-dialog`, `ha-dropdown`, `ha-automation-*` editors …); no own design system. Minimum HA version is in `hacs.json`; check new HA internals against it
 - **Lit Patterns**: one element per file (`flode-*.ts`), state via reactive properties, the panel (`flode-panel.ts`) owns the open flows and undo history
-- **Strings**: UI text lives in `packages/frontend/src/strings.ts` (de + en) and `packages/frontend/src/locales/<lang>.ts` (nl, fr, es, it, pt); card texts in `@flode/ui-core` locales (same seven languages); HA's config flow in `custom_components/flode/translations`. A new key goes into every language; `strings.test.ts` and `locales.test.ts` check keys, placeholders and plural forms
+- **Strings**: UI text lives in `packages/frontend/src/strings.ts` (de + en) and `packages/frontend/src/locales/<lang>.ts` (nl, fr, es, it, pt, zh); card texts in `@flode/ui-core` locales (same eight languages); HA's config flow in `custom_components/flode/translations`. A new key goes into every language; `strings.test.ts` and `locales.test.ts` check keys, placeholders and plural forms
 - **Import Aliases**: `@flode/*` for packages
 
 # Common Commands

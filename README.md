@@ -136,7 +136,7 @@ Optional. If you have set up an AI in Home Assistant (Anthropic, OpenAI, Google 
 
 - FLODE never overwrites anything it was not asked to save. Back up your automations before big edits anyway.
 - It warns when it cannot read part of an automation.
-- FLODE follows the language and theme of your Home Assistant profile: English, German, Dutch, French, Spanish, Italian and Portuguese.
+- FLODE follows the language and theme of your Home Assistant profile: English, German, Dutch, French, Spanish, Italian, Portuguese and Simplified Chinese.
 - Versions are `YY.M.N`: year, month and the number of the release in that month, without a leading "v". They count as newer than every 3.x version.
 
 <details>
@@ -162,6 +162,7 @@ FLODE gets better with every bug report and every idea. A big thank you to:
 - [**@Hedda**](https://github.com/Hedda): the push to English as the main language, the Lit rebuild and the labels like Home Assistant.
 - [**@srsly88**](https://github.com/srsly88): nested AND/OR conditions, the save dialog and the sidebar editor.
 - [**@jlpnea**](https://github.com/jlpnea): `choose` blocks that render all the way down and `script.stop`.
+- [**@wzr-china**](https://github.com/wzr-china): the Simplified Chinese translation.
 - [**@NullScope**](https://github.com/NullScope), [**@pkejval**](https://github.com/pkejval): parallel steps after `scene.create` and the vertical flow.
 - [**@Home-Wizz**](https://github.com/Home-Wizz), [**@JoHeyr**](https://github.com/JoHeyr), [**@oscarallo**](https://github.com/oscarallo), [**@HL-Apprentice**](https://github.com/HL-Apprentice), [**@DeKaN**](https://github.com/DeKaN), [**@Daniel-wendan**](https://github.com/Daniel-wendan), [**@bramcardon-alt**](https://github.com/bramcardon-alt), [**@dgarrison63**](https://github.com/dgarrison63): reports and ideas that made it into FLODE.
 

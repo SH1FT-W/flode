@@ -83,8 +83,7 @@ export const zh: Strings = {
   shortcutsView: '视图',
   copyCard: '复制卡片',
   pasteCard: '粘贴卡片',
-  pasteNoTriggerInScript:
-    '脚本没有触发器，因此无法将此卡片粘贴到此处',
+  pasteNoTriggerInScript: '脚本没有触发器，因此无法将此卡片粘贴到此处',
   duplicateCard: '复制卡片',
   toggleEnabledCard: '启用/禁用卡片',
   deleteCard: '删除卡片或连接',
@@ -93,35 +92,28 @@ export const zh: Strings = {
   ioImported: '已作为草稿打开：请检查后再保存',
   ioImportFailed: '导入失败：',
   mergeStart: '合并……',
-  mergeHint:
-    '选择两个或多个自动化，将它们合并为一个新的。原始自动化保持不变。',
+  mergeHint: '选择两个或多个自动化，将它们合并为一个新的。原始自动化保持不变。',
   mergeSelected: '已选择 {n} 项',
   mergeRun: '合并',
   mergeName: '已合并：{names}',
   mergeFailed: '合并失败：',
   mergeDone: '已合并：将作为新的自动化打开。原始自动化保持不变。',
-  mergeWarnVariable:
-    '“{source}” 中的变量 “{name}” 现已重命名为 “{renamed}”：相关模板已更新。',
+  mergeWarnVariable: '“{source}” 中的变量 “{name}” 现已重命名为 “{renamed}”：相关模板已更新。',
   mergeWarnVariableCheck:
     '“{source}” 中的变量 “{name}” 现已重命名为 “{renamed}”：请检查其模板，并非所有用法都能安全更新。',
   mergeWarnMode:
     '这些自动化原本以不同模式运行（{modes}）：合并后的自动化现以 “{mode}” 模式运行，以免相互阻塞。',
   mergeWarnInfoTitle: '合并时已调整',
-  mergeWarnInfoText:
-    '为使这些自动化能够协同工作，FLODE 做了以下调整：',
+  mergeWarnInfoText: '为使这些自动化能够协同工作，FLODE 做了以下调整：',
   mergeWarnCheckTitle: '已合并：请检查',
-  mergeWarnCheckText:
-    '合并时，FLODE 做了以下调整。请在保存前检查（⋮ → 显示 YAML）：',
+  mergeWarnCheckText: '合并时，FLODE 做了以下调整。请在保存前检查（⋮ → 显示 YAML）：',
   manualTitle: '从此处运行',
   manualRunning: '正在运行……',
   manualDone: '已完成',
-  manualNoChanges:
-    '活动无变化：设备可能已处于该状态。',
+  manualNoChanges: '活动无变化：设备可能已处于该状态。',
   manualLogbook: '发生了什么',
-  manualLogbookEmpty:
-    '暂无任何活动记录：Home Assistant 会在几秒后写入。',
-  manualHint:
-    'Home Assistant 不会保存手动启动的步骤的轨迹：FLODE 会在此处显示，直到页面重新加载。',
+  manualLogbookEmpty: '暂无任何活动记录：Home Assistant 会在几秒后写入。',
+  manualHint: 'Home Assistant 不会保存手动启动的步骤的轨迹：FLODE 会在此处显示，直到页面重新加载。',
   runFrom: '从此处运行',
   runFromTitle: '从此处运行',
   runFromIntro:
@@ -143,8 +135,7 @@ export const zh: Strings = {
     '现在在 Home Assistant 中真正执行 “{name}”：设备会实际发生变化。条件将按当前状态校验。',
   runOnlyDone: '“{name}” 已完成',
   tplTitle: '模板工坊',
-  tplIntro:
-    'Home Assistant 会实时渲染模板，并显示结果类型及其所依赖的内容。',
+  tplIntro: 'Home Assistant 会实时渲染模板，并显示结果类型及其所依赖的内容。',
   tplRendering: '渲染中……',
   tplEmpty: '（空）',
   tplUpdatesOn: '随以下更新：',
@@ -187,8 +178,7 @@ export const zh: Strings = {
   assistTitle: 'AI 助手',
   assistIntro:
     '询问此自动化或给它一个任务，例如“为什么晚上灯不亮？”或“添加一个通知”。AI 仅提出建议；在你点击之前不会应用任何更改。',
-  assistIntroScript:
-    '询问此脚本或给它一个任务。AI 仅提出建议；在你点击之前不会应用任何更改。',
+  assistIntroScript: '询问此脚本或给它一个任务。AI 仅提出建议；在你点击之前不会应用任何更改。',
   assistFindErrors: '查找错误',
   assistFindErrorsPrompt:
     '检查流程图中的错误、逻辑缺陷和边界情况（例如重启、设备不可用、条件不正确）。列出你发现的问题并附简短原因。暂时不要提出 YAML 建议。',
@@ -210,28 +200,23 @@ export const zh: Strings = {
   assistAppliedDone: '更改已应用',
   assistNotApplied: '未应用：当前已打开另一个流程图。',
   assistNoTriggers: '建议中没有触发器：这将删除所有触发器。',
-  assistStale:
-    '自你提问以来流程图已发生变化：应用时会用建议替换这些更改。',
+  assistStale: '自你提问以来流程图已发生变化：应用时会用建议替换这些更改。',
   assistApplyAnyway: '仍然应用',
-  assistPrivacy:
-    '当前版本及相关实体会发送给你的 Home Assistant AI。未经你同意不会保存任何内容。',
+  assistPrivacy: '当前版本及相关实体会发送给你的 Home Assistant AI。未经你同意不会保存任何内容。',
   disabledGroup: '已禁用',
   issueService: '⚠ 此服务不存在',
   issueEntity: '⚠ 此实体不存在',
   aiButton: '用 AI 创建',
   aiTitle: '用 AI 创建',
   aiTitleScript: '用 AI 创建脚本',
-  aiIntro:
-    '描述应发生的情况。你的 Home Assistant AI 会将其转换为草稿。',
-  aiIntroScript:
-    '描述脚本应执行的操作。你的 Home Assistant AI 会将其转换为草稿。',
+  aiIntro: '描述应发生的情况。你的 Home Assistant AI 会将其转换为草稿。',
+  aiIntroScript: '描述脚本应执行的操作。你的 Home Assistant AI 会将其转换为草稿。',
   aiDescribe: '描述',
   aiExample1: '日落后前门打开时，将走廊灯点亮 5 分钟',
   aiExample2: '工作日上午 6:30，缓慢调亮客厅灯光',
   aiExample3: '洗衣机结束时通知我',
   aiExampleScript1: '早安脚本：按所选亮度开灯，然后打开百叶窗',
-  aiExampleScript2:
-    '全部关闭：关闭所有灯和媒体播放器，并锁上前门',
+  aiExampleScript2: '全部关闭：关闭所有灯和媒体播放器，并锁上前门',
   aiExampleScript3: '定时脚本：让咖啡机运行所选的分钟数',
   aiCreate: '创建草稿',
   aiProblems: '草稿仍有问题',
@@ -256,10 +241,8 @@ export const zh: Strings = {
   runs: '运行',
   refresh: '重新加载',
   noRuns: '暂无运行记录：请先触发一次自动化。',
-  runOutdated:
-    '此次运行来自流程图的另一个版本：由于步骤已不匹配，卡片未做标记。',
-  runsHint:
-    'Home Assistant 仅保留每个自动化最近的几次运行（默认：5）。',
+  runOutdated: '此次运行来自流程图的另一个版本：由于步骤已不匹配，卡片未做标记。',
+  runsHint: 'Home Assistant 仅保留每个自动化最近的几次运行（默认：5）。',
   timeline: '时间线',
   stepDetails: '步骤',
   pickStep: '点击时间线中的某个步骤以查看其详情。',
@@ -318,8 +301,7 @@ export const zh: Strings = {
   mode_queued: '排队',
   mode_parallel: '并行',
   resize: '拖动以调整大小 · 双击 = 默认',
-  homeHint:
-    '像流程图一样创建、测试和理解决自动化与脚本，并保存为 Home Assistant 的标准 YAML。',
+  homeHint: '像流程图一样创建、测试和理解决自动化与脚本，并保存为 Home Assistant 的标准 YAML。',
   loadFailed: '加载失败',
   saveFailed: '保存失败',
   saveErrAtCard: '“{card}”：{reason}',
@@ -338,14 +320,12 @@ export const zh: Strings = {
     '自你在此打开 “{name}” 以来，它已在 Home Assistant 中被修改。要用你的版本覆盖，还是加载 Home Assistant 的版本？（你的更改仍可通过撤销找回。）',
   conflictOverwrite: '覆盖',
   conflictReload: '从 Home Assistant 加载',
-  tabsStorageFull:
-    '浏览器存储空间已满：已打开的标签页和未保存的草稿不再被记住。',
+  tabsStorageFull: '浏览器存储空间已满：已打开的标签页和未保存的草稿不再被记住。',
   blueprintReadOnlyTitle: '蓝图：只读',
   blueprintReadOnlyText:
     '此自动化基于蓝图创建。FLODE 会显示其步骤与输入项，但不会保存：请在 Home Assistant 中编辑。蓝图：',
   openInHa: '在 HA 中打开',
-  blueprintNoSave:
-    '此自动化基于蓝图创建：FLODE 不会保存它。请在 Home Assistant 中编辑。',
+  blueprintNoSave: '此自动化基于蓝图创建：FLODE 不会保存它。请在 Home Assistant 中编辑。',
   invalid: '无效',
   type_trigger: '触发器',
   type_automation: '自动化',
@@ -360,14 +340,11 @@ export const zh: Strings = {
   welcomeFlowText:
     '触发器、条件和动作以块的形式呈现在画布上，并保存为 Home Assistant 的标准 YAML。',
   welcomeRunsTitle: '理解决运行',
-  welcomeRunsText:
-    '每次运行都直接显示在流程图上：它走了哪条路径，卡在了哪里。',
+  welcomeRunsText: '每次运行都直接显示在流程图上：它走了哪条路径，卡在了哪里。',
   welcomeAiTitle: '用 AI 创建',
-  welcomeAiText:
-    '描述应发生的情况：FLODE 会用你的 Home Assistant AI 准备流程图（可选）。',
+  welcomeAiText: '描述应发生的情况：FLODE 会用你的 Home Assistant AI 准备流程图（可选）。',
   welcomeMapTitle: '依赖关系',
-  welcomeMapText:
-    '一眼看清谁控制谁、自动化在哪里相互矛盾，以及缺少了什么。',
+  welcomeMapText: '一眼看清谁控制谁、自动化在哪里相互矛盾，以及缺少了什么。',
   whatsNewTitle: 'FLODE {version} 新功能',
   whatsNewAll: '全部更改',
   continue: '继续',
