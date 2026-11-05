@@ -1,0 +1,68 @@
+{
+  "title": "依赖关系",
+  "subtitle": "谁监听了什么、谁控制了什么 —— 跨所有自动化与脚本",
+  "searchPlaceholder": "在哪里被使用？实体、自动化或脚本",
+  "summary": "{{automations}} · {{scripts}} · {{entities}} 个关联实体",
+  "automationCount_other": "{{count}} 个自动化",
+  "scriptCount_other": "{{count}} 个脚本",
+  "loading": "正在读取所有自动化与脚本……",
+  "loadedAt": "更新于 {{time}}",
+  "reload": "重新加载",
+  "results_other": "{{count}} 条结果",
+  "noResults": "未找到任何内容。",
+  "refCount_other": "{{count}} 处引用",
+  "useCount_other": "在 {{count}} 个自动化中",
+  "open": "打开",
+  "kind": {
+    "automation": "自动化",
+    "script": "脚本",
+    "entity": "实体"
+  },
+  "role": {
+    "trigger": "触发器",
+    "condition": "条件",
+    "action": "动作",
+    "template": "模板"
+  },
+  "issues": {
+    "conflicts": {
+      "title": "可能冲突",
+      "hint": "有两个以相反方式控制同一设备",
+      "empty": "未发现相反的控制。"
+    },
+    "selfTriggers": {
+      "title": "自身触发",
+      "hint": "修改了它自己正在监听的实体",
+      "empty": "没有自动化触发自身。"
+    },
+    "missing": {
+      "title": "缺失实体",
+      "hint": "引用了已删除或更名的实体",
+      "empty": "所有引用都指向存在的实体。"
+    },
+    "chains": {
+      "title": "连锁触发",
+      "hint": "一个自动化触发了另一个",
+      "empty": "未发现连锁触发。"
+    }
+  },
+  "focus": {
+    "empty": "在左侧选择一个实体、自动化或脚本 —— 或在上方搜索一个。",
+    "triggeredBy": "由……触发",
+    "listensTo": "监听",
+    "reads": "检查 / 读取",
+    "controls": "控制",
+    "triggers": "触发",
+    "conflictWith": "与……相反",
+    "on": "在",
+    "selfTrigger": "通过此实体触发自身：",
+    "missing_other": "{{count}} 处引用指向不存在的实体。",
+    "entityMissing_other": "Home Assistant 已不知道此实体（可能已更名或删除）？仍有 {{count}} 个自动化引用它。",
+    "unused": "没有自动化或脚本使用此实体。",
+    "usedAsTrigger": "触发器",
+    "usedAsCondition": "被检查于",
+    "controlledBy": "受控于"
+  },
+  "command": "依赖关系",
+  "commandHint": "谁监听了什么、谁控制了什么 —— 聚焦于当前打开的自动化"
+}
