@@ -380,9 +380,9 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261018GateTitle: 'Bedingungen wie in Home Assistant',
-    new261018GateText:
-      'Eine Bedingung direkt nach den Auslösern und ein Bedingungs-Schritt in den Aktionen haben nur noch einen Ausgang: Home Assistant kennt dort kein „Sonst“. Für ein Sonst nimm den Baustein „Wenn-dann“.',
+    new261101ChineseTitle: 'FLODE spricht Chinesisch',
+    new261101ChineseText:
+      'FLODE gibt es jetzt auch in vereinfachtem Chinesisch, übersetzt von wzr-china. Es folgt wie immer der Sprache deines Home-Assistant-Profils.',
   },
   en: {
     title: 'FLODE',
@@ -748,9 +748,9 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261018GateTitle: 'Conditions as in Home Assistant',
-    new261018GateText:
-      'A condition right after the triggers and a condition step among the actions now have one output only: Home Assistant has no “else” there. For an else, use the If-then block.',
+    new261101ChineseTitle: 'FLODE speaks Chinese',
+    new261101ChineseText:
+      'FLODE now also comes in Simplified Chinese, translated by wzr-china. As always, it follows the language of your Home Assistant profile.',
   },
 } as const;
 

@@ -371,7 +371,7 @@ export const nl: Strings = {
   whatsNewTitle: 'Nieuw in FLODE {version}',
   whatsNewAll: 'Alle wijzigingen',
   continue: 'Doorgaan',
-  new261018GateTitle: 'Voorwaarden zoals in Home Assistant',
-  new261018GateText:
-    'Een voorwaarde direct na de triggers en een voorwaardestap tussen de acties hebben nu nog maar één uitgang: Home Assistant kent daar geen “anders”. Gebruik voor een anders het blok Als-dan.',
+  new261101ChineseTitle: 'FLODE spreekt Chinees',
+  new261101ChineseText:
+    'FLODE is nu ook beschikbaar in vereenvoudigd Chinees, vertaald door wzr-china. Zoals altijd volgt het de taal van je Home Assistant-profiel.',
 };

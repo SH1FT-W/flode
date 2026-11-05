@@ -6,6 +6,15 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.11.1] — 2026-11-05 — Simplified Chinese
+
+Contributed by wzr-china ([#41](https://github.com/SH1FT-W/flode/pull/41)).
+
+### Added
+- **Simplified Chinese.** FLODE's interface, card texts and the dependency map now also come in Simplified Chinese, translated by wzr-china. FLODE picks it when your Home Assistant profile is set to Simplified Chinese (`zh-Hans`, also `zh`, `zh-CN`, `zh-SG`). Traditional Chinese (`zh-Hant`, Taiwan, Hong Kong) keeps showing English; every other language works as before.
+
+---
+
 ## [26.10.18] — 2026-10-31 — Conditions as in Home Assistant
 
 Reported by jlpnea ([#40](https://github.com/SH1FT-W/flode/issues/40)).

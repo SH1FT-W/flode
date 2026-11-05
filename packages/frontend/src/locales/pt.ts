@@ -370,7 +370,7 @@ export const pt: Strings = {
   whatsNewTitle: 'Novidades no FLODE {version}',
   whatsNewAll: 'Todas as alterações',
   continue: 'Continuar',
-  new261018GateTitle: 'Condições como no Home Assistant',
-  new261018GateText:
-    'Uma condição logo após os acionadores e um passo de condição entre as ações têm agora uma só saída: aí o Home Assistant não conhece um «senão». Para um senão, usa o bloco Se-então.',
+  new261101ChineseTitle: 'O FLODE fala chinês',
+  new261101ChineseText:
+    'O FLODE agora também está disponível em chinês simplificado, traduzido por wzr-china. Como sempre, segue o idioma do seu perfil do Home Assistant.',
 };

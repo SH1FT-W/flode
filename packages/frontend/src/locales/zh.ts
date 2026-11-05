@@ -348,7 +348,7 @@ export const zh: Strings = {
   whatsNewTitle: 'FLODE {version} 新功能',
   whatsNewAll: '全部更改',
   continue: '继续',
-  new261018GateTitle: '条件同 Home Assistant',
-  new261018GateText:
-    '触发器之后紧跟的条件，以及动作之间的条件步骤，现在只有一个输出：Home Assistant 在那里没有“否则”。如需“否则”，请使用“如果-则”块。',
+  new261101ChineseTitle: 'FLODE 支持中文',
+  new261101ChineseText:
+    'FLODE 现已提供简体中文版本，由 wzr-china 翻译。它一如既往地跟随你的 Home Assistant 个人资料语言。',
 };
