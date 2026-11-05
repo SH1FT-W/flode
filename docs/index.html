@@ -187,6 +187,15 @@ figcaption strong { color: var(--ink); font-weight: 600; }
 /* Zwei Bilder nebeneinander, Kacheln */
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.tiles.c3 { grid-template-columns: repeat(3, 1fr); }
+.what { margin-top: 40px; background: var(--card); border-radius: var(--radius); padding: 8px 26px; box-shadow: var(--shadow); overflow-x: auto; }
+.what table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.45; }
+.what th, .what td { text-align: left; vertical-align: top; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.what tr:last-child th, .what tr:last-child td { border-bottom: 0; }
+.what tbody th { font-weight: 600; color: var(--ink); width: 40%; padding-right: 24px; }
+.what td { color: var(--ink-2); }
+.what thead th { font-size: 13px; font-weight: 600; color: var(--ink-3); padding: 14px 0 10px; }
+.what code { font-family: var(--mono); font-size: .9em; }
 .tile { background: var(--card); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); }
 .tile h3 { font-size: 18px; margin-bottom: 8px; }
 .tile p { color: var(--ink-2); font-size: 15px; }
@@ -253,7 +262,7 @@ footer .fine { flex-basis: 100%; }
 @media (max-width: 960px) {
   .split, .split.flip, .install, .ai-panel.on { grid-template-columns: 1fr; }
   .split.flip > :first-child { order: 0; }
-  .tiles { grid-template-columns: 1fr 1fr; }
+  .tiles, .tiles.c3 { grid-template-columns: 1fr 1fr; }
   .b.s4, .b.s8 { grid-column: span 6; }
   .b.wide { flex-direction: column; }
   .ai-panel .stack { grid-template-columns: 1fr 1fr; }
@@ -264,7 +273,9 @@ footer .fine { flex-basis: 100%; }
   .nav { padding: 0 8px 0 14px; }
   .nav .lang { margin-left: auto; }
   .duo { grid-template-columns: 1fr; }
-  .tiles { grid-template-columns: 1fr; gap: 12px; }
+  .tiles, .tiles.c3 { grid-template-columns: 1fr; gap: 12px; }
+  .what { padding: 4px 18px; } .what thead { display: none; } .what table, .what tbody, .what tr { display: block; }
+  .what tbody th { width: auto; display: block; padding: 14px 0 2px; border: 0; } .what td { display: block; padding: 0 0 14px; }
   .b.s4, .b.s6, .b.s8 { grid-column: span 12; }
   .tile, .b .txt { padding: 22px; }
   .phone-row { grid-template-columns: 1fr; }
@@ -339,78 +350,32 @@ footer .fine { flex-basis: 100%; }
   <div class="wrap">
     <div class="head center reveal">
       <p class="eyebrow"><span class="en">Just arrived</span><span class="de">Gerade neu</span></p>
-      <h2><span class="en">Branches on the canvas.<br>Flows top to bottom.</span><span class="de">Zweige auf der Fläche.<br>Abläufe von oben nach unten.</span></h2>
-      <p class="lead"><span class="en">The last releases opened up the blocks: Choose and If-then show their branches as cards, flows can run top to bottom, and touch screens got menus of their own.</span><span class="de">Die letzten Releases haben die Blöcke geöffnet: Auswählen und Wenn-dann zeigen ihre Zweige als Karten, Abläufe können von oben nach unten laufen, und Touchscreens haben eigene Menüs bekommen.</span></p>
+      <h2><span class="en">Parallel lanes.<br>Notes on the canvas.</span><span class="de">Parallele Bahnen.<br>Notizen auf der Fläche.</span></h2>
+      <p class="lead"><span class="en">The biggest changes of October 2026. FLODE now also speaks Dutch, French, Spanish, Italian and Portuguese.</span><span class="de">Die größten Neuerungen im Oktober 2026. FLODE spricht jetzt auch Niederländisch, Französisch, Spanisch, Italienisch und Portugiesisch.</span></p>
     </div>
     <div class="bento">
-      <div class="b s8 wide reveal">
-        <div class="txt">
-          <span class="k">3.4.0</span>
-          <h3><span class="en">Top to bottom flows</span><span class="de">Abläufe von oben nach unten</span></h3>
-          <p><span class="en">Every flow runs left to right or top to bottom. The arrow next to "Tidy up" turns it, the direction is saved with the flow, and a setting opens every flow top to bottom by default. Branches, outputs, lines and the "+" buttons follow. Many triggers stand in rows of four, their lines meet above the first step.</span><span class="de">Jeder Ablauf läuft von links nach rechts oder von oben nach unten. Der Pfeil neben „Aufräumen“ dreht ihn, die Richtung wird mit dem Ablauf gespeichert, und eine Einstellung öffnet jeden Ablauf standardmäßig senkrecht. Zweige, Ausgänge, Linien und die „+“-Knöpfe folgen. Viele Auslöser stehen in Viererreihen, ihre Linien treffen sich über dem ersten Schritt.</span></p>
-        </div>
-        <div class="pic" aria-hidden="true">
-          <svg class="miniflow" viewBox="0 0 260 300" role="img">
-            <rect class="card" x="60" y="10" width="64" height="30" rx="7"/><rect class="t" x="60" y="10" width="5" height="30" rx="2"/><text class="lbl" x="74" y="29">Sunset</text>
-            <rect class="card" x="136" y="10" width="64" height="30" rx="7"/><rect class="t" x="136" y="10" width="5" height="30" rx="2"/><text class="lbl" x="150" y="29">Motion</text>
-            <path class="ln" d="M92 40 V58 Q92 64 98 64 H124 M168 40 V58 Q168 64 162 64 H136 M130 64 V84"/>
-            <rect class="card" x="98" y="84" width="64" height="30" rx="7"/><rect class="c" x="98" y="84" width="5" height="30" rx="2"/><text class="lbl" x="112" y="103">At home</text>
-            <path class="ln" d="M114 114 V130 Q114 136 108 136 H70 Q64 136 64 142 V158 M146 114 V130 Q146 136 152 136 H190 Q196 136 196 142 V158"/>
-            <text class="yes" x="86" y="130">Yes</text><text class="no" x="160" y="130">No</text>
-            <rect class="card" x="32" y="158" width="64" height="30" rx="7"/><rect class="a" x="32" y="158" width="5" height="30" rx="2"/><text class="lbl" x="46" y="177">Light 40%</text>
-            <rect class="card" x="164" y="158" width="64" height="30" rx="7"/><rect class="a" x="164" y="158" width="5" height="30" rx="2"/><text class="lbl" x="178" y="177">Notify</text>
-            <path class="ln" d="M64 188 V204 Q64 210 70 210 H108 Q114 210 114 216 V232 M196 188 V204 Q196 210 190 210 H136 Q130 210 130 216 V232"/>
-            <rect class="card" x="98" y="232" width="64" height="30" rx="7"/><rect class="a" x="98" y="232" width="5" height="30" rx="2"/><text class="lbl" x="112" y="251">Blinds down</text>
-            <path class="ln" d="M130 262 V280"/><circle cx="130" cy="286" r="5" fill="none" stroke="var(--violet)" stroke-width="2"/>
-          </svg>
-        </div>
-      </div>
-      <div class="b s4 reveal d1">
-        <div class="txt">
-          <span class="k">3.2.0 + 3.2.1</span>
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v6a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3v6"/><path d="M6 21v-9"/><circle cx="6" cy="3" r="1"/><circle cx="18" cy="21" r="1"/><circle cx="6" cy="21" r="1"/></svg></div>
-          <h3><span class="en">Branches as cards, nested as deep as you like</span><span class="de">Zweige als Karten, beliebig tief verschachtelt</span></h3>
-          <p><span class="en">Choose and If-then get one named output per option, the steps of each branch are drawn as cards, and all branches meet again after the block. A block inside a branch gets its own outputs too. Branch cards can be dragged one by one. In YAML it stays a plain choose or if.</span><span class="de">Auswählen und Wenn-dann bekommen je Option einen benannten Ausgang, die Schritte jedes Zweigs stehen als Karten, und alle Zweige treffen sich nach dem Block wieder. Ein Block in einem Zweig bekommt ebenfalls eigene Ausgänge. Zweig-Karten lassen sich einzeln verschieben. Im YAML bleibt es ein normales choose oder if.</span></p>
-        </div>
-      </div>
       <div class="b s4 reveal">
         <div class="txt">
-          <span class="k">3.4.0 + 26.10.12</span>
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/></svg></div>
-          <h3><span class="en">In between, in parallel, into a branch</span><span class="de">Dazwischen, parallel, in den Zweig</span></h3>
-          <p><span class="en">A "+" on an output that already leads on asks whether the new step goes in between or in parallel. A block at the end of a flow gets a "+" for the step after all its branches. Dragging a connection from a branch onto a free card pulls that card into the branch.</span><span class="de">Ein „+“ an einem Ausgang, der schon weiterführt, fragt, ob der neue Schritt dazwischen oder parallel kommt. Ein Block am Ende des Ablaufs bekommt ein „+“ für den Schritt nach allen Zweigen. Ziehst du eine Verbindung aus einem Zweig auf eine freie Karte, wandert sie in den Zweig.</span></p>
+          <span class="k">26.10.17</span>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M12 4v16M18 4v16"/></svg></div>
+          <h3><span class="en">Parallel actions in lanes</span><span class="de">Parallele Aktionen in Bahnen</span></h3>
+          <p><span class="en">A <code>parallel</code> block draws each action as its own card in its own lane, and the lanes meet again at the next step. The saved YAML is still a plain parallel.</span><span class="de">Ein <code>parallel</code>-Block zeichnet jede Aktion als eigene Karte in einer eigenen Bahn, und die Bahnen treffen sich beim nächsten Schritt wieder. Gespeichert wird weiter ein normales parallel.</span></p>
         </div>
       </div>
       <div class="b s4 reveal d1">
         <div class="txt">
-          <span class="k">3.2.2</span>
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div>
-          <h3><span class="en">Card text like Home Assistant</span><span class="de">Kartentext wie Home Assistant</span></h3>
-          <p><span class="en">A toggle in the toolbar shows each card in the wording of Home Assistant's own automation editor, with the step's targets below. The text comes from Home Assistant itself, so it always matches the installed version. FLODE's own sentences stay the default.</span><span class="de">Ein Schalter in der Werkzeugleiste zeigt jede Karte im Wortlaut des Automations-Editors von Home Assistant, mit den Zielen des Schritts darunter. Der Text kommt von Home Assistant selbst und passt so immer zur installierten Version. FLODEs eigene Sätze bleiben der Standard.</span></p>
+          <span class="k">26.10.17</span>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M7 12h10M7 16h6"/></svg></div>
+          <h3><span class="en">Notes, frames and colours</span><span class="de">Notizen, Rahmen und Farben</span></h3>
+          <p><span class="en">Right-click the empty canvas for a note or a titled frame that takes its cards along. Tint cards in a colour, and lay lines yourself with a bend.</span><span class="de">Rechtsklick auf die leere Fläche für eine Notiz oder einen Rahmen mit Titel, der seine Karten mitnimmt. Karten einfärben und Linien mit einem Knick selbst legen.</span></p>
         </div>
       </div>
       <div class="b s4 reveal d2">
         <div class="txt">
-          <span class="k">26.10.11</span>
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 18h.01"/></svg></div>
-          <h3><span class="en">Made for fingers</span><span class="de">Gemacht für Finger</span></h3>
-          <p><span class="en">Press and hold on a card or a connection opens just its menu on touch screens, on the iPhone too. A connection has a menu of its own with "Delete connection". A step inside a branch offers "Disconnect" and stays as a card of its own.</span><span class="de">Gedrückt halten auf einer Karte oder Verbindung öffnet auf Touchscreens nur ihr Menü, auch auf dem iPhone. Eine Verbindung hat ein eigenes Menü mit „Verbindung löschen“. Ein Schritt in einem Zweig bietet „Trennen“ an und bleibt als eigene Karte stehen.</span></p>
-        </div>
-      </div>
-      <div class="b s6 reveal">
-        <div class="txt">
-          <span class="k">3.3.0</span>
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
-          <h3><span class="en">Save errors point to the card</span><span class="de">Speicherfehler zeigen auf die Karte</span></h3>
-          <p><span class="en">When Home Assistant refuses to save, FLODE explains in plain words what is missing, marks the card red and takes you there. Blueprint automations open read-only with their inputs filled in. Before saving over a version that was changed in Home Assistant meanwhile, FLODE asks whether to load it or overwrite it. "Run from here" takes the data of the last trigger along.</span><span class="de">Wenn Home Assistant das Speichern verweigert, erklärt FLODE in einfachen Worten, was fehlt, färbt die Karte rot und bringt dich hin. Blueprint-Automationen öffnen sich nur lesend, mit ihren Eingaben gefüllt. Bevor eine Fassung überschrieben wird, die inzwischen in Home Assistant geändert wurde, fragt FLODE, ob sie geladen oder überschrieben werden soll. „Ab hier ausführen“ nimmt die Daten des letzten Auslösers mit.</span></p>
-        </div>
-      </div>
-      <div class="b s6 reveal d1">
-        <div class="txt">
-          <span class="k">26.10.11 + 26.10.13</span>
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c4 0 4-10 8-10s4 10 8 10"/><circle cx="3" cy="17" r="1"/><circle cx="19" cy="17" r="1"/></svg></div>
-          <h3><span class="en">Cleaner lines</span><span class="de">Sauberere Linien</span></h3>
-          <p><span class="en">Each branch runs straight in its own lane and only turns at the end of the block. A line to a step left of or above its block no longer hooks back through the cards: it runs out past the "+", across the gap and back into the input, with rounded corners. The bend into a moved branch step follows the step to its row. Dragging a card no longer makes it jump when Home Assistant sends an update.</span><span class="de">Jeder Zweig läuft gerade in seiner eigenen Spur und biegt erst am Ende des Blocks ab. Eine Linie zu einem Schritt links oder oberhalb seines Blocks hakt nicht mehr durch die Karten zurück: Sie läuft am „+“ vorbei, durch die Lücke neben den Karten und mit runden Ecken zurück in den Eingang. Der Knick zu einem verschobenen Zweig-Schritt folgt dem Schritt in seine Zeile. Beim Ziehen springt eine Karte nicht mehr, wenn Home Assistant eine Aktualisierung schickt.</span></p>
+          <span class="k">26.10.15</span>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z"/></svg></div>
+          <h3><span class="en">Run this card</span><span class="de">Diese Karte ausführen</span></h3>
+          <p><span class="en">Runs one step for real in Home Assistant, without everything after it. Inside an If-then or Choose branch too.</span><span class="de">Führt einen Schritt echt in Home Assistant aus, ohne alles danach. Auch in einem Zweig von Wenn-dann oder Auswählen.</span></p>
         </div>
       </div>
     </div>
@@ -518,12 +483,7 @@ footer .fine { flex-basis: 100%; }
       <p class="eyebrow"><span class="en">Everything else</span><span class="de">Alles andere</span></p>
       <h2><span class="en">Small things that add up.</span><span class="de">Kleinigkeiten, die sich summieren.</span></h2>
     </div>
-    <div class="tiles">
-      <div class="tile reveal">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v14l11-7z"/></svg></div>
-        <h3><span class="en">Scripts, too</span><span class="de">Auch Skripte</span></h3>
-        <p><span class="en">With fields, a run button that asks for them, and <em>Run from here</em> for any step.</span><span class="de">Mit Feldern, einem Ausführen-Knopf, der danach fragt, und <em>Ab hier ausführen</em> für jeden Schritt.</span></p>
-      </div>
+    <div class="tiles c3">
       <div class="tile reveal d1">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4l-5 8 5 8M16 4l5 8-5 8"/></svg></div>
         <h3><span class="en">Template workshop</span><span class="de">Template-Werkstatt</span></h3>
@@ -543,11 +503,6 @@ footer .fine { flex-basis: 100%; }
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4M4 21h16"/></svg></div>
         <h3><span class="en">Import, export, merge</span><span class="de">Importieren, exportieren, zusammenführen</span></h3>
         <p><span class="en">Paste YAML, save as copy, FLODE files, and merge several automations into one.</span><span class="de">YAML einfügen, als Kopie speichern, FLODE-Dateien und mehrere Automationen zu einer zusammenführen.</span></p>
-      </div>
-      <div class="tile reveal d1">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></div>
-        <h3><span class="en">Careful with your data</span><span class="de">Sorgsam mit deinen Daten</span></h3>
-        <p><span class="en">Warns when it cannot read part of an automation, keeps fields it does not model as written, and never saves a blueprint automation.</span><span class="de">Warnt, wenn ein Teil einer Automation nicht lesbar ist, lässt Felder, die es nicht kennt, wie sie sind, und speichert Blueprint-Automationen nie.</span></p>
       </div>
       <div class="tile reveal d2">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 9v11"/></svg></div>
@@ -621,6 +576,21 @@ footer .fine { flex-basis: 100%; }
           <span class="k">entity_id</span>: <span class="s">switch.string_lights</span>
 <span class="k">mode</span>: <span class="v">restart</span></pre>
       </div>
+    </div>
+    <div class="what reveal">
+      <table>
+        <thead><tr><th><span class="en">In Home Assistant</span><span class="de">In Home Assistant</span></th><th><span class="en">In FLODE</span><span class="de">In FLODE</span></th></tr></thead>
+        <tbody>
+        <tr><th><span class="en">Triggers, conditions, actions</span><span class="de">Auslöser, Bedingungen, Aktionen</span></th><td><span class="en">One card each, with the entity's own icon and live state</span><span class="de">Je eine Karte, mit dem Symbol der Entität und ihrem aktuellen Zustand</span></td></tr>
+        <tr><th><span class="en"><code>choose</code>, <code>if</code> / <code>then</code> / <code>else</code></span><span class="de"><code>choose</code>, <code>if</code> / <code>then</code> / <code>else</code></span></th><td><span class="en">Branches as cards, nested as deep as you like</span><span class="de">Zweige als Karten, beliebig tief verschachtelt</span></td></tr>
+        <tr><th><span class="en"><code>parallel</code></span><span class="de"><code>parallel</code></span></th><td><span class="en">One lane per action, meeting again at the next step</span><span class="de">Eine Bahn je Aktion, die sich beim nächsten Schritt wieder treffen</span></td></tr>
+        <tr><th><span class="en"><code>repeat</code></span><span class="de"><code>repeat</code></span></th><td><span class="en">One building block; a line drawn back to an earlier card is saved as <code>repeat</code> with <code>until</code> or <code>while</code></span><span class="de">Ein Baustein; eine Linie zurück zu einer früheren Karte wird als <code>repeat</code> mit <code>until</code> oder <code>while</code> gespeichert</span></td></tr>
+        <tr><th><span class="en">A condition right after the triggers</span><span class="de">Eine Bedingung direkt nach den Auslösern</span></th><td><span class="en">One output only, because Home Assistant stops the run there</span><span class="de">Nur ein Ausgang, weil Home Assistant den Lauf dort beendet</span></td></tr>
+        <tr><th><span class="en">Steps or fields FLODE cannot model</span><span class="de">Schritte oder Felder, die FLODE nicht abbilden kann</span></th><td><span class="en">Kept as written, handed to Home Assistant's editor and saved back unchanged</span><span class="de">Bleiben, wie sie sind, gehen an den Editor von Home Assistant und werden unverändert zurückgeschrieben</span></td></tr>
+        <tr><th><span class="en">Scripts</span><span class="de">Skripte</span></th><td><span class="en">The same canvas, with fields and a run button that asks for them</span><span class="de">Dieselbe Fläche, mit Feldern und einem Ausführen-Knopf, der danach fragt</span></td></tr>
+        <tr><th><span class="en">Blueprint automations</span><span class="de">Blueprint-Automationen</span></th><td><span class="en">Opened read-only, with the inputs filled in</span><span class="de">Nur zum Lesen geöffnet, mit ausgefüllten Eingaben</span></td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </section>
