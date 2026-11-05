@@ -66,7 +66,7 @@ mode: restart
 
 </details>
 
-**New in 26.10:** parallel actions in lanes of their own, notes, frames and coloured cards, *Run this card* and seven languages. Every change in the [changelog](CHANGELOG.md).
+**New in 26.11:** Simplified Chinese, so FLODE now speaks eight languages. **New in 26.10:** parallel actions in lanes of their own, notes, frames and coloured cards and *Run this card*. Every change in the [changelog](CHANGELOG.md).
 
 <a id="install"></a>
 ## Install
@@ -136,7 +136,7 @@ Optional. If you have set up an AI in Home Assistant (Anthropic, OpenAI, Google 
 
 - FLODE never overwrites anything it was not asked to save. Back up your automations before big edits anyway.
 - It warns when it cannot read part of an automation.
-- FLODE follows the language and theme of your Home Assistant profile: English, German, Dutch, French, Spanish, Italian, Portuguese and Simplified Chinese.
+- FLODE follows the language and theme of your Home Assistant profile: English, German, Dutch, French, Spanish, Italian, Portuguese and Simplified Chinese. Any other language, Traditional Chinese included, shows English.
 - Versions are `YY.M.N`: year, month and the number of the release in that month, without a leading "v". They count as newer than every 3.x version.
 
 <details>
