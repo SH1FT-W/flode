@@ -3,6 +3,7 @@ import { fr } from './locales/fr.ts';
 import { it } from './locales/it.ts';
 import { nl } from './locales/nl.ts';
 import { pt } from './locales/pt.ts';
+import { zh } from './locales/zh.ts';
 
 /**
  * FLODE's own UI strings: German and English here, the other languages in
@@ -758,7 +759,7 @@ export type StringKey = keyof (typeof STRINGS)['en'];
 export type Strings = Record<StringKey, string>;
 
 /** The languages FLODE speaks; any other HA language gets English. */
-export const LANGUAGES = ['de', 'en', 'nl', 'fr', 'es', 'it', 'pt'] as const;
+export const LANGUAGES = ['de', 'en', 'nl', 'fr', 'es', 'it', 'pt', 'zh'] as const;
 export type Language = (typeof LANGUAGES)[number];
 
 function isLanguage(value: string): value is Language {
@@ -780,6 +781,7 @@ export const STRING_TABLES: Readonly<Record<Language, Strings>> = {
   es,
   it,
   pt,
+  zh,
 };
 
 export function t(language: string, key: StringKey): string {

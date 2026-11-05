@@ -19,6 +19,9 @@ import nlNodes from './nl/nodes.json';
 import ptCommon from './pt/common.json';
 import ptMap from './pt/map.json';
 import ptNodes from './pt/nodes.json';
+import zhCommon from './zh/common.json';
+import zhMap from './zh/map.json';
+import zhNodes from './zh/nodes.json';
 
 /**
  * The `common`, `nodes` and `map` (Zusammenhänge) i18next namespaces — node summaries, block names
@@ -32,6 +35,7 @@ export const coreResources = {
   es: { common: esCommon, nodes: esNodes, map: esMap },
   it: { common: itCommon, nodes: itNodes, map: itMap },
   pt: { common: ptCommon, nodes: ptNodes, map: ptMap },
+  zh: { common: zhCommon, nodes: zhNodes, map: zhMap },
 } as const;
 
 export type CoreLanguage = keyof typeof coreResources;
