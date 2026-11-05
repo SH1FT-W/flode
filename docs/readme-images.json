@@ -14,7 +14,7 @@
         "v"
       ],
       [
-        "HACS"
+        "Marketplace"
       ]
     ],
     "logo": "docs/images/flode.svg",
@@ -38,7 +38,8 @@
       "bar": "Home Assistant › FLODE",
       "left": 600,
       "top": 96
-    }
+    },
+    "layout": "center"
   },
   "fonts": {
     "display": "\"Bricolage Grotesque\", system-ui, sans-serif",
