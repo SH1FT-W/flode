@@ -766,9 +766,15 @@ function isLanguage(value: string): value is Language {
   return LANGUAGES.some((language) => language === value);
 }
 
-/** HA's language ("de", "nl", "pt-BR" …) as the FLODE language to show. */
+/** Script or region subtags after "zh" that mean Simplified Chinese; FLODE has no Traditional. */
+const SIMPLIFIED_CHINESE = ['hans', 'cn', 'sg'];
+
+/** HA's language ("de", "nl", "pt-BR", "zh-Hans" …) as the FLODE language to show. */
 export function uiLanguage(language: string | undefined): Language {
-  const base = (language ?? 'en').split('-')[0].toLowerCase();
+  const [base, subtag] = (language ?? 'en').toLowerCase().split('-');
+  if (base === 'zh') {
+    return subtag === undefined || SIMPLIFIED_CHINESE.includes(subtag) ? 'zh' : 'en';
+  }
   return isLanguage(base) ? base : 'en';
 }
 
