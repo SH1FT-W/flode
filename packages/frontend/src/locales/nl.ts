@@ -284,6 +284,7 @@ export const nl: Strings = {
   branchDefault: 'Standaard',
   branchThen: 'Dan',
   branchElse: 'Anders',
+  branchRepeat: 'Lus',
   addInBranch: 'Actie toevoegen aan deze tak',
   endsHere: 'Eindigt hier',
   endsWithError: 'Eindigt met een fout',

@@ -284,6 +284,7 @@ export const es: Strings = {
   branchDefault: 'Predeterminado',
   branchThen: 'Entonces',
   branchElse: 'Si no',
+  branchRepeat: 'Bucle',
   addInBranch: 'Añadir acción a esta rama',
   endsHere: 'Termina aquí',
   endsWithError: 'Termina con un error',

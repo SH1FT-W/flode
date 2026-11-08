@@ -408,6 +408,27 @@ describe('HA building blocks (kept as one block)', () => {
     expect(raw({ parallel: [{}, {}] })).toEqual({ kind: 'Parallel ausführen', title: '2 Zweige' });
   });
 
+  it('shows the template of an if on the card (#43)', () => {
+    const template = "{{ level == 'critical' }}";
+    expect(
+      raw({ if: [{ condition: 'template', value_template: template }], then: [{}] }).title
+    ).toBe(template);
+    expect(raw({ if: [template], then: [{}] }).title).toBe(template);
+    expect(raw({ if: template, then: [{}] }).title).toBe(template);
+    expect(
+      raw({ repeat: { while: [{ condition: 'template', value_template: template }] } }).title
+    ).toContain(template);
+  });
+
+  it('names the list of a for_each (#42)', () => {
+    expect(raw({ repeat: { for_each: '{{ all_devices }}', sequence: [{}] } })).toMatchObject({
+      detail: '{{ all_devices }} · 1 Aktion',
+    });
+    expect(raw({ repeat: { for_each: ['a', 'b'], sequence: [{}] } })).toMatchObject({
+      detail: 'a, b · 1 Aktion',
+    });
+  });
+
   it('names a stop kept in a branch like a stop card of its own (#38)', () => {
     const own = (step: Record<string, unknown>) => summarizeAction(step, makeContext());
     expect(raw({ stop: 'Pumpe läuft schon' })).toEqual(own({ stop: 'Pumpe läuft schon' }));

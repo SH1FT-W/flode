@@ -281,6 +281,7 @@ export const it: Strings = {
   branchDefault: 'Predefinito',
   branchThen: 'Allora',
   branchElse: 'Altrimenti',
+  branchRepeat: 'Ciclo',
   addInBranch: 'Aggiungi azione a questo ramo',
   endsHere: 'Termina qui',
   endsWithError: 'Termina con un errore',

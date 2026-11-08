@@ -287,6 +287,7 @@ export const fr: Strings = {
   branchDefault: 'Par défaut',
   branchThen: 'Alors',
   branchElse: 'Sinon',
+  branchRepeat: 'Boucle',
   addInBranch: 'Ajouter une action à cette branche',
   endsHere: "S'arrête ici",
   endsWithError: "S'arrête avec une erreur",

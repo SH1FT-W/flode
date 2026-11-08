@@ -283,6 +283,7 @@ export const pt: Strings = {
   branchDefault: 'Padrão',
   branchThen: 'Então',
   branchElse: 'Se não',
+  branchRepeat: 'Ciclo',
   addInBranch: 'Adicionar ação a este ramo',
   endsHere: 'Termina aqui',
   endsWithError: 'Termina com um erro',

@@ -1,0 +1,25 @@
+# A script: a for_each loop with steps (drawn as cards, #42), a step after it, a loop nested in an if.
+alias: Repeat for each
+description: Loop over a list, then go on
+mode: single
+sequence:
+  - repeat:
+      for_each: "{{ ['kitchen', 'hall'] }}"
+      sequence:
+        - action: persistent_notification.create
+          data:
+            message: "{{ repeat.item }}"
+        - delay:
+            seconds: 1
+  - if:
+      - condition: template
+        value_template: "{{ now().hour > 12 }}"
+    then:
+      - repeat:
+          count: 2
+          sequence:
+            - delay:
+                seconds: 1
+  - action: persistent_notification.create
+    data:
+      message: done

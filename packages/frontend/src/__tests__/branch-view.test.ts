@@ -715,3 +715,99 @@ describe('tinted cards (#28)', () => {
     expect(withoutStaleOffsets(graph).cardColors).toEqual({ n: 'blue' });
   });
 });
+
+describe('repeat block (#42)', () => {
+  const repeat = {
+    repeat: {
+      for_each: '{{ all_devices }}',
+      sequence: [
+        { action: 'notify.{{ repeat.item }}', data: { message: '{{ message }}' } },
+        { delay: 1 },
+      ],
+    },
+  };
+  const first = branchCardId('b', ['repeat', 'sequence', 0]);
+  const second = branchCardId('b', ['repeat', 'sequence', 1]);
+
+  it('draws the steps of the loop, the flow going on after them', () => {
+    const view = branchView(flow(repeat));
+    expect(view.branches.get('b')?.map((b) => b.label)).toEqual([{ kind: 'repeat' }]);
+    const nodes = new Map(view.graph.nodes.map((n) => [n.id, n]));
+    expect(nodes.get(first)?.data).toMatchObject({ service: 'notify.{{ repeat.item }}' });
+    expect(nodes.get(second)).toBeDefined();
+    expect(nodes.get('n')?.position.x).toBeGreaterThan(nodes.get(second)?.position.x ?? 0);
+    const lines = view.graph.edges.map((e) => [e.source, e.sourceHandle ?? null, e.target]);
+    expect(lines).toEqual(
+      expect.arrayContaining([
+        ['b', 'b0', first],
+        [first, null, second],
+        [second, null, 'n'],
+      ])
+    );
+  });
+
+  it.each([
+    ['count', { count: 3 }],
+    ['while', { while: [{ condition: 'state', entity_id: 'a.b', state: 'on' }] }],
+    ['until', { until: [{ condition: 'state', entity_id: 'a.b', state: 'on' }] }],
+  ])('expands a %s loop too', (_name, loop) => {
+    const view = branchView(flow({ repeat: { ...loop, sequence: [{ delay: 1 }] } }));
+    expect(view.cards.has(branchCardId('b', ['repeat', 'sequence', 0]))).toBe(true);
+  });
+
+  it('expands a repeat nested in a branch', () => {
+    const view = branchView(flow({ if: [], then: [repeat] }));
+    expect(view.cards.has(branchCardId('b', ['then', 0, 'repeat', 'sequence', 0]))).toBe(true);
+  });
+
+  it('leaves a repeat without a list of steps as one card', () => {
+    expect(branchView(flow({ repeat: { count: 2 } })).branches.size).toBe(0);
+  });
+
+  it('writes an edited step back and saves the block unchanged otherwise', async () => {
+    const graph = flow(repeat);
+    const ref = branchView(graph).cards.get(second);
+    if (!ref) throw new Error('no card');
+    const { graph: next } = setBranchStep(graph, ref, { delay: 9 });
+    expect(next.nodes.find((n) => n.id === 'b')?.data).toEqual({
+      _raw: { repeat: { ...repeat.repeat, sequence: [repeat.repeat.sequence[0], { delay: 9 }] } },
+    });
+    const yaml = await flowYaml(graph, 'automation');
+    expect(yaml).toContain('for_each:');
+  });
+
+  it('adds a step inside the loop', () => {
+    const graph = flow(repeat);
+    const at = branchInsertAt(branchView(graph), 'b', 'b0');
+    if (!at) throw new Error('no place');
+    const { id, graph: next } = insertBranchStep(graph, at, { delay: 5 });
+    expect(id).toBe(first);
+    const step = nodeToStep(next.nodes.find((n) => n.id === 'b') ?? graph.nodes[0]);
+    expect(step).toMatchObject({ repeat: { sequence: [{ delay: 5 }, {}, {}] } });
+  });
+
+  it('keeps what follows connected when the loop ends in a stop: it may run zero times', () => {
+    const view = branchView(flow({ repeat: { count: 2, sequence: [{ stop: 'done' }] } }));
+    const stop = branchCardId('b', ['repeat', 'sequence', 0]);
+    expect(view.ends.size).toBe(0);
+    expect(view.graph.edges.some((e) => e.source === stop && e.target === 'n')).toBe(true);
+  });
+
+  it('marks the steps of the loop a run went through', () => {
+    const trace: HaTrace = {
+      run_id: '1',
+      state: 'stopped',
+      timestamp: { start: '' },
+      context: { id: 'c' },
+      config: {},
+      trace: {
+        'trigger/0': [{ path: 'trigger/0', timestamp: '' }],
+        'action/0': [{ path: 'action/0', timestamp: '' }],
+        'action/0/repeat/sequence/0': [{ path: 'action/0/repeat/sequence/0', timestamp: '' }],
+      },
+    };
+    const marks = runMarks(flow(repeat), 'automation', trace);
+    expect(marks.get(first)).toBe('done');
+    expect(marks.has(second)).toBe(false);
+  });
+});

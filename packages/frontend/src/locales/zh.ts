@@ -267,6 +267,7 @@ export const zh: Strings = {
   branchDefault: '默认',
   branchThen: '则',
   branchElse: '否则',
+  branchRepeat: '循环',
   addInBranch: '向此分支添加动作',
   endsHere: '到此结束',
   endsWithError: '以错误结束',

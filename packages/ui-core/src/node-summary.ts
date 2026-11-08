@@ -827,16 +827,29 @@ function stepCount(value: unknown): number {
 
 /** Short text for a block's (first) condition, "+N" for the rest. */
 function conditionsText(value: unknown, ctx: SummaryContext): string {
-  const list = (Array.isArray(value) ? value : [value]).filter(isPlainObject);
+  const list = (Array.isArray(value) ? value : [value])
+    .map((item) =>
+      // HA's shorthand: a bare template is a template condition.
+      typeof item === 'string' ? { condition: 'template', value_template: item } : item
+    )
+    .filter(isPlainObject);
   const [first] = list;
   if (!first) return '';
-  const text = summarizeCondition(
-    { ...first, condition: asString(first.condition) ?? '' },
-    ctx
-  ).title;
+  const condition = asString(first.condition) ?? '';
+  const summary = summarizeCondition({ ...first, condition }, ctx);
+  // "Template is true" says nothing: the template itself tells the blocks apart (#43).
+  const text = condition === 'template' ? (summary.detail ?? summary.title) : summary.title;
   return list.length > 1
     ? ctx.t('nodes:blocks.conditionsMore', { first: text, more: list.length - 1 })
     : text;
+}
+
+/** What a `for_each` goes through: its template or its items (#42). */
+function forEachText(value: unknown): string | undefined {
+  const items = (Array.isArray(value) ? value : [value]).filter(
+    (item) => typeof item === 'string' || typeof item === 'number'
+  );
+  return items.length > 0 ? snippet(items.join(', ')) : undefined;
 }
 
 /** HA building blocks shown as one card: HA's name, then what's inside. */
@@ -880,7 +893,10 @@ function summarizeHaBlock(
       return {
         kind,
         title,
-        detail: t('nodes:blocks.steps', { count: stepCount(repeat.sequence) }),
+        detail: parts(
+          forEachText(repeat.for_each),
+          t('nodes:blocks.steps', { count: stepCount(repeat.sequence) })
+        ),
       };
     }
     case 'parallel':

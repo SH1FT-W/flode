@@ -34,7 +34,7 @@ import { lineKey, withLinesKept } from './line-bends';
 import { t } from './strings';
 
 /**
- * HA's branching blocks (`choose`, `if`, `parallel` #39) drawn with their branches (#27): the
+ * HA's branching blocks (`choose`, `if`, `parallel` #39, `repeat` #42) drawn with their branches (#27): the
  * block stays ONE card in the graph — its HA step is the only truth and is
  * saved unchanged — but the canvas shows one output per branch, the steps of
  * each branch as cards, and the branches meeting again at whatever follows
@@ -46,7 +46,7 @@ export type StepPath = readonly (string | number)[];
 
 export type BranchLabel =
   | { kind: 'option' | 'parallel'; number: number; alias?: string }
-  | { kind: 'default' | 'then' | 'else' };
+  | { kind: 'default' | 'then' | 'else' | 'repeat' };
 
 /** One output of a block: a branch and the steps in it. */
 export interface Branch {
@@ -192,6 +192,8 @@ export function branchLabelText(language: string, label: BranchLabel, short = fa
       return t(language, 'branchThen');
     case 'else':
       return t(language, 'branchElse');
+    case 'repeat':
+      return t(language, 'branchRepeat');
   }
 }
 
@@ -204,11 +206,19 @@ export function isBranchCardId(id: string | null | undefined): boolean {
   return !!id?.includes(SEPARATOR);
 }
 
-/** A `choose` / `if` / `parallel` step — what the canvas expands, also inside a branch. */
+/** A `repeat` step whose loop body is a list of steps (#42). */
+function isLoop(step: Record<string, unknown>): boolean {
+  return isPlainObject(step.repeat) && Array.isArray(step.repeat.sequence);
+}
+
+/** A `choose` / `if` / `parallel` / `repeat` step — what the canvas expands, also inside a branch. */
 function isBranching(step: unknown): step is Record<string, unknown> {
   return (
     isPlainObject(step) &&
-    ('choose' in step || 'if' in step || ('parallel' in step && Array.isArray(step.parallel)))
+    ('choose' in step ||
+      'if' in step ||
+      ('parallel' in step && Array.isArray(step.parallel)) ||
+      isLoop(step))
   );
 }
 
@@ -253,6 +263,8 @@ function alwaysStops(steps: readonly unknown[]): boolean {
     (step) =>
       stopKind(step) !== null ||
       (isBranching(step) &&
+        // A loop may run zero times: its stops don't end every run through it (#42).
+        !isLoop(step) &&
         stepIsOn(step) &&
         blockBranches('', step, []).every((b) => alwaysStops(branchSteps(step, b))))
   );
@@ -269,8 +281,8 @@ function stopsEnd(step: unknown, followed: boolean): boolean {
 }
 
 /**
- * The branches of a `choose` (options + default), an `if` (then + else) or a
- * `parallel` (one per item) sitting at `at` inside the HA step of flow card `blockId`.
+ * The branches of a `choose` (options + default), an `if` (then + else), a
+ * `parallel` (one per item) or a `repeat` (its loop body) sitting at `at` inside the HA step of flow card `blockId`.
  */
 function blockBranches(blockId: string, step: Record<string, unknown>, at: StepPath): Branch[] {
   const make = (
@@ -301,6 +313,10 @@ function blockBranches(blockId: string, step: Record<string, unknown>, at: StepP
         ? make(label, ['parallel', i, 'sequence'], stepList(item.sequence), i)
         : make(label, ['parallel', i], [item], i, true);
     });
+  }
+  if (isLoop(step)) {
+    const path = ['repeat', 'sequence'];
+    return [make({ kind: 'repeat' }, path, stepList(valueAt(step, path)), 0)];
   }
   if ('if' in step) {
     return [
@@ -485,9 +501,11 @@ class BranchLayout {
         const into = axis.cross(position) + axis.breadth(size) / 2;
         for (const exit of from) this.line(i === 0 ? laneAt(axis, exit, into) : exit, card);
         const last = i === branch.cards.length - 1;
+        // What follows a loop is still reached when it runs zero times (#42).
+        const closes = last && !isLoop(step);
         // Last in its branch, a block that always stops ends the branch too.
         from = nested
-          ? this.block(card, nested, path, position, ending && stopsEnd(nested, !last))
+          ? this.block(card, nested, path, position, ending && stopsEnd(nested, !closes))
           : [
               {
                 source: card,
@@ -499,7 +517,7 @@ class BranchLayout {
               },
             ];
         // A stop last in its branch ends the run there: nothing leads on from it (#38).
-        const ends = ending && last ? stopKind(raw) : null;
+        const ends = ending && closes ? stopKind(raw) : null;
         if (ends) {
           this.ends.set(card, ends);
           from = [];
@@ -1014,7 +1032,14 @@ export function storedPosition(
   return axis.at(axis.main(drawn) - (view.shift.get(id) ?? 0), axis.cross(drawn));
 }
 
-const BRANCH_KEYS: ReadonlySet<string> = new Set(['choose', 'default', 'then', 'else', 'parallel']);
+const BRANCH_KEYS: ReadonlySet<string> = new Set([
+  'choose',
+  'default',
+  'then',
+  'else',
+  'parallel',
+  'repeat',
+]);
 
 /**
  * The branch card a trace path is about: `action/1/choose/0/sequence/2` →
