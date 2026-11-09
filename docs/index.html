@@ -20,55 +20,47 @@
 <meta name="twitter:description" content="Automations and scripts as a flow, with Home Assistant's own editors, real runs on the canvas and optional AI help.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/flode-editor-dark.png">
 <link rel="icon" type="image/svg+xml" href="images/flode.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-<!-- Shared SH1FT-W design (tokens, glass navigation, light/dark, DE/EN, reveal) -->
-<link rel="stylesheet" href="https://sh1ft-w.github.io/theme/v1/theme.css">
-<script src="https://sh1ft-w.github.io/theme/v1/theme.js"></script>
+<!-- Shared SH1FT-W design, version 2 (tokens, Archivo, navigation, light/dark, DE/EN, the lanes) -->
+<link rel="stylesheet" href="https://sh1ft-w.github.io/theme/v2/theme.css">
+<script src="https://sh1ft-w.github.io/theme/v2/theme.js"></script>
 <style>
 /* FLODE-Farben aus dem Logo: Navy, Himmelblau, Violett; Dunkel folgt dem System oder dem Schalter oben rechts */
 :root {
   --accent: var(--sky); --font: var(--body); --nav-gap: 16px;
   --bg: #f5f8fb; --bg-2: #eaf0f6; --card: #ffffff; --card-2: #eef3f8;
   --ink: #0f1a2a; --ink-2: #5a6879; --ink-3: rgba(15,26,42,0.52);
-  --sky: #4cc9fb; --sky-text: #0284c7; --sky-tint: rgba(14,165,233,0.12); --sky-glow: rgba(76,201,251,0.35); --on-sky: #0b1220;
+  --sky: #4cc9fb; --sky-text: #0284c7; --sky-tint: rgba(14,165,233,0.12); --on-sky: #0b1220;
   --violet: #7c5cf0; --violet-tint: rgba(124,92,240,0.12);
   --trigger: #e6a800; --condition: #2196f3; --action: #43a047;
   --line: rgba(15,26,42,0.1); --chip: rgba(15,26,42,0.06);
   --glass: rgba(255,255,255,0.68); --glass-line: rgba(255,255,255,0.7);
   --code-bg: #0b1220; --code-ink: #eef3fa; --code-k: #8fc8ff; --code-s: #8fe0a8; --code-v: #f4c47a;
-  --shadow: 0 1px 2px rgba(15,26,42,0.05), 0 12px 32px -14px rgba(15,26,42,0.2);
-  --shadow-lg: 0 2px 6px rgba(15,26,42,0.05), 0 48px 100px -36px rgba(15,26,42,0.4);
-  --radius: 24px; --radius-lg: 32px; --gutter: clamp(16px, 5vw, 48px); --max: 1180px;
-  --blob-1: rgba(76,201,251,0.3); --blob-2: rgba(167,139,250,0.22); --blob-3: rgba(76,201,251,0.14);
-  --display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
-  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 20px; --radius-lg: 28px; --gutter: clamp(16px, 5vw, 48px); --max: 1200px;
+  /* The lanes start darker than the sky accent so white text stays readable */
+  --lane-a: #0f8fd0; --lane-b: #38bdf8;
+  --display: "Archivo", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --body: "Archivo", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0b1220; --bg-2: #0e1727; --card: #131d30; --card-2: #1a2539;
   --ink: #eef3fa; --ink-2: #9aa8bd; --ink-3: rgba(154,168,189,0.62);
-  --sky: #4cc9fb; --sky-text: #4cc9fb; --sky-tint: rgba(76,201,251,0.14); --sky-glow: rgba(76,201,251,0.28); --on-sky: #0b1220;
+  --sky: #4cc9fb; --sky-text: #4cc9fb; --sky-tint: rgba(76,201,251,0.14); --on-sky: #0b1220;
   --violet: #a78bfa; --violet-tint: rgba(167,139,250,0.14);
   --trigger: #ffc107; --condition: #42a5f5; --action: #66bb6a;
   --line: rgba(238,243,250,0.1); --chip: rgba(238,243,250,0.07);
   --glass: rgba(17,26,43,0.64); --glass-line: rgba(255,255,255,0.08);
   --code-bg: #0a101c;
-  --shadow: 0 14px 34px -16px rgba(0,0,0,0.6); --shadow-lg: 0 48px 100px -36px rgba(0,0,0,0.8);
-  --blob-1: rgba(76,201,251,0.18); --blob-2: rgba(167,139,250,0.14); --blob-3: rgba(14,165,233,0.1);
 } }
 :root[data-theme="dark"] {
   --bg: #0b1220; --bg-2: #0e1727; --card: #131d30; --card-2: #1a2539;
   --ink: #eef3fa; --ink-2: #9aa8bd; --ink-3: rgba(154,168,189,0.62);
-  --sky: #4cc9fb; --sky-text: #4cc9fb; --sky-tint: rgba(76,201,251,0.14); --sky-glow: rgba(76,201,251,0.28); --on-sky: #0b1220;
+  --sky: #4cc9fb; --sky-text: #4cc9fb; --sky-tint: rgba(76,201,251,0.14); --on-sky: #0b1220;
   --violet: #a78bfa; --violet-tint: rgba(167,139,250,0.14);
   --trigger: #ffc107; --condition: #42a5f5; --action: #66bb6a;
   --line: rgba(238,243,250,0.1); --chip: rgba(238,243,250,0.07);
   --glass: rgba(17,26,43,0.64); --glass-line: rgba(255,255,255,0.08);
   --code-bg: #0a101c;
-  --shadow: 0 14px 34px -16px rgba(0,0,0,0.6); --shadow-lg: 0 48px 100px -36px rgba(0,0,0,0.8);
-  --blob-1: rgba(76,201,251,0.18); --blob-2: rgba(167,139,250,0.14); --blob-3: rgba(14,165,233,0.1);
 }
 
 a { color: var(--sky-text); text-decoration: none; }
@@ -77,10 +69,10 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .narrow { max-width: 760px; }
 p { margin: 0; }
 .muted { color: var(--ink-2); }
-.center { text-align: center; }
-.center .lead { margin-left: auto; margin-right: auto; max-width: 680px; }
+.center .lead { max-width: 680px; }
 kbd { font-family: var(--mono); font-size: 12px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); background: var(--chip); color: var(--ink); }
 
+body { font-family: var(--font); }
 /* Glas-Navigation, Hell/Dunkel-Knopf und Sprachschalter kommen aus theme.css */
 .brand { font-family: var(--display); font-weight: 800; letter-spacing: -0.01em; }
 .nav-links { gap: 2px; }
@@ -88,75 +80,66 @@ kbd { font-family: var(--mono); font-size: 12px; padding: 1px 6px; border-radius
 
 /* Knöpfe */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 24px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 24px; border-radius: 12px;
   font-family: inherit; font-size: 15px; font-weight: 600; line-height: 1;
   background: var(--sky); color: var(--on-sky); border: 0; cursor: pointer;
-  box-shadow: 0 12px 28px -12px var(--sky-glow); transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
+  box-shadow: none; transition: transform .2s ease, filter .2s ease;
 }
-.btn:hover { text-decoration: none; filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 16px 32px -12px var(--sky-glow); }
-.btn.ghost { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+.btn:hover { text-decoration: none; filter: brightness(1.05); transform: translateY(-1px); }
+.btn.ghost { background: var(--chip); color: var(--ink); }
 .btn.small { height: 36px; padding: 0 16px; font-size: 14px; }
 
 /* Schrift */
-.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sky-text); margin: 0 0 18px; }
-.eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--violet); }
+.eyebrow { font-size: 16px; font-weight: 650; color: var(--sky-text); margin: 0 0 12px; }
 h1, h2, h3 { margin: 0; color: var(--ink); font-family: var(--display); font-weight: 800; text-wrap: balance; }
-h1 { font-size: clamp(46px, 8.4vw, 100px); line-height: 0.96; letter-spacing: -0.04em; }
-h1 em, h2 em { font-style: normal; color: var(--sky-text); }
-h2 { font-size: clamp(34px, 5vw, 60px); line-height: 1.02; letter-spacing: -0.035em; }
-h3 { font-size: 20px; line-height: 1.22; letter-spacing: -0.015em; font-weight: 700; }
+h1 { font-size: clamp(40px, 5.2vw, 72px); line-height: 1; font-stretch: 118%; font-style: italic; letter-spacing: -0.025em; }
+h2 { font-size: clamp(30px, 3.8vw, 48px); line-height: 1.08; font-weight: 750; font-stretch: 112%; letter-spacing: -0.02em; }
+h3 { font-size: 20px; line-height: 1.22; letter-spacing: -0.015em; font-weight: 700; font-stretch: 106%; }
 .lead { font-size: clamp(18px, 2vw, 22px); line-height: 1.45; color: var(--ink-2); margin: 22px 0 0; }
 .lead strong { color: var(--ink); font-weight: 600; }
 
 /* Abschnitte */
 section { padding: clamp(72px, 9vw, 128px) 0; position: relative; }
 section.tint { background: var(--bg-2); }
-.head { margin-bottom: clamp(40px, 5.5vw, 64px); }
-.split h2 { font-size: clamp(32px, 4.2vw, 52px); }
+.head { margin-bottom: clamp(40px, 5.5vw, 64px); max-width: 50em; }
 
 /* Bildrahmen */
-.shot { border-radius: var(--radius); overflow: hidden; background: var(--card-2); box-shadow: var(--shadow-lg); position: relative; }
-.shot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--glass-line); pointer-events: none; }
+.shot { border-radius: var(--radius); overflow: hidden; background: var(--card-2); position: relative; }
+.shot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--line); pointer-events: none; }
 .shot.lg { border-radius: var(--radius-lg); }
 .shot img { width: 100%; }
-.cap { margin-top: 18px; font-size: 15px; color: var(--ink-3); text-align: center; }
+.cap { margin-top: 18px; font-size: 15px; color: var(--ink-3); }
 figure { margin: 0; }
-figcaption.cap { text-align: left; }
 figcaption strong { color: var(--ink); font-weight: 600; }
 
-/* Hero mit Farbschleier in Himmelblau und Violett */
-.hero { padding: clamp(56px, 9vw, 112px) 0 clamp(64px, 9vw, 112px); text-align: center; }
-.hero .glow { position: absolute; inset: -30% -10% auto; height: 90%; z-index: 0; pointer-events: none;
-  background:
-    radial-gradient(42% 38% at 22% 28%, var(--blob-1), transparent 70%),
-    radial-gradient(36% 34% at 78% 22%, var(--blob-2), transparent 70%),
-    radial-gradient(50% 40% at 50% 70%, var(--blob-3), transparent 70%);
-  filter: blur(48px); opacity: .8; }
-.hero .wrap { position: relative; z-index: 1; }
-.hero h1 { max-width: 13ch; margin: 0 auto; }
-.hero .lead { max-width: 660px; margin-left: auto; margin-right: auto; }
-.cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 36px; }
-.meta { margin-top: 22px; font-size: 14px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 8px 14px; justify-content: center; align-items: center; }
-.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); font-weight: 600; color: var(--ink-2); font-size: 13px; font-family: var(--mono); }
+/* Hero: text on the left, the lanes on the right, the editor screenshot as a full-width stage below */
+.hero { padding: clamp(48px, 7vw, 96px) 0 clamp(56px, 7vw, 96px); overflow: hidden; }
+.hero-top { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 64px); align-items: center; }
+.hero .mark { display: block; width: 64px; height: 64px; border-radius: 15px; margin-bottom: 26px; }
+.hero .lead { max-width: 34em; }
+.hero .s-lanes { margin: 0 calc(-1 * var(--gutter) - 14vw) 0 clamp(40px, 5vw, 72px); }
+.s-track b { color: #fff; font: italic 800 clamp(18px, 2.1vw, 30px)/1 var(--font); font-stretch: 116%; letter-spacing: -0.015em; white-space: nowrap; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+.meta { margin-top: 22px; font-size: 14px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 8px; background: var(--chip); font-weight: 600; color: var(--ink-2); font-size: 13px; }
 .pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--action); display: inline-block; }
 .hero-shot { margin-top: clamp(48px, 7vw, 88px); }
-.hero-shot .shot { box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 80px 160px -60px var(--sky-glow), var(--shadow-lg); }
 
 /* Laufband mit Bausteinen */
 .marquee { margin-top: clamp(40px, 6vw, 72px); overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
 .marquee .track { display: flex; gap: 10px; width: max-content; animation: slide 52s linear infinite; }
 .marquee:hover .track { animation-play-state: paused; }
 @keyframes slide { to { transform: translateX(-50%); } }
-.chip { display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px; border-radius: 999px; background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-size: 14px; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px; border-radius: 8px; background: var(--card); border: 1px solid var(--line); font-size: 14px; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
 .chip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex: none; }
 .chip i.t { background: var(--trigger); } .chip i.c { background: var(--condition); } .chip i.a { background: var(--action); } .chip i.v { background: var(--violet); border-radius: 50%; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
 
 /* Gerade neu: Bento */
 .bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
-.b { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; position: relative; min-width: 0; }
+.b { background: var(--card); border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; display: flex; flex-direction: column; position: relative; min-width: 0; }
 .b .txt { padding: 26px 28px 28px; }
-.b .k { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--violet); background: var(--violet-tint); padding: 4px 10px; border-radius: 999px; margin-bottom: 14px; }
+.b .k { display: inline-block; font-size: 13px; font-weight: 600; color: var(--violet); background: var(--violet-tint); padding: 4px 10px; border-radius: 6px; margin-bottom: 14px; }
 .b h3 { margin-bottom: 8px; }
 .b p { color: var(--ink-2); font-size: 16px; }
 .b .pic { background: var(--card-2); padding: 22px; display: flex; justify-content: center; align-items: center; flex: 1; }
@@ -164,7 +147,7 @@ figcaption strong { color: var(--ink); font-weight: 600; }
 .b.wide { flex-direction: row; }
 .b.wide .txt { flex: 1 1 52%; }
 .b.wide .pic { flex: 1 1 48%; }
-.b .ico { width: 44px; height: 44px; border-radius: 14px; background: var(--sky-tint); color: var(--sky-text); display: grid; place-items: center; margin-bottom: 18px; }
+.b .ico { width: 44px; height: 44px; border-radius: 10px; background: var(--sky-tint); color: var(--sky-text); display: grid; place-items: center; margin-bottom: 18px; }
 .b .ico svg { width: 22px; height: 22px; }
 .b.s4 { grid-column: span 4; } .b.s6 { grid-column: span 6; } .b.s8 { grid-column: span 8; } .b.s12 { grid-column: span 12; }
 .miniflow .card { fill: var(--card); stroke: var(--line); }
@@ -179,7 +162,7 @@ figcaption strong { color: var(--ink); font-weight: 600; }
 .split.flip > :first-child { order: 2; }
 .points { display: grid; gap: 20px; margin-top: 28px; }
 .point { display: grid; grid-template-columns: 36px 1fr; gap: 14px; }
-.point .ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--card); box-shadow: var(--shadow); }
+.point .ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--card); border: 1px solid var(--line); }
 .point .ic span { width: 12px; height: 12px; border-radius: 3px; }
 .point h3 { font-size: 18px; margin-bottom: 2px; }
 .point p { color: var(--ink-2); font-size: 16px; }
@@ -188,7 +171,7 @@ figcaption strong { color: var(--ink); font-weight: 600; }
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .tiles.c3 { grid-template-columns: repeat(3, 1fr); }
-.what { margin-top: 40px; background: var(--card); border-radius: var(--radius); padding: 8px 26px; box-shadow: var(--shadow); overflow-x: auto; }
+.what { margin-top: 40px; background: var(--card); border-radius: var(--radius); padding: 8px 26px; border: 1px solid var(--line); overflow-x: auto; }
 .what table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.45; }
 .what th, .what td { text-align: left; vertical-align: top; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .what tr:last-child th, .what tr:last-child td { border-bottom: 0; }
@@ -196,29 +179,29 @@ figcaption strong { color: var(--ink); font-weight: 600; }
 .what td { color: var(--ink-2); }
 .what thead th { font-size: 13px; font-weight: 600; color: var(--ink-3); padding: 14px 0 10px; }
 .what code { font-family: var(--mono); font-size: .9em; }
-.tile { background: var(--card); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); }
+.tile { background: var(--card); border-radius: var(--radius); padding: 26px; border: 1px solid var(--line); }
 .tile h3 { font-size: 18px; margin-bottom: 8px; }
 .tile p { color: var(--ink-2); font-size: 15px; }
-.tile .ico { width: 40px; height: 40px; border-radius: 12px; background: var(--sky-tint); color: var(--sky-text); display: grid; place-items: center; margin-bottom: 16px; }
+.tile .ico { width: 40px; height: 40px; border-radius: 10px; background: var(--sky-tint); color: var(--sky-text); display: grid; place-items: center; margin-bottom: 16px; }
 .tile .ico svg { width: 20px; height: 20px; }
 .phone-row { display: grid; grid-template-columns: 280px 1fr; gap: clamp(32px, 5vw, 64px); align-items: center; margin-top: clamp(48px, 6vw, 80px); }
-.phone { border-radius: 34px; padding: 10px; background: #05080f; box-shadow: var(--shadow-lg); }
+.phone { border-radius: 34px; padding: 10px; background: #05080f; }
 .phone img { border-radius: 26px; }
 
 /* KI mit Reitern */
-.tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--chip); margin: 0 auto 28px; }
-.tabs button { font: inherit; font-size: 14px; font-weight: 600; border: 0; background: none; color: var(--ink-2); padding: 9px 18px; border-radius: 999px; cursor: pointer; transition: background .2s, color .2s; }
-.tabs button.on { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+.tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--chip); margin: 0 0 28px; }
+.tabs button { font: inherit; font-size: 14px; font-weight: 600; border: 0; background: none; color: var(--ink-2); padding: 9px 18px; border-radius: 9px; cursor: pointer; transition: background .2s, color .2s; }
+.tabs button.on { background: var(--card); color: var(--ink); }
 .ai-panel { display: none; }
 .ai-panel.on { display: grid; grid-template-columns: 1.4fr 1fr; gap: clamp(28px, 4vw, 56px); align-items: center; }
 .ai-panel .stack { display: grid; gap: 16px; }
 .ai-panel .text h3 { font-size: clamp(24px, 2.6vw, 32px); margin-bottom: 12px; }
 .ai-panel .text p { color: var(--ink-2); font-size: 17px; }
 .optional { margin-top: 28px; display: grid; gap: 4px; padding: 16px 18px; border-radius: 18px; background: var(--violet-tint); font-size: 14px; color: var(--ink-2); }
-.optional b { color: var(--violet); font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.optional b { color: var(--violet); font-weight: 600; font-size: 13px; }
 
 /* YAML */
-.code { background: var(--code-bg); border-radius: var(--radius); padding: 26px 28px; overflow-x: auto; box-shadow: var(--shadow-lg); }
+.code { background: var(--code-bg); border-radius: var(--radius); padding: 26px 28px; overflow-x: auto; }
 .code .file { font-family: var(--mono); font-size: 12px; color: #9aa8bd; margin-bottom: 14px; }
 .code pre { margin: 0; font-family: var(--mono); font-size: 13.5px; line-height: 1.75; color: var(--code-ink); }
 .code .k { color: var(--code-k); } .code .s { color: var(--code-s); } .code .v { color: var(--code-v); }
@@ -229,7 +212,7 @@ figcaption strong { color: var(--ink); font-weight: 600; }
 
 /* Installation */
 .install { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; }
-.panel { background: var(--card); border-radius: var(--radius); padding: clamp(28px, 4vw, 44px); box-shadow: var(--shadow); min-width: 0; }
+.panel { background: var(--card); border-radius: var(--radius); padding: clamp(28px, 4vw, 44px); border: 1px solid var(--line); min-width: 0; }
 .panel h3 { margin-bottom: 6px; }
 .steps { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 20px; counter-reset: s; }
 .steps li { position: relative; padding-left: 52px; color: var(--ink-2); }
@@ -239,7 +222,7 @@ figcaption strong { color: var(--ink); font-weight: 600; }
 .req li { display: flex; gap: 14px; align-items: baseline; padding: 15px 0; border-top: 1px solid var(--line); font-size: 16px; }
 .req li:first-child { border-top: 0; padding-top: 6px; }
 .req .name { color: var(--ink); font-weight: 600; flex: 1; }
-.tag { flex: none; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: var(--sky-tint); color: var(--sky-text); }
+.tag { flex: none; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: var(--sky-tint); color: var(--sky-text); }
 .tag.opt { background: var(--chip); color: var(--ink-3); }
 .note { margin-top: 20px; font-size: 14px; color: var(--ink-3); }
 .manual { grid-column: 1 / -1; }
@@ -247,8 +230,7 @@ figcaption strong { color: var(--ink); font-weight: 600; }
 .panel .btn { margin-top: 28px; }
 
 /* Dank, Fuß */
-.credits { text-align: center; }
-.credits p:not(.eyebrow) { font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 720px; margin: 0 auto; }
+.credits p:not(.eyebrow) { font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 720px; }
 .credits a { font-weight: 600; }
 footer { border-top: 1px solid var(--line); padding: 44px 0 calc(56px + env(safe-area-inset-bottom, 0px)); font-size: 14px; color: var(--ink-3); }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: center; }
@@ -260,7 +242,8 @@ footer .fine { flex-basis: 100%; }
 
 /* Schmal */
 @media (max-width: 960px) {
-  .split, .split.flip, .install, .ai-panel.on { grid-template-columns: 1fr; }
+  .split, .split.flip, .install, .ai-panel.on, .hero-top { grid-template-columns: 1fr; }
+  .hero .s-lanes { margin: 8px calc(-1 * var(--gutter) - 8vw) 0 44px; }
   .split.flip > :first-child { order: 0; }
   .tiles, .tiles.c3 { grid-template-columns: 1fr 1fr; }
   .b.s4, .b.s8 { grid-column: span 6; }
@@ -269,8 +252,9 @@ footer .fine { flex-basis: 100%; }
 }
 @media (max-width: 640px) {
   body { font-size: 16px; }
-  :root { --radius: 22px; --radius-lg: 26px; }
   .nav { padding: 0 8px 0 14px; }
+  h1 { font-size: clamp(34px, 10.5vw, 44px); }
+  .s-track b { font-size: 15px; }
   .nav .lang { margin-left: auto; }
   .duo { grid-template-columns: 1fr; }
   .tiles, .tiles.c3 { grid-template-columns: 1fr; gap: 12px; }
@@ -289,7 +273,7 @@ footer .fine { flex-basis: 100%; }
   .code pre { font-size: 12.5px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .marquee .track { animation: none; flex-wrap: wrap; width: auto; justify-content: center; }
+  .marquee .track { animation: none; flex-wrap: wrap; width: auto; }
   .marquee { -webkit-mask-image: none; mask-image: none; }
 }
 </style>
@@ -317,19 +301,27 @@ footer .fine { flex-basis: 100%; }
 </div>
 
 <section class="hero" id="top">
-  <div class="glow" aria-hidden="true"></div>
   <div class="wrap">
-    <p class="eyebrow reveal"><span class="en">Flow editor for Home Assistant</span><span class="de">Ablauf-Editor für Home Assistant</span></p>
-    <h1 class="reveal d1"><span class="en">See your <em>automations</em>.</span><span class="de">Sieh deine <em>Automationen</em>.</span></h1>
-    <p class="lead reveal d2"><span class="en">FLODE shows <strong>Home Assistant automations and scripts as a flow</strong> you can read, test and understand. Edited with Home Assistant's own editors, saved as plain Home Assistant YAML. No server, no lock-in.</span><span class="de">FLODE zeigt <strong>Home-Assistant-Automationen und -Skripte als Ablauf</strong>, den du lesen, testen und verstehen kannst. Bearbeitet mit den Editoren von Home Assistant, gespeichert als ganz normales Home-Assistant-YAML. Kein Server, keine Abhängigkeit.</span></p>
-    <div class="cta reveal d3">
-      <a class="btn" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration"><span class="en">Install from the Marketplace</span><span class="de">Über den Marketplace installieren</span></a>
-      <a class="btn ghost" href="https://github.com/SH1FT-W/flode"><span class="en">View on GitHub</span><span class="de">Auf GitHub ansehen</span></a>
+    <div class="hero-top">
+      <div>
+        <img class="mark" src="images/icon.png" alt="" width="64" height="64">
+        <h1><span class="en">See your automations.</span><span class="de">Sieh deine Automationen.</span></h1>
+        <p class="lead reveal d2"><span class="en">FLODE shows <strong>Home Assistant automations and scripts as a flow</strong> you can read, test and understand. Edited with Home Assistant's own editors, saved as plain Home Assistant YAML. No server, no lock-in.</span><span class="de">FLODE zeigt <strong>Home-Assistant-Automationen und -Skripte als Ablauf</strong>, den du lesen, testen und verstehen kannst. Bearbeitet mit den Editoren von Home Assistant, gespeichert als ganz normales Home-Assistant-YAML. Kein Server, keine Abhängigkeit.</span></p>
+        <div class="cta reveal d3">
+          <a class="btn" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration"><span class="en">Install from the Marketplace</span><span class="de">Über den Marketplace installieren</span></a>
+          <a class="btn ghost" href="https://github.com/SH1FT-W/flode"><span class="en">View on GitHub</span><span class="de">Auf GitHub ansehen</span></a>
+        </div>
+        <p class="meta reveal d3">
+          <span class="pill"><i></i><span id="flode-version">Version 26.10.13</span></span>
+          <span class="en">Home Assistant 2026.3 or newer &middot; Free and open source</span><span class="de">Home Assistant 2026.3 oder neuer &middot; Kostenlos und Open Source</span>
+        </p>
+      </div>
+      <div class="s-lanes" aria-hidden="true">
+        <div class="s-lane"><div class="s-track"><b><span class="en">Plain Home Assistant YAML</span><span class="de">Reines HA-YAML</span></b></div></div>
+        <div class="s-lane"><div class="s-track"><b><span class="en">Real runs on the canvas</span><span class="de">Echte Ausführungen im Ablauf</span></b></div></div>
+        <div class="s-lane"><div class="s-track"><b><span class="en">No lock-in</span><span class="de">Keine Abhängigkeit</span></b></div></div>
+      </div>
     </div>
-    <p class="meta reveal d3">
-      <span class="pill"><i></i><span id="flode-version">Version 26.10.13</span></span>
-      <span class="en">Home Assistant 2026.3 or newer &middot; Free and open source</span><span class="de">Home Assistant 2026.3 oder neuer &middot; Kostenlos und Open Source</span>
-    </p>
     <div class="hero-shot reveal d3">
       <div class="shot lg">
         <picture>

@@ -2,14 +2,14 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-dark.webp" />
-  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-light.webp" alt="FLODE: See your automations." />
+  <img src="https://raw.githubusercontent.com/SH1FT-W/flode/main/docs/images/readme-title-light.webp" alt="FLODE: your automations and scripts as a flow. Plain Home Assistant YAML. Real runs on the canvas. No lock-in." />
 </picture>
 
 [![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FSH1FT-W%2Fflode%2Fmain%2Fcustom_components%2Fflode%2Fmanifest.json&query=%24.version&label=version&style=flat-square&color=4CC9FB&labelColor=0B1220)](https://github.com/SH1FT-W/flode/releases/latest)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.3%2B-4CC9FB?style=flat-square&labelColor=0B1220&logo=homeassistant&logoColor=white)](https://www.home-assistant.io)
 [![Marketplace](https://img.shields.io/badge/Marketplace-default-4CC9FB?style=flat-square&labelColor=0B1220)](https://hacs.xyz)
 
-<a href="https://sh1ft-w.github.io/flode"><b>Website</b></a>&emsp;<a href="#install">Install</a>&emsp;<a href="#using-it">Using it</a>&emsp;<a href="#ai-help">AI help</a>&emsp;<a href="docs/architecture.md">Internals</a>&emsp;<a href="CHANGELOG.md">Changelog</a>
+<a href="https://sh1ft-w.github.io/flode"><b>Website</b></a>&emsp;<a href="#get-started">Get started</a>&emsp;<a href="#using-it">Using it</a>&emsp;<a href="#ai-help">AI help</a>&emsp;<a href="CHANGELOG.md">Changelog</a>
 
 </div>
 
@@ -19,7 +19,7 @@ FLODE shows your Home Assistant automations and scripts as a **flow you can read
 
 It saves exactly what Home Assistant's own editor would save: plain YAML, no server, no lock-in. Uninstall FLODE and every automation keeps working.
 
-## Your YAML on the canvas
+## What you get
 
 | In Home Assistant | In FLODE |
 |:--|:--|
@@ -68,12 +68,15 @@ mode: restart
 
 **New in 26.11:** Simplified Chinese, so FLODE now speaks eight languages. **New in 26.10:** parallel actions in lanes of their own, notes, frames and coloured cards and *Run this card*. Every change in the [changelog](CHANGELOG.md).
 
-<a id="install"></a>
-## Install
+<a id="get-started"></a><a id="install"></a><a id="set-up"></a>
+## Get started
 
 [![Open in the Marketplace](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SH1FT-W&repository=flode&category=integration)
 
-Search for **FLODE** under **Settings > Marketplace** (called HACS before Home Assistant 2026.11), download it and restart Home Assistant. Then add it under **Settings > Devices & services > Add integration > FLODE**. It appears in the sidebar, for admins only.
+1. **Install it.** Search for **FLODE** under **Settings > Marketplace** (called HACS before Home Assistant 2026.11), download it and restart Home Assistant.
+2. **Add it.** Choose **Settings > Devices & services > Add integration > FLODE**.
+
+It appears in the sidebar, for admins only.
 
 <details>
 <summary>Install by hand</summary>
@@ -175,3 +178,11 @@ Found something or missing a feature? [Open an issue](https://github.com/SH1FT-W
 [Apache 2.0](LICENSE). FLODE is a fork of [C.A.F.E.](https://github.com/FezVrasta/cafe-hass) by [Federico Zivolo](https://github.com/FezVrasta).
 
 <sub>FLODE is an independent project and is not affiliated with Home Assistant or Nabu Casa.</sub>
+
+<br/>
+
+<div align="center">
+<a href="https://sh1ft-w.github.io"><img src="https://sh1ft-w.github.io/readme/footer.png" width="640" alt="All SH1FT-W projects"></a>
+<br/>
+<sub>More open source for Home Assistant and the Mac at <a href="https://sh1ft-w.github.io">sh1ft-w.github.io</a></sub>
+</div>
