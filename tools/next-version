@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# Next calendar version, scheme YY.M.N
+#   YY = two-digit year, M = month without leading zero,
+#   N  = running number of the release within the month (from 1).
+# Only real, published GitHub releases count (gh release list) that came out
+# in the current month (local time, publishedAt), including ones in the old
+# X.Y.Z scheme. No drafts; prereleases only with --pre. Plain git tags
+# without a release don't count. If releases YY.M.k already exist, the
+# highest k counts as well. Without a release in the month, N = 1.
+# For the count to be right, publish every release as a GitHub release.
+# Never skip a number: local builds (copied to prod to try them out, even three
+# or four times in a row) get no number of their own, the version file stays on
+# the next release number. Only the release takes exactly the number this
+# script prints (never count up by hand).
+# Tags and release titles are the bare version, without "v". Older releases
+# tagged "vYY.M.N" still count; a release that exists with and without "v"
+# counts once. The output never carries a "v".
+# If gh is not reachable: warning and fallback to the month's git tags.
+# Guard against duplicate numbers: if the version file (--file) already holds
+# YY.M.k of the current month, N is at least k (an already published k
+# counts through the releases anyway).
+#
+# Shared copy for all SH1FT-W repos (source: repo-vorlagen/vorlagen/next-version,
+# byte-identical in every repo as tools/next-version; sync: repo-vorlagen/vorlagen/abgleich.sh).
+# Version file without --file: custom_components/*/manifest.json, else
+# frontend/package.json or package.json, else Info.plist.
+# Usage:  next-version [--prefix P] [--file F] [--app] [--pre] [--tag] [--month YYYY-MM] [--no-fetch]
+#   --app        HA add-on in the repo: prefix "app-" and version file addon/*/config.yaml
+#   --prefix P   tag prefix of a separate release series (e.g. "app-"); only
+#                releases whose tag starts with P followed by a digit count.
+#                Without it (or with "v", the old app default) bare and "v" tags count
+#   --pre        count prereleases too
+#   --file F     version file (JSON/YAML with "version"); only its current value
+#                counts as guard against duplicate numbers; "" = none
+#   --tag        print with prefix (ready-made tag name; plain version without --prefix)
+#   --month      compute another month (testing)
+#   --no-fetch   when falling back to tags, don't fetch them from origin first
+set -euo pipefail
+prefix=""; vfile="__auto__"; with_tag=0; pre=0; month=$(date +%Y-%m); fetch=1
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --prefix) prefix="$2"; shift 2 ;;
+    --file) vfile="$2"; shift 2 ;;
+    --app) prefix="app-"; vfile="$( { ls addon/*/config.yaml 2>/dev/null || true; } | head -1)"; shift ;;
+    --pre) pre=1; shift ;;
+    --tag) with_tag=1; shift ;;
+    --month) month="$2"; shift 2 ;;
+    --no-fetch) fetch=0; shift ;;
+    -h|--help) sed -n '2,/^set -euo/p' "$0" | sed '$d'; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; exit 2 ;;
+  esac
+done
+# "v" is no series of its own: it is the old spelling of the bare version
+case "$prefix" in v|V) prefix="" ;; esac
+cd "$(git rev-parse --show-toplevel)"
+if [ "$vfile" = "__auto__" ]; then
+  vfile=$( { ls custom_components/*/manifest.json 2>/dev/null || true; } | head -1)
+  [ -n "$vfile" ] || vfile=$( { ls frontend/package.json package.json 2>/dev/null || true; } | head -1)
+  [ -n "$vfile" ] || vfile=$( { ls Info.plist 2>/dev/null || true; } | head -1)
+fi
+yy=${month:2:2}; m=$((10#${month:5:2}))
+maxn=0; count=0; seen=" "
+bump() { local k=${1##*.}; if [[ $k =~ ^[0-9]+$ ]] && (( 10#$k > maxn )); then maxn=$((10#$k)); fi; }
+# Version of a tag of this series without prefix, empty if the tag belongs to another series
+version_of() {
+  if [ -n "$prefix" ]; then
+    case "$1" in "${prefix}"[0-9]*) echo "${1#"$prefix"}" ;; esac
+  else
+    case "$1" in [0-9]*) echo "$1" ;; [vV][0-9]*) echo "${1#?}" ;; esac
+  fi
+}
+# Reads "tag YYYY-MM" lines: counts each version of the month once, bumps on YY.M.k
+# (with bump_any=1 also for tags created in another month, as in the tag fallback)
+tally() {
+  local bump_any=$1 t mon v
+  while read -r t mon; do
+    [ -n "${t:-}" ] || continue
+    v=$(version_of "$t"); [ -n "$v" ] || continue
+    case "$v" in "${yy}.${m}."*) if [ "$bump_any" = 1 ] || [ "$mon" = "$month" ]; then bump "$v"; fi ;; esac
+    [ "$mon" = "$month" ] || continue
+    case "$seen" in *" $v "*) continue ;; esac
+    seen="$seen$v "; count=$((count + 1))
+  done
+}
+slug=$(git remote get-url origin 2>/dev/null | sed -E 's#^(https://github\.com/|git@github\.com:)##; s#\.git$##')
+# Tag + month (local time) of every published release, without drafts
+if rel=$(gh release list -R "$slug" -L 1000 --json tagName,publishedAt,isDraft,isPrerelease \
+      -q ".[] | select(.isDraft | not) | select($pre == 1 or (.isPrerelease | not)) | select(.publishedAt != null)
+            | \"\(.tagName) \(.publishedAt | fromdateiso8601 | strflocaltime(\"%Y-%m\"))\"" 2>/dev/null); then
+  tally 0 <<< "$rel"
+else
+  echo "Warning: GitHub releases not reachable (gh), counting the month's git tags instead." >&2
+  if [ "$fetch" = 1 ]; then git fetch --tags -q origin 2>/dev/null || true; fi
+  tally 1 < <(git for-each-ref --format='%(refname:short) %(creatordate:format-local:%Y-%m)' refs/tags)
+fi
+if [ -n "$vfile" ] && [ -f "$vfile" ]; then
+  case "$vfile" in
+    *.plist) cur=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$vfile" 2>/dev/null || true) ;;
+    *) cur=$(sed -n 's/^[[:space:]"]*version"\{0,1\}[[:space:]]*:[[:space:]]*["'\'']\{0,1\}\([0-9][0-9.]*\).*/\1/p' "$vfile" | head -1) ;;
+  esac
+  if [[ $cur == "${yy}.${m}."* ]]; then k=${cur##*.}; [[ $k =~ ^[0-9]+$ ]] && (( 10#$k - 1 > maxn )) && maxn=$((10#$k - 1)); fi
+fi
+n=$(( count > maxn ? count : maxn ))
+v="${yy}.${m}.$((n + 1))"
+if [ "$with_tag" = 1 ]; then echo "${prefix}${v}"; else echo "$v"; fi

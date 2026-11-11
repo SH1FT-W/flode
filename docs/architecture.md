@@ -613,7 +613,7 @@ The result, `.gate/gate-<commit>.json`, lists every test of every step (a fixtur
 
 ### 10.4 Releases and versions
 
-Since October 2026 FLODE uses calendar versions `YY.M.N` (year, month, number of the release in that month), for example `26.10.14`; `dev/next-version` prints the next one. They sort after every 3.x version, so updates through HACS continue to work. A release means: update the "What's new" sheet (`flode-welcome.ts` and its strings), bump the version in `custom_components/flode/manifest.json` and `packages/frontend/package.json`, commit, run the gate, tag with the bare version number, push, and create the GitHub release with notes compiled from the commits. The full checklist is in `CLAUDE.md`.
+Since October 2026 FLODE uses calendar versions `YY.M.N` (year, month, number of the release in that month), for example `26.10.14`; `tools/next-version` prints the next one. They sort after every 3.x version, so updates through HACS continue to work. A release means: update the "What's new" sheet (`flode-welcome.ts` and its strings), bump the version in `custom_components/flode/manifest.json` and `packages/frontend/package.json`, commit, run the gate, tag with the bare version number, push, and create the GitHub release with notes compiled from the commits. The full checklist is in `CLAUDE.md`.
 
 ## 11. Glossary
 

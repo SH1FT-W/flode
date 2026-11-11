@@ -30,7 +30,7 @@ yarn test --run   # Run tests
 yarn typecheck    # Type checking
 yarn biome ci .   # Lint + format + import order as in CI (yarn lint:biome misses import sorting)
 dev/gate/gate.sh  # Release gate: browser checks against the test HA (Docker via tools/ha-docker.sh; FLODE_HA_BACKEND=venv for tools/ha-venv.sh) (before every release, always in full)
-dev/next-version  # Next release version (calendar version YY.M.N)
+tools/next-version  # Next release version (calendar version YY.M.N; shared script, byte-identical to repo-vorlagen)
 ```
 
 # Rules
@@ -41,6 +41,12 @@ dev/next-version  # Next release version (calendar version YY.M.N)
   `~/Software/flode-test`.
 - **TypeScript:** strict, zero errors. No `any` (use `unknown` + type guards), no `as` casts except at external API
   boundaries, no `@ts-ignore`/`@ts-expect-error`, no IIFEs (use a named helper, method or element).
+- **Issues:** commits and PRs reference issues with `Refs #n`, never `Fixes/Closes/Resolves #n`. Every issue carries
+  exactly one status label (`geplant` → `in-arbeit` → `in-beta` → `erledigt`, plus `rueckfrage`, `wartet-auf-ha`,
+  `kritisch`, `abgelehnt`; full list in the global CLAUDE.md); set them while working without asking. GitHub comments
+  only with Daniel's OK, except the beta comment in release step 7.
+- **HA assumptions:** `docs/ha-annahmen.md` lists what the integration and panel rely on in Home Assistant; a change
+  that adds or alters such an assumption updates it in the same commit.
 - **No duplication:** search for existing logic before writing code and extend it. Same logic twice → shared helper;
   shared types/schemas only in `@flode/shared`; framework-free logic in `@flode/ui-core`; a UI pattern used twice →
   reusable element; constants defined once. Duplication found while working → refactor it first.
@@ -49,9 +55,13 @@ dev/next-version  # Next release version (calendar version YY.M.N)
 
 Only with explicit user approval.
 
-- **Version:** calendar version `YY.M.N` from `dev/next-version` (rules in the global CLAUDE.md), no leading zeros
-  (they break `package.json`), tags and titles without "v". Betas: `YY.M.N-beta.K` as GitHub prerelease; they do
-  not count for `dev/next-version`.
+- **Version:** calendar version `YY.M.N` from `tools/next-version` (rules in the global CLAUDE.md), no leading zeros
+  (they break `package.json`), tags and titles without "v". Betas: `YY.M.NbK` (e.g. `26.11.3b1`, K from 1) as GitHub
+  prerelease; they get no number of their own, the stable release afterwards is `YY.M.N`. Old `-beta.K` tags stay.
+  (`YY.M.NbK` is PEP 440, which HA and HACS sort correctly; `packages/frontend/package.json` is private and only read
+  as a string, so it need not be semver.)
+- **Rhythm:** stable releases on Fridays, betas during the week.
+- **CHANGELOG:** new entries go under `## Unreleased` at the top; on release it becomes the version heading.
 - **Notes:** compiled from user-facing changes in the git history since the last release (features, fixes, breaking
   changes), in English, without asking the user for them. They go into `CHANGELOG.md` as
   `## [<version>] — <YYYY-MM-DD> — <title>`, starting directly with `### Added/Fixed/Changed`; `release.yml` copies
@@ -66,7 +76,10 @@ Only with explicit user approval.
    `dev/gate/README.md`). Release only if `.gate/gate-<commit>.json` says `"counts_for_release": true` for exactly
    that commit. `flaky` tests (green on the second try) and `new` pictures are not red, but mention them. Visual
    differences → show `.gate/visual/report.html` to the user first.
-4. `git tag "$(dev/next-version)"`, `git push origin main && git push origin --tags`.
+4. `git tag <version>` (stable: `"$(tools/next-version)"`), `git push origin main && git push origin --tags`.
 5. `gh release create <version> --title "<version>" --notes "<notes>"` (real newlines, not literal `\n`), then check
    the Releases page and watch the workflows until green.
 6. After the release: `dev/gate/gate.sh --baseline` so the next release is compared with this one.
+7. Issues: after a beta, set the fixed issues to `in-beta`, comment in the reporter's language (link to the beta, ask
+   for feedback, reopening welcome, stable release on Friday) and close them; after a stable release set them to
+   `erledigt`.
