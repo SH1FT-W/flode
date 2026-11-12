@@ -349,7 +349,9 @@ export const zh: Strings = {
   whatsNewTitle: 'FLODE {version} 新功能',
   whatsNewAll: '全部更改',
   continue: '继续',
-  new261101ChineseTitle: 'FLODE 支持中文',
-  new261101ChineseText:
-    'FLODE 现已提供简体中文版本，由 wzr-china 翻译。它一如既往地跟随你的 Home Assistant 个人资料语言。',
+  new261102RepeatTitle: '循环显示其步骤',
+  new261102RepeatText:
+    '重复块现在会将其步骤绘制为卡片，适用于各种循环，嵌套时也是如此。使用 for_each 时，列表会显示在卡片上。',
+  new261102TemplateTitle: '如果-则卡片显示模板',
+  new261102TemplateText: '在 FLODE 的卡片文本中，模板条件现在显示模板本身，而不是“模板为真”。',
 };

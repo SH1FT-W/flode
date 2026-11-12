@@ -372,7 +372,10 @@ export const es: Strings = {
   whatsNewTitle: 'Novedades en FLODE {version}',
   whatsNewAll: 'Todos los cambios',
   continue: 'Continuar',
-  new261101ChineseTitle: 'FLODE habla chino',
-  new261101ChineseText:
-    'FLODE ya está disponible también en chino simplificado, traducido por wzr-china. Como siempre, sigue el idioma de tu perfil de Home Assistant.',
+  new261102RepeatTitle: 'Los bucles muestran sus pasos',
+  new261102RepeatText:
+    'Un bloque Repetir dibuja ahora sus pasos como tarjetas, para cualquier tipo de bucle y también anidado. Con for_each, la lista aparece en la tarjeta.',
+  new261102TemplateTitle: 'Plantillas en tarjetas Si-entonces',
+  new261102TemplateText:
+    'Una condición de plantilla muestra la propia plantilla en el texto de tarjeta de FLODE en lugar de «La plantilla es verdadera».',
 };

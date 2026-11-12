@@ -369,7 +369,10 @@ export const it: Strings = {
   whatsNewTitle: 'Novità in FLODE {version}',
   whatsNewAll: 'Tutte le modifiche',
   continue: 'Continua',
-  new261101ChineseTitle: 'FLODE parla cinese',
-  new261101ChineseText:
-    'FLODE è ora disponibile anche in cinese semplificato, tradotto da wzr-china. Come sempre, segue la lingua del tuo profilo Home Assistant.',
+  new261102RepeatTitle: 'I cicli mostrano i loro passi',
+  new261102RepeatText:
+    "Un blocco Ripeti ora disegna i suoi passi come schede, per ogni tipo di ciclo e anche annidato. Con for_each, l'elenco è indicato sulla scheda.",
+  new261102TemplateTitle: 'Template sulle schede Se-allora',
+  new261102TemplateText:
+    'Una condizione template mostra il template stesso nel testo della scheda di FLODE invece di «Il template è vero».',
 };

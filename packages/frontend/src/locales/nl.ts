@@ -372,7 +372,10 @@ export const nl: Strings = {
   whatsNewTitle: 'Nieuw in FLODE {version}',
   whatsNewAll: 'Alle wijzigingen',
   continue: 'Doorgaan',
-  new261101ChineseTitle: 'FLODE spreekt Chinees',
-  new261101ChineseText:
-    'FLODE is nu ook beschikbaar in vereenvoudigd Chinees, vertaald door wzr-china. Zoals altijd volgt het de taal van je Home Assistant-profiel.',
+  new261102RepeatTitle: 'Lussen tonen hun stappen',
+  new261102RepeatText:
+    'Een Herhaling-blok tekent zijn stappen nu als kaarten, voor elk soort lus en ook genest. Bij for_each staat de lijst op de kaart.',
+  new261102TemplateTitle: 'Sjablonen op Als, dan-kaarten',
+  new261102TemplateText:
+    'Een sjabloonvoorwaarde toont in de kaarttekst van FLODE het sjabloon zelf in plaats van „Sjabloon is waar”.',
 };

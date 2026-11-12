@@ -381,9 +381,12 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261101ChineseTitle: 'FLODE spricht Chinesisch',
-    new261101ChineseText:
-      'FLODE gibt es jetzt auch in vereinfachtem Chinesisch, übersetzt von wzr-china. Es folgt wie immer der Sprache deines Home-Assistant-Profils.',
+    new261102RepeatTitle: 'Schleifen zeigen ihre Schritte',
+    new261102RepeatText:
+      'Ein Wiederholen-Block zeichnet seine Schritte jetzt als Karten, für jede Art von Schleife und auch verschachtelt. Bei for_each steht die Liste auf der Karte.',
+    new261102TemplateTitle: 'Vorlagen auf Wenn-dann-Karten',
+    new261102TemplateText:
+      'Eine Vorlagen-Bedingung zeigt in FLODEs Kartentext die Vorlage selbst statt „Vorlage ist wahr“.',
   },
   en: {
     title: 'FLODE',
@@ -750,9 +753,12 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261101ChineseTitle: 'FLODE speaks Chinese',
-    new261101ChineseText:
-      'FLODE now also comes in Simplified Chinese, translated by wzr-china. As always, it follows the language of your Home Assistant profile.',
+    new261102RepeatTitle: 'Loops show their steps',
+    new261102RepeatText:
+      'A Repeat block now draws its steps as cards, for every kind of loop and when nested too. With for_each, the list is named on the card.',
+    new261102TemplateTitle: 'Templates on If-then cards',
+    new261102TemplateText:
+      "A template condition shows the template itself in FLODE's card text instead of “Template is true”.",
   },
 } as const;
 

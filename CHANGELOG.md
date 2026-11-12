@@ -6,6 +6,19 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.11.2] — 2026-11-12 — Steps of a repeat drawn, templates on if cards
+
+Reported by jlpnea ([#42](https://github.com/SH1FT-W/flode/issues/42), [#43](https://github.com/SH1FT-W/flode/issues/43)).
+
+### Added
+- **Steps inside a repeat are drawn** ([#42](https://github.com/SH1FT-W/flode/issues/42)). Every kind of `repeat` (`for_each`, `count`, `while`, `until`) now shows its steps as cards after the block, also when it is nested in another block. They can be edited and added to like the steps of an `if`. What follows the block stays connected, since a loop may run zero times.
+- **The list of a `for_each` is named on the card** with FLODE's card text.
+
+### Changed
+- **`if` cards show their template** ([#43](https://github.com/SH1FT-W/flode/issues/43)). With FLODE's card text, a template condition shows the template itself instead of "Template is true". "Card text like Home Assistant" stays as it is: it shows Home Assistant's own wording, which does not include the condition.
+
+---
+
 ## [26.11.1] — 2026-11-05 — Simplified Chinese
 
 Contributed by wzr-china ([#41](https://github.com/SH1FT-W/flode/pull/41)).

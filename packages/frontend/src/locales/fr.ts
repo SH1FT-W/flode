@@ -375,7 +375,10 @@ export const fr: Strings = {
   whatsNewTitle: 'Nouveau dans FLODE {version}',
   whatsNewAll: 'Tous les changements',
   continue: 'Continuer',
-  new261101ChineseTitle: 'FLODE parle chinois',
-  new261101ChineseText:
-    'FLODE existe désormais aussi en chinois simplifié, traduit par wzr-china. Comme toujours, il suit la langue de votre profil Home Assistant.',
+  new261102RepeatTitle: 'Les boucles montrent leurs étapes',
+  new261102RepeatText:
+    'Un bloc Répéter dessine désormais ses étapes sous forme de cartes, pour tout type de boucle, même imbriqué. Avec for_each, la liste est indiquée sur la carte.',
+  new261102TemplateTitle: 'Modèles sur les cartes Si-alors',
+  new261102TemplateText:
+    'Une condition de modèle affiche le modèle lui-même dans le texte de carte de FLODE au lieu de « Le modèle est vrai ».',
 };

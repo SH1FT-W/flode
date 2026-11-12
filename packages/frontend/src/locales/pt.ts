@@ -371,7 +371,10 @@ export const pt: Strings = {
   whatsNewTitle: 'Novidades no FLODE {version}',
   whatsNewAll: 'Todas as alterações',
   continue: 'Continuar',
-  new261101ChineseTitle: 'O FLODE fala chinês',
-  new261101ChineseText:
-    'O FLODE agora também está disponível em chinês simplificado, traduzido por wzr-china. Como sempre, segue o idioma do seu perfil do Home Assistant.',
+  new261102RepeatTitle: 'Os ciclos mostram os seus passos',
+  new261102RepeatText:
+    'Um bloco Repetir desenha agora os seus passos como cartões, para qualquer tipo de ciclo e também aninhado. Com for_each, a lista aparece no cartão.',
+  new261102TemplateTitle: 'Modelos nos cartões Se então',
+  new261102TemplateText:
+    'Uma condição de modelo mostra o próprio modelo no texto do cartão do FLODE em vez de «O modelo é verdadeiro».',
 };
