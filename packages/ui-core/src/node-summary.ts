@@ -852,6 +852,32 @@ function forEachText(value: unknown): string | undefined {
   return items.length > 0 ? snippet(items.join(', ')) : undefined;
 }
 
+/** "3 Mal Wiederholen" / "Solange …" / "Bis …" / "Für jedes Element": how a `repeat` loops. */
+function repeatTitle(repeat: Record<string, unknown>, ctx: SummaryContext): string {
+  const { t } = ctx;
+  if (repeat.count !== undefined) {
+    return `${t('nodes:blocks.times', { n: String(repeat.count) })} ${ctx.blockLabel('repeat')}`;
+  }
+  if (repeat.while !== undefined) {
+    return t('nodes:blocks.while', { condition: conditionsText(repeat.while, ctx) });
+  }
+  if (repeat.until !== undefined) {
+    return t('nodes:blocks.until', { condition: conditionsText(repeat.until, ctx) });
+  }
+  return repeat.for_each !== undefined ? t('nodes:blocks.forEach') : ctx.blockLabel('repeat');
+}
+
+/**
+ * How a `repeat` step loops, with what a `for_each` goes through: "Für jedes
+ * Element · {{ all_devices }}". Names the frame around a loop's steps (#44),
+ * in both card text modes.
+ */
+export function summarizeLoop(step: Record<string, unknown>, ctx: SummaryContext): string {
+  const repeat = isPlainObject(step.repeat) ? step.repeat : {};
+  const list = forEachText(repeat.for_each);
+  return list ? `${repeatTitle(repeat, ctx)} · ${list}` : repeatTitle(repeat, ctx);
+}
+
 /** HA building blocks shown as one card: HA's name, then what's inside. */
 function summarizeHaBlock(
   type: HaBlockType,
@@ -880,19 +906,9 @@ function summarizeHaBlock(
       };
     case 'repeat': {
       const repeat = isPlainObject(step.repeat) ? step.repeat : {};
-      const title =
-        repeat.count !== undefined
-          ? `${t('nodes:blocks.times', { n: String(repeat.count) })} ${kind}`
-          : repeat.while !== undefined
-            ? t('nodes:blocks.while', { condition: conditionsText(repeat.while, ctx) })
-            : repeat.until !== undefined
-              ? t('nodes:blocks.until', { condition: conditionsText(repeat.until, ctx) })
-              : repeat.for_each !== undefined
-                ? t('nodes:blocks.forEach')
-                : kind;
       return {
         kind,
-        title,
+        title: repeatTitle(repeat, ctx),
         detail: parts(
           forEachText(repeat.for_each),
           t('nodes:blocks.steps', { count: stepCount(repeat.sequence) })

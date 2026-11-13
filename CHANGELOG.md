@@ -8,6 +8,9 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ## Unreleased
 
+### Added
+- **The steps of a loop stand in a frame** ([#44](https://github.com/SH1FT-W/flode/issues/44)). A dashed frame around the steps of a `repeat` sets them apart from the steps after the loop, which used to look like one chain. The frame is named after the loop with FLODE's text, for example "For each item · {{ all_devices }}", so the list of a `for_each` shows also with "Card text like Home Assistant". A loop inside a loop gets its own frame.
+
 ### Changed
 - **The sidebar opens the conditions of an `if` block** ([#43](https://github.com/SH1FT-W/flode/issues/43)). Home Assistant shows them collapsed, with only a generic line such as "If a template renders true"; FLODE now expands them when the block is selected, so the template itself is visible.
 - **Top to bottom, an action's detail gets two lines** ([#43](https://github.com/SH1FT-W/flode/issues/43)). In a vertical flow a card has room for three lines of text. An action's title mostly repeats the kind of step shown above it, so it now takes one line and the detail (for example a notification's title and message) two. If blocks, conditions and triggers keep two lines for their title, since that is where they say what they check.

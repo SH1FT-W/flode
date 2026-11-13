@@ -31,6 +31,8 @@ import {
   cachedBranchView,
   cardShape,
   endsRun,
+  type LoopFrame,
+  loopFrames,
   moveBranchCard,
   type Point,
   removeBranchStep,
@@ -80,6 +82,7 @@ import { watchHold } from './hold';
 import { HA_ICON_ELEMENTS, nodeIconTemplate } from './node-icon';
 import {
   issueLines,
+  loopLabel,
   nodeColor,
   nodeEyebrow,
   nodeIssues,
@@ -1135,6 +1138,30 @@ export class FlodeCanvas extends LitElement {
     ></flode-annotations>`;
   }
 
+  /** The frame around a loop's steps (#44): below the lines and cards, clicks pass through. */
+  private renderLoopFrame(frame: LoopFrame) {
+    const node = this.view.graph.nodes.find((n) => n.id === frame.blockId);
+    if (!node) return nothing;
+    return html`<div
+      class="loop-frame"
+      style="transform: translate(${frame.x}px, ${frame.y}px); width: ${frame.width}px; height: ${frame.height}px; --node-color: ${this.cardColor(node).color}"
+    ></div>`;
+  }
+
+  /** The loop's name on its frame's edge, above the lines: top to bottom the line into the loop crosses it. */
+  private renderLoopLabel(frame: LoopFrame) {
+    const node = this.view.graph.nodes.find((n) => n.id === frame.blockId);
+    const label = node ? loopLabel(node, this.hass) : '';
+    if (!node || !label) return nothing;
+    return html`<span
+      class="loop-label"
+      title=${label}
+      style="transform: translate(${frame.x + 12}px, ${frame.y - 9}px); max-width: ${frame.width - 24}px; --node-color: ${this.cardColor(node).color}"
+    >
+      <ha-icon icon="mdi:refresh"></ha-icon><span class="loop-text">${label}</span>
+    </span>`;
+  }
+
   // ---- node drag ---------------------------------------------------------
 
   private onNodePointerDown(event: PointerEvent, node: FlowNode): void {
@@ -1654,6 +1681,7 @@ export class FlodeCanvas extends LitElement {
     const entries = this.graph ? scriptEntryIds(this.graph) : new Set<string>();
     const edges = shown?.edges.filter(isDrawnEdge) ?? [];
     const tails = shown ? this.shownTails(shown) : [];
+    const loops = shown ? loopFrames(this.view) : [];
     const incoming = new Map<string, number>();
     // Lines that meet at a card (a loop back to it doesn't count).
     for (const edge of edges.filter((e) => e.type !== 'loop-back'))
@@ -1682,6 +1710,7 @@ export class FlodeCanvas extends LitElement {
           style="transform: translate(${x}px, ${y}px) scale(${zoom}); --zoom: ${zoom}"
         >
           ${this.graph ? this.renderAnnotations('frames') : nothing}
+          ${loops.map((frame) => this.renderLoopFrame(frame))}
           <svg class="edges">
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -1694,6 +1723,7 @@ export class FlodeCanvas extends LitElement {
             ${edges.map((edge) => this.renderEdge(edge, (incoming.get(edge.target) ?? 0) > 1))} ${tails.map(([, tail]) => this.renderTailLines(tail))}
             ${this.renderConnectionPreview()}
           </svg>
+          ${loops.map((frame) => this.renderLoopLabel(frame))}
           ${shown?.nodes.map((node) => this.renderNode(node, entries.has(node.id)))}
           ${tails.map(([id, tail]) => this.renderTail(id, tail))}
           ${this.graph ? this.renderAnnotations('notes') : nothing} ${this.renderMarquee()}
@@ -1716,6 +1746,42 @@ export class FlodeCanvas extends LitElement {
       overflow: hidden;
       /* Never scrolled to show a focused "+" (Chromium does, for one HA's dialog hands focus back to). */
       overflow: clip;
+    }
+    .loop-frame {
+      position: absolute;
+      left: 0;
+      top: 0;
+      box-sizing: border-box;
+      border: 2px dashed color-mix(in srgb, var(--node-color) 70%, transparent);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--node-color) 6%, transparent);
+      pointer-events: none;
+    }
+    .loop-label {
+      position: absolute;
+      left: 0;
+      top: 0;
+      box-sizing: border-box;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 6px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 18px;
+      color: var(--node-color);
+      background: var(--primary-background-color);
+      --mdc-icon-size: 14px;
+    }
+    .loop-label ha-icon {
+      flex: none;
+    }
+    .loop-text {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .marquee {
       position: absolute;

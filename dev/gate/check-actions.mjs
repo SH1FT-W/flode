@@ -359,6 +359,46 @@ async function ifConditions(engine) {
   }
 }
 
+/** #44: the steps of a loop stand in a frame named after the loop, apart from what follows it. */
+async function loopFrames(engine) {
+  const where = `${engine} loop frame`;
+  const flow = seededFlows().find((f) => f.id.endsWith('repeat_for_each'));
+  if (!flow) throw new Error('repeat_for_each not seeded');
+  const { browser, page, errors } = await openBrowser(engine);
+  try {
+    await gotoPanel(page);
+    await openFlow(page, flow.name);
+    await step(
+      where,
+      'each loop has a frame, the for_each one names its list (#44)',
+      async () => {
+        const labels = await page.evaluate(() => {
+          const find = (root, cls, found = []) => {
+            for (const el of root.querySelectorAll('*')) {
+              if (el.classList.contains(cls)) found.push(el);
+              if (el.shadowRoot) find(el.shadowRoot, cls, found);
+            }
+            return found;
+          };
+          return {
+            frames: find(document, 'loop-frame').length,
+            labels: find(document, 'loop-label').map((el) => el.textContent.trim()),
+          };
+        });
+        expect(labels.frames === 2, `${labels.frames} loop frames, expected 2`);
+        expect(
+          labels.labels.some((text) => text.includes("{{ ['kitchen', 'hall'] }}")),
+          `no label names the list: ${JSON.stringify(labels.labels)}`
+        );
+      },
+      page
+    );
+    for (const error of errors) result.fail(`${where}: ${error}`);
+  } finally {
+    await browser.close();
+  }
+}
+
 /** For the inspector showing node `id`: whether each of HA's condition rows in it is expanded. */
 function conditionRowsOpen(page, id) {
   return page.evaluate((nodeId) => {
@@ -404,7 +444,7 @@ await Promise.all(
     run(engine),
     phone(engine),
     ifConditions(engine),
-
+    loopFrames(engine),
     whatsNew(engine),
   ])
 );

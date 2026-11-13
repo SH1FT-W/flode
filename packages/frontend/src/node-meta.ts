@@ -5,6 +5,7 @@ import {
   type NodeSummary,
   type StepIssue,
   stepIssues,
+  summarizeLoop,
   summarizeNode,
 } from '@flode/ui-core';
 import type { NodeType } from './flow-model';
@@ -106,6 +107,13 @@ export function summarize(
       title: typeLabel(node.type, hass?.language ?? 'en'),
     }
   );
+}
+
+/** The name on the frame around a loop's steps (#44): "Für jedes Element · {{ all_devices }}". */
+export function loopLabel(node: FlowNode, hass: HomeAssistant | undefined): string {
+  const step = getRawStep(node.data);
+  const ctx = summaryContext(hass);
+  return step && ctx ? summarizeLoop(step, ctx) : '';
 }
 
 /**

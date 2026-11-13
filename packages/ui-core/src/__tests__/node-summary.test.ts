@@ -9,6 +9,7 @@ import {
   summarizeAction,
   summarizeCondition,
   summarizeDelay,
+  summarizeLoop,
   summarizeServiceAction,
   summarizeServiceData,
   summarizeTrigger,
@@ -427,6 +428,18 @@ describe('HA building blocks (kept as one block)', () => {
     expect(raw({ repeat: { for_each: ['a', 'b'], sequence: [{}] } })).toMatchObject({
       detail: 'a, b · 1 Aktion',
     });
+  });
+
+  it('names how a loop runs, for the frame around its steps (#44)', () => {
+    const loop = (repeat: Record<string, unknown>) => summarizeLoop({ repeat }, makeContext());
+    expect(loop({ for_each: '{{ all_devices }}', sequence: [{}] })).toBe(
+      'Für jedes Element · {{ all_devices }}'
+    );
+    expect(loop({ for_each: ['a', 'b'], sequence: [{}] })).toBe('Für jedes Element · a, b');
+    expect(loop({ count: 3, sequence: [{}] })).toBe('3× Wiederholen');
+    expect(loop({ until: [{ condition: 'template', value_template: '{{ x }}' }] })).toContain(
+      '{{ x }}'
+    );
   });
 
   it('names a stop kept in a branch like a stop card of its own (#38)', () => {

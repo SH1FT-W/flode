@@ -172,6 +172,83 @@ export function cardShape(
   };
 }
 
+/** The frame drawn around the steps of a loop (#44), in flow coordinates. */
+export interface LoopFrame {
+  /** The `repeat` card the loop belongs to (a flow card, or a branch card for a nested loop). */
+  blockId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+type Box = Omit<LoopFrame, 'blockId'>;
+
+/**
+ * Room between a loop's steps and its frame: along the flow there is a gap of
+ * at least 80 between cards, across it only 40 between the lanes of a block.
+ * After the last step it takes in that step's "+" (adding there stays in the loop).
+ */
+const FRAME_PAD = { start: 28, end: 44, across: 16 } as const;
+
+function union(a: Box | null, b: Box | null): Box | null {
+  if (!a || !b) return a ?? b;
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  return {
+    x,
+    y,
+    width: Math.max(a.x + a.width, b.x + b.width) - x,
+    height: Math.max(a.y + a.height, b.y + b.height) - y,
+  };
+}
+
+/**
+ * Frames around the steps of each loop, so they stand apart from what follows
+ * the loop (#44): a flat chain otherwise looks the same inside and after it.
+ * A loop inside a loop gets its own frame, inside the outer one. Outer frames
+ * come first, to be drawn below inner ones. Derived from the view, never stored.
+ */
+export function loopFrames(view: BranchView): LoopFrame[] {
+  const nodes = new Map(view.graph.nodes.map((n) => [n.id, n]));
+  const down = view.axis.direction === 'down';
+  const across = { start: FRAME_PAD.across, end: FRAME_PAD.across };
+  const along = { start: FRAME_PAD.start, end: FRAME_PAD.end };
+  const padX = down ? across : along;
+  const padY = down ? along : across;
+  const frames: LoopFrame[] = [];
+  // A card and all that is drawn in its branches, loops in their frames.
+  const extent = (id: string): Box | null => {
+    const node = nodes.get(id);
+    if (!node) return null;
+    let box: Box | null = {
+      ...node.position,
+      width: NODE_WIDTH,
+      height: cardShape(view, node).height,
+    };
+    for (const branch of view.branches.get(id) ?? []) {
+      let body: Box | null = null;
+      for (const card of branch.cards) body = union(body, extent(card));
+      if (body && branch.label.kind === 'repeat') {
+        body = {
+          x: body.x - padX.start,
+          y: body.y - padY.start,
+          width: body.width + padX.start + padX.end,
+          height: body.height + padY.start + padY.end,
+        };
+        frames.push({ blockId: id, ...body });
+      }
+      box = union(box, body);
+    }
+    return box;
+  };
+  for (const id of view.branches.keys()) {
+    if (!view.cards.has(id)) extent(id);
+  }
+  // Built inside out; the outer frames go below.
+  return frames.reverse();
+}
+
 /**
  * "Option 2 · Licht an" / "Parallel 1" / "Standard" / "Dann" / "Sonst" — the
  * name of a branch's output; `short`, where many sit side by side, a numbered

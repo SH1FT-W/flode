@@ -10,6 +10,7 @@ import {
   detachBranchStep,
   endsRun,
   insertBranchStep,
+  loopFrames,
   moveBranchCard,
   removeBranchStep,
   setBranchStep,
@@ -791,6 +792,62 @@ describe('repeat block (#42)', () => {
     const stop = branchCardId('b', ['repeat', 'sequence', 0]);
     expect(view.ends.size).toBe(0);
     expect(view.graph.edges.some((e) => e.source === stop && e.target === 'n')).toBe(true);
+  });
+
+  describe('frame around the steps of the loop (#44)', () => {
+    type Box = { x: number; y: number; width: number; height: number };
+    const boxOf = (view: ReturnType<typeof branchView>, id: string): Box => {
+      const node = view.graph.nodes.find((n) => n.id === id);
+      if (!node) throw new Error(`no card ${id}`);
+      return { ...node.position, width: NODE_WIDTH, height: cardShape(view, node).height };
+    };
+    const inside = (inner: Box, outer: Box) =>
+      inner.x > outer.x &&
+      inner.y > outer.y &&
+      inner.x + inner.width < outer.x + outer.width &&
+      inner.y + inner.height < outer.y + outer.height;
+    const overlaps = (a: Box, b: Box) =>
+      a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+    it.each([
+      'right',
+      'down',
+    ] as const)('holds the loop steps and not the block or what follows (%s)', (direction) => {
+      const view = branchView({ ...flow(repeat), direction });
+      const frames = loopFrames(view);
+      expect(frames.map((f) => f.blockId)).toEqual(['b']);
+      const [frame] = frames;
+      if (!frame) throw new Error('no frame');
+      expect(inside(boxOf(view, first), frame)).toBe(true);
+      expect(inside(boxOf(view, second), frame)).toBe(true);
+      expect(overlaps(boxOf(view, 'b'), frame)).toBe(false);
+      expect(overlaps(boxOf(view, 'n'), frame)).toBe(false);
+    });
+
+    it('puts a loop nested in a loop in a frame of its own, inside the outer one', () => {
+      const nested = { repeat: { count: 2, sequence: [{ delay: 1 }, repeat] } };
+      const view = branchView({ ...flow(nested), direction: 'down' });
+      const frames = loopFrames(view);
+      const inner = branchCardId('b', ['repeat', 'sequence', 1]);
+      expect(frames.map((f) => f.blockId)).toEqual(['b', inner]);
+      const [outer, own] = frames;
+      if (!outer || !own) throw new Error('no frames');
+      expect(inside(own, outer)).toBe(true);
+      expect(inside(boxOf(view, inner), outer)).toBe(true);
+      expect(overlaps(boxOf(view, inner), own)).toBe(false);
+    });
+
+    it('draws none for other blocks or an empty loop', () => {
+      expect(loopFrames(branchView(flow()))).toEqual([]);
+      expect(loopFrames(branchView(flow({ if: [], then: [{ delay: 1 }] })))).toEqual([]);
+      expect(loopFrames(branchView(flow({ repeat: { count: 2, sequence: [] } })))).toEqual([]);
+    });
+
+    it('frames a loop nested in the branch of an if', () => {
+      const view = branchView(flow({ if: [], then: [repeat] }));
+      const loop = branchCardId('b', ['then', 0]);
+      expect(loopFrames(view).map((f) => f.blockId)).toEqual([loop]);
+    });
   });
 
   it('marks the steps of the loop a run went through', () => {
