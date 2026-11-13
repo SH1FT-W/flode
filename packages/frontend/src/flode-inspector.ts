@@ -9,7 +9,12 @@ import {
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
 import { defineElement } from './define-element';
-import { ensureAutomationEditors, ensureHaSelector, type HomeAssistant } from './ha';
+import {
+  ensureAutomationEditors,
+  ensureHaSelector,
+  expandIfConditions,
+  type HomeAssistant,
+} from './ha';
 import {
   hasUiEditor,
   nodeToStep,
@@ -168,6 +173,16 @@ export class FlodeInspector extends LitElement {
     }
     const { triggers } = this.triggerIdFlow();
     this.triggerIds.setTriggers(triggers, this.optionsFor(triggers));
+  }
+
+  protected updated(changed: PropertyValues<this>): void {
+    const node = this.node;
+    // A newly opened if block (or the first one once HA's editors are loaded) shows its conditions (#43).
+    const opened = changed.has('node') && changed.get('node')?.id !== node?.id;
+    if (!node || this.yamlMode || !(opened || changed.has('editorsReady'))) return;
+    if (!('if' in this.stepOf(node))) return;
+    const editor = this.renderRoot.querySelector('ha-automation-action-editor');
+    if (editor) void expandIfConditions(editor);
   }
 
   private optionsFor(triggers: readonly unknown[]): TriggerIdOption[] {

@@ -1,6 +1,6 @@
 import { type FlowNode, isPlainObject, isScriptStart } from '@flode/shared';
 import type { NodeSummary } from '@flode/ui-core';
-import { ensureAutomationEditors, type HomeAssistant } from './ha';
+import { ensureAutomationEditors, type HomeAssistant, updateCompleteOf } from './ha';
 import { nodeToStep, type StepKind, stepKind } from './ha-step';
 import { summaryContext } from './i18n';
 
@@ -41,12 +41,6 @@ function readRowText(row: Element): string {
 
 /** HA writes this when its describe function throws — then FLODE's own text is the better one. */
 const DESCRIBE_ERROR = /^Error in describing/;
-
-/** A Lit element's first render; `null` for anything else. */
-function updateCompleteOf(element: Element): Promise<unknown> | null {
-  const done: unknown = Reflect.get(element, 'updateComplete');
-  return done instanceof Promise ? done : null;
-}
 
 function rowTag(kind: StepKind): string {
   return `ha-automation-${kind}-row`;

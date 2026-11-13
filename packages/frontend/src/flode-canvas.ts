@@ -1573,6 +1573,9 @@ export class FlodeCanvas extends LitElement {
     const addLabel = inBranch ? t(language, 'addInBranch') : addNextLabel(language, node);
     const selected = this.selectedId === node.id || this.multiIds.includes(node.id);
     const summary = this.cardSummary(node);
+    // Top to bottom there is room for three lines. An action's title mostly names what kind of step it
+    // is, so its detail gets two of them; triggers, conditions and if blocks say what matters in the title.
+    const detailFirst = node.type === 'action' && !branches && !twoWay && Boolean(summary.detail);
     const issues = [
       ...issueLines(this.issues.get(node.id) ?? [], language),
       ...(this.saveIssue?.nodeId === node.id ? [this.saveIssue.text] : []),
@@ -1583,7 +1586,7 @@ export class FlodeCanvas extends LitElement {
     const ends = endsRun(this.view, node);
     return html`
       <div
-        class="node nopan ${branches ? 'branching' : ''} ${twoWay ? 'two-way' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${ends ? `ends ${ends}` : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${tint ? 'tinted' : ''} ${this.runClass(node.id)}"
+        class="node nopan ${branches ? 'branching' : ''} ${twoWay ? 'two-way' : ''} ${this.view.cards.has(node.id) ? 'branch-step' : ''} ${kindIsKey(node) ? 'kind-key' : ''} ${detailFirst ? 'detail-first' : ''} ${issues.length > 0 ? 'faulty' : ''} ${selected ? 'selected' : ''} ${off ? 'off' : ''} ${ends ? `ends ${ends}` : ''} ${this.drag?.id === node.id ? 'dragging' : ''} ${tint ? 'tinted' : ''} ${this.runClass(node.id)}"
         style="transform: translate(${node.position.x}px, ${node.position.y}px); height: ${height}px; --node-color: ${color}${tint ? `; --card-tint: ${tint}` : ''}"
         data-node-id=${node.id}
         title=${[
@@ -2306,6 +2309,13 @@ export class FlodeCanvas extends LitElement {
     /* The input and output sit on the top and bottom edge: room for at most three lines of text. */
     .down .node .detail {
       -webkit-line-clamp: 1;
+    }
+    /* An action's title mostly repeats its kind above it: one line for it, two for what it does. */
+    .down:not(.far) .node.detail-first .title {
+      -webkit-line-clamp: 1;
+    }
+    .down:not(.far) .node.detail-first .detail {
+      -webkit-line-clamp: 2;
     }
     .down .node.branching .text,
     .down .node.two-way .text {

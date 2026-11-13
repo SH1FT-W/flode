@@ -730,6 +730,33 @@ export async function applyRegistryUpdate(
 }
 
 /** Readable text for errors from `hass.callApi` / `callWS` (HA puts the reason in `body.message`). */
+/** A Lit element's first render; `null` for anything else. */
+export function updateCompleteOf(element: Element): Promise<unknown> | null {
+  const done: unknown = Reflect.get(element, 'updateComplete');
+  return done instanceof Promise ? done : null;
+}
+
+/**
+ * Opens the "If" conditions of an if block in HA's action editor: HA keeps
+ * them collapsed, so only its generic text ("If a template renders true")
+ * shows (#43). Only the block's own list, not the conditions of nested steps.
+ * HA's rows have `expand()` since at least 2026.3.
+ */
+export async function expandIfConditions(editor: Element): Promise<void> {
+  await customElements.whenDefined('ha-automation-action-if');
+  await updateCompleteOf(editor);
+  const block = editor.shadowRoot?.querySelector('ha-automation-action-if');
+  if (!block) return;
+  await updateCompleteOf(block);
+  const list = block.shadowRoot?.querySelector('ha-automation-condition');
+  if (!list) return;
+  await updateCompleteOf(list);
+  for (const row of list.shadowRoot?.querySelectorAll('ha-automation-condition-row') ?? []) {
+    const expand: unknown = Reflect.get(row, 'expand');
+    if (typeof expand === 'function') expand.call(row);
+  }
+}
+
 export function errorMessage(error: unknown): string {
   if (isRecord(error)) {
     const body = error.body;

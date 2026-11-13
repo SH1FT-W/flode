@@ -318,6 +318,67 @@ async function phone(engine) {
   }
 }
 
+/** #43: selecting an if block opens its "If" conditions in the sidebar (HA keeps them collapsed). */
+async function ifConditions(engine) {
+  const where = `${engine} if block`;
+  const flow = seededFlows().find((f) => f.id.endsWith('if_blocks_with_templates'));
+  if (!flow) throw new Error('if_blocks_with_templates not seeded');
+  const { browser, page, errors } = await openBrowser(engine);
+  try {
+    await gotoPanel(page);
+    await openFlow(page, flow.name);
+    const ids = await inPanel(page, (panel) =>
+      panel.flow.graph.nodes
+        .filter((node) => 'if' in (node.data?._raw ?? node.data ?? {}))
+        .map((node) => node.id)
+    );
+    for (const [index, id] of ids.entries()) {
+      await step(
+        where,
+        `if block ${index + 1}: its "If" condition is open in the sidebar (#43)`,
+        async () => {
+          const card = (await readCards(page)).find((c) => c.id === id);
+          expect(card, 'card not on the canvas');
+          await clickCard(page, card);
+          let open = [];
+          for (const end = Date.now() + 8000; Date.now() < end; ) {
+            open = await conditionRowsOpen(page, id);
+            if (open.length > 0 && open.every(Boolean)) break;
+            await page.waitForTimeout(200);
+          }
+          expect(open.length === 1, `${open.length} condition rows in the sidebar`);
+          expect(open[0], 'the "If" condition is collapsed');
+        },
+        page
+      );
+    }
+    if (ids.length !== 2) result.fail(`${where}: found ${ids.length} if blocks, expected 2`);
+    for (const error of errors) result.fail(`${where}: ${error}`);
+  } finally {
+    await browser.close();
+  }
+}
+
+/** For the inspector showing node `id`: whether each of HA's condition rows in it is expanded. */
+function conditionRowsOpen(page, id) {
+  return page.evaluate((nodeId) => {
+    const find = (root, tag, found = []) => {
+      for (const el of root.querySelectorAll('*')) {
+        if (el.tagName === tag) found.push(el);
+        if (el.shadowRoot) find(el.shadowRoot, tag, found);
+      }
+      return found;
+    };
+    const inspector = find(document, 'FLODE-INSPECTOR').find((el) => el.node?.id === nodeId);
+    const rows = inspector?.shadowRoot
+      ? find(inspector.shadowRoot, 'HA-AUTOMATION-CONDITION-ROW')
+      : [];
+    return rows.map(
+      (row) => row.shadowRoot?.querySelector('ha-expansion-panel')?.expanded === true
+    );
+  }, id);
+}
+
 async function whatsNew(engine) {
   const where = `${engine} what's new`;
   // Someone who last saw an older version.
@@ -338,5 +399,13 @@ async function whatsNew(engine) {
   }
 }
 
-await Promise.all(ENGINES.flatMap((engine) => [run(engine), phone(engine), whatsNew(engine)]));
+await Promise.all(
+  ENGINES.flatMap((engine) => [
+    run(engine),
+    phone(engine),
+    ifConditions(engine),
+
+    whatsNew(engine),
+  ])
+);
 result.finish();

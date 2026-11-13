@@ -1,0 +1,27 @@
+# If blocks with template conditions (#43): the sidebar opens the "If" conditions of the selected block.
+alias: If template conditions
+description: If and if/else blocks whose conditions are templates
+mode: single
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "on"
+actions:
+  - if:
+      - condition: template
+        value_template: "{{ is_state('sun.sun', 'below_horizon') }}"
+    then:
+      - action: light.turn_on
+        target:
+          entity_id: light.kitchen_lights
+  - if:
+      - condition: template
+        value_template: "{{ states('sensor.outside_temperature') | int(0) > 25 }}"
+    then:
+      - action: light.turn_off
+        target:
+          entity_id: light.kitchen_lights
+    else:
+      - action: light.turn_on
+        target:
+          entity_id: light.ceiling_lights
