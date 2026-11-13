@@ -24,8 +24,9 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:repeat', title: 'new261102RepeatTitle', text: 'new261102RepeatText' },
-  { icon: 'mdi:code-braces', title: 'new261102TemplateTitle', text: 'new261102TemplateText' },
+  { icon: 'mdi:repeat', title: 'new261103LoopTitle', text: 'new261103LoopText' },
+  { icon: 'mdi:code-braces', title: 'new261103IfOpenTitle', text: 'new261103IfOpenText' },
+  { icon: 'mdi:arrow-down', title: 'new261103DetailsTitle', text: 'new261103DetailsText' },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

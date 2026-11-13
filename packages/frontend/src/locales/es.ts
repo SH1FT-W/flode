@@ -372,10 +372,13 @@ export const es: Strings = {
   whatsNewTitle: 'Novedades en FLODE {version}',
   whatsNewAll: 'Todos los cambios',
   continue: 'Continuar',
-  new261102RepeatTitle: 'Los bucles muestran sus pasos',
-  new261102RepeatText:
-    'Un bloque Repetir dibuja ahora sus pasos como tarjetas, para cualquier tipo de bucle y también anidado. Con for_each, la lista aparece en la tarjeta.',
-  new261102TemplateTitle: 'Plantillas en tarjetas Si-entonces',
-  new261102TemplateText:
-    'Una condición de plantilla muestra la propia plantilla en el texto de tarjeta de FLODE en lugar de «La plantilla es verdadera».',
+  new261103LoopTitle: 'Bucles en un marco',
+  new261103LoopText:
+    'Los pasos de un bucle están en un marco discontinuo, separados de lo que sigue. El marco nombra el bucle, con for_each también su lista.',
+  new261103IfOpenTitle: 'Condiciones Si desplegadas',
+  new261103IfOpenText:
+    'Al seleccionar un bloque Si-entonces, la barra lateral muestra sus condiciones desplegadas, con la plantilla en lugar de solo la frase genérica.',
+  new261103DetailsTitle: 'Más espacio para los detalles',
+  new261103DetailsText:
+    'De arriba abajo, el título de una acción ocupa una línea y sus detalles dos, así se lee entero por ejemplo el mensaje de una notificación.',
 };

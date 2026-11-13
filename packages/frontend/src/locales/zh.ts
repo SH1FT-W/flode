@@ -349,9 +349,11 @@ export const zh: Strings = {
   whatsNewTitle: 'FLODE {version} 新功能',
   whatsNewAll: '全部更改',
   continue: '继续',
-  new261102RepeatTitle: '循环显示其步骤',
-  new261102RepeatText:
-    '重复块现在会将其步骤绘制为卡片，适用于各种循环，嵌套时也是如此。使用 for_each 时，列表会显示在卡片上。',
-  new261102TemplateTitle: '如果-则卡片显示模板',
-  new261102TemplateText: '在 FLODE 的卡片文本中，模板条件现在显示模板本身，而不是“模板为真”。',
+  new261103LoopTitle: '循环显示在框中',
+  new261103LoopText:
+    '循环的步骤显示在虚线框中，与之后的步骤分开。框上标出循环，for_each 时还会显示列表。',
+  new261103IfOpenTitle: '展开“如果”条件',
+  new261103IfOpenText: '选择“如果-则”块时，侧边栏会展开显示其条件，显示模板而不只是通用描述。',
+  new261103DetailsTitle: '更多空间显示详情',
+  new261103DetailsText: '在纵向流程中，动作标题占一行，详情占两行，例如可以完整阅读通知的消息。',
 };

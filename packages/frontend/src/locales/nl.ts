@@ -372,10 +372,13 @@ export const nl: Strings = {
   whatsNewTitle: 'Nieuw in FLODE {version}',
   whatsNewAll: 'Alle wijzigingen',
   continue: 'Doorgaan',
-  new261102RepeatTitle: 'Lussen tonen hun stappen',
-  new261102RepeatText:
-    'Een Herhaling-blok tekent zijn stappen nu als kaarten, voor elk soort lus en ook genest. Bij for_each staat de lijst op de kaart.',
-  new261102TemplateTitle: 'Sjablonen op Als, dan-kaarten',
-  new261102TemplateText:
-    'Een sjabloonvoorwaarde toont in de kaarttekst van FLODE het sjabloon zelf in plaats van „Sjabloon is waar”.',
+  new261103LoopTitle: 'Lussen in een kader',
+  new261103LoopText:
+    'De stappen van een lus staan in een gestippeld kader, los van wat erna komt. Het kader noemt de lus, bij for_each ook de lijst.',
+  new261103IfOpenTitle: 'Als-voorwaarden uitgeklapt',
+  new261103IfOpenText:
+    'Als je een Als, dan-blok selecteert, toont de zijbalk de voorwaarden uitgeklapt, met het sjabloon in plaats van alleen de algemene zin.',
+  new261103DetailsTitle: 'Meer ruimte voor details',
+  new261103DetailsText:
+    'Van boven naar beneden krijgt de titel van een actie één regel en de details twee, zodat bijvoorbeeld het bericht van een melding volledig te lezen is.',
 };

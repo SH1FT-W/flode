@@ -6,7 +6,9 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
-## Unreleased
+## [26.11.3] — 2026-11-13 — Loops in a frame, if conditions expanded
+
+Reported by jlpnea ([#43](https://github.com/SH1FT-W/flode/issues/43), [#44](https://github.com/SH1FT-W/flode/issues/44)).
 
 ### Added
 - **The steps of a loop stand in a frame** ([#44](https://github.com/SH1FT-W/flode/issues/44)). A dashed frame around the steps of a `repeat` sets them apart from the steps after the loop, which used to look like one chain. The frame is named after the loop with FLODE's text, for example "For each item · {{ all_devices }}", so the list of a `for_each` shows also with "Card text like Home Assistant". A loop inside a loop gets its own frame.

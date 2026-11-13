@@ -381,12 +381,15 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261102RepeatTitle: 'Schleifen zeigen ihre Schritte',
-    new261102RepeatText:
-      'Ein Wiederholen-Block zeichnet seine Schritte jetzt als Karten, für jede Art von Schleife und auch verschachtelt. Bei for_each steht die Liste auf der Karte.',
-    new261102TemplateTitle: 'Vorlagen auf Wenn-dann-Karten',
-    new261102TemplateText:
-      'Eine Vorlagen-Bedingung zeigt in FLODEs Kartentext die Vorlage selbst statt „Vorlage ist wahr“.',
+    new261103LoopTitle: 'Schleifen im Rahmen',
+    new261103LoopText:
+      'Die Schritte einer Schleife stehen in einem gestrichelten Rahmen, getrennt von dem, was danach kommt. Der Rahmen nennt die Schleife, bei for_each auch die Liste.',
+    new261103IfOpenTitle: 'Wenn-Bedingungen aufgeklappt',
+    new261103IfOpenText:
+      'Wählst du einen Wenn-dann-Block aus, zeigt die Seitenleiste seine Bedingungen aufgeklappt, mit der Vorlage statt nur dem allgemeinen Satz.',
+    new261103DetailsTitle: 'Mehr Platz für Details',
+    new261103DetailsText:
+      'Im senkrechten Flow bekommt der Titel einer Aktion eine Zeile und ihre Details zwei, so ist zum Beispiel die Nachricht einer Benachrichtigung ganz zu lesen.',
   },
   en: {
     title: 'FLODE',
@@ -753,12 +756,15 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261102RepeatTitle: 'Loops show their steps',
-    new261102RepeatText:
-      'A Repeat block now draws its steps as cards, for every kind of loop and when nested too. With for_each, the list is named on the card.',
-    new261102TemplateTitle: 'Templates on If-then cards',
-    new261102TemplateText:
-      "A template condition shows the template itself in FLODE's card text instead of “Template is true”.",
+    new261103LoopTitle: 'Loops in a frame',
+    new261103LoopText:
+      'The steps of a loop stand in a dashed frame, apart from what follows it. The frame names the loop, with for_each also its list.',
+    new261103IfOpenTitle: 'If conditions expanded',
+    new261103IfOpenText:
+      'When you select an If-then block, the sidebar shows its conditions expanded, with the template instead of just the generic line.',
+    new261103DetailsTitle: 'More room for details',
+    new261103DetailsText:
+      "Top to bottom, an action's title takes one line and its details two, so a notification's message, for example, can be read in full.",
   },
 } as const;
 

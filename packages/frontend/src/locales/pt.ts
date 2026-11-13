@@ -371,10 +371,13 @@ export const pt: Strings = {
   whatsNewTitle: 'Novidades no FLODE {version}',
   whatsNewAll: 'Todas as alterações',
   continue: 'Continuar',
-  new261102RepeatTitle: 'Os ciclos mostram os seus passos',
-  new261102RepeatText:
-    'Um bloco Repetir desenha agora os seus passos como cartões, para qualquer tipo de ciclo e também aninhado. Com for_each, a lista aparece no cartão.',
-  new261102TemplateTitle: 'Modelos nos cartões Se então',
-  new261102TemplateText:
-    'Uma condição de modelo mostra o próprio modelo no texto do cartão do FLODE em vez de «O modelo é verdadeiro».',
+  new261103LoopTitle: 'Ciclos numa moldura',
+  new261103LoopText:
+    'Os passos de um ciclo ficam numa moldura tracejada, separados do que vem a seguir. A moldura nomeia o ciclo, com for_each também a sua lista.',
+  new261103IfOpenTitle: 'Condições Se expandidas',
+  new261103IfOpenText:
+    'Ao selecionar um bloco Se então, a barra lateral mostra as suas condições expandidas, com o modelo em vez de apenas a frase genérica.',
+  new261103DetailsTitle: 'Mais espaço para os detalhes',
+  new261103DetailsText:
+    'De cima para baixo, o título de uma ação ocupa uma linha e os detalhes duas, para ler por inteiro, por exemplo, a mensagem de uma notificação.',
 };

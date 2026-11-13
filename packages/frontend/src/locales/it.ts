@@ -369,10 +369,13 @@ export const it: Strings = {
   whatsNewTitle: 'Novità in FLODE {version}',
   whatsNewAll: 'Tutte le modifiche',
   continue: 'Continua',
-  new261102RepeatTitle: 'I cicli mostrano i loro passi',
-  new261102RepeatText:
-    "Un blocco Ripeti ora disegna i suoi passi come schede, per ogni tipo di ciclo e anche annidato. Con for_each, l'elenco è indicato sulla scheda.",
-  new261102TemplateTitle: 'Template sulle schede Se-allora',
-  new261102TemplateText:
-    'Una condizione template mostra il template stesso nel testo della scheda di FLODE invece di «Il template è vero».',
+  new261103LoopTitle: 'Cicli in una cornice',
+  new261103LoopText:
+    'I passi di un ciclo stanno in una cornice tratteggiata, separati da ciò che segue. La cornice nomina il ciclo, con for_each anche la sua lista.',
+  new261103IfOpenTitle: 'Condizioni Se aperte',
+  new261103IfOpenText:
+    'Quando selezioni un blocco Se-allora, la barra laterale mostra le sue condizioni aperte, con il template invece della sola frase generica.',
+  new261103DetailsTitle: 'Più spazio per i dettagli',
+  new261103DetailsText:
+    "Dall'alto in basso, il titolo di un'azione occupa una riga e i dettagli due, così si legge per intero ad esempio il messaggio di una notifica.",
 };

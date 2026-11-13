@@ -375,10 +375,13 @@ export const fr: Strings = {
   whatsNewTitle: 'Nouveau dans FLODE {version}',
   whatsNewAll: 'Tous les changements',
   continue: 'Continuer',
-  new261102RepeatTitle: 'Les boucles montrent leurs étapes',
-  new261102RepeatText:
-    'Un bloc Répéter dessine désormais ses étapes sous forme de cartes, pour tout type de boucle, même imbriqué. Avec for_each, la liste est indiquée sur la carte.',
-  new261102TemplateTitle: 'Modèles sur les cartes Si-alors',
-  new261102TemplateText:
-    'Une condition de modèle affiche le modèle lui-même dans le texte de carte de FLODE au lieu de « Le modèle est vrai ».',
+  new261103LoopTitle: 'Boucles dans un cadre',
+  new261103LoopText:
+    "Les étapes d'une boucle sont dans un cadre en pointillés, séparées de ce qui suit. Le cadre nomme la boucle, avec for_each aussi sa liste.",
+  new261103IfOpenTitle: 'Conditions Si dépliées',
+  new261103IfOpenText:
+    'Quand vous sélectionnez un bloc Si-alors, le panneau latéral affiche ses conditions dépliées, avec le modèle au lieu de la seule phrase générique.',
+  new261103DetailsTitle: 'Plus de place pour les détails',
+  new261103DetailsText:
+    "De haut en bas, le titre d'une action prend une ligne et ses détails deux, pour lire par exemple tout le message d'une notification.",
 };
