@@ -1,0 +1,12 @@
+# Only root conditions and an empty action list: the conditions stay conditions.
+alias: Conditions without actions
+description: A root condition and no actions
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "on"
+conditions:
+  - condition: state
+    entity_id: sun.sun
+    state: below_horizon
+actions: []

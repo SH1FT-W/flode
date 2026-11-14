@@ -75,6 +75,32 @@ export type FlowWorkspace = z.infer<typeof FlowWorkspaceSchema>;
  * Complete flow graph schema
  * Represents the entire automation as a graph of nodes and edges
  */
+/**
+ * Top-level automation keys FLODE writes from a field of its own (or, like `id`
+ * and a blueprint's `use_blueprint`, deliberately leaves to Home Assistant).
+ * Every other top-level key is kept as it is (`userTopLevelKeys`) — and never
+ * stands in for one FLODE writes.
+ */
+export const AUTOMATION_FIELD_KEYS: ReadonlySet<string> = new Set([
+  'id',
+  'alias',
+  'description',
+  'mode',
+  'max',
+  'max_exceeded',
+  'initial_state',
+  'trace',
+  'trigger',
+  'triggers',
+  'condition',
+  'conditions',
+  'action',
+  'actions',
+  'variables',
+  'trigger_variables',
+  'use_blueprint',
+]);
+
 export const FlowGraphSchema = z.object({
   /**
    * Unique identifier for this flow
@@ -114,6 +140,11 @@ export const FlowGraphSchema = z.object({
    * User-defined trigger_variables at the root level (preserved during round-trip)
    */
   userTriggerVariables: z.record(z.string(), z.unknown()).optional(),
+  /**
+   * Top-level automation keys FLODE has no field for (e.g. one a newer Home
+   * Assistant adds), written back unchanged (round trip).
+   */
+  userTopLevelKeys: z.record(z.string(), z.unknown()).optional(),
   /**
    * Workspace metadata for merged automations
    */

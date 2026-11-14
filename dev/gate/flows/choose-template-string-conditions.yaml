@@ -1,0 +1,19 @@
+# Choose and if whose conditions are one template string (not a list).
+alias: Choose with template string conditions
+description: A choose option and an if with a bare template as their condition
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "on"
+actions:
+  - choose:
+      - conditions: "{{ is_state('sun.sun', 'below_horizon') }}"
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: light.ceiling_lights
+  - if: "{{ is_state('light.kitchen_lights', 'off') }}"
+    then:
+      - action: light.turn_on
+        target:
+          entity_id: light.kitchen_lights

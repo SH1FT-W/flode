@@ -381,7 +381,6 @@ __metadata:
     "@types/node": "npm:^26.1.0"
     commander: "npm:^15.0.0"
     elkjs: "npm:^0.11.1"
-    graphlib: "npm:^2.1.8"
     js-yaml: "npm:^4.3.2"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^6.0.3"
@@ -1532,15 +1531,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphlib@npm:^2.1.8":
-  version: 2.1.8
-  resolution: "graphlib@npm:2.1.8"
-  dependencies:
-    lodash: "npm:^4.17.15"
-  checksum: 10c0/41c525e4d91a6d8b4e8da1883bf4e85689a547e908557ccc53f64db9141bdfb351b9162a79f13cae81c5b3a410027f59e4fc1edc1ea442234ec08e629859b188
-  languageName: node
-  linkType: hard
-
 "happy-dom@npm:^21.0.3":
   version: 21.0.3
   resolution: "happy-dom@npm:21.0.3"
@@ -1784,13 +1774,6 @@ __metadata:
     lit-element: "npm:^4.2.0"
     lit-html: "npm:^3.3.0"
   checksum: 10c0/11b6175ebffce92f4cf835ddd8a198d49707c27f34b0a7c538d2cb294f6c2fb7ff40aabd3589fcf0c2ed162404faaf2bb7c966fad9024bb9e02d013e2d5aa0b5
-  languageName: node
-  linkType: hard
-
-"lodash@npm:^4.18.0":
-  version: 4.18.1
-  resolution: "lodash@npm:4.18.1"
-  checksum: 10c0/757228fc68805c59789e82185135cf85f05d0b2d3d54631d680ca79ec21944ec8314d4533639a14b8bcfbd97a517e78960933041a5af17ecb693ec6eecb99a27
   languageName: node
   linkType: hard
 

@@ -1,9 +1,8 @@
 import type { FlowGraph } from '@flode/shared';
 import { automationToScriptConfig, isPlainObject, scriptToAutomationConfig } from '@flode/shared';
-import { dump as yamlDump } from 'js-yaml';
 import type { FlowTranspiler, YamlOptions } from './FlowTranspiler';
 import type { ParseResult, YamlParserOptions } from './parser/YamlParser';
-import { loadHaYaml } from './yaml';
+import { dumpHaYaml, haYamlLayout, loadHaYaml } from './yaml';
 
 export interface ScriptTranspileResult {
   success: boolean;
@@ -15,13 +14,6 @@ export interface ScriptTranspileResult {
   /** Strategy the underlying automation was transpiled with. */
   strategy?: string;
 }
-
-const YAML_DUMP_OPTIONS = {
-  indent: 2,
-  lineWidth: -1,
-  quotingType: '"',
-  forceQuotes: false,
-} as const;
 
 /**
  * Transpiles a script flow (one script start node, see `@flode/shared`'s
@@ -50,11 +42,7 @@ export function transpileScript(
   return {
     success: true,
     config,
-    yaml: yamlDump(config, {
-      ...YAML_DUMP_OPTIONS,
-      indent: options.indent ?? 2,
-      lineWidth: options.lineWidth ?? -1,
-    }),
+    yaml: dumpHaYaml(config, haYamlLayout(options)),
     warnings: result.warnings,
     strategy: result.output?.strategy,
   };
@@ -66,10 +54,7 @@ export async function parseScript(
   script: Record<string, unknown>,
   options: YamlParserOptions = {}
 ): Promise<ParseResult> {
-  const result = await transpiler.fromYaml(
-    yamlDump(scriptToAutomationConfig(script), YAML_DUMP_OPTIONS),
-    options
-  );
+  const result = await transpiler.fromYaml(dumpHaYaml(scriptToAutomationConfig(script)), options);
   if (!result.success || !result.graph) return result;
   const icon = typeof script.icon === 'string' ? script.icon : undefined;
   return {
@@ -109,7 +94,7 @@ export async function parseFlowYaml(
   }
   if (kind === 'automation') {
     // Empty text loads as `undefined`, which cannot be dumped — `null` fails the same way
-    return transpiler.fromYaml(yamlDump(config ?? null, YAML_DUMP_OPTIONS), options);
+    return transpiler.fromYaml(dumpHaYaml(config ?? null), options);
   }
   if (!isPlainObject(config)) {
     return {

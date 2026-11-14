@@ -3,6 +3,7 @@ import type {
   CafeMetadata,
   ConditionNode,
   DelayNode,
+  FlowDirection,
   FlowEdge,
   FlowGraph,
   FlowGraphMetadata,
@@ -16,6 +17,7 @@ import type {
   WaitNode,
 } from '@flode/shared';
 import {
+  AUTOMATION_FIELD_KEYS,
   axisOf,
   CafeMetadataSchema,
   CONDITION_STEP_KEY,
@@ -23,7 +25,6 @@ import {
   createRawStepData,
   createRawTriggerData,
   createShorthandConditionData,
-  delayValue,
   FlowGraphMetadataSchema,
   FlowGraphSchema,
   HAConditionSchema,
@@ -38,7 +39,7 @@ import {
 } from '@flode/shared';
 import { generateEdgeId, generateGraphId, generateNodeId } from '../utils/generateIds';
 import { loadHaYaml } from '../yaml';
-import { applyHeuristicLayout } from './layout';
+import { applyHeuristicLayout, applyHeuristicLayoutSync } from './layout';
 
 // Type guards for Home Assistant objects
 
@@ -309,6 +310,13 @@ function createUnmodeledConditionData(raw: Record<string, unknown>): HACondition
   return keepTargetedCondition(raw) ?? HAConditionSchema.parse(createRawConditionData(raw));
 }
 
+/** The top-level keys FLODE has no field for (e.g. from a newer HA) — kept as they are. */
+function unknownTopLevelKeys(config: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(config).filter(([key]) => !AUTOMATION_FIELD_KEYS.has(key))
+  );
+}
+
 /**
  * The automation-level settings (mode, max, …) — each field on its own, so
  * one HA does not know (or FLODE not yet) does not reset all the others.
@@ -411,6 +419,15 @@ interface ParseOptions {
 type NestedCondition = NonNullable<ConditionNode['data']['conditions']>[number];
 
 /**
+ * One condition of a `choose` option or an `if` as a mapping: the Jinja
+ * shorthand (`conditions: "{{ … }}"`) as the template condition it stands for.
+ */
+function conditionRecord(condition: unknown): Record<string, unknown> {
+  if (typeof condition === 'string') return createShorthandConditionData(condition);
+  return isPlainObject(condition) ? condition : {};
+}
+
+/**
  * Transform an array of Home Assistant conditions to internal format
  */
 function transformConditions(conditions: (HACondition | string)[]): NestedCondition[] {
@@ -451,6 +468,12 @@ export interface YamlParserOptions {
    * edges. Used by FLODE 3; state-machine automations are unaffected.
    */
   keepBlocks?: boolean;
+  /**
+   * The caller lays out a flow without a saved direction itself (the panel,
+   * opening flows top to bottom by default, #29): it gets placeholder
+   * positions here instead of a layout that would be thrown away.
+   */
+  deferLayout?: boolean;
 }
 
 /** Keys that make an action step one of HA's building blocks. */
@@ -462,6 +485,21 @@ export function isHaBlockStep(step: unknown): boolean {
 
 export class YamlParser {
   constructor(private readonly options: YamlParserOptions = {}) {}
+
+  /**
+   * The import layout (ELK) in the flow's saved direction — placeholder
+   * positions when there is none and the caller lays the flow out itself.
+   */
+  private layout(
+    nodes: FlowNode[],
+    edges: FlowEdge[],
+    direction: FlowDirection | undefined
+  ): Promise<FlowNode[]> {
+    if (this.options.deferLayout && !direction) {
+      return Promise.resolve(applyHeuristicLayoutSync(nodes, edges));
+    }
+    return applyHeuristicLayout(nodes, edges, undefined, direction);
+  }
 
   /**
    * Parse Home Assistant YAML string into FlowGraph
@@ -557,15 +595,10 @@ export class YamlParser {
         savedLayout = !hasBackwardsChooseChain;
         nodesWithPositions = savedLayout
           ? metaNodes
-          : await applyHeuristicLayout(nodes, edges, undefined, metadata.direction);
+          : await this.layout(nodes, edges, metadata.direction);
       } else {
         // Use async heuristic layout if metadata is missing
-        nodesWithPositions = await applyHeuristicLayout(
-          nodes,
-          edges,
-          undefined,
-          metadata?.direction
-        );
+        nodesWithPositions = await this.layout(nodes, edges, metadata?.direction);
       }
 
       // Step 8: Build FlowGraph object
@@ -586,6 +619,8 @@ export class YamlParser {
         !Array.isArray(content.trigger_variables)
           ? (content.trigger_variables as Record<string, unknown>)
           : undefined;
+
+      const userTopLevelKeys = unknownTopLevelKeys(content);
 
       const graph: FlowGraph = {
         // An id from elsewhere that is no UUID cannot be a flow's id — start a new one
@@ -613,6 +648,7 @@ export class YamlParser {
           userTriggerVariables && Object.keys(userTriggerVariables).length > 0
             ? userTriggerVariables
             : undefined,
+        ...(Object.keys(userTopLevelKeys).length > 0 ? { userTopLevelKeys } : {}),
       };
 
       // Step 7: Validate with Zod schema
@@ -1674,6 +1710,11 @@ export class YamlParser {
       .filter((t) => typeof t === 'object' && t !== null)
       .map((trigger, index) => {
         const nodeId = getNextNodeId('trigger', `trigger/${index}`);
+        // No trigger type (a nested `triggers:` list, or a shape from a newer HA):
+        // the schema would make it a state trigger, so it is kept verbatim instead.
+        if (!('trigger' in trigger) && !('platform' in trigger)) {
+          return this.createFallbackTriggerNode(nodeId, trigger);
+        }
         try {
           // Validate and parse trigger using HATriggerSchema
           const result = HATriggerSchema.safeParse(trigger);
@@ -1737,8 +1778,19 @@ export class YamlParser {
         });
         return;
       }
-      if (!isHACondition(condition)) return;
+      if (!isPlainObject(condition)) return;
       const nodeId = getNextNodeId('condition', `condition/${index}`);
+      if (!isHACondition(condition)) {
+        // A shape without `condition:` (the `- and: […]` / `or` / `not` shorthand,
+        // or one from a newer HA): kept verbatim and written back unchanged.
+        nodes.push({
+          id: nodeId,
+          type: 'condition',
+          position: { x: 0, y: 0 },
+          data: createUnmodeledConditionData(condition),
+        });
+        return;
+      }
       try {
         const result = HAConditionSchema.safeParse(condition);
         if (!result.success) {
@@ -1915,18 +1967,16 @@ export class YamlParser {
             ...extraProps, // Preserve extra properties
             alias: typeof alias === 'string' ? alias : undefined,
             delay:
-              typeof rawDelay === 'string'
+              typeof rawDelay === 'string' || typeof rawDelay === 'number'
                 ? rawDelay
-                : typeof rawDelay === 'number'
-                  ? delayValue(rawDelay)
-                  : typeof rawDelay === 'object' && rawDelay !== null
-                    ? (rawDelay as {
-                        hours?: number;
-                        minutes?: number;
-                        seconds?: number;
-                        milliseconds?: number;
-                      })
-                    : '',
+                : typeof rawDelay === 'object' && rawDelay !== null
+                  ? (rawDelay as {
+                      hours?: number;
+                      minutes?: number;
+                      seconds?: number;
+                      milliseconds?: number;
+                    })
+                  : '',
             enabled: getNodeEnabled(typeof enabled === 'boolean' ? enabled : undefined),
           },
         };
@@ -2730,7 +2780,7 @@ export class YamlParser {
       const choiceConditionNodes: ConditionNode[] = [];
 
       for (let i = 0; i < conditionsArray.length; i++) {
-        const condition = conditionsArray[i] as Record<string, unknown>;
+        const condition = conditionRecord(conditionsArray[i]);
         const conditionId = getNextNodeId('condition');
 
         let conditionNode: ConditionNode;
@@ -3022,7 +3072,7 @@ export class YamlParser {
     const conditionNodes: ConditionNode[] = [];
 
     for (let i = 0; i < ifConditions.length; i++) {
-      const condition = ifConditions[i] as Record<string, unknown>;
+      const condition = conditionRecord(ifConditions[i]);
       const conditionId = getNextNodeId('condition');
 
       let conditionNode: ConditionNode;

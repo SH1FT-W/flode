@@ -403,16 +403,10 @@ export const HAActionSchema: z.ZodType<HAAction> = z.lazy(() =>
 export const HADelaySchema = z.looseObject({
   id: z.string().optional(),
   alias: z.string().optional(),
-  delay: z.union([z.string(), DurationMappingSchema]),
+  // A bare number is seconds to HA; it is kept as written (round trip)
+  delay: z.union([z.string(), z.number(), DurationMappingSchema]),
 });
 export type HADelay = z.infer<typeof HADelaySchema>;
-
-/** A delay as FLODE keeps it: HA reads a bare number as seconds. */
-export function delayValue(delay: number): { seconds: number };
-export function delayValue(delay: unknown): unknown;
-export function delayValue(delay: unknown): unknown {
-  return typeof delay === 'number' ? { seconds: delay } : delay;
-}
 
 /**
  * Zod schema for Home Assistant wait action (wait_template or wait_for_trigger).

@@ -22,12 +22,11 @@ actions:
 mode: single
 `;
 
-/** `written` is what FLODE must write back; by default the trigger as it came. */
+/** `trigger` is what FLODE must write back: the trigger as it came. */
 const cases: {
   name: string;
   yaml: string;
   trigger: Record<string, unknown>;
-  written?: Record<string, unknown>;
 }[] = [
   {
     name: 'event_type as a list (several events in one trigger)',
@@ -56,9 +55,8 @@ state:
   entity_id: sensor.temperature
   to: "on"
 `,
+    // HA itself rejects a trigger without a type; FLODE adds none and keeps it as written.
     trigger: { state: { entity_id: 'sensor.temperature', to: 'on' } },
-    // HA itself rejects a trigger without a type; FLODE names it a state trigger and keeps its fields.
-    written: { trigger: 'state', state: { entity_id: 'sensor.temperature', to: 'on' } },
   },
   {
     name: 'for with a template inside the duration mapping',
@@ -79,7 +77,7 @@ for:
 ];
 
 describe('Issue #219: triggers outside the schema open as a trigger card and save unchanged', () => {
-  for (const { name, yaml, trigger, written = trigger } of cases) {
+  for (const { name, yaml, trigger } of cases) {
     it(`${name}: opens without errors, exactly one trigger card`, async () => {
       const parsed = await new YamlParser().parse(automationWith(yaml));
       expect(parsed.success).toBe(true);
@@ -94,7 +92,7 @@ describe('Issue #219: triggers outside the schema open as a trigger card and sav
       if (!parsed.graph) throw new Error('no graph');
       const result = new FlowTranspiler().transpile(parsed.graph);
       expect(result.success).toBe(true);
-      expect(result.output?.automation?.triggers).toEqual([written]);
+      expect(result.output?.automation?.triggers).toEqual([trigger]);
       expect(result.output?.automation?.actions).toEqual([
         { action: 'light.turn_on', target: { entity_id: 'light.kitchen' } },
       ]);

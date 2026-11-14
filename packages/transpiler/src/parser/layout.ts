@@ -6,9 +6,25 @@ import {
   LAYER_GAP,
   NODE_GAP,
 } from '@flode/shared';
-import ELK from 'elkjs/lib/elk.bundled.js';
+import type { ELK } from 'elkjs/lib/elk.bundled.js';
 
-const elk = new ELK();
+let elk: Promise<ELK> | undefined;
+
+/**
+ * ELK (1.5 MB) is loaded the first time a flow needs laying out — most flows
+ * open with their saved positions — so the panel's bundle splits it off.
+ */
+function loadElk(): Promise<ELK> {
+  elk ??= import('elkjs/lib/elk.bundled.js').then(
+    ({ default: Elk }) => new Elk(),
+    (error: unknown) => {
+      // A chunk that failed to load is tried again next time.
+      elk = undefined;
+      throw error;
+    }
+  );
+  return elk;
+}
 
 /**
  * The cards in the order the flow reads them: each one's followers right after
@@ -143,7 +159,7 @@ export async function applyHeuristicLayout(
     };
 
     // Compute layout
-    const layout = await elk.layout(graph);
+    const layout = await (await loadElk()).layout(graph);
 
     // Apply computed positions back to nodes
     const positionedNodes = nodes.map((node) => {

@@ -251,7 +251,8 @@ export const TriggerNodeValidationSchema = z
  */
 export const DelayNodeValidationSchema = z
   .object({
-    delay: z.union([z.string(), z.object({})]),
+    // Seconds as a number, a duration text or a template, or a duration mapping (like HA).
+    delay: z.union([z.number(), z.string(), z.object({})]),
   })
   .passthrough()
   .refine(

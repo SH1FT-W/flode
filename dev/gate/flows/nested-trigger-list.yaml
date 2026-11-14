@@ -1,0 +1,17 @@
+# A trigger list nested in the triggers (HA 2024.10+): no trigger type of its own.
+alias: Nested trigger list
+description: Two state triggers grouped in a nested triggers list, one plain trigger
+triggers:
+  - triggers:
+      - trigger: state
+        entity_id: binary_sensor.movement_backyard
+        to: "on"
+      - trigger: state
+        entity_id: light.kitchen_lights
+        to: "on"
+  - trigger: homeassistant
+    event: start
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.ceiling_lights

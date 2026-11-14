@@ -1,0 +1,26 @@
+# Top-level conditions in HA's shorthand: and/or/not without `condition:`, one with an alias.
+alias: Shorthand logic conditions
+description: and, or (with alias) and not written as shorthand at the root
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "on"
+conditions:
+  - and:
+      - condition: state
+        entity_id: sun.sun
+        state: below_horizon
+  - or:
+      - "{{ is_state('light.kitchen_lights', 'off') }}"
+      - condition: numeric_state
+        entity_id: sensor.outside_temperature
+        below: 5
+    alias: Dark kitchen or cold
+  - not:
+      - condition: state
+        entity_id: light.ceiling_lights
+        state: "on"
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.ceiling_lights

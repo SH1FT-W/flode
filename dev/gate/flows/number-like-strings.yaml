@@ -1,0 +1,21 @@
+# Strings YAML 1.1 would read as numbers (underscores, hex, sign, leading zero) and delay shapes.
+alias: Number-like strings
+description: Quoted number-like strings stay strings; a delay as seconds, as text and as a mapping
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.movement_backyard
+    to: "on"
+actions:
+  - action: notify.persistent_notification
+    data:
+      title: "1_000"
+      message: "2026_11_14"
+      data:
+        a: "10_20"
+        b: "0x_1F"
+        c: "+1_0"
+        d: "0_7"
+  - delay: 5
+  - delay: "00:00:05"
+  - delay:
+      seconds: 5

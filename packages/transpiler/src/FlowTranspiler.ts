@@ -5,7 +5,6 @@ import {
   type FlowGraph,
   withoutManualStart,
 } from '@flode/shared';
-import { dump as yamlDump } from 'js-yaml';
 import { analyzeTopology, type TopologyAnalysis } from './analyzer/topology';
 import { type ValidationResult, validateFlowGraph } from './analyzer/validator';
 import { type ParseResult, YamlParser, type YamlParserOptions } from './parser/YamlParser';
@@ -14,6 +13,7 @@ import type { HAYamlOutput, TranspilerStrategy } from './strategies/base';
 import { NativeStrategy } from './strategies/native';
 import { StateMachineStrategy } from './strategies/state-machine';
 import { stepNodeIds } from './strategies/steps';
+import { dumpHaYaml, haYamlLayout } from './yaml';
 
 /**
  * Options for YAML generation
@@ -172,20 +172,10 @@ export class FlowTranspiler {
       };
 
       // Step 6: Serialize to YAML string with metadata
-      yaml = yamlDump(contentWithMetadata, {
-        indent: options.indent ?? 2,
-        lineWidth: options.lineWidth ?? -1,
-        quotingType: '"',
-        forceQuotes: false,
-      });
+      yaml = dumpHaYaml(contentWithMetadata, haYamlLayout(options));
     } else {
       // Serialize without metadata
-      yaml = yamlDump(yamlContent, {
-        indent: options.indent ?? 2,
-        lineWidth: options.lineWidth ?? -1,
-        quotingType: '"',
-        forceQuotes: false,
-      });
+      yaml = dumpHaYaml(yamlContent, haYamlLayout(options));
     }
 
     return {

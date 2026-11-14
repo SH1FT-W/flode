@@ -690,10 +690,15 @@ export class NativeStrategy extends BaseStrategy {
       // Can only promote if the condition uses only ONE handle type (no branching to different outcomes)
       // If both handles are used, it's a full if/then/else and cannot be promoted
       if (truePaths.length > 0 && falsePaths.length > 0) break;
-      // Must have at least one path
-      if (truePaths.length === 0 && falsePaths.length === 0) break;
-
       const condition = this.buildRootCondition(node);
+
+      // The last condition with nothing after it (`actions: []`): it stays in the
+      // root block instead of becoming a condition step of the actions.
+      if (truePaths.length === 0 && falsePaths.length === 0) {
+        conditions.push(condition);
+        visitedIds.add(currentId);
+        return { conditions, nextNodeIds: [], visitedIds };
+      }
 
       if (falsePaths.length > 0) {
         // Connected via false handle only → inverted condition, wrap in "not"

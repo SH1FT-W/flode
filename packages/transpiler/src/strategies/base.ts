@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@flode/shared';
+import { AUTOMATION_FIELD_KEYS, type FlowGraph } from '@flode/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 
 /**
@@ -25,7 +25,8 @@ export interface HAYamlOutput {
 
 /**
  * The automation-level keys after `mode` that every strategy keeps from the
- * original automation — user variables, run limits, initial state, traces.
+ * original automation — user variables, run limits, initial state, traces,
+ * and the top-level keys FLODE has no field for.
  */
 export function buildAutomationSettings(flow: FlowGraph): Record<string, unknown> {
   const settings: Record<string, unknown> = {};
@@ -49,7 +50,11 @@ export function buildAutomationSettings(flow: FlowGraph): Record<string, unknown
   if (flow.userTriggerVariables && Object.keys(flow.userTriggerVariables).length > 0) {
     settings.trigger_variables = flow.userTriggerVariables;
   }
-  return settings;
+  // Kept keys never replace one FLODE writes (a graph from storage or an import might carry any).
+  const kept = Object.entries(flow.userTopLevelKeys ?? {}).filter(
+    ([key]) => !AUTOMATION_FIELD_KEYS.has(key)
+  );
+  return { ...settings, ...Object.fromEntries(kept) };
 }
 
 /**

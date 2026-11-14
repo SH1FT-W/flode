@@ -1,9 +1,5 @@
 import type { FlowEdge, FlowGraph } from '@flode/shared';
-import graphlib from 'graphlib';
-
-const { Graph, alg } = graphlib;
-
-type GraphInstance = InstanceType<typeof Graph>;
+import { Digraph } from './digraph';
 
 /**
  * Find back-edges in the flow graph using DFS.
@@ -160,7 +156,7 @@ export function analyzeTopology(flow: FlowGraph): TopologyAnalysis {
     edges: flow.edges.filter((e) => e.type !== 'hint' && e.type !== 'choose-hint'),
   };
 
-  const g = new Graph({ directed: true });
+  const g = new Digraph();
 
   // Structurally detect back-edges (loop edges) using DFS
   const backEdgeIds = findBackEdges(flow);
@@ -188,14 +184,15 @@ export function analyzeTopology(flow: FlowGraph): TopologyAnalysis {
 
   // Build the graph (excluding back-edges)
   for (const node of flow.nodes) {
-    g.setNode(node.id, node);
+    g.setNode(node.id);
   }
   for (const edge of forwardEdges) {
-    g.setEdge(edge.source, edge.target, edge);
+    g.setEdge(edge.source, edge.target);
   }
 
-  // Detect cycles using graphlib's isAcyclic (back-edges excluded)
-  const hasCycles = !alg.isAcyclic(g);
+  // Detect cycles (back-edges excluded); the order exists only without them
+  const topologicalOrder = g.topsort();
+  const hasCycles = topologicalOrder === null;
 
   // Find entry points (nodes with no incoming forward edges)
   const entryNodes = flow.nodes.filter((n) => g.predecessors(n.id)?.length === 0).map((n) => n.id);
@@ -207,17 +204,6 @@ export function analyzeTopology(flow: FlowGraph): TopologyAnalysis {
       return forwardOutgoing.length === 0;
     })
     .map((n) => n.id);
-
-  // Get topological order if acyclic
-  let topologicalOrder: string[] | null = null;
-  if (!hasCycles) {
-    try {
-      topologicalOrder = alg.topsort(g);
-    } catch {
-      // Should not happen if isAcyclic is true
-      topologicalOrder = null;
-    }
-  }
 
   // Check for cross-links (edges that skip levels) - use filtered flow
   const hasCrossLinks = detectCrossLinks(g, filteredFlow, topologicalOrder);
@@ -260,11 +246,7 @@ export function analyzeTopology(flow: FlowGraph): TopologyAnalysis {
  * Exception: parallel branches of different lengths that converge to a common
  * target are NOT cross-links - they're valid parallel patterns.
  */
-function detectCrossLinks(
-  g: GraphInstance,
-  flow: FlowGraph,
-  topologicalOrder: string[] | null
-): boolean {
+function detectCrossLinks(g: Digraph, flow: FlowGraph, topologicalOrder: string[] | null): boolean {
   if (!topologicalOrder || topologicalOrder.length === 0) {
     return false; // Can't detect cross-links in cyclic graphs
   }
@@ -406,7 +388,7 @@ function traceToParallelSourceBFS(
  * In native HA, all triggers run the same action sequence, so if triggers have
  * different targets, we need the state machine to route based on which trigger fired.
  */
-function detectDivergentTriggerPaths(g: GraphInstance, flow: FlowGraph): boolean {
+function detectDivergentTriggerPaths(g: Digraph, flow: FlowGraph): boolean {
   // Find all trigger nodes
   const triggerNodes = flow.nodes.filter((n) => n.type === 'trigger');
 
@@ -680,10 +662,10 @@ function checkParallelConvergence(
  * Get the depth of each node from entry points
  */
 export function getNodeDepths(flow: FlowGraph): Map<string, number> {
-  const g = new Graph({ directed: true });
+  const g = new Digraph();
 
   for (const node of flow.nodes) {
-    g.setNode(node.id, node);
+    g.setNode(node.id);
   }
   for (const edge of flow.edges) {
     g.setEdge(edge.source, edge.target);

@@ -32,6 +32,7 @@ export {
 export { type ConditionEdge, ConditionEdgeSchema, EdgeSchema, type FlowEdge } from './edges';
 // Graph schemas
 export {
+  AUTOMATION_FIELD_KEYS,
   type FlowGraph,
   FlowGraphSchema,
   type FlowMetadata,
@@ -64,7 +65,6 @@ export {
 export {
   type CafeMetadata,
   CafeMetadataSchema,
-  delayValue,
   type FlodeMetadata,
   FlodeMetadataSchema,
   type FlowGraphMetadata,
