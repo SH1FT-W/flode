@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "23 5 * * 1"   # Mondays: catches breakage from new HA versions (job ha-latest)
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -55,6 +58,85 @@ jobs:
         with:
           version: "0.16.9"
           src: custom_components
+
+  python-test:
+    name: Integration tests (pytest, minimum HA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: requirements_test.txt
+
+      - name: Install
+        # HA 2026.3 requires Python 3.14; requirements_test.txt pins the oldest
+        # Home Assistant that has a pytest-homeassistant-custom-component release
+        # (2026.3.1, hacs.json minimum is 2026.3.0).
+        run: |
+          uv venv --python 3.14
+          uv pip install -r requirements_test.txt
+
+      - name: Lint tests (Ruff)
+        # custom_components is covered by the Python Lint job; same ruff version
+        run: uvx ruff@0.16.9 check tests && uvx ruff@0.16.9 format --check tests
+
+      - name: Test
+        run: .venv/bin/python -m pytest -q
+
+  ha-latest:
+    # Early warning: tests against the latest HA (beta included) with HA's own test package
+    # pytest-homeassistant, versioned like HA. pytest-homeassistant-custom-component was discontinued
+    # on 2026-11-03 and is stuck at HA 2026.10.4. May fail, blocks nothing.
+    name: Tests against latest HA (early warning)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install (latest)
+        run: |
+          uv venv --python 3.14
+          # Other test requirements unpinned; "|| true" because grep fails when none are left
+          { grep -v -i -E '^(homeassistant|pytest-homeassistant-custom-component)==' requirements_test.txt || true; } \
+            | sed -E 's/==.*//' > /tmp/req-latest.txt
+          uv pip install --prerelease=allow pytest-homeassistant -r /tmp/req-latest.txt
+
+      - name: Redirect old imports
+        # The tests still import pytest_homeassistant_custom_component for the minimum version;
+        # here that name points to pytest_homeassistant.
+        run: |
+          site=$(.venv/bin/python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
+          mkdir -p "$site/pytest_homeassistant_custom_component"
+          cat > "$site/pytest_homeassistant_custom_component/__init__.py" <<'EOF'
+          import importlib, importlib.abc, importlib.machinery, sys
+          class _Loader(importlib.abc.Loader):
+              def __init__(self, real): self.real = real
+              def create_module(self, spec): return importlib.import_module(self.real)
+              def exec_module(self, module): pass
+          class _Finder(importlib.abc.MetaPathFinder):
+              def find_spec(self, name, path=None, target=None):
+                  old = "pytest_homeassistant_custom_component."
+                  if name.startswith(old):
+                      return importlib.machinery.ModuleSpec(name, _Loader("pytest_homeassistant." + name[len(old):]))
+          sys.meta_path.insert(0, _Finder())
+          EOF
+
+      - name: Test
+        # respx plugin off: HA installs its httpx alias before respx is loaded
+        run: .venv/bin/python -m pytest -q -p no:logging -p no:respx
 
   publish-check:
     name: Publish Check

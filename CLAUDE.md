@@ -29,6 +29,7 @@ yarn build:ha     # Build + copy to custom_components
 yarn test --run   # Run tests
 yarn typecheck    # Type checking
 yarn biome ci .   # Lint + format + import order as in CI (yarn lint:biome misses import sorting)
+.venv/bin/python -m pytest -q  # Integration tests (tests/, venv from requirements_test.txt, Python 3.14)
 dev/gate/gate.sh  # Release gate: browser checks against the test HA (Docker via tools/ha-docker.sh; FLODE_HA_BACKEND=venv for tools/ha-venv.sh) (before every release, always in full)
 tools/next-version  # Next release version (calendar version YY.M.N; shared script, byte-identical to repo-vorlagen)
 ```

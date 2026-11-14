@@ -75,10 +75,15 @@ jobs:
 
       - name: Extract Changelog section
         id: changelog
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          BODY=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          VERSION="${TAG#v}"
+          BODY=$(awk -v v="$VERSION" 'index($0, "## [" v "]") == 1 {found=1; next} found && /^## \[/ {exit} found {print}' CHANGELOG.md)
+          if [ -z "$(printf '%s' "$BODY" | tr -d '[:space:]')" ]; then
+            echo "::error::CHANGELOG.md hat keinen Abschnitt '## [$VERSION]' (oder er ist leer)"
+            exit 1
+          fi
           {
             echo "body<<EOF"
             echo "$BODY"
