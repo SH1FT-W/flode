@@ -6,7 +6,9 @@
 import type { FlowGraph, FlowNode } from '@flode/shared';
 import { SCRIPT_START_TRIGGER } from '@flode/shared';
 import { afterEach, describe, expect, it } from 'vitest';
+import { cachedBranchView } from '../branch-view';
 import { FlodePanel } from '../flode-panel';
+import { NODE_HEIGHT, NODE_WIDTH } from '../flow-model';
 import { isMac, shortcutKeys } from '../shortcuts';
 import { t } from '../strings';
 import type { OpenFlow } from '../tabs';
@@ -89,6 +91,12 @@ function pressOnWindow(key: string, mod = false): void {
       cancelable: true,
     })
   );
+}
+
+function requireGraph(panel: FlodePanel): FlowGraph {
+  const graph = panel.flow?.graph;
+  if (!graph) throw new Error('no flow open');
+  return graph;
 }
 
 afterEach(() => {
@@ -198,5 +206,68 @@ describe('panel in the DOM', () => {
     await panel.updateComplete;
     expect(panel.flow?.graph.nodes).toHaveLength(2);
     expect(cardIds(panel).sort()).toEqual(['action_1', 'trigger_1']);
+  });
+
+  it('puts a step added from the toolbar beside a selected branch card on a free spot', async () => {
+    const block: FlowNode = {
+      id: 'block_1',
+      type: 'action',
+      position: { x: 360, y: 0 },
+      data: {
+        _raw: {
+          choose: [
+            {
+              conditions: [{ condition: 'trigger', id: 'a' }],
+              sequence: [{ delay: { seconds: 5 } }, { action: 'light.turn_off' }],
+            },
+          ],
+        },
+      },
+    };
+    const panel = await mountPanel(
+      draft('automation', [trigger, block], [{ id: 'e1', source: 'trigger_1', target: 'block_1' }])
+    );
+    const before = cachedBranchView(requireGraph(panel));
+    const delayCard = [...before.cards.keys()][0];
+    panel.selectedId = delayCard ?? null;
+    // The user looks at the expanded choose: the middle of the view is on its branch cards.
+    const branchCard = before.graph.nodes.find((n) => n.id === delayCard);
+    const canvas = panel.shadowRoot?.querySelector('flode-canvas');
+    if (!canvas || !branchCard) throw new Error('no canvas or branch card');
+    Reflect.set(canvas, 'visibleCenter', () => branchCard.position);
+    panel['onStepAdded'](
+      'action',
+      new CustomEvent('value-changed', { detail: { value: [{ action: 'light.toggle' }] } })
+    );
+    const graph = panel.flow?.graph;
+    expect(graph?.nodes).toHaveLength(3);
+    const drawn = cachedBranchView(requireGraph(panel)).graph.nodes;
+    const added = drawn.find(
+      (n) => !['trigger_1', 'block_1'].includes(n.id) && !before.cards.has(n.id)
+    );
+    expect(added).toBeDefined();
+    const overlapping = drawn.filter(
+      (n) =>
+        n !== added &&
+        added !== undefined &&
+        Math.abs(n.position.x - added.position.x) < NODE_WIDTH &&
+        Math.abs(n.position.y - added.position.y) < NODE_HEIGHT
+    );
+    expect(overlapping.map((n) => n.id)).toEqual([]);
+  });
+
+  it("keeps the browser's own save dialog away while a FLODE dialog is open", async () => {
+    const panel = await mountPanel(draft('automation', [trigger], []));
+    panel['paletteOpen'] = true;
+    await panel.updateComplete;
+    const save = new KeyboardEvent('keydown', {
+      key: 's',
+      metaKey: isMac(),
+      ctrlKey: !isMac(),
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(save);
+    expect(save.defaultPrevented).toBe(true);
   });
 });

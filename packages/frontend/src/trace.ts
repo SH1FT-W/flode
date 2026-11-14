@@ -1,8 +1,7 @@
 import { type FlowGraph, isPlainObject } from '@flode/shared';
 import { configShape, createTracePathResolver } from '@flode/ui-core';
-import { load as yamlLoad } from 'js-yaml';
 import { branchCardForPath, cachedBranchView } from './branch-view';
-import { flowYaml } from './flow-yaml';
+import { flowConfig } from './flow-yaml';
 import type { FlowKind } from './ha';
 
 /**
@@ -132,8 +131,7 @@ export function runVariables(trace: HaTrace, uptoPath?: string): Record<string, 
  */
 export async function graphShape(graph: FlowGraph, kind: FlowKind): Promise<string | null> {
   try {
-    const config: unknown = yamlLoad(await flowYaml(graph, kind));
-    return isPlainObject(config) ? configShape(config) : null;
+    return configShape(await flowConfig(graph, kind));
   } catch {
     return null;
   }

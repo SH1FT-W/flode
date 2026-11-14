@@ -4,6 +4,7 @@ import {
   haBlockType,
   type NodeSummary,
   type StepIssue,
+  type SummaryContext,
   stepIssues,
   summarizeLoop,
   summarizeNode,
@@ -102,12 +103,26 @@ export function summarize(
 ): NodeSummary {
   const data: Record<string, unknown> = isPlainObject(node.data) ? node.data : {};
   const ctx = summaryContext(hass, fullNames);
-  return (
-    (ctx && summarizeNode(node.type, data, ctx)) ?? {
-      title: typeLabel(node.type, hass?.language ?? 'en'),
-    }
-  );
+  if (!ctx) return { title: typeLabel(node.type, hass?.language ?? 'en') };
+  let known = summaries.get(ctx);
+  if (!known) {
+    known = new WeakMap();
+    summaries.set(ctx, known);
+  }
+  const cached = known.get(data);
+  if (cached?.type === node.type) return cached.summary;
+  const summary = summarizeNode(node.type, data, ctx) ?? {
+    title: typeLabel(node.type, hass?.language ?? 'en'),
+  };
+  known.set(data, { type: node.type, summary });
+  return summary;
 }
+
+/** Per summary context (HA's data as the cards read it), per card data: its text (every card, every render). */
+const summaries = new WeakMap<
+  SummaryContext,
+  WeakMap<object, { type: NodeType; summary: NodeSummary }>
+>();
 
 /** The name on the frame around a loop's steps (#44): "Für jedes Element · {{ all_devices }}". */
 export function loopLabel(node: FlowNode, hass: HomeAssistant | undefined): string {
@@ -127,11 +142,25 @@ export function entityExists(hass: HomeAssistant, entityId: string): boolean {
 interface CachedIssues {
   hass: HomeAssistant;
   created: ReadonlySet<string>;
+  /** Per entity the step names: whether HA knew it. */
+  entities: Map<string, boolean>;
   issues: StepIssue[];
 }
 
 /** Per card data: its issues while neither HA's data nor the flow's created entities changed. */
 const issueCache = new WeakMap<object, CachedIssues>();
+
+/** HA hands in a new `hass` on every state change: the issues stand while its services and the step's entities do. */
+function issuesStand(cached: CachedIssues, hass: HomeAssistant): boolean {
+  if (cached.hass === hass) return true;
+  if (cached.hass.services !== hass.services || cached.hass.entities !== hass.entities)
+    return false;
+  for (const [entityId, known] of cached.entities) {
+    if (entityExists(hass, entityId) !== known) return false;
+  }
+  cached.hass = hass;
+  return true;
+}
 
 /**
  * What would make this step fail: a service HA doesn't have, an entity that
@@ -147,12 +176,17 @@ export function nodeIssues(
   if (!hass?.services) return [];
   const data: Record<string, unknown> = isPlainObject(node.data) ? node.data : {};
   const cached = issueCache.get(data);
-  if (cached && cached.hass === hass && cached.created === created) return cached.issues;
+  if (cached && cached.created === created && issuesStand(cached, hass)) return cached.issues;
+  const entities = new Map<string, boolean>();
   const issues = stepIssues(node.type, data, {
     hasService: (service) => serviceInfo(hass, service) !== undefined,
-    hasEntity: (entityId) => entityExists(hass, entityId) || created.has(entityId),
+    hasEntity: (entityId) => {
+      const known = entityExists(hass, entityId);
+      entities.set(entityId, known);
+      return known || created.has(entityId);
+    },
   });
-  issueCache.set(data, { hass, created, issues });
+  issueCache.set(data, { hass, created, entities, issues });
   return issues;
 }
 

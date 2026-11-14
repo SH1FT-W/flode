@@ -74,10 +74,10 @@ describe('ha-step', () => {
     );
   });
 
-  it('reads a delay given as a bare number as seconds, as HA does', () => {
+  it('keeps a delay given as a bare number (seconds to HA) as written', () => {
     expect(stepToNode('action', { delay: 3 })).toEqual({
       type: 'delay',
-      data: { delay: { seconds: 3 } },
+      data: { delay: 3 },
     });
   });
 

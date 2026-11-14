@@ -10,6 +10,7 @@ import {
   LAYER_GAP,
   NODE_GAP,
   NodeSchema,
+  PositionSchema,
   RAW_STEP_KEY,
 } from '@flode/shared';
 import { stepIsOn, stopKind } from '@flode/ui-core';
@@ -17,7 +18,9 @@ import {
   addNode,
   byFlowOrder,
   CARD_SIZE,
+  type CardRows,
   cardHandles,
+  cardRows,
   incoming,
   isDrawnEdge,
   lineRoom,
@@ -152,11 +155,42 @@ export function endsRun(view: BranchView, node: FlowNode): 'done' | 'error' | nu
   return outgoing(view.graph, node.id, null).length === 0 ? stopKind(node.data) : null;
 }
 
+/** A card's outputs and its height as drawn. */
+export interface CardShape {
+  handles: readonly (string | null)[];
+  height: number;
+}
+
+/** Per picture of a flow: its cards' shapes (asked for every card and every line on each render). */
+const shapes = new WeakMap<BranchView, WeakMap<FlowNode, CardShape>>();
+
 /** A card's outputs and height as drawn: one output per branch on an expanded block, one on a branch card. */
-export function cardShape(
-  view: BranchView,
-  node: FlowNode
-): { handles: readonly (string | null)[]; height: number } {
+export function cardShape(view: BranchView, node: FlowNode): CardShape {
+  let known = shapes.get(view);
+  if (!known) {
+    known = new WeakMap();
+    shapes.set(view, known);
+  }
+  const cached = known.get(node);
+  if (cached) return cached;
+  const shape = shapeOf(view, node);
+  known.set(node, shape);
+  return shape;
+}
+
+const rowsOfView = new WeakMap<BranchView, CardRows>();
+
+/** The picture's cards sorted along the flow, for the ways of its lines round them (`detourAmong`). */
+export function viewCardRows(view: BranchView): CardRows {
+  let rows = rowsOfView.get(view);
+  if (!rows) {
+    rows = cardRows(view.graph.nodes, (node) => cardShape(view, node).height);
+    rowsOfView.set(view, rows);
+  }
+  return rows;
+}
+
+function shapeOf(view: BranchView, node: FlowNode): CardShape {
   const branches = view.branches.get(node.id);
   if (branches) {
     const { height } = cardSize(view.axis, branches.length);
@@ -639,14 +673,37 @@ class BranchLayout {
 
   private card(id: string, raw: unknown, base: Point): void {
     this.base.set(id, base);
-    const position = this.position(id);
-    const { type, data } = stepToNode('action', isPlainObject(raw) ? raw : {});
-    const card = NodeSchema.safeParse({ id, type, data, position });
-    // A step no card can show still keeps its place (and the line through it).
-    this.nodes.push(
-      card.success ? card.data : { id, type: 'action', data: { [RAW_STEP_KEY]: raw }, position }
-    );
+    this.nodes.push(branchCard(id, raw, this.position(id)));
   }
+}
+
+/**
+ * Per HA step of a branch: its card as first checked. A step that did not
+ * change keeps its card's data object on every picture (moving a card makes a
+ * new one per pointer move), so what is worked out per card data (its issues,
+ * texts) is not worked out again.
+ */
+const branchCards = new WeakMap<object, { node: FlowNode; valid: boolean }>();
+
+function branchCard(id: string, raw: unknown, position: Point): FlowNode {
+  // A step no card can show still keeps its place (and the line through it).
+  const fallback = (): FlowNode => ({
+    id,
+    type: 'action',
+    data: { [RAW_STEP_KEY]: raw },
+    position,
+  });
+  const key = typeof raw === 'object' && raw !== null ? raw : null;
+  const placed = PositionSchema.safeParse(position).success;
+  const known = key ? branchCards.get(key) : undefined;
+  // The card's id is never empty: only its position could fail the check now.
+  if (known) return known.valid && !placed ? fallback() : { ...known.node, id, position };
+  const { type, data } = stepToNode('action', isPlainObject(raw) ? raw : {});
+  const card = NodeSchema.safeParse({ id, type, data, position });
+  const node = card.success ? card.data : fallback();
+  // Kept only when the step itself decided (not a bad position).
+  if (key && placed) branchCards.set(key, { node, valid: card.success });
+  return node;
 }
 
 /** The canvas' picture of `graph` with every `choose` / `if` card expanded into its branches. */

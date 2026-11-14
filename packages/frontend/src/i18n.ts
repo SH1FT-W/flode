@@ -85,11 +85,67 @@ function uses12Hours(hass: HomeAssistant): boolean {
   return hour12;
 }
 
-const contexts = new WeakMap<HomeAssistant, SummaryContext>();
-const fullNameContexts = new WeakMap<HomeAssistant, SummaryContext>();
+/** A summary context with the `hass` it reads now and what it has read of the entities' states. */
+interface ContextEntry {
+  /** The `hass` its functions read (the newest it was kept for). */
+  source: { hass: HomeAssistant };
+  context: SummaryContext;
+  full: SummaryContext;
+  /** Per entity read: its friendly name and unit, as they were when read. */
+  read: Map<string, { name: unknown; unit: unknown }>;
+}
+
+const contexts = new WeakMap<HomeAssistant, ContextEntry>();
+/** The context handed out last: kept for a new `hass` while nothing the cards read of it changed. */
+let latest: ContextEntry | null = null;
+
+/** What of `hass` a summary context reads, besides the states of the entities it was asked about. */
+function sameSources(a: HomeAssistant, b: HomeAssistant): boolean {
+  return (
+    a.language === b.language &&
+    a.localize === b.localize &&
+    a.locale === b.locale &&
+    a.services === b.services &&
+    a.devices === b.devices &&
+    a.areas === b.areas
+  );
+}
+
+function entityRead(hass: HomeAssistant, entityId: string): { name: unknown; unit: unknown } {
+  const attributes = hass.states[entityId]?.attributes;
+  return { name: attributes?.friendly_name, unit: attributes?.unit_of_measurement };
+}
+
+/** HA hands in a new `hass` on every state change: still the same context when only other entities changed. */
+function stillValid(entry: ContextEntry, hass: HomeAssistant): boolean {
+  if (!sameSources(entry.source.hass, hass)) return false;
+  for (const [entityId, seen] of entry.read) {
+    const now = entityRead(hass, entityId);
+    if (now.name !== seen.name || now.unit !== seen.unit) return false;
+  }
+  return true;
+}
+
+function contextEntry(hass: HomeAssistant): ContextEntry {
+  const known = contexts.get(hass);
+  if (known) return known;
+  if (latest && stillValid(latest, hass)) {
+    latest.source.hass = hass;
+    contexts.set(hass, latest);
+    return latest;
+  }
+  const read = new Map<string, { name: unknown; unit: unknown }>();
+  const source = { hass };
+  const context = buildContext(source, read);
+  const entry = { source, read, context, full: { ...context, nameMax: Number.POSITIVE_INFINITY } };
+  contexts.set(hass, entry);
+  latest = entry;
+  return entry;
+}
 
 /**
- * Summary context for the node cards, built once per `hass` object.
+ * Summary context for the node cards, built once per `hass` object and kept
+ * for the next one while nothing it read changed (cards keep their texts).
  * `fullNames`: entity names are never shortened (tooltips).
  */
 export function summaryContext(
@@ -97,41 +153,46 @@ export function summaryContext(
   fullNames = false
 ): SummaryContext | null {
   if (!hass) return null;
-  if (fullNames) {
-    const base = summaryContext(hass);
-    if (!base) return null;
-    const full = fullNameContexts.get(hass) ?? { ...base, nameMax: Number.POSITIVE_INFINITY };
-    fullNameContexts.set(hass, full);
-    return full;
-  }
-  const cached = contexts.get(hass);
-  if (cached) return cached;
-  const context = createSummaryContext({
+  const entry = contextEntry(hass);
+  return fullNames ? entry.full : entry.context;
+}
+
+/** The context reading `source.hass`; every entity state it reads is noted in `read`. */
+function buildContext(
+  source: { hass: HomeAssistant },
+  read: Map<string, { name: unknown; unit: unknown }>
+): SummaryContext {
+  const { hass } = source;
+  const current = () => source.hass;
+  const entity = (entityId: string) => {
+    const seen = entityRead(current(), entityId);
+    if (!read.has(entityId)) read.set(entityId, seen);
+    return seen;
+  };
+  return createSummaryContext({
     t: i18n.getFixedT(uiLanguage(hass.language), ['nodes', 'common']),
-    localize: (key) => hass.localize(key) || undefined,
+    localize: (key) => current().localize(key) || undefined,
     friendlyName: (entityId) => {
-      const name = hass.states[entityId]?.attributes.friendly_name;
+      const { name } = entity(entityId);
       return typeof name === 'string' ? name : undefined;
     },
     unitOfMeasurement: (entityId) => {
-      const unit = hass.states[entityId]?.attributes.unit_of_measurement;
+      const { unit } = entity(entityId);
       return typeof unit === 'string' ? unit : undefined;
     },
     formatNumber: cachedNumberFormatter(hass),
     hour12: uses12Hours(hass),
-    serviceName: (service) => serviceInfo(hass, service)?.name,
+    serviceName: (service) => serviceInfo(current(), service)?.name,
     serviceFieldInfo: (service, field) => {
-      const info = findServiceField(serviceInfo(hass, service)?.fields, field);
+      const info = findServiceField(serviceInfo(current(), service)?.fields, field);
       return { name: info?.name, unit: info?.selector?.number?.unit_of_measurement };
     },
     deviceName: (id) => {
-      const device = hass.devices?.[id];
+      const device = current().devices?.[id];
       return device?.name_by_user ?? device?.name ?? null;
     },
-    areaName: (id) => hass.areas?.[id]?.name ?? null,
+    areaName: (id) => current().areas?.[id]?.name ?? null,
   });
-  contexts.set(hass, context);
-  return context;
 }
 
 /** A string of the shared `map` namespace (Zusammenhänge), with plurals/interpolation. */

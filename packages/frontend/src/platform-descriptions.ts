@@ -1,5 +1,6 @@
+import { isPlainObject } from '@flode/shared';
 import type { ReactiveController, ReactiveControllerHost } from 'lit';
-import { type HomeAssistant, isRecord } from './ha';
+import type { HomeAssistant } from './ha';
 import { HaContextProvider } from './ha-context';
 
 /**
@@ -31,10 +32,10 @@ const KINDS: readonly PlatformKind[] = ['trigger', 'condition'];
 
 /** Only the well-formed entries of an update (HA sends added/changed platforms). */
 function descriptionsOf(message: unknown): Record<string, Record<string, unknown>> {
-  if (!isRecord(message)) return {};
+  if (!isPlainObject(message)) return {};
   const out: Record<string, Record<string, unknown>> = {};
   for (const [key, value] of Object.entries(message)) {
-    if (isRecord(value)) out[key] = value;
+    if (isPlainObject(value)) out[key] = value;
   }
   return out;
 }

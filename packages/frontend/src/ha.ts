@@ -1,3 +1,4 @@
+import { isPlainObject } from '@flode/shared';
 import type { TemplateConnection } from '@flode/ui-core';
 import { SUMMARY_TRANSLATION_CATEGORIES } from '@flode/ui-core';
 import type { HaTrace } from './trace';
@@ -56,10 +57,6 @@ export interface HomeAssistant {
 export function serviceInfo(hass: HomeAssistant, service: string): HassService | undefined {
   const [domain = '', name = ''] = service.split('.');
   return hass.services?.[domain]?.[name];
-}
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export function friendlyName(hass: HomeAssistant | undefined, entityId: string): string {
@@ -127,6 +124,9 @@ const SCRIPT_PREFIX = 'script.';
  */
 const scriptConfigIds = new Map<string, string>();
 let scriptIdSync: Promise<boolean> | null = null;
+/** After HA refused the lookup: not before this time again (`hass` changes many times a second). */
+let scriptIdRetryAt = 0;
+const SCRIPT_ID_RETRY_MS = 60_000;
 
 function scriptEntityIds(hass: HomeAssistant): string[] {
   return Object.keys(hass.states).filter((id) => id.startsWith(SCRIPT_PREFIX));
@@ -145,16 +145,18 @@ async function readScriptIds(hass: HomeAssistant, entityIds: string[]): Promise<
     });
     let changed = false;
     for (const entityId of entityIds) {
-      const entry = isRecord(entries) ? entries[entityId] : undefined;
+      const entry = isPlainObject(entries) ? entries[entityId] : undefined;
       const uniqueId =
-        isRecord(entry) && typeof entry.unique_id === 'string' ? entry.unique_id : null;
+        isPlainObject(entry) && typeof entry.unique_id === 'string' ? entry.unique_id : null;
       const configId = uniqueId ?? entityId.slice(SCRIPT_PREFIX.length);
       if (configId !== scriptConfigId(entityId)) changed = true;
       scriptConfigIds.set(entityId, configId);
     }
     return changed;
   } catch {
-    return false; // Unknown ones keep their object id and are asked for again next time.
+    // Unknown ones keep their object id and are asked for again a minute later.
+    scriptIdRetryAt = Date.now() + SCRIPT_ID_RETRY_MS;
+    return false;
   }
 }
 
@@ -166,7 +168,7 @@ async function readScriptIds(hass: HomeAssistant, entityIds: string[]): Promise<
 export async function syncScriptIds(hass: HomeAssistant): Promise<boolean> {
   while (scriptIdSync) await scriptIdSync;
   const missing = scriptEntityIds(hass).filter((id) => !scriptConfigIds.has(id));
-  if (missing.length === 0) return false;
+  if (missing.length === 0 || Date.now() < scriptIdRetryAt) return false;
   scriptIdSync = readScriptIds(hass, missing);
   try {
     return await scriptIdSync;
@@ -202,7 +204,11 @@ export function listFlows(hass: HomeAssistant, kind: FlowKind): AutomationListIt
  * (`Flur Licht` → `flur_licht`), unique among the existing scripts' config
  * ids and entity ids (call `syncScriptIds` first so renamed ones are known).
  */
-export function newScriptId(hass: HomeAssistant, alias: string): string {
+export function newScriptId(
+  hass: HomeAssistant,
+  alias: string,
+  alsoTaken: ReadonlySet<string> = new Set()
+): string {
   const base =
     alias
       .normalize('NFD')
@@ -213,8 +219,25 @@ export function newScriptId(hass: HomeAssistant, alias: string): string {
       .replace(/^_+|_+$/g, '') || 'script';
   const taken = new Set(scriptEntityIds(hass).map(scriptConfigId));
   let id = base;
-  for (let n = 2; taken.has(id) || hass.states[`${SCRIPT_PREFIX}${id}`]; n++) id = `${base}_${n}`;
+  for (let n = 2; taken.has(id) || alsoTaken.has(id) || hass.states[`${SCRIPT_PREFIX}${id}`]; n++)
+    id = `${base}_${n}`;
   return id;
+}
+
+/**
+ * `newScriptId`, also clear of scripts HA has in scripts.yaml without an entity
+ * (broken or removed ones) — saving a new script must never write over one.
+ */
+export async function freeScriptId(hass: HomeAssistant, alias: string): Promise<string> {
+  const stored = new Set<string>();
+  for (;;) {
+    const id = newScriptId(hass, alias, stored);
+    const existing = await hass
+      .callApi<unknown>('GET', `config/script/config/${id}`)
+      .catch(() => null);
+    if (!isPlainObject(existing)) return id;
+    stored.add(id);
+  }
 }
 
 export async function loadFlowConfig(
@@ -223,14 +246,14 @@ export async function loadFlowConfig(
   configId: string
 ): Promise<Record<string, unknown>> {
   const config = await hass.callApi<unknown>('GET', `config/${kind}/config/${configId}`);
-  if (!isRecord(config)) throw new Error(`No config for ${kind} ${configId}`);
+  if (!isPlainObject(config)) throw new Error(`No config for ${kind} ${configId}`);
   return config;
 }
 
 /** JSON with sorted keys — the same config always gives the same text. */
 function stableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
-  if (isRecord(value)) {
+  if (isPlainObject(value)) {
     const entries = Object.keys(value)
       .filter((key) => value[key] !== undefined)
       .sort()
@@ -264,7 +287,7 @@ export function usesBlueprint(config: Record<string, unknown>): boolean {
 /** The blueprint a flow is made from (`use_blueprint.path`), if any. */
 export function blueprintPath(config: Record<string, unknown>): string | undefined {
   const use = config.use_blueprint;
-  return isRecord(use) && typeof use.path === 'string' ? use.path : undefined;
+  return isPlainObject(use) && typeof use.path === 'string' ? use.path : undefined;
 }
 
 /**
@@ -276,15 +299,15 @@ export async function substituteBlueprint(
   kind: FlowKind,
   config: Record<string, unknown>
 ): Promise<Record<string, unknown>> {
-  const use = isRecord(config.use_blueprint) ? config.use_blueprint : {};
+  const use = isPlainObject(config.use_blueprint) ? config.use_blueprint : {};
   const result = await hass.callWS<unknown>({
     type: 'blueprint/substitute',
     domain: kind,
     path: blueprintPath(config) ?? '',
-    input: isRecord(use.input) ? use.input : {},
+    input: isPlainObject(use.input) ? use.input : {},
   });
-  const substituted = isRecord(result) ? result.substituted_config : undefined;
-  if (!isRecord(substituted)) throw new Error('blueprint/substitute: no config');
+  const substituted = isPlainObject(result) ? result.substituted_config : undefined;
+  if (!isPlainObject(substituted)) throw new Error('blueprint/substitute: no config');
   return substituted;
 }
 
@@ -302,27 +325,10 @@ export async function saveFlowConfig(
   const stored = await hass
     .callApi<unknown>('GET', `config/${kind}/config/${configId}`)
     .catch(() => null);
-  if (isRecord(stored) && usesBlueprint(stored)) {
+  if (isPlainObject(stored) && usesBlueprint(stored)) {
     throw new Error(`${kind} ${configId} is made from a blueprint – not overwritten`);
   }
   await hass.callApi('POST', `config/${kind}/config/${configId}`, config);
-}
-
-export async function loadAutomationConfig(
-  hass: HomeAssistant,
-  configId: string
-): Promise<Record<string, unknown>> {
-  const config = await hass.callApi<unknown>('GET', `config/automation/config/${configId}`);
-  if (!isRecord(config)) throw new Error(`No config for automation ${configId}`);
-  return config;
-}
-
-export async function saveAutomationConfig(
-  hass: HomeAssistant,
-  configId: string,
-  config: Record<string, unknown>
-): Promise<void> {
-  await hass.callApi('POST', `config/automation/config/${configId}`, config);
 }
 
 interface CardHelpers {
@@ -562,7 +568,7 @@ function editorField(editor: HTMLElement, name: string): unknown {
 
 function settingsFrom(editor: HTMLElement, fallback: AutomationSettings): AutomationSettings {
   const config = editorField(editor, 'config');
-  if (!isRecord(config)) return fallback;
+  if (!isPlainObject(config)) return fallback;
   return {
     alias: typeof config.alias === 'string' ? config.alias : fallback.alias,
     description: typeof config.description === 'string' ? config.description : '',
@@ -575,7 +581,7 @@ function settingsFrom(editor: HTMLElement, fallback: AutomationSettings): Automa
 
 function registryUpdateFrom(editor: HTMLElement): RegistryUpdate | undefined {
   const update = editorField(editor, 'entityRegistryUpdate');
-  return isRecord(update) ? update : undefined;
+  return isPlainObject(update) ? update : undefined;
 }
 
 /**
@@ -593,7 +599,7 @@ function prefillSaveDialog(config: Record<string, unknown>, name: string): void 
       ?.shadowRoot?.querySelector('ha-dialog-automation-save');
     const params: unknown = dialog ? Reflect.get(dialog, '_params') : undefined;
     // HA keeps the dialog element around — only touch it once it shows our config.
-    if (dialog && isRecord(params) && params.config === config) {
+    if (dialog && isPlainObject(params) && params.config === config) {
       Reflect.set(dialog, '_newName', name);
       const requestUpdate: unknown = Reflect.get(dialog, 'requestUpdate');
       if (typeof requestUpdate === 'function') Reflect.apply(requestUpdate, dialog, []);
@@ -758,9 +764,9 @@ export async function expandIfConditions(editor: Element): Promise<void> {
 }
 
 export function errorMessage(error: unknown): string {
-  if (isRecord(error)) {
+  if (isPlainObject(error)) {
     const body = error.body;
-    if (isRecord(body) && typeof body.message === 'string') return body.message;
+    if (isPlainObject(body) && typeof body.message === 'string') return body.message;
     if (typeof error.message === 'string') return error.message;
     if (typeof error.error === 'string') return error.error;
   }

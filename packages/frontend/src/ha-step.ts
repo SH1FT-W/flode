@@ -4,7 +4,6 @@ import {
   createRawConditionData,
   createRawStepData,
   createRawTriggerData,
-  delayValue,
   type FlowNode,
   HAConditionSchema,
   HATriggerSchema,
@@ -157,7 +156,7 @@ export function stepToNode(
       : createRawConditionData(step);
     return { type: 'condition', data: { ...condition, ...kept } };
   }
-  if ('delay' in step) return { type: 'delay', data: { ...step, delay: delayValue(step.delay) } };
+  if ('delay' in step) return { type: 'delay', data: step };
   if ('wait_template' in step || 'wait_for_trigger' in step) return { type: 'wait', data: step };
   if (
     isPlainObject(step.variables) &&

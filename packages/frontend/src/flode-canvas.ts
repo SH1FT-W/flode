@@ -37,6 +37,7 @@ import {
   type Point,
   removeBranchStep,
   tintCards,
+  viewCardRows,
 } from './branch-view';
 import { defineElement } from './define-element';
 import { bendSlots, laidRoute, lineKey, roundedPath, withLineBends } from './line-bends';
@@ -54,9 +55,10 @@ import {
   cardAtInput,
   connect,
   connectionError,
-  detour,
+  detourAmong,
   downPoints,
   graphBounds,
+  graphIndex,
   HANDLE_OUTSIDE,
   handlePosition,
   hasTargetHandle,
@@ -90,6 +92,7 @@ import {
   summarize,
 } from './node-meta';
 import type { CardIssue } from './save-errors';
+import { isTyping } from './shortcuts';
 import { t } from './strings';
 import type { RunMark } from './trace';
 import { isNarrow, isTouch } from './viewport';
@@ -285,6 +288,11 @@ interface FitOptions {
   covered?: number;
   /** Frame only these cards (a run's path) when any of them is shown. */
   only?: ReadonlySet<string>;
+  /**
+   * A flow just opened: readable on any screen (like phones always), starting at
+   * the trigger — "fit" itself still shows the whole flow on a desktop.
+   */
+  opening?: boolean;
 }
 
 /** Room kept around a card brought into view — its "+" included (px). */
@@ -481,7 +489,7 @@ export class FlodeCanvas extends LitElement {
   }
 
   private drawnNode(id: string): FlowNode | undefined {
-    return this.view.graph.nodes.find((n) => n.id === id);
+    return graphIndex(this.view.graph).nodes.get(id);
   }
 
   private drawnHandle(node: FlowNode, side: 'source' | 'target', handle: string | null = null) {
@@ -500,7 +508,7 @@ export class FlodeCanvas extends LitElement {
       { capture: true }
     );
     this.initPanZoom();
-    this.fitView(false);
+    this.fitView(false, { opening: true });
     // HA's icon elements arrive with its automation editor — then show them on the cards.
     for (const tag of HA_ICON_ELEMENTS) {
       void customElements.whenDefined(tag).then(() => this.requestUpdate());
@@ -586,7 +594,7 @@ export class FlodeCanvas extends LitElement {
   protected updated(changed: PropertyValues<this>): void {
     // A different flow was loaded (not just edited): frame it.
     const previous = changed.get('graph');
-    if (previous && previous.id !== this.graph.id) this.fitView(false);
+    if (previous && previous.id !== this.graph.id) this.fitView(false, { opening: true });
     // Turned the other way (also by undo): the old view no longer fits (#29).
     else if (previous && flowAxis(previous).direction !== this.view.axis.direction) this.fitView();
     this.syncMinimap(changed.has('paneSize') || changed.has('minimap'));
@@ -675,7 +683,7 @@ export class FlodeCanvas extends LitElement {
   }
 
   /** Frames every node (see `FitOptions`); animated unless it's the first layout. */
-  fitView(animate = true, { covered = 0, only }: FitOptions = {}): void {
+  fitView(animate = true, { covered = 0, only, opening = false }: FitOptions = {}): void {
     const pane = this.pane;
     if (!pane || !this.panZoom || !this.graph) return;
     const { width, height } = pane.getBoundingClientRect();
@@ -685,7 +693,7 @@ export class FlodeCanvas extends LitElement {
     const bounds = this.bounds(picked.length > 0 ? { ...shown, nodes: picked } : shown);
     // Phones and tablets: a long flow would shrink to unreadable — stay readable,
     // start at the trigger and pan.
-    const readable = isNarrow() || isTouch();
+    const readable = opening || isNarrow() || isTouch();
     const down = this.view.axis.direction === 'down';
     const viewport = fitViewport(bounds, {
       width,
@@ -957,7 +965,9 @@ export class FlodeCanvas extends LitElement {
     const mode = selectionMode(event);
     if (event.button !== 0 || !mode || !this.isEmptyPane(event.target)) return;
     event.preventDefault();
-    (event.currentTarget as Element).setPointerCapture(event.pointerId);
+    if (event.currentTarget instanceof Element) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
     this.pane?.focus({ preventScroll: true });
     const at = this.toFlow(event.clientX, event.clientY);
     this.marquee = { pointerId: event.pointerId, mode, start: at, end: at };
@@ -1351,8 +1361,7 @@ export class FlodeCanvas extends LitElement {
     }
     if (event.key !== 'Delete' && event.key !== 'Backspace') return;
     // A note's or frame's text field keeps its own keys.
-    const typing = event.composedPath()[0];
-    if (typing instanceof HTMLInputElement || typing instanceof HTMLTextAreaElement) return;
+    if (isTyping(event)) return;
     // HA listens for single-key shortcuts on window; keep editing keys to ourselves.
     event.stopPropagation();
     const branchCard = this.selectedId ? this.view.cards.get(this.selectedId) : undefined;
@@ -1400,10 +1409,11 @@ export class FlodeCanvas extends LitElement {
   /** Entities the flow creates itself (`scene.create` …), recomputed only when the graph changes. */
   private createdEntities(): ReadonlySet<string> {
     if (this.created.graph !== this.graph) {
-      this.created = {
-        graph: this.graph,
-        ids: createdEntityIds(this.graph?.nodes.map((node) => node.data) ?? []),
-      };
+      const ids = createdEntityIds(this.graph?.nodes.map((node) => node.data) ?? []);
+      const same =
+        ids.size === this.created.ids.size && [...ids].every((id) => this.created.ids.has(id));
+      // The same entities keep the same set: the cards' issues stay cached (moving a card is a new graph).
+      this.created = { graph: this.graph, ids: same ? this.created.ids : ids };
     }
     return this.created.ids;
   }
@@ -1426,14 +1436,7 @@ export class FlodeCanvas extends LitElement {
     }
     const cached = known.get(id);
     if (cached) return cached;
-    const bends = detour(
-      view.axis,
-      from,
-      to,
-      view.graph.nodes,
-      new Set(ends),
-      (n) => this.cardBounds(n).height
-    );
+    const bends = detourAmong(view.axis, from, to, viewCardRows(view), new Set(ends));
     known.set(id, bends);
     return bends;
   }

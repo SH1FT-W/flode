@@ -53,19 +53,59 @@ export function isGateCondition(graph: FlowGraph, node: FlowNode): boolean {
 function isGate(graph: FlowGraph, node: FlowNode, seen: Set<string>): boolean {
   if (node.type !== 'condition' || seen.has(node.id)) return false;
   seen.add(node.id);
-  if (graph.edges.some((e) => e.source === node.id && e.sourceHandle === 'false')) return false;
+  const index = graphIndex(graph);
+  if ((index.from.get(node.id) ?? []).some((e) => e.sourceHandle === 'false')) return false;
   if (isConditionStep(node.data)) return true;
-  const into = graph.edges.filter((e) => e.target === node.id);
+  const into = index.into.get(node.id) ?? [];
   return (
     into.length > 0 &&
     into.every((edge) => {
-      const source = graph.nodes.find((n) => n.id === edge.source);
+      const source = index.nodes.get(edge.source);
       return (
         source?.type === 'trigger' ||
         (!!source && edge.sourceHandle === 'true' && isGate(graph, source, seen))
       );
     })
   );
+}
+
+/** A graph's nodes by id and its edges by source and by target (in graph order). */
+export interface GraphIndex {
+  nodes: ReadonlyMap<string, FlowNode>;
+  from: ReadonlyMap<string, readonly FlowEdge[]>;
+  into: ReadonlyMap<string, readonly FlowEdge[]>;
+}
+
+const indexes = new WeakMap<FlowGraph, GraphIndex>();
+
+function listIn<T>(map: Map<string, T[]>, key: string): T[] {
+  let list = map.get(key);
+  if (!list) {
+    list = [];
+    map.set(key, list);
+  }
+  return list;
+}
+
+/**
+ * Built once per graph (graphs are never changed in place): looking up
+ * a card's lines stays cheap however many cards and lines the flow has.
+ */
+export function graphIndex(graph: FlowGraph): GraphIndex {
+  const known = indexes.get(graph);
+  if (known) return known;
+  const nodes = new Map<string, FlowNode>();
+  // Like `nodes.find`: the first card of an id wins.
+  for (const node of graph.nodes) if (!nodes.has(node.id)) nodes.set(node.id, node);
+  const from = new Map<string, FlowEdge[]>();
+  const into = new Map<string, FlowEdge[]>();
+  for (const edge of graph.edges) {
+    listIn(from, edge.source).push(edge);
+    listIn(into, edge.target).push(edge);
+  }
+  const index = { nodes, from, into };
+  indexes.set(graph, index);
+  return index;
 }
 
 /** A card's outputs as drawn: a gate condition (`isGateCondition`) only goes on. */
@@ -121,14 +161,14 @@ export function connect(graph: FlowGraph, request: ConnectRequest): FlowGraph {
 
 /** The connections leaving `source` at `handle` that carry the flow on (not hints or block internals). */
 export function outgoing(graph: FlowGraph, source: string, handle: string | null): FlowEdge[] {
-  return graph.edges.filter(
-    (e) => e.source === source && (e.sourceHandle ?? null) === handle && isFlowEdge(e)
+  return (graphIndex(graph).from.get(source) ?? []).filter(
+    (e) => (e.sourceHandle ?? null) === handle && isFlowEdge(e)
   );
 }
 
 /** The connections of the flow leading into `target`. */
 export function incoming(graph: FlowGraph, target: string): FlowEdge[] {
-  return graph.edges.filter((e) => e.target === target && isFlowEdge(e));
+  return (graphIndex(graph).into.get(target) ?? []).filter(isFlowEdge);
 }
 
 /**
@@ -347,8 +387,7 @@ function deepEqual(a: unknown, b: unknown): boolean {
   const ka = defined(a);
   const kb = defined(b);
   return (
-    ka.length === kb.length &&
-    ka.every((k) => deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]))
+    ka.length === kb.length && ka.every((k) => deepEqual(Reflect.get(a, k), Reflect.get(b, k)))
   );
 }
 
@@ -687,15 +726,72 @@ export function detour(
   skip: ReadonlySet<string>,
   height: (node: FlowNode) => number
 ): { x: number; y: number }[] {
+  return detourAmong(axis, from, to, cardRows(cards, height), skip);
+}
+
+/** A card with where it starts and ends along the flow (top to bottom). */
+interface CardRow {
+  node: FlowNode;
+  top: number;
+  bottom: number;
+  /** Its place among the cards as given (the lane nearest the way keeps the first of equals). */
+  order: number;
+}
+
+/** The cards sorted by their top, for `detourAmong` (build it once per picture, not per line). */
+export interface CardRows {
+  rows: readonly CardRow[];
+}
+
+export function cardRows(cards: readonly FlowNode[], height: (node: FlowNode) => number): CardRows {
+  const rows = cards.map((node, order) => ({
+    node,
+    top: node.position.y,
+    bottom: node.position.y + height(node),
+    order,
+  }));
+  return { rows: rows.sort((a, b) => a.top - b.top || a.order - b.order) };
+}
+
+/** The cards strictly between `top` and `bottom` along the flow, in their given order. */
+function rowsBetween(
+  { rows }: CardRows,
+  top: number,
+  bottom: number,
+  skip: ReadonlySet<string>
+): CardRow[] {
+  // The first card starting below `top` (binary search).
+  let low = 0;
+  let high = rows.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if ((rows[middle]?.top ?? Number.POSITIVE_INFINITY) > top) high = middle;
+    else low = middle + 1;
+  }
+  const found: CardRow[] = [];
+  for (let i = low; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.top >= bottom) break;
+    if (row.bottom < bottom && !skip.has(row.node.id)) found.push(row);
+  }
+  return found.sort((a, b) => a.order - b.order);
+}
+
+/** `detour` with the cards already sorted (`cardRows`): a long flow's lines are found fast. */
+export function detourAmong(
+  axis: Axis,
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  cards: CardRows,
+  skip: ReadonlySet<string>
+): { x: number; y: number }[] {
   if (axis.direction !== 'down' || to.y <= from.y) return [];
   // The cards between the two ends, along the flow.
-  const between = cards.filter(
-    (n) => !skip.has(n.id) && n.position.y > from.y && n.position.y + height(n) < to.y
-  );
-  const inWay = between.some((n) => {
+  const between = rowsBetween(cards, from.y, to.y, skip);
+  const inWay = between.some(({ node: n, top, bottom }) => {
     // Where the line runs while level with the card (it bends, so a lane's width to spare).
-    const a = crossAt(from, to, n.position.y);
-    const b = crossAt(from, to, n.position.y + height(n));
+    const a = crossAt(from, to, top);
+    const b = crossAt(from, to, bottom);
     return (
       Math.max(a, b) > n.position.x - LANE && Math.min(a, b) < n.position.x + NODE_WIDTH + LANE
     );
@@ -703,15 +799,17 @@ export function detour(
   if (!inWay) return [];
   // Beside one of them, clear of all of them; the one nearest the way from one end to the other.
   const free = (x: number) =>
-    between.every((n) => x <= n.position.x - LANE / 2 || x >= n.position.x + NODE_WIDTH + LANE / 2);
+    between.every(
+      ({ node: n }) => x <= n.position.x - LANE / 2 || x >= n.position.x + NODE_WIDTH + LANE / 2
+    );
   const cost = (x: number) => Math.abs(x - from.x) + Math.abs(x - to.x);
   const lane = between
-    .flatMap((n) => [n.position.x - LANE, n.position.x + NODE_WIDTH + LANE])
+    .flatMap(({ node: n }) => [n.position.x - LANE, n.position.x + NODE_WIDTH + LANE])
     .filter(free)
     .reduce((best, x) => (cost(x) < cost(best) ? x : best), Number.POSITIVE_INFINITY);
   if (!Number.isFinite(lane)) return [];
-  const top = Math.min(...between.map((n) => n.position.y));
-  const bottom = Math.max(...between.map((n) => n.position.y + height(n)));
+  const top = Math.min(...between.map((row) => row.top));
+  const bottom = Math.max(...between.map((row) => row.bottom));
   const below = from.y + PAST_ADD;
   // Out of the lane in time to turn to the target (and never below its input).
   const leave = Math.min(bottom + PAST_ADD, to.y - MERGE_ABOVE);

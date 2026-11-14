@@ -3,7 +3,8 @@ import { randomId } from '@flode/ui-core';
 import type { Viewport } from '@xyflow/system';
 import type { AutomationListItem, RegistryEntry, RegistryUpdate } from './ha';
 import type { SaveProblem } from './save-errors';
-import type { StringKey } from './strings';
+import { isStringKey, type StringKey } from './strings';
+import { FLODE_VERSION } from './version';
 
 export type SaveState = 'saved' | 'unsaved' | 'saving';
 
@@ -140,6 +141,8 @@ interface StoredTab {
   viewport?: Viewport;
   /** The browser window that wrote this entry (`WINDOW_ID`). */
   writer: string;
+  /** The FLODE version that wrote it — an older one may have read the flow differently. */
+  parsedBy: string;
 }
 
 /** This browser window — tells its own stored entries from another window's. */
@@ -192,6 +195,7 @@ export function writeTabs(state: StoredTabs, known: ReadonlySet<string>): boolea
       saveState: tab.saveState === 'saving' ? 'unsaved' : tab.saveState,
       viewport: tab.viewport,
       writer: WINDOW_ID,
+      parsedBy: FLODE_VERSION,
     })
   );
   const entries = storedEntries();
@@ -252,6 +256,14 @@ function isRegistryUpdate(value: unknown): value is RegistryUpdate {
   );
 }
 
+function isWarningsHeading(value: unknown): value is ImportWarningsHeading {
+  return isPlainObject(value) && isStringKey(value.title) && isStringKey(value.text);
+}
+
+function isStringList(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
+}
+
 function restoreTab(value: unknown): EditorTab | null {
   if (!isPlainObject(value) || typeof value.id !== 'string') return null;
   const flow = value.flow;
@@ -263,6 +275,9 @@ function restoreTab(value: unknown): EditorTab | null {
   if (!graph.success) return null;
   const saveState: SaveState = value.saveState === 'saved' ? 'saved' : 'unsaved';
   const restoredGraph: FlowGraph = graph.data;
+  // A saved tab another FLODE version read is read from HA again (no fingerprint to match):
+  // its graph may miss what that version couldn't read. A draft keeps it for the conflict check.
+  const keepVersion = saveState !== 'saved' || value.parsedBy === FLODE_VERSION;
   return {
     id: value.id,
     flow: {
@@ -271,7 +286,13 @@ function restoreTab(value: unknown): EditorTab | null {
       isNew: flow.isNew === true,
       registryEntry: isRegistryEntry(flow.registryEntry) ? flow.registryEntry : null,
       registryUpdate: isRegistryUpdate(flow.registryUpdate) ? flow.registryUpdate : undefined,
-      ...(typeof flow.haVersion === 'string' ? { haVersion: flow.haVersion } : {}),
+      ...(keepVersion && typeof flow.haVersion === 'string' ? { haVersion: flow.haVersion } : {}),
+      // Read-only and the "not read" banner must survive a reload, or a save could overwrite.
+      ...(typeof flow.blueprint === 'string' ? { blueprint: flow.blueprint } : {}),
+      ...(isStringList(flow.importWarnings) ? { importWarnings: flow.importWarnings } : {}),
+      ...(isWarningsHeading(flow.importWarningsHeading)
+        ? { importWarningsHeading: flow.importWarningsHeading }
+        : {}),
       ...(saveState === 'saved' ? { savedGraph: restoredGraph } : {}),
     },
     past: [],

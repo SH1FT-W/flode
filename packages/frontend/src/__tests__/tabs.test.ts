@@ -139,6 +139,59 @@ describe('remembered tabs', () => {
     expect(readTabs()?.tabs[0]?.flow.haVersion).toBe('v1');
   });
 
+  it('keeps a blueprint flow read-only and its import warnings after a reload', () => {
+    const made = tab('a', 'saved');
+    made.flow = {
+      ...made.flow,
+      blueprint: 'motion.yaml',
+      importWarnings: ['step 2 not read'],
+      importWarningsHeading: { title: 'mergeWarnInfoTitle', text: 'mergeWarnInfoText' },
+    };
+    writeTabs({ tabs: [made], activeTabId: 'a', showHome: false }, new Set(['a']));
+    const flow = readTabs()?.tabs[0]?.flow;
+    expect(flow?.blueprint).toBe('motion.yaml');
+    expect(flow?.importWarnings).toEqual(['step 2 not read']);
+    expect(flow?.importWarningsHeading).toEqual({
+      title: 'mergeWarnInfoTitle',
+      text: 'mergeWarnInfoText',
+    });
+  });
+
+  it('reads a saved tab from HA again after FLODE was updated (its parse may be outdated)', () => {
+    const saved = tab('a', 'saved');
+    saved.flow = { ...saved.flow, haVersion: 'v1' };
+    const draft = tab('b', 'unsaved');
+    draft.flow = { ...draft.flow, haVersion: 'v1' };
+    writeTabs({ tabs: [saved, draft], activeTabId: 'a', showHome: false }, new Set(['a', 'b']));
+    // Same version: HA's fingerprint is kept, nothing to read again.
+    expect(readTabs()?.tabs.map((t) => t.flow.haVersion)).toEqual(['v1', 'v1']);
+    // Written by an older FLODE: the saved tab forgets the fingerprint, so it is read
+    // from HA again; an unsaved draft keeps it (it is compared with HA before saving).
+    const stored = JSON.parse(window.localStorage.getItem('flode3.tabs') ?? '{}');
+    for (const entry of stored.tabs) entry.parsedBy = '3.4.1';
+    window.localStorage.setItem('flode3.tabs', JSON.stringify(stored));
+    expect(readTabs()?.tabs.map((t) => t.flow.haVersion)).toEqual([undefined, 'v1']);
+  });
+
+  it('drops a remembered warnings heading whose texts no longer exist', () => {
+    window.localStorage.setItem(
+      'flode3.tabs',
+      JSON.stringify({
+        tabs: [
+          {
+            ...tab('a', 'saved'),
+            flow: {
+              ...tab('a', 'saved').flow,
+              importWarningsHeading: { title: 'gone', text: 'gone' },
+            },
+          },
+        ],
+        activeTabId: 'a',
+      })
+    );
+    expect(readTabs()?.tabs[0]?.flow.importWarningsHeading).toBeUndefined();
+  });
+
   it('drops broken entries and survives garbage', () => {
     window.localStorage.setItem(
       'flode3.tabs',

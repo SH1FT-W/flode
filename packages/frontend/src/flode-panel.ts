@@ -9,7 +9,6 @@ import {
   NodeSchema,
   SCRIPT_START_TRIGGER,
 } from '@flode/shared';
-import { dump as yamlDump } from 'js-yaml';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import './flode-canvas';
 import './flode-inspector';
@@ -93,6 +92,7 @@ import {
   errorMessage,
   type FlowKind,
   flowName,
+  freeScriptId,
   getRegistryEntry,
   getRunLogbook,
   type HomeAssistant,
@@ -100,7 +100,6 @@ import {
   loadFlowConfig,
   loadSummaryTranslations,
   navigateInHa,
-  newScriptId,
   promptAutomationDialog,
   type RegistryUpdate,
   runScript,
@@ -144,6 +143,7 @@ import {
 import {
   haDialogShowing,
   isInDialog,
+  isTyping,
   labelWithHint,
   matchShortcut,
   type ShortcutId,
@@ -265,17 +265,6 @@ type MenuEntry = MenuItem | 'divider';
 function typeName(kind: StepKind, language: string): string {
   const label = typeLabel(kind, language);
   return language.startsWith('de') ? label : label.toLowerCase();
-}
-
-/** The key goes to a text field / HA's code editor (CodeMirror is contenteditable). */
-function isTyping(event: KeyboardEvent): boolean {
-  return event
-    .composedPath()
-    .some(
-      (el) =>
-        el instanceof HTMLElement &&
-        (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
-    );
 }
 
 /**
@@ -504,6 +493,7 @@ export class FlodePanel extends LitElement {
     this.minimapVisible = readFlag(MINIMAP_KEY);
     this.haCardText = readFlag(HA_CARD_TEXT_KEY);
     this.verticalDefault = readFlag(VERTICAL_KEY);
+    // The canvas gets the room until a card is picked (an empty sidebar only says "pick one").
     this.autoSide = readFlag(AUTO_SIDE_KEY);
     this.yamlViewOpen = false;
     this.canvasMenu = null;
@@ -1657,20 +1647,19 @@ export class FlodePanel extends LitElement {
     const steps =
       blueprint === undefined ? config : await substituteBlueprint(hass, item.kind, config);
     report(t(language, 'progressParse'), 0.35);
-    const { transpiler, parseScript } = await loadTranspiler();
+    const { transpiler, parseScript, dumpHaYaml } = await loadTranspiler();
     // Wenn-dann, Auswählen, Wiederholen, Parallel stay HA blocks (HA's own nested editor).
-    const options = { keepBlocks: true };
+    // Opening top to bottom lays the flow out below (`inDefaultDirection`) — only once.
+    const vertical = this.verticalDefault;
+    const options = { keepBlocks: true, deferLayout: vertical };
     const result =
       item.kind === 'script'
         ? await parseScript(transpiler, steps, options)
-        : await transpiler.fromYaml(
-            yamlDump(steps, { indent: 2, lineWidth: -1, quotingType: '"', forceQuotes: false }),
-            options
-          );
+        : await transpiler.fromYaml(dumpHaYaml(steps), options);
     if (!result.success || !result.graph) throw new Error(result.errors?.join('\n') ?? 'parse');
     report(t(language, 'progressRegistry'), 0.8);
     const registryEntry = await getRegistryEntry(hass, item.entityId);
-    const graph = await this.inDefaultDirection(result.graph);
+    const graph = await this.inDefaultDirection(result.graph, vertical);
     report(t(language, 'progressOpen'), 1);
     return {
       item,
@@ -1786,7 +1775,7 @@ export class FlodePanel extends LitElement {
         // Like HA's script editor: a new script's id comes from its name —
         // unique among today's scripts (renamed ones by their registry id).
         await syncScriptIds(this.hass ?? hass);
-        const configId = newScriptId(this.hass ?? hass, current.graph.name);
+        const configId = await freeScriptId(this.hass ?? hass, current.graph.name);
         current = { ...current, item: { ...current.item, configId } };
         this.updateTab(tabId, (open, saveState) => ({
           flow: { ...open, item: { ...open.item, configId } },
@@ -2356,26 +2345,23 @@ export class FlodePanel extends LitElement {
     }
     const { type, data } = stepToNode(kind, added);
     const source = at?.source ? flow.graph.nodes.find((n) => n.id === at.source) : undefined;
-    // From the toolbar: a condition / action goes beside the selected card, not below it.
-    const beside =
-      source ??
-      (!at && kind !== 'trigger'
-        ? flow.graph.nodes.find((n) => n.id === this.selectedId)
-        : undefined);
+    // Places are found among the cards as drawn (expanded branches, cards moved on past them).
+    const drawn = cachedBranchView(flow.graph).graph;
+    // From the toolbar: a condition / action goes beside the selected card (a branch card
+    // too), not below it.
+    const besideId = at?.source ?? (!at && kind !== 'trigger' ? this.selectedId : null);
+    const beside = besideId ? drawn.nodes.find((n) => n.id === besideId) : undefined;
     // Where it was asked for (right-click, dropped connection); after a card one step
     // further along the flow; otherwise where the user is looking.
-    const wanted =
+    const drawnAt =
       at?.position ??
-      (beside
-        ? nextPosition(flow.graph, beside.position)
-        : (this.canvas?.visibleCenter() ?? { x: 0, y: 0 }));
-    const { graph, id } = addNode(
-      flow.graph,
-      type,
-      freePosition(flow.graph, wanted),
-      undefined,
-      data
-    );
+      freePosition(
+        drawn,
+        beside
+          ? nextPosition(drawn, beside.position)
+          : (this.canvas?.visibleCenter() ?? { x: 0, y: 0 })
+      );
+    const { graph, id } = addNode(flow.graph, type, drawnAt, undefined, data);
     if (at?.between && source) {
       this.commit(insertBetween(graph, source.id, at.sourceHandle ?? null, id));
       this.selectNewCard(id);
@@ -2385,11 +2371,9 @@ export class FlodePanel extends LitElement {
       at?.source && source
         ? connect(graph, { source: at.source, sourceHandle: at.sourceHandle ?? null, target: id })
         : graph;
-    // A card after an expanded block is drawn further right — store it so it appears where it was dropped.
-    const placed = at?.position
-      ? storedPosition(cachedBranchView(connected), id, at.position)
-      : undefined;
-    this.commit(placed ? moveNode(connected, id, placed.x, placed.y) : connected);
+    // A card after an expanded block is drawn further on — store it so it appears where it was put.
+    const placed = storedPosition(cachedBranchView(connected), id, drawnAt);
+    this.commit(moveNode(connected, id, placed.x, placed.y));
     this.selectNewCard(id);
   }
 
@@ -2514,7 +2498,13 @@ export class FlodePanel extends LitElement {
       return;
     }
     // A dialog is open (FLODE's or HA's): ⌘Z, ⌘V, ⌘S … must not act on the editor behind it.
-    if (this.dialogOpen() || isInDialog(event.composedPath())) return;
+    if (this.dialogOpen() || isInDialog(event.composedPath())) {
+      // … but ⌘S during a save or a dialog must not open the browser's "Save page as".
+      if (this.flow && (shortcut.id === 'save' || shortcut.id === 'saveCopy')) {
+        event.preventDefault();
+      }
+      return;
+    }
     if (!shortcut.global && (!this.flow || this.showHome)) return;
     // Inside a text field / HA's code editor these keys belong to the text.
     if (shortcut.notInText && isTyping(event)) return;
@@ -2707,9 +2697,13 @@ export class FlodePanel extends LitElement {
   /**
    * A flow as it opens: one without a saved direction is laid out top to
    * bottom when that is the default (#29) — left to right it stays as saved.
+   * `vertical`: the default as it was when the flow was read.
    */
-  private async inDefaultDirection(graph: FlowGraph): Promise<FlowGraph> {
-    if (graph.direction || !this.verticalDefault) return graph;
+  private async inDefaultDirection(
+    graph: FlowGraph,
+    vertical = this.verticalDefault
+  ): Promise<FlowGraph> {
+    if (graph.direction || !vertical) return graph;
     if (visibleGraph(graph).nodes.length === 0) return { ...graph, direction: 'down' };
     return layoutGraph(graph, 'down');
   }

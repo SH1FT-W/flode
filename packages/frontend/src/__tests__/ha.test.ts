@@ -5,6 +5,7 @@ import {
   configFingerprint,
   ensureAutomationEditors,
   flowName,
+  freeScriptId,
   type HomeAssistant,
   listScripts,
   newScriptId,
@@ -90,6 +91,33 @@ describe('script config ids', () => {
     expect(newScriptId(hass, 'Küche')).toBe('kuche');
     // Nothing new to look up.
     expect(await syncScriptIds(hass)).toBe(false);
+  });
+
+  it('are not asked for again on every state change after HA refused them', async () => {
+    let calls = 0;
+    const hass: HomeAssistant = {
+      ...fakeHass(['script.refused'], () => null),
+      callWS: () => {
+        calls++;
+        return Promise.reject(new Error('unauthorized'));
+      },
+    };
+    // HA sets `hass` many times a second; each one syncs.
+    for (let i = 0; i < 5; i++) expect(await syncScriptIds(hass)).toBe(false);
+    expect(calls).toBe(1);
+  });
+});
+
+describe('a new script id', () => {
+  it('skips a script in scripts.yaml that has no entity in HA', async () => {
+    const hass: HomeAssistant = {
+      ...fakeHass([], () => null),
+      callApi: <T>(method: string, path: string) =>
+        method === 'GET' && path === 'config/script/config/flur'
+          ? Promise.resolve({ alias: 'Flur', sequence: [] } as T)
+          : Promise.reject(new Error('404')),
+    };
+    expect(await freeScriptId(hass, 'Flur')).toBe('flur_2');
   });
 });
 

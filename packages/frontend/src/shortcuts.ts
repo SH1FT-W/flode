@@ -113,6 +113,17 @@ export function submitOnModEnter(
   };
 }
 
+/** The key goes to a text field / HA's code editor (CodeMirror is contenteditable). */
+export function isTyping(event: KeyboardEvent): boolean {
+  return event
+    .composedPath()
+    .some(
+      (el) =>
+        el instanceof HTMLElement &&
+        (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
+    );
+}
+
 export function matchShortcut(event: KeyboardEvent): Shortcut | undefined {
   const pressed = eventKeys(event);
   return SHORTCUTS.find((shortcut) => !shortcut.listOnly && shortcut.keys.includes(pressed));
