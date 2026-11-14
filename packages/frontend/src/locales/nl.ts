@@ -372,13 +372,13 @@ export const nl: Strings = {
   whatsNewTitle: 'Nieuw in FLODE {version}',
   whatsNewAll: 'Alle wijzigingen',
   continue: 'Doorgaan',
-  new261103LoopTitle: 'Lussen in een kader',
-  new261103LoopText:
-    'De stappen van een lus staan in een gestippeld kader, los van wat erna komt. Het kader noemt de lus, bij for_each ook de lijst.',
-  new261103IfOpenTitle: 'Als-voorwaarden uitgeklapt',
-  new261103IfOpenText:
-    'Als je een Als, dan-blok selecteert, toont de zijbalk de voorwaarden uitgeklapt, met het sjabloon in plaats van alleen de algemene zin.',
-  new261103DetailsTitle: 'Meer ruimte voor details',
-  new261103DetailsText:
-    'Van boven naar beneden krijgt de titel van een actie één regel en de details twee, zodat bijvoorbeeld het bericht van een melding volledig te lezen is.',
+  new261104ReadableOpenTitle: 'Leesbaar geopend',
+  new261104ReadableOpenText:
+    'Op de desktop opent een flow op leesbare grootte bij de trigger, in plaats van zo klein dat alleen pictogrammen te zien zijn. "Passend weergeven" toont nog steeds de hele flow.',
+  new261104FasterTitle: 'Sneller',
+  new261104FasterText:
+    'FLODE laadt ongeveer een kwart van de gegevens van vroeger, schikt grote flows maar één keer en rekent bij het slepen niet meer elke kaart opnieuw uit.',
+  new261104LosslessTitle: 'Slaat precies op wat er staat',
+  new261104LosslessText:
+    'Verkorte voorwaarden (and/or/not), tekst zoals "1_000", delay: 5 en onbekende sleutels komen bij het opslaan ongewijzigd terug.',
 };

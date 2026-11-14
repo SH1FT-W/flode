@@ -6,6 +6,33 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## [26.11.4] — 2026-11-14 — Lossless saving, readable flows, faster
+
+### Fixed
+- **Conditions written as `and:` / `or:` / `not:` were lost on save.** Top-level conditions in Home Assistant's short form (`- or: [...]`, also with an `alias`) were dropped when FLODE opened the automation, so after saving it ran without them. They now stay exactly as written.
+- **Text that looks like a number became a number.** Values such as `"1_000"` or `"2026_11_14"` were turned into numbers when a flow was opened or a script saved. They now stay strings.
+- **A nested trigger list** (`- triggers: [...]` inside `triggers:`) no longer gets a `trigger: state` added.
+- **Conditions of an automation without actions** stay under `conditions:` instead of moving into `actions:`.
+- **`delay: 5`** is saved as written instead of being rewritten to `delay: {seconds: 5}`.
+- **Top-level keys FLODE doesn't know** (for example ones a newer Home Assistant adds) are kept on save.
+- **Choose options with a template as their condition** (`conditions: "{{ … }}"`) are read correctly.
+- **Pasting YAML with `!secret`, `!input` or `!include`** now says why it can't be imported instead of a bare YAML error.
+- **A blueprint automation became editable after reloading the page**, and the "parts not recognised" notice disappeared after a reload. Both are remembered with the tab now.
+- **A new script could overwrite one in `scripts.yaml`** that had no entity in Home Assistant (a broken or removed one). New script ids now skip those.
+- **⌘S / Ctrl+S during a save or with a dialog open** no longer opens the browser's "Save page as".
+- **A step added from the toolbar** no longer lands on top of a card inside an expanded block.
+- **If Home Assistant refused to look up renamed scripts**, FLODE asked again on every state change; it now waits a minute.
+- **`hide_entity` was lost on save** for automations that still carry it.
+- **Flows remembered in open tabs from an older FLODE** are read from Home Assistant again after an update, so they no longer keep a state that an older version read wrongly.
+- **The YAML view** puts quotes around text Home Assistant would read as a date or number (`2026-11-14`, `0o17`, `1e3`), so copying it into Home Assistant keeps it text.
+
+### Changed
+- **FLODE loads faster.** Its files are minified and shipped pre-compressed (gzip and Brotli), so opening the panel transfers about a quarter of the data it did.
+- **Faster with large flows.** The layout engine loads only when a flow needs arranging, a flow without stored positions is arranged once instead of twice, and dragging cards or state changes in Home Assistant no longer recompute every card.
+- **Flows open readable on the desktop.** A larger automation used to open zoomed out so far that only icons showed; it now opens at a readable size starting at its trigger. "Fit view" still shows the whole flow.
+
+---
+
 ## [26.11.3] — 2026-11-13 — Loops in a frame, if conditions expanded
 
 Reported by jlpnea ([#43](https://github.com/SH1FT-W/flode/issues/43), [#44](https://github.com/SH1FT-W/flode/issues/44)).

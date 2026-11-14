@@ -375,13 +375,13 @@ export const fr: Strings = {
   whatsNewTitle: 'Nouveau dans FLODE {version}',
   whatsNewAll: 'Tous les changements',
   continue: 'Continuer',
-  new261103LoopTitle: 'Boucles dans un cadre',
-  new261103LoopText:
-    "Les étapes d'une boucle sont dans un cadre en pointillés, séparées de ce qui suit. Le cadre nomme la boucle, avec for_each aussi sa liste.",
-  new261103IfOpenTitle: 'Conditions Si dépliées',
-  new261103IfOpenText:
-    'Quand vous sélectionnez un bloc Si-alors, le panneau latéral affiche ses conditions dépliées, avec le modèle au lieu de la seule phrase générique.',
-  new261103DetailsTitle: 'Plus de place pour les détails',
-  new261103DetailsText:
-    "De haut en bas, le titre d'une action prend une ligne et ses détails deux, pour lire par exemple tout le message d'une notification.",
+  new261104ReadableOpenTitle: 'Ouverture lisible',
+  new261104ReadableOpenText:
+    'Sur ordinateur, un flux s’ouvre à une taille lisible sur son déclencheur, au lieu d’être si petit que seules les icônes sont visibles. « Ajuster la vue » montre toujours le flux entier.',
+  new261104FasterTitle: 'Plus rapide',
+  new261104FasterText:
+    'FLODE charge environ un quart des données d’avant, n’organise les grands flux qu’une fois et ne recalcule plus chaque carte pendant le glissement.',
+  new261104LosslessTitle: 'Enregistre exactement ce qui est écrit',
+  new261104LosslessText:
+    'Les conditions abrégées (and/or/not), les textes comme "1_000", delay: 5 et les clés inconnues reviennent inchangés à l’enregistrement.',
 };

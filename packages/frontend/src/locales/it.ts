@@ -369,13 +369,13 @@ export const it: Strings = {
   whatsNewTitle: 'Novità in FLODE {version}',
   whatsNewAll: 'Tutte le modifiche',
   continue: 'Continua',
-  new261103LoopTitle: 'Cicli in una cornice',
-  new261103LoopText:
-    'I passi di un ciclo stanno in una cornice tratteggiata, separati da ciò che segue. La cornice nomina il ciclo, con for_each anche la sua lista.',
-  new261103IfOpenTitle: 'Condizioni Se aperte',
-  new261103IfOpenText:
-    'Quando selezioni un blocco Se-allora, la barra laterale mostra le sue condizioni aperte, con il template invece della sola frase generica.',
-  new261103DetailsTitle: 'Più spazio per i dettagli',
-  new261103DetailsText:
-    "Dall'alto in basso, il titolo di un'azione occupa una riga e i dettagli due, così si legge per intero ad esempio il messaggio di una notifica.",
+  new261104ReadableOpenTitle: 'Si apre leggibile',
+  new261104ReadableOpenText:
+    'Sul desktop un flusso si apre a una dimensione leggibile sul suo trigger, invece che così piccolo da mostrare solo le icone. «Adatta alla vista» mostra ancora l’intero flusso.',
+  new261104FasterTitle: 'Più veloce',
+  new261104FasterText:
+    'FLODE carica circa un quarto dei dati di prima, dispone i flussi grandi una sola volta e non ricalcola più ogni scheda durante il trascinamento.',
+  new261104LosslessTitle: 'Salva esattamente ciò che c’è',
+  new261104LosslessText:
+    'Le condizioni abbreviate (and/or/not), testi come "1_000", delay: 5 e le chiavi sconosciute tornano invariati al salvataggio.',
 };

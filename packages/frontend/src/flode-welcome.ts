@@ -1,9 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
-import { version } from '../package.json';
 import { defineElement } from './define-element';
 import { type StringKey, t } from './strings';
-
-export const FLODE_VERSION: string = version;
+import { FLODE_VERSION } from './version';
 
 interface Feature {
   icon: string;
@@ -24,9 +22,17 @@ const WELCOME: Feature[] = [
  * release — shown once per version (`package.json`) to everyone who used an older one.
  */
 const WHATS_NEW: Feature[] = [
-  { icon: 'mdi:repeat', title: 'new261103LoopTitle', text: 'new261103LoopText' },
-  { icon: 'mdi:code-braces', title: 'new261103IfOpenTitle', text: 'new261103IfOpenText' },
-  { icon: 'mdi:arrow-down', title: 'new261103DetailsTitle', text: 'new261103DetailsText' },
+  {
+    icon: 'mdi:magnify-plus-outline',
+    title: 'new261104ReadableOpenTitle',
+    text: 'new261104ReadableOpenText',
+  },
+  { icon: 'mdi:speedometer', title: 'new261104FasterTitle', text: 'new261104FasterText' },
+  {
+    icon: 'mdi:content-save-check-outline',
+    title: 'new261104LosslessTitle',
+    text: 'new261104LosslessText',
+  },
 ];
 
 const SEEN_KEY = 'flode3.seenVersion';

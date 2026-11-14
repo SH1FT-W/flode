@@ -381,15 +381,15 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261103LoopTitle: 'Schleifen im Rahmen',
-    new261103LoopText:
-      'Die Schritte einer Schleife stehen in einem gestrichelten Rahmen, getrennt von dem, was danach kommt. Der Rahmen nennt die Schleife, bei for_each auch die Liste.',
-    new261103IfOpenTitle: 'Wenn-Bedingungen aufgeklappt',
-    new261103IfOpenText:
-      'Wählst du einen Wenn-dann-Block aus, zeigt die Seitenleiste seine Bedingungen aufgeklappt, mit der Vorlage statt nur dem allgemeinen Satz.',
-    new261103DetailsTitle: 'Mehr Platz für Details',
-    new261103DetailsText:
-      'Im senkrechten Flow bekommt der Titel einer Aktion eine Zeile und ihre Details zwei, so ist zum Beispiel die Nachricht einer Benachrichtigung ganz zu lesen.',
+    new261104ReadableOpenTitle: 'Lesbar geöffnet',
+    new261104ReadableOpenText:
+      'Ein Flow öffnet am Desktop in lesbarer Größe beim Auslöser, statt so klein, dass nur Symbole zu sehen sind. „Alles zeigen“ zeigt weiter den ganzen Flow.',
+    new261104FasterTitle: 'Schneller',
+    new261104FasterText:
+      'FLODE lädt rund ein Viertel der Daten von früher, ordnet große Flows nur einmal an und rechnet beim Ziehen nicht mehr jede Karte neu.',
+    new261104LosslessTitle: 'Speichert genau, was da steht',
+    new261104LosslessText:
+      'Kurzform-Bedingungen (and/or/not), Texte wie "1_000", delay: 5 und unbekannte Schlüssel kommen beim Speichern unverändert zurück.',
   },
   en: {
     title: 'FLODE',
@@ -756,19 +756,24 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261103LoopTitle: 'Loops in a frame',
-    new261103LoopText:
-      'The steps of a loop stand in a dashed frame, apart from what follows it. The frame names the loop, with for_each also its list.',
-    new261103IfOpenTitle: 'If conditions expanded',
-    new261103IfOpenText:
-      'When you select an If-then block, the sidebar shows its conditions expanded, with the template instead of just the generic line.',
-    new261103DetailsTitle: 'More room for details',
-    new261103DetailsText:
-      "Top to bottom, an action's title takes one line and its details two, so a notification's message, for example, can be read in full.",
+    new261104ReadableOpenTitle: 'Opens readable',
+    new261104ReadableOpenText:
+      'On the desktop a flow opens at a readable size starting at its trigger, instead of so small that only icons show. "Fit view" still shows the whole flow.',
+    new261104FasterTitle: 'Faster',
+    new261104FasterText:
+      'FLODE loads about a quarter of the data it used to, arranges large flows only once and no longer recomputes every card while you drag.',
+    new261104LosslessTitle: 'Saves exactly what is there',
+    new261104LosslessText:
+      'Short-form conditions (and/or/not), text like "1_000", delay: 5 and unknown keys come back unchanged when you save.',
   },
 } as const;
 
 export type StringKey = keyof (typeof STRINGS)['en'];
+
+/** Whether a value (from storage, say) names one of FLODE's UI strings. */
+export function isStringKey(value: unknown): value is StringKey {
+  return typeof value === 'string' && Object.hasOwn(STRINGS.en, value);
+}
 /** A complete table of FLODE's UI strings in one language. */
 export type Strings = Record<StringKey, string>;
 

@@ -371,13 +371,13 @@ export const pt: Strings = {
   whatsNewTitle: 'Novidades no FLODE {version}',
   whatsNewAll: 'Todas as alterações',
   continue: 'Continuar',
-  new261103LoopTitle: 'Ciclos numa moldura',
-  new261103LoopText:
-    'Os passos de um ciclo ficam numa moldura tracejada, separados do que vem a seguir. A moldura nomeia o ciclo, com for_each também a sua lista.',
-  new261103IfOpenTitle: 'Condições Se expandidas',
-  new261103IfOpenText:
-    'Ao selecionar um bloco Se então, a barra lateral mostra as suas condições expandidas, com o modelo em vez de apenas a frase genérica.',
-  new261103DetailsTitle: 'Mais espaço para os detalhes',
-  new261103DetailsText:
-    'De cima para baixo, o título de uma ação ocupa uma linha e os detalhes duas, para ler por inteiro, por exemplo, a mensagem de uma notificação.',
+  new261104ReadableOpenTitle: 'Abre legível',
+  new261104ReadableOpenText:
+    'No computador, um fluxo abre num tamanho legível no seu acionador, em vez de tão pequeno que só se veem ícones. «Ajustar à tela» continua a mostrar o fluxo inteiro.',
+  new261104FasterTitle: 'Mais rápido',
+  new261104FasterText:
+    'O FLODE carrega cerca de um quarto dos dados de antes, organiza fluxos grandes apenas uma vez e já não recalcula cada cartão ao arrastar.',
+  new261104LosslessTitle: 'Guarda exatamente o que lá está',
+  new261104LosslessText:
+    'Condições abreviadas (and/or/not), textos como "1_000", delay: 5 e chaves desconhecidas voltam inalterados ao guardar.',
 };

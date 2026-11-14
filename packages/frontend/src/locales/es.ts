@@ -372,13 +372,13 @@ export const es: Strings = {
   whatsNewTitle: 'Novedades en FLODE {version}',
   whatsNewAll: 'Todos los cambios',
   continue: 'Continuar',
-  new261103LoopTitle: 'Bucles en un marco',
-  new261103LoopText:
-    'Los pasos de un bucle están en un marco discontinuo, separados de lo que sigue. El marco nombra el bucle, con for_each también su lista.',
-  new261103IfOpenTitle: 'Condiciones Si desplegadas',
-  new261103IfOpenText:
-    'Al seleccionar un bloque Si-entonces, la barra lateral muestra sus condiciones desplegadas, con la plantilla en lugar de solo la frase genérica.',
-  new261103DetailsTitle: 'Más espacio para los detalles',
-  new261103DetailsText:
-    'De arriba abajo, el título de una acción ocupa una línea y sus detalles dos, así se lee entero por ejemplo el mensaje de una notificación.',
+  new261104ReadableOpenTitle: 'Se abre legible',
+  new261104ReadableOpenText:
+    'En el escritorio, un flujo se abre a un tamaño legible en su disparador, en lugar de tan pequeño que solo se ven iconos. «Ajustar vista» sigue mostrando el flujo entero.',
+  new261104FasterTitle: 'Más rápido',
+  new261104FasterText:
+    'FLODE carga aproximadamente una cuarta parte de los datos de antes, organiza los flujos grandes solo una vez y ya no recalcula cada tarjeta al arrastrar.',
+  new261104LosslessTitle: 'Guarda exactamente lo que hay',
+  new261104LosslessText:
+    'Las condiciones abreviadas (and/or/not), textos como "1_000", delay: 5 y las claves desconocidas vuelven sin cambios al guardar.',
 };
