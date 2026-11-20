@@ -20,6 +20,7 @@ Worauf sich FLODE bei Home Assistant verlässt. Bei jeder Änderung am Code mitp
 | Startseite nutzt HAs Listen `ha-automation-picker` / `ha-script-picker` | `packages/frontend/src/flode-ha-list.ts` `HA_LIST_TAGS` | Gate `visual` |
 | HA-Textmodus der Karten nutzt HAs eigene Beschreibungs-Zeilen (`rowTag(kind)`) | `packages/frontend/src/ha-describe.ts` | Gate `cards` |
 | Speichern über REST `POST config/automation/config/<id>` bzw. `config/script/config/<id>`; Konfig-Id = `id:` in automations.yaml | `ha.ts` (Speichern) | Gate `roundtrip` |
+| Vor dem Schreiben liest FLODE die gespeicherte Konfig per `GET config/<art>/config/<id>`: fehlt sie, lehnt `hass.callApi` mit `status_code: 404` ab (Serverfehler mit ihrem Status, Netzfehler ohne). Nur 404 heißt „nicht vorhanden“, alles andere bricht das Speichern ab (Blueprint-Schutz, freie Skript-Id) | `ha.ts` `storedConfigBeforeWrite()`, `saveFlowConfig()`, `freeScriptId()` | Unit-Tests `ha.test.ts` (Stub), Gate `roundtrip` (neue Flows) |
 | Läufe: Websocket `trace/list`, `trace/get` (`domain`, `item_id`, `run_id`), Logbuch `logbook/get_events` | `ha.ts`, `flode-debug.ts` | Unit-Tests `trace-mapping`, Gate `actions` |
 | KI: `ai_task.generate_data` und `ai_task/preferences/get`; KI-Entitäten beginnen mit `ai_task.` | `packages/ui-core/src/ai-task.ts` | Unit-Tests `ai-task` |
 | Panel: `panel_custom.async_register_panel` mit `module_url`, `require_admin=True`; Cache-Bust über `?v=<Startzeit>` | `custom_components/flode/panel.py` | Gate (Panel lädt), pytest `tests/test_panel.py` |

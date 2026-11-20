@@ -350,6 +350,8 @@ export const fr: Strings = {
   openInHa: 'Ouvrir dans HA',
   blueprintNoSave:
     "Cette automatisation est créée à partir d'un blueprint – FLODE ne l'enregistre pas. Modifiez-la dans Home Assistant.",
+  saveReadFailed:
+    "FLODE n'a pas pu lire la version enregistrée dans Home Assistant, rien n'a donc été enregistré. Vérifiez la connexion et enregistrez à nouveau.",
   invalid: 'Invalide',
   type_trigger: 'Déclencheur',
   type_automation: 'Automatisation',

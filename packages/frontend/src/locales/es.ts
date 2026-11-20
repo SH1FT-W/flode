@@ -347,6 +347,8 @@ export const es: Strings = {
   openInHa: 'Abrir en HA',
   blueprintNoSave:
     'Esta automatización se creó a partir de un plano: FLODE no la guarda. Edítala en Home Assistant.',
+  saveReadFailed:
+    'FLODE no pudo leer la versión guardada en Home Assistant, así que no guardó nada. Comprueba la conexión y vuelve a guardar.',
   invalid: 'No válido',
   type_trigger: 'Disparador',
   type_automation: 'Automatización',

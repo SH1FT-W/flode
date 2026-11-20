@@ -347,6 +347,8 @@ export const pt: Strings = {
   openInHa: 'Abrir no HA',
   blueprintNoSave:
     'Esta automação foi criada a partir de um blueprint – o FLODE não a salva. Edite-a no Home Assistant.',
+  saveReadFailed:
+    'O FLODE não conseguiu ler a versão salva no Home Assistant, então nada foi salvo. Verifique a conexão e salve novamente.',
   invalid: 'Inválido',
   type_trigger: 'Gatilho',
   type_automation: 'Automação',

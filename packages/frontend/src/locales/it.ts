@@ -344,6 +344,8 @@ export const it: Strings = {
   openInHa: 'Apri in HA',
   blueprintNoSave:
     'Questa automazione è creata da un progetto – FLODE non la salva. Modificala in Home Assistant.',
+  saveReadFailed:
+    'FLODE non è riuscito a leggere la versione salvata in Home Assistant, quindi non ha salvato nulla. Controlla la connessione e salva di nuovo.',
   invalid: 'Non valido',
   type_trigger: 'Attivatore',
   type_automation: 'Automazione',

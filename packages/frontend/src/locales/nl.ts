@@ -347,6 +347,8 @@ export const nl: Strings = {
   openInHa: 'Openen in HA',
   blueprintNoSave:
     'Deze automatisering is gemaakt van een blueprint – FLODE slaat haar niet op. Bewerk haar in Home Assistant.',
+  saveReadFailed:
+    'FLODE kon de in Home Assistant opgeslagen versie niet lezen en heeft daarom niets opgeslagen. Controleer de verbinding en sla opnieuw op.',
   invalid: 'Ongeldig',
   type_trigger: 'Trigger',
   type_automation: 'Automatisering',

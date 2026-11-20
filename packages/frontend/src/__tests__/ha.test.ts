@@ -9,7 +9,9 @@ import {
   type HomeAssistant,
   listScripts,
   newScriptId,
+  StoredConfigUnreadableError,
   sameFlow,
+  saveFlowConfig,
   syncScriptIds,
   usesBlueprint,
 } from '../ha';
@@ -30,6 +32,30 @@ function fakeHass(
     callWS: <T>(message: Record<string, unknown> & { type: string }) =>
       Promise.resolve(ws(message) as T),
   };
+}
+
+// What HA's `hass.callApi` rejects with: the HTTP status, or none when the request itself failed.
+const notFound = { error: 'Not Found', status_code: 404, body: { message: 'Resource not found' } };
+const serverError = { error: 'Internal Server Error', status_code: 500, body: null };
+const requestError = { error: 'Request error', status_code: undefined, body: undefined };
+
+/** A `hass` whose REST GETs answer with `get`; POSTed paths are collected in `posts`. */
+function restHass(get: (path: string) => Promise<unknown>): {
+  hass: HomeAssistant;
+  posts: string[];
+} {
+  const posts: string[] = [];
+  const hass: HomeAssistant = {
+    ...fakeHass([], () => null),
+    callApi: <T>(method: string, path: string): Promise<T> => {
+      if (method === 'POST') {
+        posts.push(path);
+        return Promise.resolve({ result: 'ok' } as T);
+      }
+      return get(path) as Promise<T>;
+    },
+  };
+  return { hass, posts };
 }
 
 const item: AutomationListItem = {
@@ -115,9 +141,42 @@ describe('a new script id', () => {
       callApi: <T>(method: string, path: string) =>
         method === 'GET' && path === 'config/script/config/flur'
           ? Promise.resolve({ alias: 'Flur', sequence: [] } as T)
-          : Promise.reject(new Error('404')),
+          : Promise.reject(notFound),
     };
     expect(await freeScriptId(hass, 'Flur')).toBe('flur_2');
+  });
+
+  it.each([
+    ['a server error', serverError],
+    ['a lost connection', requestError],
+  ])('is not handed out after %s', async (_, failure) => {
+    const { hass } = restHass(() => Promise.reject(failure));
+    await expect(freeScriptId(hass, 'Flur')).rejects.toBeInstanceOf(StoredConfigUnreadableError);
+  });
+});
+
+describe('saveFlowConfig', () => {
+  it('creates a flow HA has no config for', async () => {
+    const { hass, posts } = restHass(() => Promise.reject(notFound));
+    await saveFlowConfig(hass, 'automation', '1', { alias: 'Flur' });
+    expect(posts).toEqual(['config/automation/config/1']);
+  });
+
+  it('never writes over a blueprint automation', async () => {
+    const { hass, posts } = restHass(() => Promise.resolve({ use_blueprint: { path: 'a.yaml' } }));
+    await expect(saveFlowConfig(hass, 'automation', '1', { alias: 'Flur' })).rejects.toThrow();
+    expect(posts).toEqual([]);
+  });
+
+  it.each([
+    ['a server error', serverError],
+    ['a lost connection', requestError],
+  ])('does not write when the stored config could not be read (%s)', async (_, failure) => {
+    const { hass, posts } = restHass(() => Promise.reject(failure));
+    await expect(saveFlowConfig(hass, 'automation', '1', { alias: 'Flur' })).rejects.toBeInstanceOf(
+      StoredConfigUnreadableError
+    );
+    expect(posts).toEqual([]);
   });
 });
 

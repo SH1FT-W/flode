@@ -103,6 +103,7 @@ import {
   promptAutomationDialog,
   type RegistryUpdate,
   runScript,
+  StoredConfigUnreadableError,
   sameFlow,
   saveFlowConfig,
   substituteBlueprint,
@@ -1816,10 +1817,12 @@ export class FlodePanel extends LitElement {
       const problem =
         error instanceof SaveProblemError
           ? error.problem
-          : describeHaSaveError(errorMessage(error), current.graph, current.item.kind, {
-              language: this.language,
-              hass: this.hass,
-            });
+          : error instanceof StoredConfigUnreadableError
+            ? { text: t(this.language, 'saveReadFailed'), detail: errorMessage(error.cause) }
+            : describeHaSaveError(errorMessage(error), current.graph, current.item.kind, {
+                language: this.language,
+                hass: this.hass,
+              });
       if (this.updateTab(tabId, (open) => settleSave(open, null))) this.showSaveProblem(problem);
       else this.notify(`${t(this.language, 'saveFailed')}: ${problem.text}`);
     }

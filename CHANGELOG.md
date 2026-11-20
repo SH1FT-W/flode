@@ -8,6 +8,9 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ## Unreleased
 
+### Fixed
+- **Saving no longer goes ahead when FLODE can't read what Home Assistant has stored.** Before writing, FLODE checks that it doesn't overwrite a blueprint automation or a script in `scripts.yaml`; if that check failed because of a server error or a lost connection, it saved anyway. Now it stops and says so, and only a flow Home Assistant really doesn't have counts as new.
+
 ### Changed
 - **Updated zod to 4.6** (security advisory GHSA-mrhx-c7xc-m3w5), plus the build and test tools.
 

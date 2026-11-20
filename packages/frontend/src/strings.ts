@@ -356,6 +356,8 @@ const STRINGS = {
     openInHa: 'In HA öffnen',
     blueprintNoSave:
       'Diese Automation stammt aus einem Blueprint – FLODE speichert sie nicht. Bearbeite sie in Home Assistant.',
+    saveReadFailed:
+      'FLODE konnte den in Home Assistant gespeicherten Stand nicht lesen und hat deshalb nichts gespeichert. Prüfe die Verbindung und speichere erneut.',
     invalid: 'Ungültig',
     type_trigger: 'Auslöser',
     type_automation: 'Automation',
@@ -731,6 +733,8 @@ const STRINGS = {
     openInHa: 'Open in HA',
     blueprintNoSave:
       'This automation is made from a blueprint – FLODE doesn’t save it. Edit it in Home Assistant.',
+    saveReadFailed:
+      'FLODE couldn’t read the version stored in Home Assistant, so nothing was saved. Check the connection and save again.',
     invalid: 'Invalid',
     type_trigger: 'Trigger',
     type_automation: 'Automation',

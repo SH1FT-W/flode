@@ -232,11 +232,42 @@ export async function freeScriptId(hass: HomeAssistant, alias: string): Promise<
   const stored = new Set<string>();
   for (;;) {
     const id = newScriptId(hass, alias, stored);
-    const existing = await hass
-      .callApi<unknown>('GET', `config/script/config/${id}`)
-      .catch(() => null);
+    const existing = await storedConfigBeforeWrite(hass, 'script', id);
     if (!isPlainObject(existing)) return id;
     stored.add(id);
+  }
+}
+
+/**
+ * HA's stored config could not be read before writing (server error, lost
+ * connection). Saving stops then: FLODE can't tell what it would write over.
+ */
+export class StoredConfigUnreadableError extends Error {
+  constructor(kind: FlowKind, configId: string, cause: unknown) {
+    super(`${kind} ${configId}: stored config could not be read – not saved`, { cause });
+  }
+}
+
+/** HA answered 404 — `hass.callApi` rejects with the HTTP status in `status_code`. */
+function isNotFound(error: unknown): boolean {
+  return isPlainObject(error) && error.status_code === 404;
+}
+
+/**
+ * The config HA has stored for a flow, read right before writing it; `null`
+ * only when HA has none (404). Any other failure throws
+ * `StoredConfigUnreadableError` — the checks that rely on it fail closed.
+ */
+async function storedConfigBeforeWrite(
+  hass: HomeAssistant,
+  kind: FlowKind,
+  configId: string
+): Promise<unknown> {
+  try {
+    return await hass.callApi<unknown>('GET', `config/${kind}/config/${configId}`);
+  } catch (error) {
+    if (isNotFound(error)) return null;
+    throw new StoredConfigUnreadableError(kind, configId, error);
   }
 }
 
@@ -322,9 +353,7 @@ export async function saveFlowConfig(
   configId: string,
   config: Record<string, unknown>
 ): Promise<void> {
-  const stored = await hass
-    .callApi<unknown>('GET', `config/${kind}/config/${configId}`)
-    .catch(() => null);
+  const stored = await storedConfigBeforeWrite(hass, kind, configId);
   if (isPlainObject(stored) && usesBlueprint(stored)) {
     throw new Error(`${kind} ${configId} is made from a blueprint – not overwritten`);
   }

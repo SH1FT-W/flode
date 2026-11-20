@@ -327,6 +327,8 @@ export const zh: Strings = {
     '此自动化基于蓝图创建。FLODE 会显示其步骤与输入项，但不会保存：请在 Home Assistant 中编辑。蓝图：',
   openInHa: '在 HA 中打开',
   blueprintNoSave: '此自动化基于蓝图创建：FLODE 不会保存它。请在 Home Assistant 中编辑。',
+  saveReadFailed:
+    'FLODE 无法读取 Home Assistant 中已保存的版本，因此未保存任何内容。请检查连接后重新保存。',
   invalid: '无效',
   type_trigger: '触发器',
   type_automation: '自动化',
