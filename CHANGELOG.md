@@ -6,6 +6,11 @@ After 3.4.1, releases use calendar versions `YY.M.N` (year, month, number of the
 
 ---
 
+## Unreleased
+
+### Changed
+- **Updated zod to 4.6** (security advisory GHSA-mrhx-c7xc-m3w5), plus the build and test tools.
+
 ## [26.11.4] — 2026-11-14 — Lossless saving, readable flows, faster
 
 ### Fixed
