@@ -377,13 +377,10 @@ export const fr: Strings = {
   whatsNewTitle: 'Nouveau dans FLODE {version}',
   whatsNewAll: 'Tous les changements',
   continue: 'Continuer',
-  new261104ReadableOpenTitle: 'Ouverture lisible',
-  new261104ReadableOpenText:
-    'Sur ordinateur, un flux s’ouvre à une taille lisible sur son déclencheur, au lieu d’être si petit que seules les icônes sont visibles. « Ajuster la vue » montre toujours le flux entier.',
-  new261104FasterTitle: 'Plus rapide',
-  new261104FasterText:
-    'FLODE charge environ un quart des données d’avant, n’organise les grands flux qu’une fois et ne recalcule plus chaque carte pendant le glissement.',
-  new261104LosslessTitle: 'Enregistre exactement ce qui est écrit',
-  new261104LosslessText:
-    'Les conditions abrégées (and/or/not), les textes comme "1_000", delay: 5 et les clés inconnues reviennent inchangés à l’enregistrement.',
+  new261105SafeSaveTitle: 'Enregistrement plus sûr',
+  new261105SafeSaveText:
+    'Si FLODE ne peut pas lire ce qui est enregistré dans Home Assistant juste avant d’enregistrer (connexion perdue, erreur serveur), il s’arrête et vous le signale au lieu de risquer d’écraser une automatisation issue d’un blueprint ou un script.',
+  new261105LibrariesTitle: 'Bibliothèques à jour',
+  new261105LibrariesText:
+    'La bibliothèque de validation zod est à jour, avec un correctif de sécurité.',
 };

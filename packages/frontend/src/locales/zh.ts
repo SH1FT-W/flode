@@ -351,13 +351,9 @@ export const zh: Strings = {
   whatsNewTitle: 'FLODE {version} 新功能',
   whatsNewAll: '全部更改',
   continue: '继续',
-  new261104ReadableOpenTitle: '打开即可阅读',
-  new261104ReadableOpenText:
-    '在桌面上，流程会以可阅读的大小从触发器处打开，而不是小到只能看到图标。“适应视图”仍可显示整个流程。',
-  new261104FasterTitle: '更快',
-  new261104FasterText:
-    'FLODE 只需加载以前约四分之一的数据，大型流程只排列一次，拖动时也不再重新计算每张卡片。',
-  new261104LosslessTitle: '原样保存',
-  new261104LosslessText:
-    '简写条件（and/or/not）、"1_000" 这样的文本、delay: 5 以及未知的键在保存后保持不变。',
+  new261105SafeSaveTitle: '更安全的保存',
+  new261105SafeSaveText:
+    '如果 FLODE 在保存前无法读取 Home Assistant 中已保存的内容（连接中断、服务器错误），它会停止并告诉你，而不是冒险覆盖基于蓝图的自动化或脚本。',
+  new261105LibrariesTitle: '库已更新',
+  new261105LibrariesText: '验证库 zod 已更新，包含一项安全修复。',
 };

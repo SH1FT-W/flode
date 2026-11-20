@@ -23,15 +23,14 @@ const WELCOME: Feature[] = [
  */
 const WHATS_NEW: Feature[] = [
   {
-    icon: 'mdi:magnify-plus-outline',
-    title: 'new261104ReadableOpenTitle',
-    text: 'new261104ReadableOpenText',
+    icon: 'mdi:content-save-alert-outline',
+    title: 'new261105SafeSaveTitle',
+    text: 'new261105SafeSaveText',
   },
-  { icon: 'mdi:speedometer', title: 'new261104FasterTitle', text: 'new261104FasterText' },
   {
-    icon: 'mdi:content-save-check-outline',
-    title: 'new261104LosslessTitle',
-    text: 'new261104LosslessText',
+    icon: 'mdi:shield-check-outline',
+    title: 'new261105LibrariesTitle',
+    text: 'new261105LibrariesText',
   },
 ];
 

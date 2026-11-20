@@ -374,13 +374,10 @@ export const nl: Strings = {
   whatsNewTitle: 'Nieuw in FLODE {version}',
   whatsNewAll: 'Alle wijzigingen',
   continue: 'Doorgaan',
-  new261104ReadableOpenTitle: 'Leesbaar geopend',
-  new261104ReadableOpenText:
-    'Op de desktop opent een flow op leesbare grootte bij de trigger, in plaats van zo klein dat alleen pictogrammen te zien zijn. "Passend weergeven" toont nog steeds de hele flow.',
-  new261104FasterTitle: 'Sneller',
-  new261104FasterText:
-    'FLODE laadt ongeveer een kwart van de gegevens van vroeger, schikt grote flows maar één keer en rekent bij het slepen niet meer elke kaart opnieuw uit.',
-  new261104LosslessTitle: 'Slaat precies op wat er staat',
-  new261104LosslessText:
-    'Verkorte voorwaarden (and/or/not), tekst zoals "1_000", delay: 5 en onbekende sleutels komen bij het opslaan ongewijzigd terug.',
+  new261105SafeSaveTitle: 'Veiliger opslaan',
+  new261105SafeSaveText:
+    'Kan FLODE vlak voor het opslaan niet lezen wat er in Home Assistant staat (verbinding weg, serverfout), dan slaat het niets op en meldt dat, in plaats van mogelijk een blueprint-automatisering of een script te overschrijven.',
+  new261105LibrariesTitle: 'Bijgewerkte bibliotheken',
+  new261105LibrariesText:
+    'De validatiebibliotheek zod is bijgewerkt, inclusief een beveiligingsoplossing.',
 };

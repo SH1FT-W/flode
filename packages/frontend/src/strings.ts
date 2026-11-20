@@ -383,15 +383,12 @@ const STRINGS = {
     whatsNewTitle: 'Neu in FLODE {version}',
     whatsNewAll: 'Alle Änderungen',
     continue: 'Weiter',
-    new261104ReadableOpenTitle: 'Lesbar geöffnet',
-    new261104ReadableOpenText:
-      'Ein Flow öffnet am Desktop in lesbarer Größe beim Auslöser, statt so klein, dass nur Symbole zu sehen sind. „Alles zeigen“ zeigt weiter den ganzen Flow.',
-    new261104FasterTitle: 'Schneller',
-    new261104FasterText:
-      'FLODE lädt rund ein Viertel der Daten von früher, ordnet große Flows nur einmal an und rechnet beim Ziehen nicht mehr jede Karte neu.',
-    new261104LosslessTitle: 'Speichert genau, was da steht',
-    new261104LosslessText:
-      'Kurzform-Bedingungen (and/or/not), Texte wie "1_000", delay: 5 und unbekannte Schlüssel kommen beim Speichern unverändert zurück.',
+    new261105SafeSaveTitle: 'Sicherer speichern',
+    new261105SafeSaveText:
+      'Kann FLODE direkt vor dem Speichern nicht lesen, was in Home Assistant steht (Verbindung weg, Serverfehler), speichert es nicht und sagt das, statt womöglich eine Blueprint-Automation oder ein Skript zu überschreiben.',
+    new261105LibrariesTitle: 'Aktualisierte Bausteine',
+    new261105LibrariesText:
+      'Die Prüfbibliothek zod ist auf dem neuesten Stand, mit einer Sicherheitskorrektur.',
   },
   en: {
     title: 'FLODE',
@@ -760,15 +757,11 @@ const STRINGS = {
     whatsNewTitle: 'New in FLODE {version}',
     whatsNewAll: 'All changes',
     continue: 'Continue',
-    new261104ReadableOpenTitle: 'Opens readable',
-    new261104ReadableOpenText:
-      'On the desktop a flow opens at a readable size starting at its trigger, instead of so small that only icons show. "Fit view" still shows the whole flow.',
-    new261104FasterTitle: 'Faster',
-    new261104FasterText:
-      'FLODE loads about a quarter of the data it used to, arranges large flows only once and no longer recomputes every card while you drag.',
-    new261104LosslessTitle: 'Saves exactly what is there',
-    new261104LosslessText:
-      'Short-form conditions (and/or/not), text like "1_000", delay: 5 and unknown keys come back unchanged when you save.',
+    new261105SafeSaveTitle: 'Safer saving',
+    new261105SafeSaveText:
+      'If FLODE can’t read what Home Assistant has stored right before saving (connection lost, server error), it now stops and tells you instead of possibly overwriting a blueprint automation or a script.',
+    new261105LibrariesTitle: 'Updated libraries',
+    new261105LibrariesText: 'The validation library zod is up to date, including a security fix.',
   },
 } as const;
 
